@@ -1,16 +1,12 @@
-// GTA2-style steering: left/right turn with GTA2's turn curve, forward/back move along the facing,
-// weapons fire ahead with auto-aim onto the nearest target in a cone. The mouse plays no part.
+// Steering: on foot W/A/S/D move north/west/south/east on screen and you face your movement;
+// in vehicles W/S are gas/brake and A/D steer. Weapons fire the way you face, with auto-aim onto
+// the nearest target in a cone. The mouse plays no part.
 import { VEHICLES } from '../../shared/packs';
 import { Mode, type YouState } from '../../shared/protocol';
 import type { Input } from './input';
 
 const DEG = Math.PI / 180;
-// GTA2 (30 Hz ticks): turn speed builds 5°/tick up to 12°/tick, 3°/tick while holding fire still.
-const TURN_ACCEL = 5 * DEG * 30 * 30;     // rad/s²
-const TURN_ACCEL_AIMING = 3 * DEG * 30 * 30;
-const TURN_MAX = 12 * DEG * 30;           // rad/s (a full turn in ~1 s)
 const TURRET_RATE = 1.5;
-const BACK_SPEED = 0.8;
 export const AUTO_AIM_CONE = 16 * DEG;
 
 export interface SteerOut { mx: number; my: number; throttle: number; steer: number; aim: number }
@@ -20,7 +16,6 @@ export type AimAssist = (x: number, y: number, facing: number) => number | null;
 
 export class Steering {
   facing = 0;
-  private turnSpeed = 0;
   private turret = 0;
   private lastMode = -1;
   private lastHeading = 0;
@@ -32,7 +27,6 @@ export class Steering {
     if (mode !== this.lastMode) {
       if (mode === Mode.Foot) this.facing = this.lastMode === Mode.Driver || this.lastMode === Mode.Passenger ? this.lastHeading : you.body[2];
       this.turret = 0;
-      this.turnSpeed = 0;
       this.lastMode = mode;
     }
     const turn = input.axis('left', 'right');
@@ -47,16 +41,12 @@ export class Steering {
       this.facing = aim;
       return mode === Mode.Driver ? { mx: 0, my: 0, throttle: fwd, steer: turn, aim } : { mx: 0, my: 0, throttle: 0, steer: 0, aim };
     }
-    // GTA2 turning: builds up quickly to a cap, stops dead on release.
-    if (turn === 0) this.turnSpeed = 0;
-    else {
-      const accel = firing && fwd <= 0 ? TURN_ACCEL_AIMING : TURN_ACCEL;
-      this.turnSpeed = Math.max(-TURN_MAX, Math.min(TURN_MAX, this.turnSpeed + turn * accel * dt));
-      if (Math.sign(this.turnSpeed) !== turn) this.turnSpeed = turn * accel * dt;
-    }
-    this.facing += this.turnSpeed * dt;
-    const k = fwd > 0 ? 1 : fwd < 0 ? -BACK_SPEED : 0;
+    // On foot the keys are screen directions: W north, D east, S south, A west (diagonals too).
+    // You face the way you're moving and keep that facing when you stop.
+    const mx = turn, my = -fwd;
+    if (mx !== 0 || my !== 0) this.facing = Math.atan2(my, mx);
+    const len = Math.hypot(mx, my) || 1;
     const aim = firing ? assist(from.x, from.y, this.facing) ?? this.facing : this.facing;
-    return { mx: Math.cos(this.facing) * k, my: Math.sin(this.facing) * k, throttle: 0, steer: 0, aim };
+    return { mx: mx / len, my: my / len, throttle: 0, steer: 0, aim };
   }
 }

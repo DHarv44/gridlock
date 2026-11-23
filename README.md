@@ -32,13 +32,14 @@ Open http://localhost:5228, pick a name, **Create game**, then send friends the 
 
 ## Controls
 
-Keyboard only, GTA2-style: turn and run where you face, shots auto-aim at whoever is ahead of
-you (±16°). The mouse pointer plays no part. Esc → Change controls rebinds any action.
+Keyboard only. On foot W/A/S/D (or arrows) run north/west/south/east on screen and you face the
+way you run; shots go that way and auto-aim at whoever is ahead of you (±16°). The mouse pointer
+plays no part. Esc → Change controls rebinds any action.
 
 | Key | Action |
 | --- | --- |
-| W/S or Up/Down | Run forward / back where you face · in vehicles gas / brake, reverse |
-| A/D or Left/Right | Turn · steer |
+| W/A/S/D or arrows | On foot: run north / west / south / east (diagonals too) |
+| W/S · A/D in vehicles | Gas / brake, reverse · steer |
 | Ctrl | Fire ahead (auto-aims at the nearest person in front) |
 | , / . | Tank turret left / right |
 | Space | Jump on foot · handbrake in cars · climb in helicopters |
