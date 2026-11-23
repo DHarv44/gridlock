@@ -6,7 +6,7 @@ Top-down multiplayer crime sandbox for up to 6 friends in the browser.
 
 ```
 npm install
-npm start
+npm run play
 ```
 
 Open http://localhost:5228, pick a name, **Create game**, then send friends the invite link
@@ -15,7 +15,9 @@ Open http://localhost:5228, pick a name, **Create game**, then send friends the 
 - **Same network:** friends use the LAN address the server prints on startup.
 - **Over the internet:** forward TCP port 5228 on your router to this PC and share
   `http://<your-public-ip>:5228/#CODE`, or deploy to any Node host (it honours `PORT`;
-  build command `npm run build`, start command `npm run serve`).
+  build command `npm run build`, start command `npm start`). `railway.json` configures Railway.
+  Room saves live in `data/` (or `GRIDLOCK_DATA`); on Railway mount a volume there to keep them
+  across deploys.
 
 ## Controls
 

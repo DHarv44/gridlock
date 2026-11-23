@@ -5,7 +5,8 @@ Server-authoritative Node simulation + three.js browser client. Read `docs/STATU
 
 ## Run
 - `npm run dev` — game server (tsx watch, port 5228) + Vite client (port 5229, proxies `/ws` and `/api`).
-- `npm start` — production: builds the client into `dist/` and serves everything on one port (5228, or `PORT`).
+- `npm run play` — local production: builds the client into `dist/` and serves everything on one port (5228).
+- `npm start` — serve only (expects `dist/`); Railway runs `npm run build` then this (`railway.json`, honours `PORT`).
 - `npm run smoke [seconds]` — headless 6-bot soak test (tick time, NaN checks, message sizes).
 - `npx tsx scripts/citystats.ts [seed]` — city generator stats.
 - Client URL params: `?play=Name#CODE` auto-joins (creates a room if no code), `?mute` silences audio.
