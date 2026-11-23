@@ -11,14 +11,47 @@ export function audioDuration(buf: Buffer, ext: string): number | null {
   return null;
 }
 
-/** 'mvhd': [version][flags×3] then v0: ctime, mtime, timescale, duration (u32) / v1: u64 times. */
+/** Child boxes of [start, end): type → body offset and end, in file order. */
+function boxes(buf: Buffer, start: number, end: number): { type: string; body: number; end: number }[] {
+  const out: { type: string; body: number; end: number }[] = [];
+  for (let i = start; i + 8 <= end;) {
+    let size = buf.readUInt32BE(i), hdr = 8;
+    if (size === 1) { size = Number(buf.readBigUInt64BE(i + 8)); hdr = 16; }
+    if (size === 0) size = end - i;
+    if (size < hdr) break;
+    out.push({ type: buf.toString('latin1', i + 4, i + 8), body: i + hdr, end: Math.min(end, i + size) });
+    i += size;
+  }
+  return out;
+}
+
+/** The sound track's length: its track header duration (after its edit list), in the movie's
+ *  timescale. Not the movie header's: that is the longest track, and some files carry a subtitle
+ *  track that runs on seconds past the audio. 'mvhd' / 'tkhd' bodies: [version][flags×3], then
+ *  v0 u32 times / v1 u64 times. */
 function mp4(buf: Buffer): number | null {
-  const at = buf.indexOf('mvhd');
-  if (at < 0) return null;
-  const v = buf[at + 4];
-  const scale = v === 1 ? buf.readUInt32BE(at + 24) : buf.readUInt32BE(at + 16);
-  const dur = v === 1 ? Number(buf.readBigUInt64BE(at + 28)) : buf.readUInt32BE(at + 20);
-  return scale > 0 ? dur / scale : null;
+  const moov = boxes(buf, 0, buf.length).find((b) => b.type === 'moov');
+  if (!moov) return null;
+  const kids = boxes(buf, moov.body, moov.end);
+  const mvhd = kids.find((b) => b.type === 'mvhd');
+  if (!mvhd) return null;
+  const mv = buf[mvhd.body];
+  const scale = mv === 1 ? buf.readUInt32BE(mvhd.body + 20) : buf.readUInt32BE(mvhd.body + 12);
+  const movieDur = mv === 1 ? Number(buf.readBigUInt64BE(mvhd.body + 24)) : buf.readUInt32BE(mvhd.body + 16);
+  if (!(scale > 0)) return null;
+  for (const trak of kids.filter((b) => b.type === 'trak')) {
+    const parts = boxes(buf, trak.body, trak.end);
+    const mdia = parts.find((b) => b.type === 'mdia');
+    const hdlr = mdia && boxes(buf, mdia.body, mdia.end).find((b) => b.type === 'hdlr');
+    if (!hdlr || buf.toString('latin1', hdlr.body + 8, hdlr.body + 12) !== 'soun') continue;
+    const tkhd = parts.find((b) => b.type === 'tkhd');
+    if (!tkhd) break;
+    const tv = buf[tkhd.body];
+    const dur = tv === 1 ? Number(buf.readBigUInt64BE(tkhd.body + 28)) : buf.readUInt32BE(tkhd.body + 20);
+    if (dur > 0) return dur / scale;
+    break;
+  }
+  return movieDur / scale;
 }
 
 const MP3_BITRATES = [

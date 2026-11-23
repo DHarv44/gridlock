@@ -159,6 +159,13 @@ export class Radio {
     // Songs are `file`, commercials `commercials/file`: encode each path segment.
     const src = `/radio/${encodeURIComponent(s.id)}/${air.file.split('/').map(encodeURIComponent).join('/')}`;
     if (this.playing === src) {
+      // The file ran out before the schedule says it ends (or we're in its last moment): playing it
+      // again would restart it from the top. Wait for the next item instead.
+      const end = Number.isFinite(this.audio.duration) ? this.audio.duration : air.dur;
+      if (this.audio.ended || air.offset >= end - 0.05) {
+        this.checkT = Math.min(1, Math.max(0.05, air.endsAt - this.now() + 0.02));
+        return;
+      }
       if (!this.audio.seeking && Math.abs(this.audio.currentTime - air.offset) > DRIFT_S) this.audio.currentTime = air.offset;
       if (this.audio.paused) this.start();
       return;
