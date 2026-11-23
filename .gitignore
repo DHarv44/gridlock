@@ -9,3 +9,6 @@ radio.local.json
 voice/out/
 
 thirdparty/_incoming/
+# Blender review renders (art/review.py) and Python caches.
+art/out/
+__pycache__/

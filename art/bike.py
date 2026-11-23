@@ -1,0 +1,87 @@
+"""Motorbikes: a sports bike with a fairing, and a dirt bike. The spec gives axles, wheel size and the
+type; the rest is built around those. x forward, metres."""
+import math
+
+import kit
+import materials as M
+
+
+def ellipse_rings(stations, n=12):
+    """[(x, half_width, z_low, z_high)] -> rings of an elliptical section."""
+    rings = []
+    for x, hw, z0, z1 in stations:
+        zc, hz = (z0 + z1) / 2, max((z1 - z0) / 2, 0.005)
+        rings.append([(x, max(hw, 0.005) * math.cos(2 * math.pi * k / n), zc + hz * math.sin(2 * math.pi * k / n)) for k in range(n)])
+    return rings
+
+
+def shell(name, stations, col, mat, n=12):
+    v, f = kit.loft(ellipse_rings(stations, n))
+    return kit.recalc(kit.mesh(name, v, f, col, M.get(mat), smooth=True, sharp=60))
+
+
+def bike_wheel(name, x, r, w, col, spokes, rim="rim"):
+    out = [kit.lathe(name + "_tyre", [(-w / 2, r * 0.78), (-w / 2, r * 0.93), (-w / 4, r), (w / 4, r), (w / 2, r * 0.93), (w / 2, r * 0.78)],
+                     col, M.get("tyre"), n=18, axis='Y', at=(x, 0, r), caps=False)]
+    out.append(kit.lathe(name + "_rim", [(-w * 0.3, r * 0.8), (-w * 0.3, r * 0.74), (w * 0.3, r * 0.74), (w * 0.3, r * 0.8)],
+                         col, M.get(rim), n=18, axis='Y', at=(x, 0, r), caps=False))
+    out.append(kit.lathe(name + "_hub", [(-0.07, 0.0), (-0.07, 0.06), (0.07, 0.06), (0.07, 0.0)], col, M.get("steel"), n=10, axis='Y', at=(x, 0, r)))
+    for k in range(spokes):
+        a = 2 * math.pi * k / spokes
+        for sd in (1, -1):
+            out.append(kit.tube(name + "_sp", [(x + math.cos(a) * 0.05, sd * 0.05, r + math.sin(a) * 0.05),
+                                               (x + math.cos(a + 0.4) * r * 0.75, sd * 0.02, r + math.sin(a + 0.4) * r * 0.75)], 0.012 if spokes > 6 else 0.025, col, M.get(rim), n=4))
+    return out
+
+
+def build(vid, st, dims, col):
+    fx, rx = st["axles"]
+    r, w = st["r"], st["w"]
+    dirt = st["type"] == "dirt"
+    out = bike_wheel("fw", fx, r, w, col, 16 if dirt else 5, "rim_dark" if not dirt else "steel")
+    out += bike_wheel("rw", rx, r, w * 1.25, col, 16 if dirt else 5, "rim_dark" if not dirt else "steel")
+    head = (fx - (0.3 if dirt else 0.22), 0, 1.0 if dirt else 0.9)
+    # Forks and the swingarm.
+    for sd in (1, -1):
+        out.append(kit.tube("fork", [(fx, sd * 0.07, r), (head[0], sd * 0.07, head[2])], 0.026 if dirt else 0.03, col, M.get("chrome" if dirt else "trim"), n=8))
+        out.append(kit.tube("swing", [(rx, sd * 0.08, r), (-0.12, sd * 0.08, 0.45)], 0.025, col, M.get("trim"), n=6))
+    out.append(kit.tube("bars", [(head[0] - 0.05, -0.36, head[2] + 0.08), (head[0] - 0.02, 0, head[2] + 0.04), (head[0] - 0.05, 0.36, head[2] + 0.08)],
+                        0.016, col, M.get("trim"), n=6))
+    for sd in (1, -1):
+        out.append(kit.tube("grip", [(head[0] - 0.05, sd * 0.36, head[2] + 0.08), (head[0] - 0.06, sd * 0.44, head[2] + 0.085)], 0.022, col, M.get("tyre"), n=8))
+    # Engine, frame spine, exhaust.
+    # Crankcase low between the wheels, the cylinder block leaning forward above it, fins in steel.
+    z0 = 0.3 if not dirt else 0.38
+    out.append(kit.prism("crank", [(-0.18, z0), (0.22, z0), (0.28, z0 + 0.18), (-0.1, z0 + 0.28)], -0.12, 0.12, col, M.get("underbody"), bev=0.03))
+    out.append(kit.prism("block", [(0.02, z0 + 0.22), (0.24, z0 + 0.16), (0.34, z0 + 0.42), (0.12, z0 + 0.48)], -0.1, 0.1, col, M.get("steel"), bev=0.02))
+    for k in range(3):
+        z = z0 + 0.27 + k * 0.06
+        out.append(kit.prism("fin", [(0.04 + k * 0.02, z), (0.27 + k * 0.02, z - 0.04), (0.28 + k * 0.02, z - 0.025), (0.05 + k * 0.02, z + 0.015)], -0.115, 0.115, col, M.get("steel")))
+    out.append(kit.tube("spine", [(head[0], 0, head[2] - 0.05), (0.15, 0, 0.82), (-0.12, 0, 0.6), (-0.12, 0, 0.42)], 0.04, col, M.get("trim"), n=8))
+    if dirt:
+        out.append(kit.tube("pipe", [(0.22, 0.1, 0.5), (0.0, 0.17, 0.75), (-0.45, 0.17, 0.85)], 0.035, col, M.get("steel"), n=8))
+        out.append(kit.lathe("can", [(-0.75, 0.0), (-0.75, 0.05), (-0.7, 0.06), (-0.45, 0.06), (-0.43, 0.04)], col, M.get("steel"), n=10, axis='X', at=(0, 0.17, 0.87)))
+        out.append(shell("tank", [(-0.12, 0.08, 0.8, 0.86), (0.0, 0.15, 0.76, 0.98), (0.25, 0.14, 0.82, 1.02), (0.36, 0.05, 0.92, 0.98)], col, "paint"))
+        out.append(kit.box("seat", -0.65, 0.02, -0.12, 0.12, 0.88, 0.97, col, M.get("seat"), bev=0.03, seg=2))
+        out.append(shell("rear_fender", [(-0.95, 0.05, 0.94, 0.95), (-0.7, 0.1, 0.9, 0.96), (-0.45, 0.12, 0.84, 0.94)], col, "paint"))
+        out.append(shell("front_fender", [(fx - 0.25, 0.05, 0.82, 0.84), (fx, 0.08, 0.79, 0.85), (fx + 0.28, 0.06, 0.74, 0.77)], col, "paint"))
+        out.append(kit.box("plate", head[0] + 0.02, head[0] + 0.06, -0.14, 0.14, head[2] - 0.32, head[2] - 0.02, col, M.get("white"), bev=0.02))
+        out.append(kit.box("lamp", head[0] + 0.06, head[0] + 0.08, -0.06, 0.06, head[2] - 0.22, head[2] - 0.12, col, M.get("head")))
+        for sd in (1, -1):
+            out.append(kit.prism("sidepanel", [(-0.55, 0.72), (-0.2, 0.72), (-0.1, 0.92), (-0.5, 0.92)], sd * 0.13, sd * 0.15, col, M.get("white")))
+        out.append(kit.box("tail", -0.98, -0.94, -0.04, 0.04, 0.9, 0.94, col, M.get("tail")))
+    else:
+        out.append(kit.tube("pipe", [(0.25, 0.08, 0.3), (0.0, 0.14, 0.24), (-0.3, 0.16, 0.32)], 0.035, col, M.get("steel"), n=8))
+        out.append(kit.lathe("can", [(-0.72, 0.0), (-0.72, 0.06), (-0.66, 0.075), (-0.3, 0.075), (-0.27, 0.04)], col, M.get("chrome"), n=12, axis='X', at=(0, 0.16, 0.42)))
+        out.append(shell("fairing", [(0.38, 0.16, 0.38, 0.82), (0.55, 0.2, 0.42, 0.98), (0.7, 0.15, 0.55, 0.95), (0.8, 0.05, 0.72, 0.84)], col, "paint", n=14))
+        out.append(shell("tank", [(-0.08, 0.1, 0.78, 0.86), (0.05, 0.17, 0.74, 0.98), (0.3, 0.16, 0.76, 1.0), (0.42, 0.1, 0.82, 0.96)], col, "paint"))
+        out.append(shell("seat", [(-0.5, 0.05, 0.86, 0.9), (-0.35, 0.12, 0.84, 0.92), (-0.05, 0.14, 0.8, 0.9)], col, "seat"))
+        out.append(shell("tail", [(-0.85, 0.03, 0.9, 0.92), (-0.7, 0.1, 0.84, 0.98), (-0.45, 0.13, 0.8, 0.94), (-0.3, 0.12, 0.76, 0.86)], col, "paint"))
+        v = [(0.62, -0.17, 0.98), (0.62, 0.17, 0.98), (0.5, 0.13, 1.12), (0.5, -0.13, 1.12)]
+        g = kit.recalc(kit.mesh("screen", v, [(0, 1, 2, 3)], col, M.get("glass")))
+        g.modifiers.new("Solid", 'SOLIDIFY').thickness = 0.01
+        out.append(g)
+        out.append(kit.box("lamp", 0.79, 0.81, -0.07, 0.07, 0.74, 0.82, col, M.get("head")))
+        out.append(kit.box("tail", -0.86, -0.84, -0.05, 0.05, 0.9, 0.95, col, M.get("tail")))
+        out.append(shell("front_fender", [(fx - 0.2, 0.06, r + 0.3, r + 0.32), (fx, 0.08, r + 0.33, r + 0.38), (fx + 0.2, 0.06, r + 0.25, r + 0.28)], col, "paint"))
+    return out
