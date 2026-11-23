@@ -6,6 +6,7 @@ import { buildingMaterial, type BuildingUniforms } from './buildingMaterial';
 import { turfGang } from '../../shared/world/gangTurf';
 import { decorate, type DetailBatches, type Mass, massesFor } from './buildingDetail';
 import { type GraffitiSpot, graffitiSpots } from './buildingSpots';
+import { ownInstance } from './hideable';
 import { Batch, byTile, lambert, UNIT } from './instancing';
 import { StreetProps } from './streetProps';
 
@@ -27,16 +28,21 @@ export class CityMeshes {
       gable: new Batch(UNIT.gable(), lambert()),
       glass: new Batch(UNIT.box(), glassMat),
     };
-    const masses: Mass[] = [];
-    for (const b of city.buildings) {
+    const masses: (Mass & { owner: number })[] = [];
+    // Walk-in buildings can be hidden (the cutaway): their instances are tagged with the building.
+    const open = new Set(city.interiors.map((i) => i.building));
+    city.buildings.forEach((b, bi) => {
+      const owner = open.has(bi) ? bi : -1;
       const ms = massesFor(b, rng);
-      masses.push(...ms);
+      masses.push(...ms.map((m) => ({ ...m, owner })));
       const lot = city.lots[b.lot];
+      for (const batch of Object.values(out)) batch.owner = owner;
       const deco = decorate(b, lot, ms, rng, out);
       // Gang turf: the model's paintable spots, for the graffiti layer.
       const gang = lot ? turfGang(city.blocks[lot.block]?.district ?? -1) : null;
       if (gang) for (const s of graffitiSpots(b, lot, ms, deco)) this.graffitiSpots.push({ ...s, gang });
-    }
+    });
+    for (const batch of Object.values(out)) batch.owner = -1;
     this.uniforms = this.buildMasses(scene, masses, rng);
     for (const batch of Object.values(out)) batch.build(scene);
 
@@ -54,7 +60,7 @@ export class CityMeshes {
   }
 
   /** One instanced mesh per map tile so off-screen blocks are culled (also from the shadow pass). */
-  private buildMasses(scene: THREE.Scene, masses: Mass[], rng: Rng): BuildingUniforms {
+  private buildMasses(scene: THREE.Scene, masses: (Mass & { owner: number })[], rng: Rng): BuildingUniforms {
     const { mat, uniforms } = buildingMaterial();
     const base = UNIT.box();
     const m4 = new THREE.Matrix4(), c = new THREE.Color();
@@ -67,6 +73,7 @@ export class CityMeshes {
         const r = ms.r;
         m4.makeScale(r.x1 - r.x0, ms.h - ms.base, r.y1 - r.y0).setPosition((r.x0 + r.x1) / 2, ms.base, (r.y0 + r.y1) / 2);
         mesh.setMatrixAt(i, m4);
+        if (ms.owner >= 0) ownInstance(ms.owner, mesh, i, m4);
         // Color.set() converts sRGB hex to the linear working space already.
         c.set(ms.wall); wall.set([c.r, c.g, c.b], i * 3);
         c.set(ms.roof); roof.set([c.r, c.g, c.b], i * 3);

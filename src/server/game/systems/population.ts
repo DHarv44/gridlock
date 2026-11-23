@@ -13,7 +13,8 @@ import { laneSpawn, pedSpawn } from './spawnPoints';
 const GANG_CARS = VEHICLES.filter((v) => v.roles.includes('gang')).map((v) => ({ id: v.id, weight: 2.5 }));
 
 interface FixedSpawn { x: number; y: number; angle: number; type: number; veh: number; readyAt: number }
-interface FixedGuard { x: number; y: number; angle: number; arch: number; ped: number; readyAt: number }
+/** `indoor`: under a roof (a clerk), so it may appear close by; others only out of sight (60 m+). */
+interface FixedGuard { x: number; y: number; angle: number; arch: number; ped: number; readyAt: number; indoor?: boolean }
 
 const STANDERS = new Set(['dealer', 'streetwalker', 'guard', 'gang']);
 const BUCKET = 64;
@@ -37,6 +38,8 @@ export class Population {
 
   private buildFixed(): void {
     const w = this.w;
+    // A clerk behind every walk-in counter (world/interiors.ts), kept like the services' guards.
+    for (const i of w.city.interiors) this.guards.push({ x: i.clerk.x, y: i.clerk.y, angle: i.clerk.angle, arch: pedIndex('clerk'), ped: 0, readyAt: 0, indoor: true });
     for (const place of w.city.services) {
       const spec = SERVICES[place.spec];
       const pad = place.pad ?? { x: place.x, y: place.y, angle: 0 };
@@ -249,7 +252,7 @@ export class Population {
       if (p && p.dead) { g.ped = 0; g.readyAt = w.time + 120; continue; }
       if (!p) g.ped = 0;
       if (p && near > 300 * 300) { removePed(w, p); g.ped = 0; continue; }
-      if (!g.ped && near < 220 * 220 && near > 60 * 60 && w.time >= g.readyAt) {
+      if (!g.ped && near < 220 * 220 && (g.indoor || near > 60 * 60) && w.time >= g.readyAt) {
         const np = spawnPed(w, g.arch, g.x, g.y, g.angle);
         np.persistent = true;
         np.ai!.post = { x: g.x, y: g.y, angle: g.angle };

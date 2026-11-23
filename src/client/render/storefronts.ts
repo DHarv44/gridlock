@@ -88,9 +88,18 @@ export class Storefronts {
     };
     const lit = new THREE.MeshBasicMaterial({ color: garage ? '#2b2a27' : '#ffd9a0' });
     const frame = new THREE.MeshLambertMaterial({ color });
-    // Doorway: frame + glowing opening (a roller door for drive-in services).
-    add(boxGeo, frame, wx + dx * 0.12, 0, wy + dy * 0.12, along ? doorW + 0.5 : 0.25, doorH + 0.3, along ? 0.25 : doorW + 0.5);
-    add(boxGeo, lit, wx + dx * 0.26, 0, wy + dy * 0.26, along ? doorW : 0.06, doorH, along ? 0.06 : doorW);
+    if (place.counter) {
+      // Walk-in: an open doorway, two posts and a lintel round the 1.6 m gap in the wall (world/interiors.ts).
+      for (const s of [-1, 1]) {
+        const o = s * 0.92;
+        add(boxGeo, frame, wx + dx * 0.12 + (along ? o : 0), 0, wy + dy * 0.12 + (along ? 0 : o), 0.24, doorH + 0.3, 0.24);
+      }
+      add(boxGeo, frame, wx + dx * 0.12, doorH, wy + dy * 0.12, along ? 2.1 : 0.25, 0.3, along ? 0.25 : 2.1);
+    } else {
+      // Doorway: frame + glowing opening (a roller door for drive-in services).
+      add(boxGeo, frame, wx + dx * 0.12, 0, wy + dy * 0.12, along ? doorW + 0.5 : 0.25, doorH + 0.3, along ? 0.25 : doorW + 0.5);
+      add(boxGeo, lit, wx + dx * 0.26, 0, wy + dy * 0.26, along ? doorW : 0.06, doorH, along ? 0.06 : doorW);
+    }
     if (garage) {
       const stripes = new THREE.MeshLambertMaterial({ color: '#8f9296' });
       for (let k = 0; k < 6; k++) add(boxGeo, stripes, wx + dx * 0.3, 0.4 + k * 0.5, wy + dy * 0.3, along ? doorW : 0.04, 0.06, along ? 0.04 : doorW);
@@ -124,7 +133,10 @@ export class Storefronts {
     const r = lot.rect;
     const edgeX = dx > 0 ? r.x1 : dx < 0 ? r.x0 : place.x, edgeY = dy > 0 ? r.y1 : dy < 0 ? r.y0 : place.y;
     const side = 3.5;
-    const x = edgeX - dx * 1.2 + (dy !== 0 ? side : 0), y = edgeY - dy * 1.2 + (dx !== 0 ? side : 0);
+    // Walk-in places: out on the sidewalk beside the door (the lot's edge can be inside the shop),
+    // on the side away from the ATM.
+    const x = place.counter ? place.x + dx * 0.8 - (dy !== 0 ? side : 0) : edgeX - dx * 1.2 + (dy !== 0 ? side : 0);
+    const y = place.counter ? place.y + dy * 0.8 - (dx !== 0 ? side : 0) : edgeY - dy * 1.2 + (dx !== 0 ? side : 0);
     const group = new THREE.Group();
     const post = new THREE.Mesh(boxGeo, new THREE.MeshLambertMaterial({ color: '#e8e4da' }));
     post.scale.set(0.12, 2.2, 0.12);

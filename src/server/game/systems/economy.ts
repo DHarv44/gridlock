@@ -110,7 +110,8 @@ export class Economy {
     const place: Place | undefined = isProperty ? w.city.properties[placeId] : w.city.services[placeId];
     if (!place) return 'Nothing here.';
     const pos = w.pedPos(p);
-    const reach = Math.min(dist(pos.x, pos.y, place.x, place.y), place.pad ? dist(pos.x, pos.y, place.pad.x, place.pad.y) : Infinity);
+    const reach = Math.min(dist(pos.x, pos.y, place.x, place.y), place.pad ? dist(pos.x, pos.y, place.pad.x, place.pad.y) : Infinity,
+      place.counter ? dist(pos.x, pos.y, place.counter.x, place.counter.y) : Infinity);
     if (reach > 12) return 'Too far away.';
     // Carried cash first; the bank covers the rest.
     const pay = (price: number) => {

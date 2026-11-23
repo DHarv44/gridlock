@@ -1,8 +1,9 @@
 // Collects many copies of one geometry (position, scale, yaw, colour) into InstancedMeshes,
 // split into map tiles so the renderer (and the shadow pass) can frustum-cull each tile.
 import * as THREE from 'three';
+import { ownInstance } from './hideable';
 
-interface Inst { x: number; y: number; z: number; sx: number; sy: number; sz: number; rot: number; color: string }
+interface Inst { x: number; y: number; z: number; sx: number; sy: number; sz: number; rot: number; color: string; owner: number }
 
 export const TILE = 160;
 
@@ -30,12 +31,14 @@ export function byTile<T>(items: T[], pos: (t: T) => [number, number]): Map<numb
 
 export class Batch {
   private items: Inst[] = [];
+  /** Instances added from now on belong to this owner (a building that can be hidden; -1 none). */
+  owner = -1;
 
   constructor(private geo: THREE.BufferGeometry, private mat: THREE.Material, private shadows: { cast: boolean; receive: boolean } = { cast: true, receive: true }) {}
 
   /** (x, z) is the ground position in world metres, y the base height. */
   add(x: number, y: number, z: number, sx: number, sy: number, sz: number, color: string, rot = 0): void {
-    this.items.push({ x, y, z, sx, sy, sz, rot, color });
+    this.items.push({ x, y, z, sx, sy, sz, rot, color, owner: this.owner });
   }
 
   get size(): number {
@@ -50,6 +53,7 @@ export class Batch {
         q.setFromAxisAngle(up, it.rot);
         mesh.setMatrixAt(i, m.compose(p.set(it.x, it.y, it.z), q, s.set(it.sx, it.sy, it.sz)));
         mesh.setColorAt(i, c.set(it.color));
+        if (it.owner >= 0) ownInstance(it.owner, mesh, i, m);
       });
       mesh.castShadow = this.shadows.cast;
       mesh.receiveShadow = this.shadows.receive;

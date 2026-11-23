@@ -30,7 +30,8 @@ export class Interact {
     let best: Spot | null = null, bd = Infinity;
     const consider = (place: Place, property: boolean) => {
       const verb = property ? PROPERTIES[place.spec].kind : place.verb;
-      const dDoor = Math.hypot(place.x - x, place.y - y);
+      // Walk-in places do business at the counter inside; walking through their door is just a door.
+      const dDoor = place.counter ? Math.hypot(place.counter.x - x, place.counter.y - y) : Math.hypot(place.x - x, place.y - y);
       const dPad = place.pad ? Math.hypot(place.pad.x - x, place.pad.y - y) : Infinity;
       let d = Infinity;
       if (!driving && dDoor < 3.2) d = dDoor;
@@ -83,7 +84,8 @@ export class Interact {
   tick(x: number, y: number): void {
     if (!this.openSpot || !this.pane.isOpen) return;
     const p = this.openSpot.place;
-    const d = Math.min(Math.hypot(p.x - x, p.y - y), p.pad ? Math.hypot(p.pad.x - x, p.pad.y - y) : Infinity);
+    const d = Math.min(Math.hypot(p.x - x, p.y - y), p.pad ? Math.hypot(p.pad.x - x, p.pad.y - y) : Infinity,
+      p.counter ? Math.hypot(p.counter.x - x, p.counter.y - y) : Infinity);
     if (d > 11) this.pane.close();
   }
 }

@@ -57,6 +57,9 @@ own character's last spot, in that vehicle.
 - **Banks and ATMs**: dying drops some of the cash you carry and getting busted costs a fine, but
   money in the bank is safe. Bank it at an ATM (on the walls of banks, corner stores, diners, clubs,
   car washes and gas station kiosks) or a bank's counter. Shops take your cash first, then the bank for the rest.
+- **Walk-in places**: gun shops, corner stores, gas station kiosks, diners, nightclubs and warehouses
+  open up when you walk to their door: the roof comes off and you walk in, past the shelves and booths
+  to the counter, where the clerk is and where you do business.
 - **Businesses**: income fills each one's safe (up to 8 game hours of it). Empty it at the door, or
   at midnight an armoured car takes it to your bank (less 10%). Gangs that don't respect you send a
   crew to lean on your places: kill them, pay them off at the door, or lose the safe. Your car wash

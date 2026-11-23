@@ -1,4 +1,5 @@
 import type { Rect } from '../math';
+import type { Interior } from './interiors';
 
 export const MAP_SIZE = 2048;
 export const LAND0 = 80;
@@ -98,6 +99,8 @@ export interface Place {
   x: number; y: number; // door / trigger point
   pad?: { x: number; y: number; angle: number };
   name: string;
+  /** Walk-in places: where you stand inside to do business (instead of at the door). */
+  counter?: { x: number; y: number };
 }
 
 export interface City {
@@ -119,4 +122,6 @@ export interface City {
   services: Place[];
   properties: Place[];
   bridges: Rect[];
+  /** Walk-in ground floors (world/interiors.ts). */
+  interiors: Interior[];
 }

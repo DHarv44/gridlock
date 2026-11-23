@@ -34,6 +34,7 @@ import type { StreetProps } from '../render/streetProps';
 import { Storefronts } from '../render/storefronts';
 import { addAtms } from '../render/atms';
 import { GasStations } from '../render/gasStations';
+import { Interiors } from '../render/interiors';
 import { atmsOf } from '../../shared/world/atms';
 import { Water } from '../render/water';
 import { type OwnState, type PlayerTag, WorldView } from '../render/worldView';
@@ -67,6 +68,7 @@ export class Game {
   private offscreen: OffscreenPlayers;
   private phone: Phone;
   private gas: GasStations;
+  private interiors: Interiors;
   private interact: Interact;
   private jobs: Jobs;
   private sound = new Sound();
@@ -135,6 +137,7 @@ export class Game {
     this.storefronts = new Storefronts(this.stage.scene, city);
     addAtms(this.stage.scene, atmsOf(city));
     this.gas = new GasStations(this.stage.scene, city);
+    this.interiors = new Interiors(this.stage.scene, city);
     new Graffiti(this.stage.scene, city, meshes.graffitiSpots);
     this.quality = new QualityGovernor(this.stage);
     this.quality.onAuto = (q) => this.hud.notify(`Graphics set to ${q} for a smoother frame rate (Esc to change)`, 'info');
@@ -291,6 +294,8 @@ export class Game {
     const it = this.itSpot();
     if (it) this.fx.glow.put(it.x, it.y, 0.09, 3.2 + Math.sin(performance.now() / 160) * 0.7, 1, 0, 1, 0.12, 0.08, 0.7);
     this.gas.putGlows(this.fx.glow, night, vr);
+    if (own) this.interiors.update(own.x, own.y, !own.vid);
+    this.interiors.putGlows(this.fx.glow, night);
     this.view.sync(this.store, dt, own, this.tags(), night, vr);
     this.fx.update(dt);
     this.water.update(dt);

@@ -64,8 +64,13 @@ Walk through a door and the roof fades away: the floor plan shows from the same 
 world, so friends see you inside and the city keeps running around you.
 - F0. Design note (before code): docs/INTERIORS.md (written 2026-11-23; waiting on the user's two
   decisions: who sees inside, which buildings open).
-- F1. Single-floor businesses and shops: plans generated from the footprint by room layouts per type;
-  a clerk inside.
+- F1. (done) 30 walk-in ground floors (packs `interior`: gun shops, corner stores, gas kiosks, diners,
+  clubs, warehouses; shared/world/interiors.ts): a room behind the storefront door, shell walls with a
+  1.6 m door gap (people and bikes fit, cars don't), furniture by layout, the rest of the building
+  solid; the building hides (render/hideable.ts) when you're at or in it on foot; a clerk behind
+  each counter; business happens at the counter. Ground floor only, so no "floor" field yet: the
+  walls are ordinary collision (bullets and sight stop at them). `npx tsx scripts/interiors.ts`.
+  Not yet: police and gangs pathing in through doors; the dealership office; owners' back-room desk.
 - F2. Banks with a vault (hand-made layout); the bank job.
 - F3. Multi-storey: stairs and elevators; the camera shows your floor, hides everything above and dims
   the floor below.

@@ -233,7 +233,11 @@ export interface ServiceSpec {
   guards?: { archetype: string; count: number }[];
   price?: number;               // respray cost
   atm?: boolean;                // an ATM on the wall beside the door
+  interior?: InteriorLayout;    // walk in: the ground floor is laid out like this (world/interiors.ts)
 }
+
+/** How an enterable place's ground floor is laid out (shared/world/interiors.ts). */
+export type InteriorLayout = 'shop' | 'diner' | 'club' | 'warehouse' | 'kiosk';
 
 export interface PropertySpec {
   id: string;
@@ -251,6 +255,7 @@ export interface PropertySpec {
    *  `fence` drive a stolen car onto its pad to sell it above chop-shop prices; `club` meet any gang
    *  that will work with you at its door. */
   perk?: 'wash' | 'fence' | 'club';
+  interior?: InteriorLayout;    // walk in: the ground floor is laid out like this
 }
 
 export interface Squad { vehicle: string; crew: string[] }

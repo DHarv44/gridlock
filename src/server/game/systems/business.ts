@@ -133,7 +133,8 @@ export class Business {
     if (!p || p.dead || !place) return 'Not now.';
     if (this.owners.get(propId) !== pl.name.toLowerCase()) return "It isn't yours.";
     const pos = w.pedPos(p);
-    if (dist(pos.x, pos.y, place.x, place.y) > 8) return 'Too far away.';
+    const counter = place.counter ? dist(pos.x, pos.y, place.counter.x, place.counter.y) : Infinity;
+    if (Math.min(dist(pos.x, pos.y, place.x, place.y), counter) > 8) return 'Too far away.';
     if (kind === 'collect') {
       const amount = this.safes.get(propId) ?? 0;
       if (amount <= 0) return 'The safe is empty.';

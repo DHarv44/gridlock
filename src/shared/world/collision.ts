@@ -22,7 +22,14 @@ export class StaticWorld {
   private q = 1;
 
   constructor(city: City) {
-    for (const b of city.buildings) this.addBox({ ...b.rect, h: b.h });
+    // Walk-in buildings: their room's walls (with the door gap), furniture and the solid rest,
+    // instead of one solid box.
+    const open = new Set(city.interiors.map((i) => i.building));
+    city.buildings.forEach((b, bi) => { if (!open.has(bi)) this.addBox({ ...b.rect, h: b.h }); });
+    for (const i of city.interiors) {
+      for (const w of [...i.walls, ...i.rest]) this.addBox({ ...w.rect, h: w.h });
+      for (const p of i.props) if (p.kind !== 'dance') this.addBox({ ...p.rect, h: p.h });
+    }
     for (const o of city.obstacles) this.addBox({ ...o.rect, h: o.h });
     for (const t of city.trees) this.addCircle({ x: t.x, y: t.y, r: TRUNK_R, h: 7 });
     this.stamp = new Uint32Array(this.boxes.length);

@@ -72,6 +72,10 @@ export const PEDS: PedArchetype[] = [
   { ...base, id: 'soldier', name: 'Soldier', behaviour: 'military', faction: 'military', courage: 1, accuracy: 0.7, hp: 130, armor: 100, runSpeed: 5.4, cash: [20, 100],
     loadout: [{ weapon: 'rifle', chance: 1, ammo: 240 }, { weapon: 'grenade', chance: 0.3, ammo: 3 }, { weapon: 'rpg', chance: 0.1, ammo: 3 }, { weapon: 'lmg', chance: 0.12, ammo: 200 }],
     look: { skin: SKIN, top: ['#575b3c'], bottom: ['#3c3f2e'], hat: ['#3c3f2e'], hatChance: 1, build: 1.05 } },
+  // Behind shop counters (world/interiors.ts clerk spots): holds the post, defends the till.
+  { ...base, id: 'clerk', name: 'Clerk', behaviour: 'guard', faction: 'civ', courage: 0.55, accuracy: 0.35, hp: 90, cash: [40, 160],
+    loadout: [{ weapon: 'pistol', chance: 0.5, ammo: 30 }],
+    look: { skin: SKIN, top: ['#c62a22', '#2f6fb3', '#2bb34a', '#e3b30c', '#f2f2ee'], bottom: ['#16171a', '#3a3d44'], hat: ['#16171a'], hatChance: 0.2 } },
   { ...base, id: 'guard', name: 'Security Guard', behaviour: 'guard', faction: 'civ', courage: 0.9, accuracy: 0.5, hp: 110, armor: 30, cash: [30, 90],
     loadout: [{ weapon: 'pistol', chance: 1, ammo: 45 }],
     look: { skin: SKIN, top: ['#4a4f55'], bottom: ['#16171a'], hat: ['#16171a'], hatChance: 0.8 } },
