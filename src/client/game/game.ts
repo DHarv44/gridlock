@@ -106,7 +106,7 @@ export class Game {
     this.props = meshes.props;
     this.water = new Water(this.stage.scene, this.map);
     this.storefronts = new Storefronts(this.stage.scene, city);
-    new Graffiti(this.stage.scene, city);
+    new Graffiti(this.stage.scene, city, meshes.graffitiSpots);
     this.quality = new QualityGovernor(this.stage);
     this.quality.onAuto = (q) => this.hud.notify(`Graphics set to ${q} for a smoother frame rate (Esc to change)`, 'info');
     requestAnimationFrame(() => this.frame());

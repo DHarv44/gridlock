@@ -3,7 +3,9 @@ import * as THREE from 'three';
 import { Rng } from '../../shared/rng';
 import type { City } from '../../shared/world/cityTypes';
 import { buildingMaterial, type BuildingUniforms } from './buildingMaterial';
+import { turfGang } from '../../shared/world/gangTurf';
 import { decorate, type DetailBatches, type Mass, massesFor } from './buildingDetail';
+import { type GraffitiSpot, graffitiSpots } from './buildingSpots';
 import { Batch, byTile, lambert, UNIT } from './instancing';
 import { StreetProps } from './streetProps';
 
@@ -13,6 +15,8 @@ export class CityMeshes {
   readonly uniforms: BuildingUniforms;
   readonly lamps: LampSpot[];
   readonly props: StreetProps;
+  /** Surfaces on gang turf that can carry graffiti, with the gang that owns them. */
+  readonly graffitiSpots: (GraffitiSpot & { gang: string })[] = [];
 
   constructor(scene: THREE.Scene, city: City) {
     const rng = new Rng(city.seed ^ 0xb11d);
@@ -27,7 +31,11 @@ export class CityMeshes {
     for (const b of city.buildings) {
       const ms = massesFor(b, rng);
       masses.push(...ms);
-      decorate(b, city.lots[b.lot], ms, rng, out);
+      const lot = city.lots[b.lot];
+      const deco = decorate(b, lot, ms, rng, out);
+      // Gang turf: the model's paintable spots, for the graffiti layer.
+      const gang = lot ? turfGang(city.blocks[lot.block]?.district ?? -1) : null;
+      if (gang) for (const s of graffitiSpots(b, lot, ms, deco)) this.graffitiSpots.push({ ...s, gang });
     }
     this.uniforms = this.buildMasses(scene, masses, rng);
     for (const batch of Object.values(out)) batch.build(scene);

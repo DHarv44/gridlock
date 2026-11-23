@@ -77,8 +77,16 @@ class RoofPlanner {
 const cx = (r: Rect) => (r.x0 + r.x1) / 2;
 const cy = (r: Rect) => (r.y0 + r.y1) / 2;
 
-export function decorate(b: Building, lot: Lot | undefined, masses: Mass[], rng: Rng, out: DetailBatches): void {
-  if (b.kind === 'house') { house(b, masses[0], rng, out); return; }
+/** A rooftop box with walls (stair or lift housing): a graffiti spot too. */
+export interface Housing { r: Rect; y: number; h: number }
+
+/** What decoration added that changes where graffiti can go. */
+export interface Decorated { housings: Housing[]; awning: number }
+
+/** Adds the building's detail; returns its rooftop housings and the awning's side (Dir, or -1). */
+export function decorate(b: Building, lot: Lot | undefined, masses: Mass[], rng: Rng, out: DetailBatches): Decorated {
+  const housings: Housing[] = [];
+  if (b.kind === 'house') { house(b, masses[0], rng, out); return { housings, awning: -1 }; }
   for (const m of masses) parapet(m, out);
   const top = masses.reduce((a, c) => (c.h > a.h ? c : a));
   for (const m of masses) {
@@ -104,14 +112,14 @@ export function decorate(b: Building, lot: Lot | undefined, masses: Mass[], rng:
     }
     if (isTop && b.kind === 'tower') {
       const sw = plan.place(5, 6);
-      if (sw) out.box.add(cx(sw), y, cy(sw), 5, 3.5, 6, shade(m.wall, 0.9));
+      if (sw) { out.box.add(cx(sw), y, cy(sw), 5, 3.5, 6, shade(m.wall, 0.9)); housings.push({ r: sw, y, h: 3.5 }); }
       if (rng.chance(0.3) && W(m.r) > 22 && D(m.r) > 22) helipad(m, out);
       else if (rng.chance(0.5)) {
         out.cyl.add(cx(m.r) + rng.range(-3, 3), y, cy(m.r) + rng.range(-3, 3), 0.25, rng.range(3, 6), 0.25, '#b9bcc0');
       }
     } else if (rng.chance(0.6)) {
       const sw = plan.place(3, 4);
-      if (sw) out.box.add(cx(sw), y, cy(sw), 3, 2.6, 4, shade(m.wall, 0.9));
+      if (sw) { out.box.add(cx(sw), y, cy(sw), 3, 2.6, 4, shade(m.wall, 0.9)); housings.push({ r: sw, y, h: 2.6 }); }
     }
     if (b.windows < 0.9 && rng.chance(0.35)) {
       // Water tank on legs.
@@ -141,7 +149,11 @@ export function decorate(b: Building, lot: Lot | undefined, masses: Mass[], rng:
       }
     }
   }
-  if (lot && lot.front >= 0 && !b.sign && b.kind === 'block' && b.h < 26 && rng.chance(0.5)) awning(b, lot, rng, out);
+  if (lot && lot.front >= 0 && !b.sign && b.kind === 'block' && b.h < 26 && rng.chance(0.5)) {
+    awning(b, lot, rng, out);
+    return { housings, awning: lot.front };
+  }
+  return { housings, awning: -1 };
 }
 
 function parapet(m: Mass, out: DetailBatches): void {
