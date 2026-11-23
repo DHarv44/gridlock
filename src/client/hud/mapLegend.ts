@@ -1,0 +1,90 @@
+// The city map's legend: one button per kind of marker (icon, name, how many there are) that
+// shows or hides it with a click, plus All / None. Plain DOM over the map so it reads at full size
+// and clicks on it never land on the map underneath. The choice is remembered in this browser.
+import { SERVICES } from '../../shared/packs';
+import type { CityMap } from '../../shared/world/city';
+import { PLACE_ICON } from './minimap';
+
+const STORE = 'gridlock.mapHidden';
+
+interface Row { key: string; label: string; icon: HTMLElement }
+
+export class MapLegend {
+  /** Marker kinds switched off: service verbs, 'property' and 'players'. */
+  readonly hidden = new Set<string>();
+  private buttons = new Map<string, HTMLButtonElement>();
+
+  constructor(root: HTMLElement, map: CityMap) {
+    try { for (const k of JSON.parse(localStorage.getItem(STORE) ?? '[]') as string[]) this.hidden.add(k); } catch { /* none saved */ }
+    const count = new Map<string, number>();
+    for (const s of map.city.services) { const v = SERVICES[s.spec].verb; count.set(v, (count.get(v) ?? 0) + 1); }
+    count.set('property', map.city.properties.length);
+    const rows: Row[] = [
+      ...Object.entries(PLACE_ICON).filter(([k]) => count.has(k)).map(([key, v]) => ({ key, label: v.label, icon: dot(v.color, v.glyph) })),
+      { key: 'property', label: 'Property', icon: house() },
+      { key: 'players', label: 'Players', icon: dot('#ffffff', '') },
+    ];
+    const box = document.createElement('div');
+    box.className = 'map-legend';
+    box.addEventListener('mousedown', (e) => e.stopPropagation());
+    box.addEventListener('wheel', (e) => e.stopPropagation());
+    const head = document.createElement('div');
+    head.className = 'ml-head';
+    head.innerHTML = '<span>Show</span>';
+    const all = button('All', 'ml-bulk', () => this.set(rows.map((r) => r.key), false));
+    const none = button('None', 'ml-bulk', () => this.set(rows.map((r) => r.key), true));
+    head.append(all, none);
+    box.append(head);
+    for (const r of rows) {
+      const b = button('', 'ml-row', () => this.set([r.key], !this.hidden.has(r.key)));
+      const name = document.createElement('span');
+      name.className = 'ml-name';
+      name.textContent = r.label;
+      b.append(r.icon, name);
+      const n = count.get(r.key);
+      if (n !== undefined) { const c = document.createElement('span'); c.className = 'ml-count'; c.textContent = String(n); b.append(c); }
+      this.buttons.set(r.key, b);
+      box.append(b);
+    }
+    root.append(box);
+    this.refresh();
+  }
+
+  private set(keys: string[], off: boolean): void {
+    for (const k of keys) { if (off) this.hidden.add(k); else this.hidden.delete(k); }
+    try { localStorage.setItem(STORE, JSON.stringify([...this.hidden])); } catch { /* private window */ }
+    this.refresh();
+  }
+
+  private refresh(): void {
+    for (const [k, b] of this.buttons) {
+      const on = !this.hidden.has(k);
+      b.classList.toggle('off', !on);
+      b.setAttribute('aria-pressed', String(on));
+    }
+  }
+}
+
+function button(text: string, cls: string, onClick: () => void): HTMLButtonElement {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = cls;
+  b.textContent = text;
+  b.tabIndex = -1; // keys belong to the game; a focused button would eat Space/Enter
+  b.addEventListener('click', (e) => { e.stopPropagation(); onClick(); });
+  return b;
+}
+
+function dot(color: string, glyph: string): HTMLElement {
+  const s = document.createElement('span');
+  s.className = 'ml-icon';
+  s.style.background = color;
+  s.textContent = glyph;
+  return s;
+}
+
+function house(): HTMLElement {
+  const s = document.createElement('span');
+  s.className = 'ml-icon ml-house';
+  return s;
+}

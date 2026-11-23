@@ -1,5 +1,5 @@
 // The city map (M): pan by dragging, zoom with the wheel, click to set a waypoint (click it again
-// or right-click to clear), hover a pin for its name, click legend rows to hide or show them.
+// or right-click to clear), hover a pin for its name; the legend (mapLegend.ts) hides or shows kinds.
 // A controller pans with the D-pad, zooms with the bumpers and drops the waypoint at the centre.
 import { DISTRICTS, FACTIONS, PROPERTIES, SERVICES } from '../../shared/packs';
 import type { PlayerInfo } from '../../shared/protocol';
@@ -8,6 +8,7 @@ import { MAP_SIZE } from '../../shared/world/cityTypes';
 import type { Blip } from '../game/jobs';
 import type { Pt } from '../game/route';
 import { bakeCityMap } from './mapArt';
+import { MapLegend } from './mapLegend';
 import { PLACE_ICON } from './minimap';
 
 export const WAYPOINT_COLOR = '#ff4fd8';
@@ -29,8 +30,7 @@ export class BigMap {
   private cx = MAP_SIZE / 2;
   private cy = MAP_SIZE / 2;
   private zoom = 0.9;
-  private hidden = new Set<string>();
-  private legend: { key: string; y0: number; y1: number }[] = [];
+  private hidden: Set<string>;
   private pins: Pin[] = [];
   private mouse: { x: number; y: number } | null = null;
   private drag: { x: number; y: number; moved: boolean } | null = null;
@@ -40,6 +40,7 @@ export class BigMap {
 
   constructor(private root: HTMLElement, private canvas: HTMLCanvasElement, private map: CityMap) {
     this.baked = bakeCityMap(map, 1);
+    this.hidden = new MapLegend(root, map).hidden;
     canvas.addEventListener('mousedown', (e) => { if (e.button === 0) this.drag = { x: e.offsetX, y: e.offsetY, moved: false }; });
     canvas.addEventListener('mousemove', (e) => {
       this.padMode = false;
@@ -100,8 +101,6 @@ export class BigMap {
   }
 
   private click(sx: number, sy: number): void {
-    const row = this.legend.find((l) => sx < 190 && sy >= l.y0 && sy < l.y1);
-    if (row) { if (this.hidden.has(row.key)) this.hidden.delete(row.key); else this.hidden.add(row.key); return; }
     this.toggleWaypoint(this.toWorld(sx, sy));
   }
 
@@ -141,7 +140,6 @@ export class BigMap {
       ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     }
     if (!this.hidden.has('players')) this.people(ctx, f);
-    this.legendBox(ctx);
     if (this.padMode) crosshair(ctx, w / 2, h / 2);
     this.tooltip(ctx);
   }
@@ -199,28 +197,6 @@ export class BigMap {
     ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(11, 0); ctx.lineTo(-8, 7.5); ctx.lineTo(-4, 0); ctx.lineTo(-8, -7.5); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.restore();
-  }
-
-  private legendBox(ctx: CanvasRenderingContext2D): void {
-    const rows: { key: string; color: string; glyph: string; label: string }[] = [
-      ...Object.entries(PLACE_ICON).map(([key, v]) => ({ key, ...v })),
-      { key: 'property', color: '#6fe08a', glyph: '', label: 'Property' },
-      { key: 'players', color: '#ffffff', glyph: '', label: 'Players' },
-    ];
-    const x = 14, top = 14, rh = 24;
-    ctx.fillStyle = 'rgba(11,13,16,0.82)';
-    ctx.beginPath(); ctx.roundRect(x - 6, top - 6, 182, rows.length * rh + 12, 6); ctx.fill();
-    ctx.font = `600 13px ${FONT}`;
-    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    this.legend = [];
-    rows.forEach((r, i) => {
-      const y = top + i * rh + rh / 2, off = this.hidden.has(r.key);
-      ctx.globalAlpha = off ? 0.35 : 1;
-      pin(ctx, x + 10, y, r.color, r.glyph, 8);
-      ctx.fillStyle = '#dfe3e8'; ctx.fillText(r.label, x + 26, y);
-      ctx.globalAlpha = 1;
-      this.legend.push({ key: r.key, y0: y - rh / 2, y1: y + rh / 2 });
-    });
   }
 
   private tooltip(ctx: CanvasRenderingContext2D): void {
