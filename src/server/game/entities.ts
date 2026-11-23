@@ -148,6 +148,9 @@ export interface Player {
   lastPlace: number;
   gunCrimeT: number;
   seenCheckT: number;
+  /** Last entity state sent to this player (id -> serialized), for delta snapshots. */
+  sent: Map<number, string>;
+  snapCount: number;
 }
 
 export interface Squad {

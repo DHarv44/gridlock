@@ -66,34 +66,47 @@ export class Hud {
     this.root.hidden = false;
   }
 
+  /** Writes to the DOM only when a value actually changed (avoids per-frame style/layout work). */
+  private last = new Map<string, string>();
+  private put(key: string, value: string, apply: (v: string) => void): void {
+    if (this.last.get(key) === value) return;
+    this.last.set(key, value);
+    apply(value);
+  }
+
   update(you: YouState, gameMinutes: number, seen: boolean): void {
     const h = Math.floor(gameMinutes / 60) % 24, m = Math.floor(gameMinutes % 60);
-    this.clock.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    this.put('clock', `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`, (v) => { this.clock.textContent = v; });
     this.shownCash += (you.cash - this.shownCash) * 0.2;
     if (Math.abs(you.cash - this.shownCash) < 1) this.shownCash = you.cash;
-    this.cash.textContent = `$${Math.round(this.shownCash).toLocaleString('en-US')}`;
-    [...this.stars.children].forEach((s, i) => s.classList.toggle('on', i < you.wl));
-    this.stars.classList.toggle('flash', you.wl > 0 && seen);
-    this.hp.style.width = `${Math.max(0, Math.min(100, you.hp))}%`;
-    this.ar.style.width = `${Math.max(0, Math.min(100, you.ar))}%`;
-    (this.ar.parentElement as HTMLElement).style.visibility = you.ar > 0 ? 'visible' : 'hidden';
+    this.put('cash', `$${Math.round(this.shownCash).toLocaleString('en-US')}`, (v) => { this.cash.textContent = v; });
+    this.put('stars', `${you.wl}:${you.wl > 0 && seen}`, () => {
+      [...this.stars.children].forEach((s, i) => s.classList.toggle('on', i < you.wl));
+      this.stars.classList.toggle('flash', you.wl > 0 && seen);
+    });
+    this.put('hp', `${Math.max(0, Math.min(100, you.hp))}%`, (v) => { this.hp.style.width = v; });
+    this.put('ar', `${Math.max(0, Math.min(100, you.ar))}%`, (v) => {
+      this.ar.style.width = v;
+      (this.ar.parentElement as HTMLElement).style.visibility = you.ar > 0 ? 'visible' : 'hidden';
+    });
     const held = you.w[you.wi];
     const vt = you.vt >= 0 ? VEHICLES[you.vt] : null;
     const mounted = vt?.weapons?.length && you.mode === Mode.Driver;
-    if (mounted) {
-      this.weapon.textContent = vt!.name;
-      this.ammo.innerHTML = '';
-    } else if (held) {
+    let name = '', ammo = '';
+    if (mounted) name = vt!.name;
+    else if (held) {
       const spec = WEAPONS[held[0]];
-      this.weapon.textContent = spec.name;
-      this.ammo.innerHTML = spec.clip === 0 ? '' : you.rl > 0 ? '<small>reloading…</small>' : `${held[2]} <small>/ ${held[1]}</small>`;
+      name = spec.name;
+      ammo = spec.clip === 0 ? '' : you.rl > 0 ? '<small>reloading…</small>' : `${held[2]} <small>/ ${held[1]}</small>`;
     }
-    if (vt) {
-      this.veh.innerHTML = `${vt.name}<div class="bar veh"><div style="width:${Math.round(you.vhp * 100)}%"></div></div>`;
-    } else this.veh.innerHTML = '';
-    if (you.mode === Mode.Dead) { this.big.hidden = false; this.big.className = 'hud-big wasted'; this.big.textContent = 'WASTED'; }
-    else if (you.mode === Mode.Busted) { this.big.hidden = false; this.big.className = 'hud-big busted'; this.big.textContent = 'BUSTED'; }
-    else this.big.hidden = true;
+    this.put('weapon', name, (v) => { this.weapon.textContent = v; });
+    this.put('ammo', ammo, (v) => { this.ammo.innerHTML = v; });
+    this.put('veh', vt ? `${vt.name}<div class="bar veh"><div style="width:${Math.round(you.vhp * 100)}%"></div></div>` : '', (v) => { this.veh.innerHTML = v; });
+    this.put('big', String(you.mode), () => {
+      if (you.mode === Mode.Dead) { this.big.hidden = false; this.big.className = 'hud-big wasted'; this.big.textContent = 'WASTED'; }
+      else if (you.mode === Mode.Busted) { this.big.hidden = false; this.big.className = 'hud-big busted'; this.big.textContent = 'BUSTED'; }
+      else this.big.hidden = true;
+    });
   }
 
   feedLine(text: string, kind: string): void {
@@ -141,8 +154,10 @@ export class Hud {
   }
 
   setPrompt(text: string | null): void {
-    this.prompt.hidden = !text;
-    if (text) this.prompt.innerHTML = `<kbd>E</kbd>${text}`;
+    this.put('prompt', text ?? '', (v) => {
+      this.prompt.hidden = !v;
+      if (v) { this.prompt.innerHTML = '<kbd>E</kbd>'; this.prompt.append(v); }
+    });
   }
 
   showScore(on: boolean, players: PlayerInfo[], code: string): void {

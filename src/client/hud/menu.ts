@@ -1,5 +1,7 @@
 // Esc pane: controls reference, volume, invite link, leave.
 import type { Sound } from '../audio/sound';
+import type { QualityGovernor } from '../game/quality';
+import type { Quality } from '../render/scene';
 import type { Pane } from './pane';
 
 const KEYS: [string, string][] = [
@@ -9,7 +11,13 @@ const KEYS: [string, string][] = [
   ['T', 'Chat'], ['M', 'City map'], ['Tab', 'Scores'],
 ];
 
-export function openMenu(pane: Pane, sound: Sound, code: string, leave: () => void): void {
+const LEVELS: { q: Quality; label: string; sub: string }[] = [
+  { q: 'high', label: 'High', sub: 'Sharp shadows, full resolution' },
+  { q: 'medium', label: 'Medium', sub: 'Lighter shadows, reduced resolution' },
+  { q: 'low', label: 'Low', sub: 'No shadows, lowest resolution' },
+];
+
+export function openMenu(pane: Pane, sound: Sound, quality: QualityGovernor, code: string, leave: () => void): void {
   pane.open(() => ({
     title: 'Paused',
     subtitle: `Room ${code} · the game keeps running`,
@@ -21,9 +29,13 @@ export function openMenu(pane: Pane, sound: Sound, code: string, leave: () => vo
       <div class="keys">${KEYS.map(([k, v]) => `<kbd>${k}</kbd><span>${v}</span>`).join('')}</div>
       <div class="group">&nbsp;</div>`,
     rows: [
-      { name: 'Copy invite link', onClick: () => { void navigator.clipboard?.writeText(`${location.origin}/#${code}`); } },
-      { name: 'Resume', onClick: () => pane.close() },
-      { name: 'Leave game', onClick: leave },
+      ...LEVELS.map((l) => ({
+        name: `${l.label}${quality.current === l.q ? '  ✓' : ''}`, sub: l.sub, group: 'Graphics',
+        onClick: () => quality.choose(l.q),
+      })),
+      { name: 'Copy invite link', group: 'Game', onClick: () => { void navigator.clipboard?.writeText(`${location.origin}/#${code}`); } },
+      { name: 'Resume', group: 'Game', onClick: () => pane.close() },
+      { name: 'Leave game', group: 'Game', onClick: leave },
     ],
   }));
   const vol = pane.el.querySelector<HTMLInputElement>('#vol');

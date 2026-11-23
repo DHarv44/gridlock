@@ -22,6 +22,7 @@ import { routeFx } from './fxRouter';
 import { Input } from './input';
 import { Interact } from './interact';
 import { Predictor } from './predict';
+import { QualityGovernor } from './quality';
 
 const STEP = 1 / TICK_HZ;
 const LAW = new Set(PEDS.map((p, i) => (p.behaviour === 'police' || p.behaviour === 'military' ? i : -1)).filter((i) => i >= 0));
@@ -74,12 +75,15 @@ export class Game {
     this.buildingUniforms = meshes.uniforms;
     this.props = meshes.props;
     this.water = new Water(this.stage.scene, this.map);
+    this.quality = new QualityGovernor(this.stage);
+    this.quality.onAuto = (q) => this.hud.notify(`Graphics set to ${q} for a smoother frame rate (Esc to change)`, 'info');
     requestAnimationFrame(() => this.frame());
   }
 
   private buildingUniforms: { uNight: { value: number } };
   private props: StreetProps;
   private water: Water;
+  private quality: QualityGovernor;
 
   /** Signal lamps follow the server clock; they also cast a small coloured glow. */
   private signals(night: number, vr: { x0: number; y0: number; x1: number; y1: number }): void {
@@ -108,7 +112,7 @@ export class Game {
       case 'menu':
         if (this.mapOpen) { this.mapOpen = false; this.hud.bigmap.hidden = true; return; }
         if (this.pane.isOpen) this.pane.close();
-        else openMenu(this.pane, this.sound, this.code, () => this.leave());
+        else openMenu(this.pane, this.sound, this.quality, this.code, () => this.leave());
         break;
       case 'scoreOn': this.hud.showScore(true, this.players, this.code); break;
       case 'scoreOff': this.hud.showScore(false, this.players, this.code); break;
@@ -119,7 +123,7 @@ export class Game {
     switch (m.t) {
       case 's':
         if (!this.you) document.getElementById('loading')!.hidden = true;
-        this.store.ingest(m.st, m.e);
+        this.store.ingest(m.st, m.e, m.k);
         this.gameMinutes = m.gt;
         this.you = m.you;
         this.predict.reconcile(m.you, m.ack);
@@ -154,6 +158,7 @@ export class Game {
   }
 
   private aimAngle = 0;
+  private hudFrame = 0;
 
   private tick(own: OwnState | null): void {
     const inp = this.input;
@@ -190,6 +195,7 @@ export class Game {
     }
     if (this.acc > STEP * 4) this.acc = 0;
     this.predict.decay(dt);
+    if (this.you && !document.hidden) this.quality.sample(dt);
     this.store.update();
     const own = this.ownState(this.acc / STEP);
     if (own) {
@@ -199,6 +205,7 @@ export class Game {
     }
     const vr = this.cam.viewRect();
     this.ground.update(vr);
+    this.stage.fitShadow(Math.max(vr.x1 - vr.x0, vr.y1 - vr.y0) / 2 - 40);
     // Dev hook: window.__forceTime = minutes previews any time of day locally.
     const forced = (window as unknown as { __forceTime?: number }).__forceTime;
     this.stage.setTime(forced ?? this.gameMinutes, this.cam.x, this.cam.y);
@@ -237,6 +244,8 @@ export class Game {
     if (!you || !own) return;
     const seen = you.wl > 0;
     this.hud.update(you, this.gameMinutes, seen);
+    // Radar, place lookup and pane refresh don't need full frame rate.
+    if ((this.hudFrame = (this.hudFrame + 1) % 2) !== 0) return;
     const spot = this.interact.find(own.x, own.y, you);
     this.interact.current = spot;
     this.hud.setPrompt(this.pane.isOpen ? null : this.interact.promptText(spot, this.owners, this.myName));

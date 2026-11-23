@@ -4,7 +4,7 @@ import { Rng } from '../../shared/rng';
 import type { City } from '../../shared/world/cityTypes';
 import { buildingMaterial, type BuildingUniforms } from './buildingMaterial';
 import { decorate, type DetailBatches, type Mass, massesFor } from './buildingDetail';
-import { Batch, lambert, UNIT } from './instancing';
+import { Batch, byTile, lambert, UNIT } from './instancing';
 import { StreetProps } from './streetProps';
 
 export interface LampSpot { x: number; y: number }
@@ -49,28 +49,34 @@ export class CityMeshes {
     this.lamps = this.props.lamps;
   }
 
+  /** One instanced mesh per map tile so off-screen blocks are culled (also from the shadow pass). */
   private buildMasses(scene: THREE.Scene, masses: Mass[], rng: Rng): BuildingUniforms {
     const { mat, uniforms } = buildingMaterial();
-    const geo = UNIT.box();
-    const n = masses.length;
-    const wall = new Float32Array(n * 3), roof = new Float32Array(n * 3), win = new Float32Array(n * 3);
-    const mesh = new THREE.InstancedMesh(geo, mat, n);
+    const base = UNIT.box();
     const m4 = new THREE.Matrix4(), c = new THREE.Color();
-    masses.forEach((ms, i) => {
-      const r = ms.r;
-      m4.makeScale(r.x1 - r.x0, ms.h - ms.base, r.y1 - r.y0).setPosition((r.x0 + r.x1) / 2, ms.base, (r.y0 + r.y1) / 2);
-      mesh.setMatrixAt(i, m4);
-      // Color.set() converts sRGB hex to the linear working space already.
-      c.set(ms.wall); wall.set([c.r, c.g, c.b], i * 3);
-      c.set(ms.roof); roof.set([c.r, c.g, c.b], i * 3);
-      win.set([ms.win, rng.next() * 100, ms.kind], i * 3);
-    });
-    geo.setAttribute('aWall', new THREE.InstancedBufferAttribute(wall, 3));
-    geo.setAttribute('aRoof', new THREE.InstancedBufferAttribute(roof, 3));
-    geo.setAttribute('aWin', new THREE.InstancedBufferAttribute(win, 3));
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    scene.add(mesh);
+    for (const group of byTile(masses, (ms) => [(ms.r.x0 + ms.r.x1) / 2, (ms.r.y0 + ms.r.y1) / 2]).values()) {
+      const n = group.length;
+      const geo = base.clone();
+      const wall = new Float32Array(n * 3), roof = new Float32Array(n * 3), win = new Float32Array(n * 3);
+      const mesh = new THREE.InstancedMesh(geo, mat, n);
+      group.forEach((ms, i) => {
+        const r = ms.r;
+        m4.makeScale(r.x1 - r.x0, ms.h - ms.base, r.y1 - r.y0).setPosition((r.x0 + r.x1) / 2, ms.base, (r.y0 + r.y1) / 2);
+        mesh.setMatrixAt(i, m4);
+        // Color.set() converts sRGB hex to the linear working space already.
+        c.set(ms.wall); wall.set([c.r, c.g, c.b], i * 3);
+        c.set(ms.roof); roof.set([c.r, c.g, c.b], i * 3);
+        win.set([ms.win, rng.next() * 100, ms.kind], i * 3);
+      });
+      geo.setAttribute('aWall', new THREE.InstancedBufferAttribute(wall, 3));
+      geo.setAttribute('aRoof', new THREE.InstancedBufferAttribute(roof, 3));
+      geo.setAttribute('aWin', new THREE.InstancedBufferAttribute(win, 3));
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.computeBoundingSphere();
+      mesh.matrixAutoUpdate = false;
+      scene.add(mesh);
+    }
     return uniforms;
   }
 

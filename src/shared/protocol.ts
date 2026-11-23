@@ -3,7 +3,9 @@
 export const TICK_HZ = 30;
 export const SNAP_EVERY = 2;             // snapshots at 15 Hz
 export const INTERP_DELAY_MS = 120;
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
+/** Every Nth snapshot carries every entity in full (others list unchanged ones in `k`). */
+export const FULL_SNAP_EVERY = 30;
 
 // Input buttons (bitmask).
 export const BTN = {
@@ -76,7 +78,8 @@ export interface Profile {
 export type S2C =
   | { t: 'welcome'; id: number; room: string; seed: number; maxPlayers: number }
   | { t: 'reject'; reason: string }
-  | { t: 's'; st: number; ack: number; gt: number; you: YouState; e: number[][]; fx: number[][] }
+  /** e: changed/new entities; k: ids still in view and unchanged since the last snapshot. */
+  | { t: 's'; st: number; ack: number; gt: number; you: YouState; e: number[][]; k: number[]; fx: number[][] }
   | { t: 'players'; list: PlayerInfo[] }
   | { t: 'owners'; list: [number, string | null][] }
   | { t: 'profile'; p: Profile }

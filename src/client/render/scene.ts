@@ -2,6 +2,8 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 
+export type Quality = 'high' | 'medium' | 'low';
+
 export interface Lighting {
   night: number;          // 0 day .. 1 full night
   hour: number;
@@ -52,8 +54,48 @@ export class Stage {
     window.addEventListener('resize', () => this.resize());
   }
 
+  quality: Quality = 'high';
+  private shadowHalf = 140;
+
+  /** Fits the sun's shadow frustum to the visible area (fewer casters, sharper shadows). */
+  fitShadow(viewHalf: number): void {
+    // Margin so tall buildings just off-screen still cast into view.
+    const want = Math.min(180, Math.max(70, Math.ceil((viewHalf + 45) / 10) * 10));
+    if (want === this.shadowHalf) return;
+    this.shadowHalf = want;
+    const sc = this.sun.shadow.camera;
+    sc.left = -want; sc.right = want; sc.top = want; sc.bottom = -want;
+    sc.updateProjectionMatrix();
+  }
+
+  /** Trades resolution and shadow quality for speed. */
+  setQuality(q: Quality): void {
+    if (q === this.quality) return;
+    const shadowsBefore = this.renderer.shadowMap.enabled;
+    this.quality = q;
+    const r = this.renderer;
+    const size = q === 'high' ? 2048 : 1024;
+    r.shadowMap.enabled = q !== 'low';
+    r.shadowMap.type = q === 'high' ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+    if (this.sun.shadow.mapSize.x !== size) {
+      this.sun.shadow.mapSize.set(size, size);
+      this.sun.shadow.map?.dispose();
+      this.sun.shadow.map = null;
+    }
+    // Shadow on/off changes shader variants.
+    if (shadowsBefore !== r.shadowMap.enabled || q !== 'high') {
+      this.scene.traverse((o) => {
+        const m = (o as THREE.Mesh).material;
+        if (Array.isArray(m)) m.forEach((x) => { x.needsUpdate = true; }); else if (m) m.needsUpdate = true;
+      });
+    }
+    this.resize();
+  }
+
   resize(): void {
     const w = window.innerWidth, h = window.innerHeight;
+    const cap = this.quality === 'high' ? 1.75 : this.quality === 'medium' ? 1.25 : 1;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, cap));
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();

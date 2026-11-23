@@ -1,5 +1,6 @@
 // Headless soak test: 6 fake players in one room, random inputs, simulated minutes.
 // `npm run smoke [seconds]`
+import { deflateRawSync } from 'node:zlib';
 import { BTN, type InputMsg, Mode } from '../src/shared/protocol';
 import { addHeat } from '../src/server/game/systems/wanted';
 import { Room } from '../src/server/room';
@@ -9,8 +10,14 @@ const SECONDS = Number(process.argv[2] ?? 180);
 const room = new Room('SMKE', 1337);
 room.stop();
 const bytes: number[] = [];
+const zbytes: number[] = [];
+let sampleN = 0;
 const players = Array.from({ length: 6 }, (_, i) => {
-  const res = room.join(`bot${i}`, { send: (d) => bytes.push(d.length), close: () => {} });
+  const res = room.join(`bot${i}`, { send: (d) => {
+    bytes.push(d.length);
+    // Deflate a sample of messages to estimate on-the-wire size.
+    if (d.startsWith('{"t":"s"') && sampleN++ % 10 === 0) zbytes.push(deflateRawSync(d, { level: 3 }).length);
+  }, close: () => {} });
   if (typeof res === 'string') throw new Error(res);
   return res;
 });
@@ -46,6 +53,9 @@ for (let k = 0; k < ticks; k++) {
     const tasks = new Map<string, number>();
     for (const p of w.peds.values()) if (p.ai) tasks.set(p.ai.task, (tasks.get(p.ai.task) ?? 0) + 1);
     const avg = bytes.length ? Math.round(bytes.reduce((a, b) => a + b, 0) / bytes.length) : 0;
+    const zavg = zbytes.length ? Math.round(zbytes.reduce((a, b) => a + b, 0) / zbytes.length) : 0;
+    zbytes.length = 0;
+    console.log(`  snapshot deflated ≈ ${zavg} B → ${(zavg * 15 / 1024).toFixed(1)} KB/s per player`);
     console.log(`t=${(k / 30).toFixed(0)}s peds=${w.peds.size} veh=${w.vehicles.size} proj=${w.projectiles.size} fires=${w.fires.size} squads=${w.squads.size} NaN=${bad} msgAvg=${avg}B`,
       `wanted=[${players.map((p) => p.wanted).join(',')}] modes=[${players.map((p) => Mode.Dead === p.mode ? 'D' : p.mode).join(',')}]`,
       JSON.stringify(Object.fromEntries(tasks)));

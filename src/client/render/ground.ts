@@ -7,7 +7,8 @@ import { CHUNK, paintChunk } from './groundPaint';
 interface Chunk { mesh: THREE.Mesh; tex: THREE.CanvasTexture; used: number }
 
 const MAX_CHUNKS = 48;
-const BUILDS_PER_FRAME = 2;
+const BUILDS_PER_FRAME = 3;
+const BUILD_BUDGET_MS = 3;
 const N = Math.ceil(MAP_SIZE / CHUNK);
 
 export class Ground {
@@ -40,7 +41,12 @@ export class Ground {
       }
     }
     missing.sort((a, b) => a[2] - b[2]);
-    for (const [i, j] of missing.slice(0, BUILDS_PER_FRAME)) this.build(i, j);
+    // Build nearest first, within a small per-frame time budget (always at least one).
+    const t0 = performance.now();
+    for (const [i, j] of missing.slice(0, BUILDS_PER_FRAME)) {
+      this.build(i, j);
+      if (performance.now() - t0 > BUILD_BUDGET_MS) break;
+    }
     if (this.chunks.size > MAX_CHUNKS) this.evict();
   }
 

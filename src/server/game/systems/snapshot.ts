@@ -1,7 +1,7 @@
 // Per-player snapshots with interest management.
 import { r2 } from '../../../shared/math';
 import { RULES } from '../../../shared/packs';
-import { EK, FX, Mode, PF, type PlayerInfo, type S2C, VF, type YouState } from '../../../shared/protocol';
+import { EK, FULL_SNAP_EVERY, FX, Mode, PF, type PlayerInfo, type S2C, VF, type YouState } from '../../../shared/protocol';
 import type { Ped, Player, Vehicle } from '../entities';
 import type { World } from '../world';
 
@@ -63,7 +63,23 @@ export function buildSnapshot(w: World, pl: Player): S2C {
     if (near(f.x, f.y)) e.push([f.id, EK.Fire, r2(f.x), r2(f.y), a2(f.r)]);
   }
   const fx = w.fx.filter((ev) => fxNear(w, ev, center.x, center.y, R2));
-  return { t: 's', st: Math.round(w.time * 1000), ack: pl.ack, gt: Math.round(w.gameMinutes * 10) / 10, you: youState(w, pl, me), e, fx };
+  const { changed, kept } = delta(pl, e);
+  return { t: 's', st: Math.round(w.time * 1000), ack: pl.ack, gt: Math.round(w.gameMinutes * 10) / 10, you: youState(w, pl, me), e: changed, k: kept, fx };
+}
+
+/** Splits entities into changed (sent in full) and unchanged (sent as ids only). */
+function delta(pl: Player, all: number[][]): { changed: number[][]; kept: number[] } {
+  const full = pl.snapCount++ % FULL_SNAP_EVERY === 0;
+  const next = new Map<number, string>();
+  const changed: number[][] = [], kept: number[] = [];
+  for (const d of all) {
+    const key = d.join(',');
+    next.set(d[0], key);
+    if (!full && pl.sent.get(d[0]) === key) kept.push(d[0]);
+    else changed.push(d);
+  }
+  pl.sent = next;
+  return { changed, kept };
 }
 
 const ID_EVENTS = new Set<number>([FX.Swing, FX.Horn, FX.Throw]);

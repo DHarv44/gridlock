@@ -1,7 +1,10 @@
-// Collects many copies of one geometry (position, scale, yaw, colour) into a single InstancedMesh.
+// Collects many copies of one geometry (position, scale, yaw, colour) into InstancedMeshes,
+// split into map tiles so the renderer (and the shadow pass) can frustum-cull each tile.
 import * as THREE from 'three';
 
 interface Inst { x: number; y: number; z: number; sx: number; sy: number; sz: number; rot: number; color: string }
+
+export const TILE = 160;
 
 const m = new THREE.Matrix4();
 const q = new THREE.Quaternion();
@@ -9,6 +12,21 @@ const s = new THREE.Vector3();
 const p = new THREE.Vector3();
 const up = new THREE.Vector3(0, 1, 0);
 const c = new THREE.Color();
+
+export const tileKey = (x: number, z: number): number => Math.floor(z / TILE) * 1000 + Math.floor(x / TILE);
+
+/** Groups items by map tile. */
+export function byTile<T>(items: T[], pos: (t: T) => [number, number]): Map<number, T[]> {
+  const out = new Map<number, T[]>();
+  for (const it of items) {
+    const [x, z] = pos(it);
+    const k = tileKey(x, z);
+    let arr = out.get(k);
+    if (!arr) { arr = []; out.set(k, arr); }
+    arr.push(it);
+  }
+  return out;
+}
 
 export class Batch {
   private items: Inst[] = [];
@@ -24,26 +42,31 @@ export class Batch {
     return this.items.length;
   }
 
-  build(scene: THREE.Scene): THREE.InstancedMesh | null {
-    if (!this.items.length) return null;
-    const mesh = new THREE.InstancedMesh(this.geo, this.mat, this.items.length);
-    this.items.forEach((it, i) => {
-      q.setFromAxisAngle(up, it.rot);
-      mesh.setMatrixAt(i, m.compose(p.set(it.x, it.y, it.z), q, s.set(it.sx, it.sy, it.sz)));
-      mesh.setColorAt(i, c.set(it.color));
-    });
-    mesh.castShadow = this.shadows.cast;
-    mesh.receiveShadow = this.shadows.receive;
-    scene.add(mesh);
+  build(scene: THREE.Scene): THREE.InstancedMesh[] {
+    const meshes: THREE.InstancedMesh[] = [];
+    for (const group of byTile(this.items, (it) => [it.x, it.z]).values()) {
+      const mesh = new THREE.InstancedMesh(this.geo, this.mat, group.length);
+      group.forEach((it, i) => {
+        q.setFromAxisAngle(up, it.rot);
+        mesh.setMatrixAt(i, m.compose(p.set(it.x, it.y, it.z), q, s.set(it.sx, it.sy, it.sz)));
+        mesh.setColorAt(i, c.set(it.color));
+      });
+      mesh.castShadow = this.shadows.cast;
+      mesh.receiveShadow = this.shadows.receive;
+      mesh.computeBoundingSphere();
+      mesh.matrixAutoUpdate = false;
+      scene.add(mesh);
+      meshes.push(mesh);
+    }
     this.items = [];
-    return mesh;
+    return meshes;
   }
 }
 
 /** Unit geometries with their base at y = 0. */
 export const UNIT = {
   box: () => new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0),
-  cyl: (seg = 10) => new THREE.CylinderGeometry(0.5, 0.5, 1, seg).translate(0, 0.5, 0),
+  cyl: (seg = 8) => new THREE.CylinderGeometry(0.5, 0.5, 1, seg).translate(0, 0.5, 0),
   /** Triangular prism with the ridge along x. */
   gable: () => {
     const shape = new THREE.Shape([new THREE.Vector2(-0.5, 0), new THREE.Vector2(0.5, 0), new THREE.Vector2(0, 1)]);

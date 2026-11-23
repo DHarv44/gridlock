@@ -22,7 +22,7 @@ export class EntityStore {
   private offsetInit = false;
   renderTime = 0;
 
-  ingest(st: number, list: number[][]): void {
+  ingest(st: number, list: number[][], kept: number[]): void {
     const now = performance.now();
     const off = st - now;
     if (!this.offsetInit) { this.offset = off; this.offsetInit = true; }
@@ -39,6 +39,14 @@ export class EntityStore {
       e.data = d;
       e.seen = this.serial;
       e.samples.push({ t: st, d });
+      if (e.samples.length > 4) e.samples.shift();
+    }
+    // Unchanged entities: repeat their last state at this timestamp.
+    for (const id of kept) {
+      const e = this.all.get(id);
+      if (!e) continue;
+      e.seen = this.serial;
+      e.samples.push({ t: st, d: e.data });
       if (e.samples.length > 4) e.samples.shift();
     }
     for (const [id, e] of this.all) if (e.seen !== this.serial) this.all.delete(id);
