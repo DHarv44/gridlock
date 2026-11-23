@@ -6,6 +6,7 @@ import { Radio } from '../audio/radio';
 import { Sound } from '../audio/sound';
 import { Hud } from '../hud/hud';
 import { openMenu } from '../hud/menu';
+import { GunShop } from '../hud/gunShop';
 import { PaintGarage } from '../hud/paintGarage';
 import { SERVICES } from '../../shared/packs';
 import type { Place } from '../../shared/world/cityTypes';
@@ -52,6 +53,7 @@ export class Game {
   private radar: Minimap;
   private pane = new Pane();
   private garage = new PaintGarage();
+  private gunShop = new GunShop();
   private interact: Interact;
   private jobs: Jobs;
   private sound = new Sound();
@@ -90,6 +92,7 @@ export class Game {
     // The pad drives whichever overlay is up: the paint shop, the map (B closes it) or the pane.
     this.input.onNav = (c) => {
       if (this.garage.isOpen) this.garage.nav(c);
+      else if (this.gunShop.isOpen) this.gunShop.nav(c);
       else if (!this.bigMap.isOpen) this.pane.nav(c);
       else if (c === 'back') this.bigMap.close();
       else this.bigMap.nav(c);
@@ -131,6 +134,7 @@ export class Game {
         // otherwise get into the nearest car or out of this one.
         if (this.pane.isOpen) { this.pane.close(); break; }
         if (!this.interact.current) { this.input.pressEnter(); break; }
+        if (!this.interact.current.property && SERVICES[this.interact.current.place.spec].verb === 'gunshop') { this.openGunShop(this.interact.current.place); break; }
         if (this.you) this.interact.toggle(() => this.you!, () => this.profile, this.owners, this.myName, (kind, id, place) => this.conn.send({ t: 'buy', kind, id, place }));
         break;
       case 'chat':
@@ -147,6 +151,7 @@ export class Game {
       }
       case 'menu':
         if (this.garage.isOpen) { this.garage.leave(); return; }
+        if (this.gunShop.isOpen) { this.gunShop.leave(); return; }
         if (this.bigMap.isOpen) { this.bigMap.close(); return; }
         if (this.pane.isOpen) this.pane.close();
         else openMenu({ pane: this.pane, sound: this.sound, quality: this.quality, input: this.input, code: this.code, record: () => this.profile.felonies ?? {}, leave: () => this.leave() });
@@ -227,7 +232,7 @@ export class Game {
     const now = performance.now();
     const dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
-    this.input.pollPad(dt, this.pane.isOpen || this.bigMap.isOpen || this.garage.isOpen);
+    this.input.pollPad(dt, this.pane.isOpen || this.bigMap.isOpen || this.garage.isOpen || this.gunShop.isOpen);
     this.acc += dt;
     let n = 0;
     while (this.acc >= STEP && n < 4) {
@@ -302,6 +307,16 @@ export class Game {
       this.bigMap.draw({ me: { x: own.x, y: own.y, angle: own.angle }, players: this.players, meId: this.myId, owned, owners: this.owners,
         blips: this.jobs.blips(you), waypoint: wp.point, route: wp.route });
     }
+  }
+
+  /** Gun shop: you step up to the counter (controls off) till you walk out. */
+  private openGunShop(place: Place): void {
+    if (this.gunShop.isOpen || this.you?.mode !== Mode.Foot) return;
+    this.input.enabled = false;
+    this.input.release();
+    this.gunShop.open({ shop: place.name, stock: SERVICES[place.spec].stock ?? [], you: () => this.you,
+      buy: (kind, id) => this.conn.send({ t: 'buy', kind, id, place: place.id }),
+      close: () => { this.input.enabled = true; } });
   }
 
   /** Paint shop: the car goes into the garage (hidden on the street, controls off) till it's done. */

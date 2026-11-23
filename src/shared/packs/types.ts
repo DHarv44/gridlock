@@ -99,9 +99,23 @@ export interface WeaponSpec {
   hold: 'fist' | 'one' | 'two' | 'heavy' | 'throw';
   vehicleOnly?: boolean;
   driveBy?: boolean;       // usable from a car window
-  /** Display length of the held mesh in metres. */
+  /** Display length of the held mesh in metres (0 = nothing in the hand). */
   size: number;
+  /** The weapon's 3D model (packs/weaponModels.ts), in the hand and in the gun shop. */
+  model?: WeaponPart[];
 }
+
+/** A weapon model part, in metres: x along the barrel (+ = muzzle; 0 is where the hand grips),
+ *  y up, z to the right. A box spans the three ranges; a cylinder runs along `axis` (default x)
+ *  and fills the other two. `tilt` pitches the part about its centre (radians, + = nose up). */
+export interface WeaponPart {
+  shape: 'box' | 'cyl';
+  x: [number, number]; y: [number, number]; z: [number, number];
+  mat: WeaponMat;
+  axis?: 'x' | 'y' | 'z';
+  tilt?: number;
+}
+export type WeaponMat = 'steel' | 'black' | 'polymer' | 'wood' | 'chrome' | 'olive' | 'brass' | 'red' | 'glass' | 'cloth' | `#${string}`;
 
 export interface LoadoutEntry { weapon: string; chance: number; ammo: number }
 

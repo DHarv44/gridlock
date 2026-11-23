@@ -1,6 +1,8 @@
 import type { WeaponSpec } from './types';
+import { WEAPON_MODELS } from './weaponModels';
 
-const W = (w: WeaponSpec): WeaponSpec => w;
+/** Each weapon picks up its model (packs/weaponModels.ts) by id. */
+const W = (w: WeaponSpec): WeaponSpec => ({ ...w, model: WEAPON_MODELS[w.id] });
 
 export const WEAPONS: WeaponSpec[] = [
   W({ id: 'fists', name: 'Fists', kind: 'melee', slot: 0, damage: 9, rate: 2.5, range: 1.3, spread: 0.9, auto: true, clip: 0, reload: 0, vehicleMul: 0.1, price: 0, ammoPrice: 0, ammoBundle: 0, tracer: '#fff', sound: 'punch', hold: 'fist', size: 0 }),

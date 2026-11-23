@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { hash32 } from '../../shared/math';
 import { CHARACTER_LOOKS, type CharLook, HAIR, PEDS, SHOES, WEAPONS } from '../../shared/packs';
+import { weaponModel } from './weaponMesh';
 
 const S = 1.55; // drawn larger than life so people read from the air
 
@@ -25,20 +26,24 @@ function cached(key: string, make: () => THREE.BufferGeometry[]): THREE.BufferGe
 }
 
 const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
-const gunMats = new Map<string, THREE.MeshLambertMaterial>();
-const gunMat = (c: string) => {
-  let m = gunMats.get(c);
-  if (!m) { m = new THREE.MeshLambertMaterial({ color: c }); gunMats.set(c, m); }
-  return m;
+/** Where the hand grips the weapon, by how it's held (in body space; x forward, z to the right),
+ *  and its pitch: armed peds hold the right arm out front, so pistols sit in that hand and long guns
+ *  reach back to the shoulder; melee weapons and throwables hang at the side, pointing down a little. */
+const HOLD: Record<string, { at: [number, number, number]; pitch: number }> = {
+  one: { at: [0.56, 1.47, 0.34], pitch: 0 },
+  two: { at: [0.5, 1.42, 0.3], pitch: 0 },
+  heavy: { at: [0.42, 1.3, 0.3], pitch: 0 },
+  fist: { at: [0.04, 0.92, 0.34], pitch: -0.7 },
+  throw: { at: [0.04, 0.92, 0.34], pitch: 0 },
 };
-const GUN = new THREE.BoxGeometry(1, 0.09 * S, 0.08 * S).translate(0.5, 0, 0);
 
 export interface PedView {
   root: THREE.Group;
   body: THREE.Group;
   legL: THREE.Mesh; legR: THREE.Mesh;
   armL: THREE.Mesh; armR: THREE.Mesh;
-  gun: THREE.Mesh;
+  /** Holds the weapon model in the hand (empty when unarmed). */
+  gun: THREE.Group;
   weapon: number;
   phase: number;
   deadT: number;
@@ -103,8 +108,7 @@ export function makePed(id: number, arch: number, playerColor: string | null, ch
   legL.position.set(0, 0.86 * S, -0.11 * S); legR.position.set(0, 0.86 * S, 0.11 * S);
   const armL = mesh(armGeo), armR = mesh(armGeo);
   armL.position.set(0, 1.47 * S, -0.34 * S); armR.position.set(0, 1.47 * S, 0.34 * S);
-  const gun = new THREE.Mesh(GUN, gunMat('#1d1f22'));
-  gun.position.set(0.2 * S, 1.4 * S, 0.3 * S);
+  const gun = new THREE.Group();
   gun.visible = false;
   body.add(gun);
   const build = look.build ?? 1;
@@ -116,11 +120,15 @@ export function setPedWeapon(v: PedView, wi: number): void {
   if (v.weapon === wi) return;
   v.weapon = wi;
   const spec = wi >= 0 ? WEAPONS[wi] : null;
-  v.gun.visible = !!spec && spec.size > 0;
-  if (spec && spec.size > 0) {
-    v.gun.scale.x = spec.size * S;
-    v.gun.material = gunMat(spec.kind === 'melee' ? (spec.id === 'bat' ? '#a0773f' : '#b9bcc0') : '#1d1f22');
-  }
+  v.gun.clear();
+  v.gun.visible = !!spec?.model && spec.size > 0;
+  if (!spec?.model || !v.gun.visible) return;
+  // The ped is drawn larger than life (S), so its weapon is too.
+  const hold = HOLD[spec.kind === 'melee' ? 'fist' : spec.hold] ?? HOLD.one;
+  v.gun.add(weaponModel(spec.id, spec.model));
+  v.gun.position.set(hold.at[0] * S, hold.at[1] * S, hold.at[2] * S);
+  v.gun.rotation.z = hold.pitch;
+  v.gun.scale.setScalar(S);
 }
 
 /** Poses the ped for this frame. speed in m/s. */
@@ -142,7 +150,7 @@ export function animatePed(v: PedView, dt: number, speed: number, aiming: boolea
   const s = Math.sin(v.phase) * swing;
   v.legL.rotation.z = s; v.legR.rotation.z = -s;
   const armed = v.gun.visible && v.weapon >= 0 && WEAPONS[v.weapon].kind !== 'melee';
-  const twoHanded = armed && v.gun.scale.x > 0.45 * S;
+  const twoHanded = armed && (WEAPONS[v.weapon].hold === 'two' || WEAPONS[v.weapon].hold === 'heavy');
   if (aiming || armed) {
     v.armR.rotation.z = Math.PI / 2;
     v.armL.rotation.z = twoHanded ? Math.PI / 2.3 : -s;
