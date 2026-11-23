@@ -18,11 +18,11 @@ export function routeFx(events: number[][], fx: Effects, sound: Sound, store: En
       case FX.Boom: {
         const [, x, y, r] = e;
         fx.explosion(x, y, r);
-        if (r > 3) {
-          sound.play('boom', x, y);
-          const d = Math.hypot(x - cam.x, y - cam.y);
-          cam.addShake(Math.max(0, 2.5 - d / 40));
-        } else sound.play('splash', x, y);
+        // Shake by blast size and distance from the camera: point-blank rockets hit hard,
+        // a car going up across the block is a rumble, molotovs barely register.
+        const d = Math.hypot(x - cam.x, y - cam.y);
+        cam.addShake(Math.min(1, r / 8) * Math.max(0, 1 - d / 140) * 0.9);
+        sound.play(r > 3 ? 'boom' : 'splash', x, y);
         break;
       }
       case FX.Blood: fx.blood(e[1], e[2]); break;

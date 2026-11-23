@@ -1,7 +1,13 @@
-// Esc → Controls: every action with its keys; click a row and press a key or mouse button to rebind.
-import { type Action, ACTIONS, keyName } from '../game/controls';
+// Esc → Controls: control style, then every action with its keys; click a row and press a key or
+// mouse button to rebind.
+import { type Action, ACTIONS, keyName, type Scheme } from '../game/controls';
 import type { Input } from '../game/input';
 import type { Pane, PaneRow } from './pane';
+
+const STYLES: { s: Scheme; label: string; sub: string }[] = [
+  { s: 'mouse', label: 'Mouse aim', sub: 'WASD moves up/down/left/right on screen, you face the cursor, click to shoot' },
+  { s: 'classic', label: 'Classic', sub: 'Arrows turn and move where you face, Ctrl fires straight ahead' },
+];
 
 export function openControls(pane: Pane, input: Input, back: () => void): void {
   let waiting: Action | null = null;
@@ -16,24 +22,26 @@ export function openControls(pane: Pane, input: Input, back: () => void): void {
   };
   pane.onClose = () => { input.capture = null; };
   pane.open(() => {
-    const rows: PaneRow[] = ACTIONS.map((def) => {
-      const keys = input.bindings.keys(def.id);
-      return {
+    const b = input.bindings;
+    const rows: PaneRow[] = STYLES.map((st) => ({
+      name: `${st.label}${b.scheme === st.s ? '  ✓' : ''}`, sub: st.sub, group: 'Style',
+      onClick: () => { if (b.scheme !== st.s) { b.setScheme(st.s); pane.refresh(); } },
+    }));
+    for (const def of ACTIONS) {
+      if (def.classicOnly && b.scheme !== 'classic') continue;
+      const keys = b.keys(def.id);
+      rows.push({
         name: def.label,
         group: def.group,
         price: waiting === def.id ? 'press a key…' : keys.length ? keys.map(keyName).join(' / ') : 'unbound',
         affordable: waiting === def.id || keys.length > 0,
         onClick: () => listen(def.id),
-      };
-    });
+      });
+    }
     rows.push(
-      { name: 'Reset to classic defaults', group: 'Done', onClick: () => { input.bindings.reset(); pane.refresh(); } },
+      { name: 'Reset keys to defaults', group: 'Done', onClick: () => { b.reset(); pane.refresh(); } },
       { name: 'Back', group: 'Done', onClick: () => { input.capture = null; back(); } },
     );
-    return {
-      title: 'Controls',
-      subtitle: 'Click an action, then press a key or mouse button. Esc cancels. Each action keeps up to two keys.',
-      rows,
-    };
+    return { title: 'Controls', subtitle: 'Click an action, then press a key or mouse button (Esc cancels). Up to two keys each.', rows };
   });
 }

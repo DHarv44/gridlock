@@ -19,7 +19,7 @@ import type { StreetProps } from '../render/streetProps';
 import { Water } from '../render/water';
 import { type OwnState, type PlayerTag, WorldView } from '../render/worldView';
 import { routeFx } from './fxRouter';
-import { ClassicControls } from './classic';
+import { Steering } from './steering';
 import { Input } from './input';
 import { Interact } from './interact';
 import { Predictor } from './predict';
@@ -162,12 +162,13 @@ export class Game {
 
   private aimAngle = 0;
   private hudFrame = 0;
-  private classic = new ClassicControls();
+  private steering = new Steering();
 
   private tick(own: OwnState | null): void {
     const inp = this.input;
     if (!this.you || !own) return;
-    const c = this.classic.step(inp, this.you, own.angle, STEP);
+    const cursor = this.cam.screenToWorld(inp.mouseX, inp.mouseY, own.alt > 3 ? 1 : 0);
+    const c = this.steering.step(inp, this.you, own.angle, STEP, own, cursor);
     this.aimAngle = c.aim;
     const msg: InputMsg = [
       ++this.seq, c.mx, c.my, c.throttle, c.steer,
@@ -198,8 +199,10 @@ export class Game {
     this.store.update();
     const own = this.ownState(this.acc / STEP);
     if (own) {
-      // On foot the camera leans toward where you're facing.
-      const ax = own.x + Math.cos(this.aimAngle) * 45, ay = own.y + Math.sin(this.aimAngle) * 45;
+      // On foot the camera leans toward the cursor (mouse style) or a little ahead of you (classic).
+      const mouse = this.input.bindings.scheme === 'mouse';
+      const cur = mouse ? this.cam.screenToWorld(this.input.mouseX, this.input.mouseY) : null;
+      const ax = cur ? cur.x : own.x + Math.cos(this.aimAngle) * 20, ay = cur ? cur.y : own.y + Math.sin(this.aimAngle) * 20;
       this.cam.update(dt, own.x, own.y, own.vx, own.vy, own.alt, ax, ay, !!own.vid);
       this.sound.listenerX = own.x; this.sound.listenerY = own.y;
     }

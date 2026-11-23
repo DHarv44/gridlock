@@ -15,6 +15,8 @@ export class Input {
   private pressed = new Set<Action>(); // held actions pressed since the last tick (taps shorter than a tick)
   weaponWish = -1;
   enabled = true;
+  mouseX = window.innerWidth / 2;
+  mouseY = window.innerHeight / 3;
   /** When set, the next key or mouse button is handed to this callback instead of the game. */
   capture: ((code: string) => void) | null = null;
   onUi: (a: UiAction) => void = () => {};
@@ -23,6 +25,7 @@ export class Input {
     window.addEventListener('keydown', (e) => this.key(e, e.code, true));
     window.addEventListener('keyup', (e) => this.key(e, e.code, false));
     window.addEventListener('blur', () => this.release());
+    canvas.addEventListener('mousemove', (e) => { this.mouseX = e.clientX; this.mouseY = e.clientY; });
     window.addEventListener('mousedown', (e) => {
       if (this.capture) { e.preventDefault(); this.takeCapture(`Mouse${e.button}`); return; }
       if (e.target === canvas) this.press(`Mouse${e.button}`, true);

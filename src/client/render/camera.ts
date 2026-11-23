@@ -10,14 +10,16 @@ export class ChaseCamera {
   height = FOOT_HEIGHT;
   private leadX = 0;
   private leadY = 0;
-  private shake = 0;
+  /** Shake "trauma" 0..1; the visible shake is trauma² so small hits stay subtle. */
+  private trauma = 0;
+  private shakeT = 0;
   private ray = new THREE.Raycaster();
   private plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
   constructor(private cam: THREE.PerspectiveCamera) {}
 
-  addShake(amount: number): void {
-    this.shake = Math.min(3, this.shake + amount);
+  addShake(trauma: number): void {
+    this.trauma = Math.min(1, this.trauma + trauma);
   }
 
   update(dt: number, tx: number, ty: number, vx: number, vy: number, alt: number, aimX: number, aimY: number, driving: boolean): void {
@@ -35,9 +37,19 @@ export class ChaseCamera {
     this.leadY += (ly - this.leadY) * k;
     this.x = tx + this.leadX;
     this.y = ty + this.leadY;
-    this.shake *= Math.exp(-dt * 6);
-    const sx = (Math.random() - 0.5) * this.shake, sy = (Math.random() - 0.5) * this.shake;
-    this.cam.position.set(this.x + sx, this.height, this.y + sy);
+    // Smooth shake: layered sines (not per-frame random jitter), scaled with height so it reads the
+    // same at any zoom, plus a little roll and a downward punch.
+    this.trauma = Math.max(0, this.trauma - dt * 1.1);
+    this.shakeT += dt;
+    const s = this.trauma * this.trauma;
+    const t = this.shakeT;
+    const amp = s * this.height * 0.045;
+    const sx = amp * (Math.sin(t * 37) * 0.6 + Math.sin(t * 61 + 1.3) * 0.4);
+    const sy = amp * (Math.sin(t * 43 + 2.1) * 0.6 + Math.sin(t * 71 + 0.4) * 0.4);
+    const roll = s * 0.06 * Math.sin(t * 29 + 0.7);
+    const dip = s * this.height * 0.06;
+    this.cam.up.set(Math.sin(roll), 0, -Math.cos(roll));
+    this.cam.position.set(this.x + sx, this.height - dip, this.y + sy);
     this.cam.lookAt(this.x + sx, 0, this.y + sy);
   }
 

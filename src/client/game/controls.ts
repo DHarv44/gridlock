@@ -1,5 +1,8 @@
-// Player actions and their key bindings. Defaults follow the classic top-down layout:
-// arrow keys turn and move relative to facing, Ctrl fires straight ahead, Enter gets in/out.
+// Player actions and their key bindings, for two control styles:
+//  - 'mouse' (default): WASD moves in screen directions, the mouse aims, left click fires.
+//  - 'classic': arrows turn and move relative to facing, Ctrl fires straight ahead.
+
+export type Scheme = 'mouse' | 'classic';
 
 export type Action =
   | 'forward' | 'back' | 'left' | 'right' | 'fire' | 'enter' | 'handbrake' | 'sprint' | 'climb' | 'descend'
@@ -8,32 +11,40 @@ export type Action =
 
 export type ActionKind = 'held' | 'edge' | 'ui';
 
-export interface ActionDef { id: Action; label: string; kind: ActionKind; group: string; keys: string[] }
+export interface ActionDef {
+  id: Action;
+  label: string;
+  kind: ActionKind;
+  group: string;
+  mouse: string[];
+  classic: string[];
+  classicOnly?: boolean;
+}
 
 export const ACTIONS: ActionDef[] = [
-  { id: 'forward', label: 'Forward / accelerate', kind: 'held', group: 'Movement', keys: ['ArrowUp'] },
-  { id: 'back', label: 'Back / brake, reverse', kind: 'held', group: 'Movement', keys: ['ArrowDown'] },
-  { id: 'left', label: 'Turn / steer left', kind: 'held', group: 'Movement', keys: ['ArrowLeft'] },
-  { id: 'right', label: 'Turn / steer right', kind: 'held', group: 'Movement', keys: ['ArrowRight'] },
-  { id: 'sprint', label: 'Sprint', kind: 'held', group: 'Movement', keys: ['ShiftLeft'] },
-  { id: 'handbrake', label: 'Handbrake', kind: 'held', group: 'Vehicles', keys: ['Space'] },
-  { id: 'enter', label: 'Get in / out', kind: 'edge', group: 'Vehicles', keys: ['Enter'] },
-  { id: 'horn', label: 'Horn / siren', kind: 'edge', group: 'Vehicles', keys: ['KeyH'] },
-  { id: 'climb', label: 'Helicopter climb', kind: 'held', group: 'Vehicles', keys: ['Space'] },
-  { id: 'descend', label: 'Helicopter descend', kind: 'held', group: 'Vehicles', keys: ['ShiftLeft'] },
-  { id: 'turretLeft', label: 'Turret left', kind: 'held', group: 'Vehicles', keys: ['KeyA'] },
-  { id: 'turretRight', label: 'Turret right', kind: 'held', group: 'Vehicles', keys: ['KeyD'] },
-  { id: 'fire', label: 'Fire', kind: 'held', group: 'Weapons', keys: ['ControlLeft', 'ControlRight'] },
-  { id: 'prevWeapon', label: 'Previous weapon', kind: 'edge', group: 'Weapons', keys: ['KeyZ'] },
-  { id: 'nextWeapon', label: 'Next weapon', kind: 'edge', group: 'Weapons', keys: ['KeyX'] },
-  { id: 'reload', label: 'Reload', kind: 'edge', group: 'Weapons', keys: ['KeyR'] },
-  { id: 'interact', label: 'Shop / property', kind: 'ui', group: 'Other', keys: ['KeyE'] },
-  { id: 'chat', label: 'Chat', kind: 'ui', group: 'Other', keys: ['KeyT'] },
-  { id: 'map', label: 'City map', kind: 'ui', group: 'Other', keys: ['KeyM'] },
-  { id: 'scores', label: 'Scores (hold)', kind: 'ui', group: 'Other', keys: ['Tab'] },
+  { id: 'forward', label: 'Up / accelerate', kind: 'held', group: 'Movement', mouse: ['KeyW', 'ArrowUp'], classic: ['ArrowUp'] },
+  { id: 'back', label: 'Down / brake, reverse', kind: 'held', group: 'Movement', mouse: ['KeyS', 'ArrowDown'], classic: ['ArrowDown'] },
+  { id: 'left', label: 'Left / steer left', kind: 'held', group: 'Movement', mouse: ['KeyA', 'ArrowLeft'], classic: ['ArrowLeft'] },
+  { id: 'right', label: 'Right / steer right', kind: 'held', group: 'Movement', mouse: ['KeyD', 'ArrowRight'], classic: ['ArrowRight'] },
+  { id: 'sprint', label: 'Sprint', kind: 'held', group: 'Movement', mouse: ['ShiftLeft'], classic: ['ShiftLeft'] },
+  { id: 'fire', label: 'Fire', kind: 'held', group: 'Weapons', mouse: ['Mouse0'], classic: ['ControlLeft', 'ControlRight'] },
+  { id: 'reload', label: 'Reload', kind: 'edge', group: 'Weapons', mouse: ['KeyR'], classic: ['KeyR'] },
+  { id: 'prevWeapon', label: 'Previous weapon', kind: 'edge', group: 'Weapons', mouse: ['KeyQ'], classic: ['KeyZ'] },
+  { id: 'nextWeapon', label: 'Next weapon', kind: 'edge', group: 'Weapons', mouse: ['KeyX'], classic: ['KeyX'] },
+  { id: 'enter', label: 'Get in / out', kind: 'edge', group: 'Vehicles', mouse: ['KeyF', 'Enter'], classic: ['Enter'] },
+  { id: 'handbrake', label: 'Handbrake', kind: 'held', group: 'Vehicles', mouse: ['Space'], classic: ['Space'] },
+  { id: 'horn', label: 'Horn / siren', kind: 'edge', group: 'Vehicles', mouse: ['KeyH'], classic: ['KeyH'] },
+  { id: 'climb', label: 'Helicopter climb', kind: 'held', group: 'Vehicles', mouse: ['Space'], classic: ['Space'] },
+  { id: 'descend', label: 'Helicopter descend', kind: 'held', group: 'Vehicles', mouse: ['ShiftLeft'], classic: ['ShiftLeft'] },
+  { id: 'turretLeft', label: 'Turret left', kind: 'held', group: 'Vehicles', mouse: [], classic: ['KeyA'], classicOnly: true },
+  { id: 'turretRight', label: 'Turret right', kind: 'held', group: 'Vehicles', mouse: [], classic: ['KeyD'], classicOnly: true },
+  { id: 'interact', label: 'Shop / property', kind: 'ui', group: 'Other', mouse: ['KeyE'], classic: ['KeyE'] },
+  { id: 'chat', label: 'Chat', kind: 'ui', group: 'Other', mouse: ['KeyT'], classic: ['KeyT'] },
+  { id: 'map', label: 'City map', kind: 'ui', group: 'Other', mouse: ['KeyM'], classic: ['KeyM'] },
+  { id: 'scores', label: 'Scores (hold)', kind: 'ui', group: 'Other', mouse: ['Tab'], classic: ['Tab'] },
 ];
 
-const STORE = 'gridlock.keys.v1';
+const STORE = 'gridlock.controls.v2';
 const MAX_KEYS = 2;
 
 /** Readable name for a key code or mouse button. */
@@ -51,15 +62,17 @@ export function keyName(code: string): string {
 }
 
 export class Bindings {
+  scheme: Scheme = 'mouse';
   private map = new Map<Action, string[]>();
   private byKey = new Map<string, Action[]>();
 
   constructor() {
-    this.reset(false);
     try {
-      const saved = JSON.parse(localStorage.getItem(STORE) ?? 'null') as Record<string, string[]> | null;
-      if (saved) for (const a of ACTIONS) if (Array.isArray(saved[a.id])) this.map.set(a.id, saved[a.id].slice(0, MAX_KEYS));
-    } catch { /* corrupt or unavailable storage: defaults */ }
+      const saved = JSON.parse(localStorage.getItem(STORE) ?? 'null') as { scheme: Scheme; keys: Record<string, string[]> } | null;
+      if (saved?.scheme === 'mouse' || saved?.scheme === 'classic') this.scheme = saved.scheme;
+      this.defaults();
+      if (saved) for (const a of ACTIONS) if (Array.isArray(saved.keys?.[a.id])) this.map.set(a.id, saved.keys[a.id].slice(0, MAX_KEYS));
+    } catch { this.defaults(); }
     this.index();
   }
 
@@ -71,8 +84,8 @@ export class Bindings {
     return this.byKey.get(code) ?? [];
   }
 
-  /** Binds `code` to `a` (replacing its oldest key if full). Movement/vehicle twins may share keys;
-   *  any other action already using the key loses it. */
+  /** Binds `code` to `a` (dropping its oldest key if full). Twins that never apply at the same
+   *  time may share a key; any other action using the key loses it. */
   bind(a: Action, code: string): void {
     for (const def of ACTIONS) {
       if (def.id === a || sharable(def.id, a)) continue;
@@ -83,20 +96,24 @@ export class Bindings {
     this.save();
   }
 
-  clear(a: Action): void {
-    this.map.set(a, []);
+  /** Switching style restores that style's default keys. */
+  setScheme(s: Scheme): void {
+    this.scheme = s;
+    this.reset();
+  }
+
+  reset(): void {
+    this.defaults();
     this.save();
   }
 
-  reset(persist = true): void {
-    for (const a of ACTIONS) this.map.set(a.id, [...a.keys]);
-    if (persist) this.save();
-    else this.index();
+  private defaults(): void {
+    for (const a of ACTIONS) this.map.set(a.id, [...a[this.scheme]]);
   }
 
   private save(): void {
     this.index();
-    try { localStorage.setItem(STORE, JSON.stringify(Object.fromEntries(this.map))); } catch { /* ignore */ }
+    try { localStorage.setItem(STORE, JSON.stringify({ scheme: this.scheme, keys: Object.fromEntries(this.map) })); } catch { /* ignore */ }
   }
 
   private index(): void {

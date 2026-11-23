@@ -14,16 +14,16 @@ const LEVELS: { q: Quality; label: string; sub: string }[] = [
 ];
 
 const SUMMARY: [Action[], string][] = [
-  [['forward', 'back'], 'Move / drive'], [['left', 'right'], 'Turn / steer'], [['fire'], 'Fire (straight ahead)'],
+  [['forward', 'left', 'back', 'right'], 'Move / drive'], [['fire'], 'Fire'], [['sprint'], 'Sprint'],
   [['enter'], 'Get in / out, carjack'], [['handbrake'], 'Handbrake'], [['interact'], 'Shop / property'],
-  [['prevWeapon', 'nextWeapon'], 'Switch weapon'], [['turretLeft', 'turretRight'], 'Tank turret'],
+  [['prevWeapon', 'nextWeapon'], 'Switch weapon'], [['reload'], 'Reload'],
 ];
 
 export interface MenuDeps { pane: Pane; sound: Sound; quality: QualityGovernor; input: Input; code: string; leave: () => void }
 
 export function openMenu(d: MenuDeps): void {
   const { pane, sound, quality, input, code } = d;
-  const keysOf = (acts: Action[]) => acts.map((a) => keyName(input.bindings.keys(a)[0] ?? '—')).join(' / ');
+  const keysOf = (acts: Action[]) => acts.map((a) => keyName(input.bindings.keys(a)[0] ?? '—')).join(acts.length > 2 ? ' ' : ' / ');
   pane.open(() => ({
     title: 'Paused',
     subtitle: `Room ${code} · the game keeps running`,
@@ -32,7 +32,7 @@ export function openMenu(d: MenuDeps): void {
       <div class="group">Invite friends</div>
       <div class="field"><span>${location.origin}/#${code}</span></div>
       <div class="group">Controls</div>
-      <div class="keys">${SUMMARY.map(([a, label]) => `<kbd>${keysOf(a)}</kbd><span>${label}</span>`).join('')}
+      <div class="keys">${input.bindings.scheme === 'mouse' ? '<kbd>Mouse</kbd><span>Aim</span>' : ''}${SUMMARY.map(([a, label]) => `<kbd>${keysOf(a)}</kbd><span>${label}</span>`).join('')}
         <kbd>1–9 · wheel</kbd><span>Pick weapon</span></div>`,
     rows: [
       { name: 'Change controls…', sub: 'Rebind any action to a key or mouse button', group: 'Controls', onClick: () => openControls(pane, input, () => openMenu(d)) },
