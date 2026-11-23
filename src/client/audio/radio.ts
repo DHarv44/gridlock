@@ -1,14 +1,30 @@
 // In-vehicle radio, as a broadcast: each station plays on the clock (shared/radioSchedule.ts), so
-// tuning in joins whatever is on air and every player on a station hears the same moment. Like
+// tuning in joins whatever is on air and every player on a station hears the same thing. Like
 // GTA2, the radio belongs to the car: each one comes tuned to its own station (picked from its id),
-// and the radio key cycles that car's radio through the stations and Off, which it remembers for
-// the next time you get in it. Getting out fades the sound but the stream keeps running
-// for a few seconds, so hopping into another car just fades it back in; after that it stops, and
-// the next car tunes in to the live broadcast again. The station name shows briefly on screen.
+// and the radio key cycles that car's radio through the stations and Off, which it remembers.
+//
+// The clock is only used to tune in (the right track, the right second) and to check at each
+// changeover that we're still with the broadcast. Between those the music runs itself: two decks,
+// the next track loading on the second deck while the first plays, handed over the moment the
+// first one ends, never seeked mid-song. If a changeover finds us more than a few seconds off the
+// broadcast, it waits (ahead) or starts the next track a little in (behind) to rejoin it.
+//
+// Getting out fades the sound but keeps it running for a few seconds, so hopping into another car
+// on the same station carries straight on.
 import { RADIO } from '../../shared/packs';
-import { onAir, type RadioListing, type StationList } from '../../shared/radioSchedule';
+import { onAir, type OnAir, type RadioListing, type StationList } from '../../shared/radioSchedule';
+import { RadioClock } from './radioClock';
+import { RadioDisplay } from './radioDisplay';
 
 const NONE: StationList = { songs: [], ads: [] };
+const FADE_S = 0.35;
+/** Seconds the stream keeps running silently after you get out. */
+const GRACE_S = 12;
+/** Start loading the next track this long before the current one ends. */
+const PRELOAD_S = 12;
+/** At a changeover, further than this off the broadcast (seconds) and we rejoin it. */
+const RESYNC_S = 3;
+const REFRESH_S = 120;
 
 /** The station a car's radio comes tuned to: scrambled from its id, so neighbouring cars differ. */
 function carStation(vid: number): number {
@@ -17,18 +33,27 @@ function carStation(vid: number): number {
   return ((h ^ (h >>> 16)) >>> 0) % Math.max(1, RADIO.length);
 }
 
-const FADE_S = 0.35;
-/** Seconds the stream keeps running silently after you get out. */
-const GRACE_S = 12;
-/** Re-sync when the player drifts this far from the broadcast (seconds). */
-const DRIFT_S = 1.2;
-const REFRESH_S = 120;
+/** A scheduled item: what a deck holds, and when the broadcast starts and ends it. */
+interface Item { station: string; file: string; ad: boolean; start: number; endsAt: number }
+const itemOf = (station: string, a: OnAir): Item => ({ station, file: a.file, ad: a.ad, start: a.endsAt - a.dur, endsAt: a.endsAt });
+// Songs are `file`, commercials `commercials/file`: encode each path segment.
+const srcOf = (it: Item) => `/radio/${encodeURIComponent(it.station)}/${it.file.split('/').map(encodeURIComponent).join('/')}`;
 
 export class Radio {
-  private audio = new Audio();
+  private decks = [new Audio(), new Audio()];
+  /** Index of the deck on air. */
+  private cur = 0;
+  /** What the deck on air holds, and what the other deck has loaded to play next. */
+  private item: Item | null = null;
+  private queued: Item | null = null;
+  private queuedFailed = false;
+  /** Broadcast time to start the deck on air (we finished early and are waiting for the broadcast). */
+  private startAt = 0;
+  /** Bumped whenever the decks are reset, so a load that finishes afterwards bows out. */
+  private gen = 0;
   private stations: Record<string, StationList> = {};
-  /** Server clock minus ours (ms). */
-  private clock = 0;
+  private clock = new RadioClock();
+  private display = new RadioDisplay();
   /** The car you're in: -1 = off, else index into RADIO. */
   private station = 0;
   private inVehicle = false;
@@ -37,46 +62,36 @@ export class Radio {
   private retuned = new Map<number, number>();
   private target = 0;
   private grace = 0;
-  private playing = '';
-  private loading = false;
-  private checkT = 0;
+  private retryT = 0;
   private refreshT = REFRESH_S;
-  private banner: HTMLElement;
-  private bannerT = 0;
-  /** "Now playing" card, top left: title, artist, station. */
-  private card: HTMLElement;
-  private cardT = 0;
+  private unblock: (() => void) | null = null;
   /** Scaled by the music volume setting passed to update(). */
   volume = 1;
 
   constructor(private muted: boolean) {
-    this.audio.preload = 'auto';
-    this.audio.volume = 0;
-    this.audio.addEventListener('ended', () => this.follow());
-    this.banner = document.createElement('div');
-    this.banner.className = 'radio-banner';
-    this.banner.hidden = true;
-    document.body.appendChild(this.banner);
-    this.card = document.createElement('div');
-    this.card.className = 'now-playing';
-    this.card.innerHTML = '<div class="np-title"></div><div class="np-artist"></div>';
-    document.body.appendChild(this.card);
+    for (const d of this.decks) {
+      d.preload = 'auto';
+      d.volume = 0;
+      d.addEventListener('ended', () => { if (d === this.deck) this.changeover(); });
+      d.addEventListener('error', () => {
+        if (!d.getAttribute('src')) return;
+        console.warn('[radio] could not load', d.getAttribute('src'));
+        if (d === this.deck) this.item = null; // rejoin on the next try
+        else this.queuedFailed = true;
+      });
+    }
     void this.load();
   }
 
+  private get deck(): HTMLAudioElement { return this.decks[this.cur]; }
+  private get other(): HTMLAudioElement { return this.decks[1 - this.cur]; }
+  private now(): number { return this.clock.now(); }
+  private list(station: string): StationList { return this.stations[station] ?? NONE; }
+
   /** Fetches the playlists and lines our clock up with the server's. */
   private async load(): Promise<void> {
-    try {
-      const t0 = Date.now();
-      const l = (await (await fetch('/api/radio')).json()) as RadioListing;
-      const t1 = Date.now();
-      this.clock = l.now + (t1 - t0) / 2 - t1;
-      this.stations = l.stations;
-    } catch { /* offline: no radio */ }
-  }
-
-  private now(): number {
-    return (Date.now() + this.clock) / 1000;
+    try { this.stations = ((await (await fetch('/api/radio')).json()) as RadioListing).stations; } catch { /* offline: no radio */ }
+    await this.clock.sync();
   }
 
   /** Call every frame with the vehicle you're in (0 = on foot). */
@@ -87,38 +102,22 @@ export class Radio {
       this.vehicle = vehicle;
       this.inVehicle = true;
       this.station = this.retuned.get(vehicle) ?? carStation(vehicle);
-      this.tune(false);
+      this.tune();
     } else if (!vehicle && this.inVehicle) {
       this.vehicle = 0;
       this.inVehicle = false;
       this.target = 0;
       this.grace = GRACE_S;
     }
-    if (!this.inVehicle && this.playing && (this.grace -= dt) <= 0) this.stop();
-    // Keep on the broadcast, and keep trying to tune in if nothing is playing yet (the station list
-    // may still have been loading when you got in).
-    const tuned = this.inVehicle && this.target > 0;
-    if ((this.playing || tuned) && (this.checkT -= dt) <= 0) { this.checkT = 1; this.follow(); }
+    if (!this.inVehicle && this.item && (this.grace -= dt) <= 0) this.stop();
+    // Tuned in but nothing on yet (the station list may still have been loading): keep trying.
+    if (this.inVehicle && this.target > 0 && !this.item && (this.retryT -= dt) <= 0) { this.retryT = 1; this.join(); }
+    if (this.startAt && this.now() >= this.startAt) { this.startAt = 0; this.start(); }
+    this.preload();
     const want = this.muted ? 0 : this.target * level * this.volume;
-    const v = this.audio.volume + Math.sign(want - this.audio.volume) * Math.min(Math.abs(want - this.audio.volume), dt / FADE_S);
-    this.audio.volume = Math.max(0, Math.min(1, v));
-    if (this.bannerT > 0 && (this.bannerT -= dt) <= 0) this.banner.hidden = true;
-    if (this.cardT > 0 && ((this.cardT -= dt) <= 0 || !this.inVehicle)) { this.cardT = 0; this.card.classList.remove('on'); }
-  }
-
-  /** Shows what's playing (songs only; commercials leave the card alone). */
-  private nowPlaying(stationId: string, file: string): void {
-    const s = RADIO.find((r) => r.id === stationId);
-    const t = this.stations[stationId]?.songs.find((x) => x.file === file);
-    if (!s || !t || !this.inVehicle) return;
-    this.card.querySelector('.np-title')!.textContent = t.title ?? file;
-    this.card.querySelector('.np-artist')!.textContent = t.artist ? `${t.artist} · ${s.name}` : s.name;
-    this.card.style.setProperty('--np', s.color);
-    // Top left, under the job panel when one is up.
-    const job = document.querySelector('.hud-mission')?.getBoundingClientRect();
-    this.card.style.top = job && job.height > 0 ? `${Math.round(job.bottom + 10)}px` : '';
-    this.card.classList.add('on');
-    this.cardT = 7;
+    const d = this.deck, v = d.volume;
+    d.volume = Math.max(0, Math.min(1, v + Math.sign(want - v) * Math.min(Math.abs(want - v), dt / FADE_S)));
+    this.display.update(dt, this.inVehicle);
   }
 
   /** The radio key: this car's next station (or off). Only works in a vehicle. */
@@ -126,96 +125,123 @@ export class Radio {
     if (!this.inVehicle) return;
     this.station = this.station + 1 >= RADIO.length ? -1 : this.station + 1;
     this.retuned.set(this.vehicle, this.station);
-    this.tune(true);
+    this.tune();
   }
 
-  private tune(_announce: boolean): void {
+  private tune(): void {
     const s = RADIO[this.station];
+    this.display.hideCard();
     if (!s) {
       this.target = 0;
       this.stop();
-      this.show('Radio off', '#9aa5ad');
+      this.display.show('Radio off', '#9aa5ad');
       return;
     }
     this.target = 1;
-    this.show(s.name, s.color);
-    // Another station's track (playing or still loading) goes: tune straight to this one, and a
-    // station with nothing on air is silent rather than carrying on with the last one.
-    if (this.playing && !this.playing.startsWith(`/radio/${encodeURIComponent(s.id)}/`)) this.stop();
-    this.cardT = 0;
-    this.card.classList.remove('on');
-    this.follow();
-    // Tuning in mid-song: say what it is.
-    const air = onAir(s.id, this.stations[s.id] ?? NONE, this.now());
-    if (air && !air.ad) this.nowPlaying(s.id, air.file);
-  }
-
-  /** Puts the player on what the station is broadcasting right now: the right track, the right
-   *  second. Already there? Only nudges it back if it has drifted. */
-  private follow(): void {
-    const s = RADIO[this.station];
-    const air = s && !this.muted ? onAir(s.id, this.stations[s.id] ?? NONE, this.now()) : null;
-    if (!s || !air || this.loading) return;
-    // Songs are `file`, commercials `commercials/file`: encode each path segment.
-    const src = `/radio/${encodeURIComponent(s.id)}/${air.file.split('/').map(encodeURIComponent).join('/')}`;
-    if (this.playing === src) {
-      // The file ran out before the schedule says it ends (or we're in its last moment): playing it
-      // again would restart it from the top. Wait for the next item instead.
-      const end = Number.isFinite(this.audio.duration) ? this.audio.duration : air.dur;
-      if (this.audio.ended || air.offset >= end - 0.05) {
-        this.checkT = Math.min(1, Math.max(0.05, air.endsAt - this.now() + 0.02));
-        return;
-      }
-      if (!this.audio.seeking && Math.abs(this.audio.currentTime - air.offset) > DRIFT_S) this.audio.currentTime = air.offset;
-      if (this.audio.paused) this.start();
+    this.display.show(s.name, s.color);
+    if (this.item?.station === s.id) {
+      // Back in a car on the station that's still running (the grace period): carry on.
+      if (!this.item.ad) this.nowPlaying(this.item);
+      if (this.deck.paused && !this.deck.ended && !this.startAt) this.start();
       return;
     }
-    this.playing = src;
-    this.loading = true;
-    this.audio.src = src;
-    if (!air.ad) this.nowPlaying(s.id, air.file);
-    this.audio.addEventListener('loadedmetadata', () => {
-      if (this.playing !== src) return; // retuned while this was loading
-      // Loading took a moment: seek to where the broadcast is now, not where it was.
-      const live = onAir(s.id, this.stations[s.id] ?? NONE, this.now());
-      this.audio.currentTime = live && live.file === air.file ? Math.min(live.offset, this.audio.duration - 0.1) : 0;
-      this.loading = false;
-      this.start();
-    }, { once: true });
-    // A track that won't load: forget it so the next check tries again.
-    this.audio.addEventListener('error', () => { if (this.playing !== src) return; this.loading = false; this.playing = ''; console.warn('[radio] could not load', src); }, { once: true });
+    this.stop();
+    this.join();
   }
 
-  /** Starts playback. A browser that won't play sound before the page is used gets another go on
-   *  the next key press or click. */
+  /** Tunes in to the broadcast as it is right now: the right track, the right second. */
+  private join(): void {
+    const s = RADIO[this.station];
+    const air = s && !this.muted ? onAir(s.id, this.list(s.id), this.now()) : null;
+    if (!s || !air) return;
+    const gen = ++this.gen;
+    const it = itemOf(s.id, air);
+    const d = this.deck;
+    this.item = it;
+    this.queued = null;
+    this.startAt = 0;
+    d.src = srcOf(it);
+    if (!it.ad) this.nowPlaying(it);
+    d.addEventListener('loadedmetadata', () => {
+      if (gen !== this.gen) return;
+      // Loading took a moment: start where the broadcast is now, or rejoin if this one's over.
+      const at = this.now() - it.start;
+      if (at >= d.duration - 0.25) { this.item = null; this.join(); return; }
+      d.currentTime = Math.max(0, at);
+      this.start();
+    }, { once: true });
+  }
+
+  /** Loads the next scheduled item on the other deck once the one on air is nearly done. */
+  private preload(): void {
+    const it = this.item;
+    if (!it || this.queued || this.muted) return;
+    const d = this.deck;
+    const left = Number.isFinite(d.duration) ? d.duration - d.currentTime : it.endsAt - this.now();
+    if (left > PRELOAD_S) return;
+    const next = onAir(it.station, this.list(it.station), it.endsAt + 0.01);
+    if (!next) return;
+    this.queued = itemOf(it.station, next);
+    this.queuedFailed = false;
+    this.other.src = srcOf(this.queued);
+  }
+
+  /** The deck on air finished: hand over to the next one. */
+  private changeover(): void {
+    const q = this.queued;
+    if (!q || this.queuedFailed || q.station !== RADIO[this.station]?.id) { this.item = null; this.join(); return; }
+    const level = this.deck.volume;
+    this.deck.pause();
+    this.cur = 1 - this.cur;
+    this.item = q;
+    this.queued = null;
+    const d = this.deck;
+    d.volume = level;
+    // Still with the broadcast? Positive: we're early; negative: we're late.
+    const early = q.start - this.now();
+    if (early > RESYNC_S) {
+      d.currentTime = 0;
+      this.startAt = q.start; // wait for the broadcast to catch up
+    } else {
+      d.currentTime = early < -RESYNC_S ? Math.min(-early, q.endsAt - q.start - 1) : 0;
+      this.start();
+    }
+    if (!q.ad) this.nowPlaying(q);
+  }
+
+  /** Plays the deck on air. A browser that won't play sound before the page is used gets another
+   *  go on the next key press or click. */
   private start(): void {
-    this.audio.play().catch((err: unknown) => {
+    this.deck.play().catch((err: unknown) => {
       if ((err as { name?: string }).name !== 'NotAllowedError' || this.unblock) return;
       this.unblock = () => {
         window.removeEventListener('keydown', this.unblock!);
         window.removeEventListener('pointerdown', this.unblock!);
         this.unblock = null;
-        if (this.playing && this.target > 0) void this.audio.play().catch(() => {});
+        if (this.item && this.target > 0 && !this.startAt) void this.deck.play().catch(() => {});
       };
       window.addEventListener('keydown', this.unblock);
       window.addEventListener('pointerdown', this.unblock);
     });
   }
 
-  private unblock: (() => void) | null = null;
-
   private stop(): void {
-    this.audio.pause();
-    this.audio.removeAttribute('src');
-    this.audio.load();
-    this.playing = '';
-    this.loading = false;
+    this.gen++;
+    for (const d of this.decks) {
+      d.pause();
+      d.removeAttribute('src');
+      d.load();
+    }
+    this.item = null;
+    this.queued = null;
+    this.startAt = 0;
   }
 
-  private show(text: string, color: string): void {
-    this.banner.textContent = text;
-    this.banner.style.color = color;
-    this.banner.hidden = false;
-    this.bannerT = 2.6;
+  /** Shows what's playing (songs only; commercials leave the card alone). */
+  private nowPlaying(it: Item): void {
+    const s = RADIO.find((r) => r.id === it.station);
+    const t = this.list(it.station).songs.find((x) => x.file === it.file);
+    if (!s || !t || !this.inVehicle) return;
+    this.display.nowPlaying(t.title ?? it.file, t.artist ? `${t.artist} · ${s.name}` : s.name, s.color);
   }
 }

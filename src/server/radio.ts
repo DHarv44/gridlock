@@ -67,6 +67,12 @@ function playlists(): Record<string, StationList> {
 
 /** Handles /api/radio and /radio/<station>/<file>; false if not ours. */
 export function radioRoutes(req: IncomingMessage, res: ServerResponse, path: string): boolean {
+  if (path === '/api/radio/now') {
+    // Tiny on purpose: clients time a few of these round trips to line their clocks up.
+    res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+    res.end(JSON.stringify({ now: Date.now() }));
+    return true;
+  }
   if (path === '/api/radio') {
     // `now` lets clients line their clocks up with the server's, so everyone hears the same moment.
     const body: RadioListing = { now: Date.now(), stations: playlists() };
