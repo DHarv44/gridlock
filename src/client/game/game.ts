@@ -19,6 +19,7 @@ import type { StreetProps } from '../render/streetProps';
 import { Water } from '../render/water';
 import { type OwnState, type PlayerTag, WorldView } from '../render/worldView';
 import { routeFx } from './fxRouter';
+import { ClassicControls } from './classic';
 import { Input } from './input';
 import { Interact } from './interact';
 import { Predictor } from './predict';
@@ -72,6 +73,8 @@ export class Game {
     this.hud.onChat = (text) => conn.send({ t: 'chat', text });
     this.input.onUi = (a) => this.ui(a);
     conn.on((m) => this.onMessage(m));
+    // Ctrl is the default fire key: guard against Ctrl+W / Ctrl+R closing the game by accident.
+    if (import.meta.env.PROD) window.onbeforeunload = (e) => { if (this.running) e.preventDefault(); };
     this.buildingUniforms = meshes.uniforms;
     this.props = meshes.props;
     this.water = new Water(this.stage.scene, this.map);
@@ -112,7 +115,7 @@ export class Game {
       case 'menu':
         if (this.mapOpen) { this.mapOpen = false; this.hud.bigmap.hidden = true; return; }
         if (this.pane.isOpen) this.pane.close();
-        else openMenu(this.pane, this.sound, this.quality, this.code, () => this.leave());
+        else openMenu({ pane: this.pane, sound: this.sound, quality: this.quality, input: this.input, code: this.code, leave: () => this.leave() });
         break;
       case 'scoreOn': this.hud.showScore(true, this.players, this.code); break;
       case 'scoreOff': this.hud.showScore(false, this.players, this.code); break;
@@ -159,23 +162,19 @@ export class Game {
 
   private aimAngle = 0;
   private hudFrame = 0;
+  private classic = new ClassicControls();
 
   private tick(own: OwnState | null): void {
     const inp = this.input;
-    const alt = own?.alt ?? 0;
-    const aim = this.cam.screenToWorld(inp.mouseX, inp.mouseY, alt > 3 ? 0 : 0);
-    if (own) this.aimAngle = Math.atan2(aim.y - own.y, aim.x - own.x);
+    if (!this.you || !own) return;
+    const c = this.classic.step(inp, this.you, own.angle, STEP);
+    this.aimAngle = c.aim;
     const msg: InputMsg = [
-      ++this.seq,
-      inp.axis(['KeyA', 'ArrowLeft'], ['KeyD', 'ArrowRight']),
-      inp.axis(['KeyW', 'ArrowUp'], ['KeyS', 'ArrowDown']),
-      inp.axis(['KeyS', 'ArrowDown'], ['KeyW', 'ArrowUp']),
-      inp.axis(['KeyA', 'ArrowLeft'], ['KeyD', 'ArrowRight']),
-      Math.round(this.aimAngle * 1000) / 1000,
+      ++this.seq, c.mx, c.my, c.throttle, c.steer,
+      Math.round(c.aim * 1000) / 1000,
       inp.takeButtons(),
       inp.takeWeaponWish(),
     ];
-    if (!inp.enabled) { msg[1] = msg[2] = msg[3] = msg[4] = 0; }
     this.predict.apply(msg);
     this.conn.send({ t: 'in', i: [msg] });
   }
@@ -199,8 +198,9 @@ export class Game {
     this.store.update();
     const own = this.ownState(this.acc / STEP);
     if (own) {
-      const ax = this.cam.screenToWorld(this.input.mouseX, this.input.mouseY);
-      this.cam.update(dt, own.x, own.y, own.vx, own.vy, own.alt, ax.x, ax.y, !!own.vid);
+      // On foot the camera leans toward where you're facing.
+      const ax = own.x + Math.cos(this.aimAngle) * 45, ay = own.y + Math.sin(this.aimAngle) * 45;
+      this.cam.update(dt, own.x, own.y, own.vx, own.vy, own.alt, ax, ay, !!own.vid);
       this.sound.listenerX = own.x; this.sound.listenerY = own.y;
     }
     const vr = this.cam.viewRect();

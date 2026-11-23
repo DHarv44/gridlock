@@ -21,14 +21,19 @@ Open http://localhost:5228, pick a name, **Create game**, then send friends the 
 
 ## Controls
 
+Classic layout by default; every action can be rebound (keys or mouse buttons) in Esc → Change controls.
+
 | Key | Action |
 | --- | --- |
-| WASD | Move / drive |
-| Mouse / left click | Aim / shoot (also from cars with pistols, SMGs, rifles) |
-| Shift | Sprint · descend in helicopters |
+| Up / Down arrows | Move forward / back where you face · accelerate / brake and reverse |
+| Left / Right arrows | Turn · steer |
+| Left Ctrl | Fire straight ahead (also from cars with pistols, SMGs, rifles) |
+| Enter | Get in/out, carjack, ride as passenger with a friend |
 | Space | Handbrake · climb in helicopters |
-| F or Enter | Get in/out, carjack, ride as passenger with a friend |
+| Left Shift | Sprint · descend in helicopters |
+| A / D | Tank turret left / right |
+| Z / X / wheel / 1–9 | Previous / next / pick weapon |
+| R | Reload |
 | E | Use a shop, hospital, dealer, respray, chop shop, property |
-| R / Q / X / wheel / 1–9 | Reload / switch weapon |
 | H | Horn (siren in emergency vehicles) |
 | T / M / Tab / Esc | Chat / city map / scores / menu |

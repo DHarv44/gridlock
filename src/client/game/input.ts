@@ -1,76 +1,97 @@
-// Keyboard + mouse state. Edge-triggered actions latch until the next sim tick consumes them.
+// Keyboard + mouse buttons mapped through rebindable actions. Edge actions latch until the next
+// sim tick consumes them; UI actions fire callbacks immediately.
 import { BTN } from '../../shared/protocol';
+import { type Action, ACTIONS, Bindings } from './controls';
 
 export type UiAction = 'interact' | 'chat' | 'map' | 'menu' | 'scoreOn' | 'scoreOff';
 
+const EDGE_BTN: Partial<Record<Action, number>> = { enter: BTN.enter, reload: BTN.reload, prevWeapon: BTN.prev, nextWeapon: BTN.next, horn: BTN.horn };
+const KIND = new Map(ACTIONS.map((a) => [a.id, a.kind]));
+
 export class Input {
-  private keys = new Set<string>();
+  readonly bindings = new Bindings();
+  private down = new Set<string>();
   private edges = 0;
-  mouseX = 0;
-  mouseY = 0;
-  mouseDown = false;
-  private clicked = false;
+  private pressed = new Set<Action>(); // held actions pressed since the last tick (taps shorter than a tick)
   weaponWish = -1;
   enabled = true;
+  /** When set, the next key or mouse button is handed to this callback instead of the game. */
+  capture: ((code: string) => void) | null = null;
   onUi: (a: UiAction) => void = () => {};
 
   constructor(canvas: HTMLCanvasElement) {
-    window.addEventListener('keydown', (e) => this.key(e, true));
-    window.addEventListener('keyup', (e) => this.key(e, false));
-    window.addEventListener('blur', () => { this.keys.clear(); this.mouseDown = false; });
-    canvas.addEventListener('mousemove', (e) => { this.mouseX = e.clientX; this.mouseY = e.clientY; });
-    canvas.addEventListener('mousedown', (e) => { if (e.button === 0 && this.enabled) { this.mouseDown = true; this.clicked = true; } });
-    window.addEventListener('mouseup', (e) => { if (e.button === 0) this.mouseDown = false; });
+    window.addEventListener('keydown', (e) => this.key(e, e.code, true));
+    window.addEventListener('keyup', (e) => this.key(e, e.code, false));
+    window.addEventListener('blur', () => this.release());
+    window.addEventListener('mousedown', (e) => {
+      if (this.capture) { e.preventDefault(); this.takeCapture(`Mouse${e.button}`); return; }
+      if (e.target === canvas) this.press(`Mouse${e.button}`, true);
+    });
+    window.addEventListener('mouseup', (e) => this.press(`Mouse${e.button}`, false));
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     canvas.addEventListener('wheel', (e) => {
-      if (!this.enabled) return;
-      this.edges |= e.deltaY > 0 ? BTN.next : BTN.prev;
+      if (this.enabled) this.edges |= e.deltaY > 0 ? BTN.next : BTN.prev;
     }, { passive: true });
   }
 
-  private key(e: KeyboardEvent, down: boolean): void {
+  private takeCapture(code: string): void {
+    const cb = this.capture!;
+    this.capture = null;
+    cb(code);
+  }
+
+  private key(e: KeyboardEvent, code: string, isDown: boolean): void {
+    if (this.capture && isDown) {
+      e.preventDefault();
+      this.takeCapture(code); // the capturer treats 'Escape' as cancel
+      return;
+    }
     const target = e.target as HTMLElement | null;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
-    const k = e.code;
-    if (k === 'Tab') { e.preventDefault(); this.onUi(down ? 'scoreOn' : 'scoreOff'); return; }
-    if (down && k === 'Escape') { this.onUi('menu'); return; }
-    if (!this.enabled) { if (!down) this.keys.delete(k); return; }
-    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(k)) e.preventDefault();
-    if (down && !e.repeat) {
-      switch (k) {
-        case 'KeyF': case 'Enter': this.edges |= BTN.enter; break;
-        case 'KeyE': this.onUi('interact'); break;
-        case 'KeyR': this.edges |= BTN.reload; break;
-        case 'KeyQ': this.edges |= BTN.prev; break;
-        case 'KeyX': this.edges |= BTN.next; break;
-        case 'KeyH': this.edges |= BTN.horn; break;
-        case 'KeyT': e.preventDefault(); this.onUi('chat'); return;
-        case 'KeyM': this.onUi('map'); break;
-      }
-      if (k.startsWith('Digit')) this.weaponWish = (Number(k.slice(5)) + 9) % 10;
+    if (isDown && code === 'Escape') { this.onUi('menu'); return; }
+    const actions = this.bindings.actionsFor(code);
+    // Keep the browser from acting on game keys (Ctrl+R reload, Space scroll, Tab focus...).
+    if (actions.length || (e.ctrlKey && this.enabled)) e.preventDefault();
+    if (isDown && !e.repeat && code.startsWith('Digit') && this.enabled) this.weaponWish = (Number(code.slice(5)) + 9) % 10;
+    if (e.repeat) return;
+    this.press(code, isDown);
+  }
+
+  private press(code: string, isDown: boolean): void {
+    if (isDown) this.down.add(code); else this.down.delete(code);
+    for (const a of this.bindings.actionsFor(code)) {
+      const kind = KIND.get(a);
+      if (a === 'scores') { this.onUi(isDown ? 'scoreOn' : 'scoreOff'); continue; }
+      if (!isDown) continue;
+      if (kind === 'ui') { this.onUi(a as UiAction); continue; }
+      if (!this.enabled) continue;
+      if (kind === 'edge') this.edges |= EDGE_BTN[a] ?? 0;
+      else this.pressed.add(a);
     }
-    if (down) this.keys.add(k); else this.keys.delete(k);
   }
 
-  held(...codes: string[]): boolean {
-    return codes.some((c) => this.keys.has(c));
+  /** Is the action held (or was it tapped since the last tick)? */
+  held(a: Action): boolean {
+    if (!this.enabled) return false;
+    if (this.pressed.has(a)) return true;
+    return this.bindings.keys(a).some((k) => this.down.has(k));
   }
 
-  axis(neg: string[], pos: string[]): number {
-    return (this.held(...pos) ? 1 : 0) - (this.held(...neg) ? 1 : 0);
+  axis(neg: Action, pos: Action): number {
+    return (this.held(pos) ? 1 : 0) - (this.held(neg) ? 1 : 0);
   }
 
-  /** Buttons for this tick (held + latched edges); clears the latch. */
+  /** Buttons for this tick (held + latched edges); clears the latches. */
   takeButtons(): number {
     let b = this.edges;
     this.edges = 0;
-    if (!this.enabled) return b & ~(BTN.fire);
-    // A click shorter than one tick still fires once.
-    if (this.mouseDown || this.clicked) b |= BTN.fire;
-    this.clicked = false;
-    if (this.held('Space')) b |= BTN.handbrake | BTN.up;
-    if (this.held('ShiftLeft', 'ShiftRight')) b |= BTN.sprint | BTN.down;
-    return b;
+    if (this.held('fire')) b |= BTN.fire;
+    if (this.held('handbrake')) b |= BTN.handbrake;
+    if (this.held('climb')) b |= BTN.up;
+    if (this.held('sprint')) b |= BTN.sprint;
+    if (this.held('descend')) b |= BTN.down;
+    this.pressed.clear();
+    return this.enabled ? b : b & ~BTN.fire;
   }
 
   takeWeaponWish(): number {
@@ -80,7 +101,7 @@ export class Input {
   }
 
   release(): void {
-    this.keys.clear();
-    this.mouseDown = false;
+    this.down.clear();
+    this.pressed.clear();
   }
 }

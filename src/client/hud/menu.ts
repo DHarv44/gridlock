@@ -1,15 +1,11 @@
-// Esc pane: controls reference, volume, invite link, leave.
+// Esc pane: volume, invite link, graphics, controls (rebindable), leave.
 import type { Sound } from '../audio/sound';
+import { type Action, keyName } from '../game/controls';
+import type { Input } from '../game/input';
 import type { QualityGovernor } from '../game/quality';
 import type { Quality } from '../render/scene';
+import { openControls } from './controlsPane';
 import type { Pane } from './pane';
-
-const KEYS: [string, string][] = [
-  ['WASD', 'Move / drive'], ['Mouse', 'Aim'], ['Left click', 'Shoot'], ['Shift', 'Sprint · descend (heli)'],
-  ['Space', 'Handbrake · climb (heli)'], ['F / Enter', 'Get in / out, carjack'], ['E', 'Shop / property'],
-  ['R', 'Reload'], ['Q / X / wheel', 'Switch weapon'], ['1–9', 'Pick weapon'], ['H', 'Horn / siren'],
-  ['T', 'Chat'], ['M', 'City map'], ['Tab', 'Scores'],
-];
 
 const LEVELS: { q: Quality; label: string; sub: string }[] = [
   { q: 'high', label: 'High', sub: 'Sharp shadows, full resolution' },
@@ -17,7 +13,17 @@ const LEVELS: { q: Quality; label: string; sub: string }[] = [
   { q: 'low', label: 'Low', sub: 'No shadows, lowest resolution' },
 ];
 
-export function openMenu(pane: Pane, sound: Sound, quality: QualityGovernor, code: string, leave: () => void): void {
+const SUMMARY: [Action[], string][] = [
+  [['forward', 'back'], 'Move / drive'], [['left', 'right'], 'Turn / steer'], [['fire'], 'Fire (straight ahead)'],
+  [['enter'], 'Get in / out, carjack'], [['handbrake'], 'Handbrake'], [['interact'], 'Shop / property'],
+  [['prevWeapon', 'nextWeapon'], 'Switch weapon'], [['turretLeft', 'turretRight'], 'Tank turret'],
+];
+
+export interface MenuDeps { pane: Pane; sound: Sound; quality: QualityGovernor; input: Input; code: string; leave: () => void }
+
+export function openMenu(d: MenuDeps): void {
+  const { pane, sound, quality, input, code } = d;
+  const keysOf = (acts: Action[]) => acts.map((a) => keyName(input.bindings.keys(a)[0] ?? '—')).join(' / ');
   pane.open(() => ({
     title: 'Paused',
     subtitle: `Room ${code} · the game keeps running`,
@@ -26,18 +32,22 @@ export function openMenu(pane: Pane, sound: Sound, quality: QualityGovernor, cod
       <div class="group">Invite friends</div>
       <div class="field"><span>${location.origin}/#${code}</span></div>
       <div class="group">Controls</div>
-      <div class="keys">${KEYS.map(([k, v]) => `<kbd>${k}</kbd><span>${v}</span>`).join('')}</div>
-      <div class="group">&nbsp;</div>`,
+      <div class="keys">${SUMMARY.map(([a, label]) => `<kbd>${keysOf(a)}</kbd><span>${label}</span>`).join('')}
+        <kbd>1–9 · wheel</kbd><span>Pick weapon</span></div>`,
     rows: [
+      { name: 'Change controls…', sub: 'Rebind any action to a key or mouse button', group: 'Controls', onClick: () => openControls(pane, input, () => openMenu(d)) },
       ...LEVELS.map((l) => ({
         name: `${l.label}${quality.current === l.q ? '  ✓' : ''}`, sub: l.sub, group: 'Graphics',
         onClick: () => quality.choose(l.q),
       })),
       { name: 'Copy invite link', group: 'Game', onClick: () => { void navigator.clipboard?.writeText(`${location.origin}/#${code}`); } },
       { name: 'Resume', group: 'Game', onClick: () => pane.close() },
-      { name: 'Leave game', group: 'Game', onClick: leave },
+      { name: 'Leave game', group: 'Game', onClick: d.leave },
     ],
   }));
-  const vol = pane.el.querySelector<HTMLInputElement>('#vol');
-  vol?.addEventListener('input', () => sound.setVolume(Number(vol.value)));
+  // Delegated so it survives the pane re-rendering.
+  pane.el.oninput = (e) => {
+    const t = e.target as HTMLInputElement;
+    if (t.id === 'vol') sound.setVolume(Number(t.value));
+  };
 }
