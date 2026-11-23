@@ -31,7 +31,7 @@ export class Radio {
   private refreshT = REFRESH_S;
   private banner: HTMLElement;
   private bannerT = 0;
-  /** "Now playing" card, bottom left: title, artist, station. */
+  /** "Now playing" card, top left: title, artist, station. */
   private card: HTMLElement;
   private cardT = 0;
   /** Scaled by the music volume setting passed to update(). */
@@ -95,7 +95,10 @@ export class Radio {
     if (!s || !t || !this.inVehicle) return;
     this.card.querySelector('.np-title')!.textContent = t.title ?? file;
     this.card.querySelector('.np-artist')!.textContent = t.artist ? `${t.artist} · ${s.name}` : s.name;
-    (this.card as HTMLElement).style.setProperty('--np', s.color);
+    this.card.style.setProperty('--np', s.color);
+    // Top left, under the job panel when one is up.
+    const job = document.querySelector('.hud-mission')?.getBoundingClientRect();
+    this.card.style.top = job && job.height > 0 ? `${Math.round(job.bottom + 10)}px` : '';
     this.card.classList.add('on');
     this.cardT = 7;
   }
