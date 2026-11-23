@@ -4,6 +4,7 @@ import math
 
 import kit
 import materials as M
+import parts
 
 
 def ellipse_rings(stations, n=12):
@@ -34,7 +35,81 @@ def bike_wheel(name, x, r, w, col, spokes, rim="rim"):
     return out
 
 
+def chopper(st, col):
+    """Long and low: raked forks out front, a tall thin front wheel, a fat rear, a V-twin, ape-hangers."""
+    fx, rx = st["axles"]
+    fr, rr = st["r_front"], st["r"]
+    out = bike_wheel("fw", fx, fr, 0.09, col, 24, "chrome")
+    out += bike_wheel("rw", rx, rr, 0.2, col, 24, "chrome")
+    head = (fx - 0.62, 0, 0.95)
+    for sd in (1, -1):
+        out.append(kit.tube("fork", [(fx, sd * 0.07, fr), (head[0], sd * 0.07, head[2])], 0.022, col, M.get("chrome"), n=8))
+        out.append(kit.tube("rail", [(rx, sd * 0.1, rr), (-0.35, sd * 0.1, 0.42), (head[0] - 0.05, sd * 0.03, head[2] - 0.08)], 0.02, col, M.get("trim"), n=6))
+        out.append(kit.tube("stay", [(rx, sd * 0.1, rr), (-0.4, sd * 0.1, 0.68)], 0.018, col, M.get("trim"), n=6))
+        # Twin pipes, low along the right.
+        out.append(kit.tube("pipe", [(0.05, 0.12 + (0.05 if sd > 0 else 0), 0.42 + sd * 0.08), (-0.2, 0.18 + (0.05 if sd > 0 else 0), 0.3 + sd * 0.05),
+                                     (-1.1, 0.2 + (0.05 if sd > 0 else 0), 0.32 + sd * 0.05)], 0.03, col, M.get("chrome"), n=8))
+    out.append(kit.tube("downtube", [(head[0], 0, head[2] - 0.05), (head[0] + 0.05, 0, 0.35), (-0.35, 0, 0.3)], 0.025, col, M.get("trim"), n=6))
+    out.append(kit.tube("backbone", [(head[0], 0, head[2]), (-0.4, 0, 0.7)], 0.025, col, M.get("trim"), n=6))
+    # V-twin: crankcase, two cylinders leaning apart, primary cover, air cleaner.
+    out.append(kit.prism("crank", [(-0.25, 0.25), (0.2, 0.25), (0.25, 0.38), (-0.2, 0.42)], -0.11, 0.11, col, M.get("steel"), bev=0.03))
+    for a, x in ((0.45, 0.08), (-0.45, -0.12)):
+        out.append(kit.tube("cyl", [(x, 0, 0.38), (x + math.sin(a) * 0.25, 0, 0.38 + math.cos(a) * 0.25)], 0.06, col, M.get("chrome"), n=10))
+    out.append(kit.lathe("cleaner", [(0.0, 0.0), (0.0, 0.08), (0.04, 0.08), (0.04, 0.0)], col, M.get("chrome"), n=12, axis='Y', at=(-0.02, 0.14, 0.52)))
+    out.append(shell("tank", [(-0.3, 0.04, 0.72, 0.74), (-0.15, 0.12, 0.68, 0.84), (0.1, 0.11, 0.72, 0.88), (0.22, 0.05, 0.8, 0.86)], col, "paint"))
+    out.append(shell("seat", [(-0.55, 0.06, 0.66, 0.72), (-0.4, 0.15, 0.64, 0.74), (-0.22, 0.13, 0.66, 0.72), (-0.15, 0.06, 0.7, 0.72)], col, "seat"))
+    out.append(shell("rear_fender", [(-1.2, 0.05, 0.58, 0.6), (-1.0, 0.12, 0.6, 0.68), (-0.7, 0.12, 0.62, 0.7), (-0.55, 0.06, 0.6, 0.64)], col, "paint"))
+    out.append(kit.tube("sissy", [(-0.7, 0.12, 0.68), (-0.78, 0.12, 1.05), (-0.78, -0.12, 1.05), (-0.7, -0.12, 0.68)], 0.015, col, M.get("chrome"), n=6))
+    out.append(kit.tube("bars", [(head[0] - 0.02, -0.38, head[2] + 0.42), (head[0], -0.3, head[2] + 0.05), (head[0], 0.3, head[2] + 0.05), (head[0] - 0.02, 0.38, head[2] + 0.42)],
+                        0.016, col, M.get("chrome"), n=6))
+    for sd in (1, -1):
+        out.append(kit.tube("grip", [(head[0] - 0.02, sd * 0.38, head[2] + 0.42), (head[0] - 0.08, sd * 0.46, head[2] + 0.44)], 0.022, col, M.get("tyre"), n=8))
+    out.append(kit.lathe("lamp", [(0.0, 0.0), (0.0, 0.08), (0.1, 0.085), (0.11, 0.0)], col, M.get("chrome"), n=12, axis='X', at=(head[0] + 0.04, 0, head[2] - 0.05)))
+    out.append(kit.lathe("lens", [(0.11, 0.0), (0.11, 0.075), (0.115, 0.0)], col, M.get("head"), n=12, axis='X', at=(head[0] + 0.04, 0, head[2] - 0.05)))
+    out.append(kit.box("tail", -1.22, -1.19, -0.04, 0.04, 0.6, 0.64, col, M.get("tail")))
+    return out
+
+
+def police(st, col, dims):
+    """A touring bike in police kit: fairing and screen, saddlebags with crash bars, light bar."""
+    fx, rx = st["axles"]
+    r, w = st["r"], st["w"]
+    out = bike_wheel("fw", fx, r, w, col, 0, "rim_dark") + bike_wheel("rw", rx, r, w * 1.3, col, 0, "rim_dark")
+    head = (fx - 0.24, 0, 0.92)
+    for sd in (1, -1):
+        out.append(kit.tube("fork", [(fx, sd * 0.08, r), (head[0], sd * 0.08, head[2])], 0.032, col, M.get("chrome"), n=8))
+        out.append(kit.tube("swing", [(rx, sd * 0.1, r), (-0.15, sd * 0.1, 0.42)], 0.03, col, M.get("trim"), n=6))
+        # Saddlebags and the crash bars round the engine and bags.
+        out.append(kit.box("bag", -0.9, -0.45, sd * 0.2 if sd > 0 else -0.38, 0.38 if sd > 0 else -0.2, 0.42, 0.78, col, M.get("paint"), bev=0.05, seg=2))
+        out.append(kit.tube("guard", [(0.32, sd * 0.1, 0.62), (0.34, sd * 0.32, 0.5), (0.25, sd * 0.32, 0.3), (0.12, sd * 0.12, 0.28)], 0.018, col, M.get("chrome"), n=6))
+        out.append(kit.tube("bagguard", [(-0.4, sd * 0.2, 0.75), (-0.42, sd * 0.42, 0.62), (-0.9, sd * 0.42, 0.45)], 0.016, col, M.get("chrome"), n=6))
+    out.append(kit.prism("engine", [(-0.2, 0.25), (0.28, 0.25), (0.32, 0.55), (-0.15, 0.62)], -0.15, 0.15, col, M.get("steel"), bev=0.03))
+    out.append(kit.tube("pipe", [(0.2, 0.18, 0.3), (-0.3, 0.2, 0.32), (-0.95, 0.22, 0.38)], 0.04, col, M.get("chrome"), n=8))
+    out.append(shell("tank", [(-0.15, 0.1, 0.78, 0.84), (0.0, 0.18, 0.72, 0.96), (0.3, 0.17, 0.76, 0.98), (0.4, 0.1, 0.84, 0.96)], col, "paint"))
+    out.append(shell("seat", [(-0.5, 0.08, 0.84, 0.9), (-0.35, 0.18, 0.82, 0.92), (-0.08, 0.17, 0.8, 0.9), (0.0, 0.08, 0.82, 0.88)], col, "seat"))
+    out.append(shell("fairing", [(0.42, 0.24, 0.45, 0.98), (0.6, 0.28, 0.5, 1.08), (0.72, 0.2, 0.62, 1.04), (0.8, 0.06, 0.78, 0.9)], col, "paint", n=14))
+    v = [(0.66, -0.22, 1.06), (0.66, 0.22, 1.06), (0.5, 0.18, 1.38), (0.5, -0.18, 1.38)]
+    g = kit.recalc(kit.mesh("screen", v, [(0, 1, 2, 3)], col, M.get("glass")))
+    g.modifiers.new("Solid", 'SOLIDIFY').thickness = 0.01
+    out.append(g)
+    out.append(kit.box("lamp", 0.79, 0.81, -0.08, 0.08, 0.76, 0.86, col, M.get("head")))
+    for sd in (1, -1):
+        out.append(kit.box("strobe", 0.7, 0.74, sd * 0.24 - 0.04, sd * 0.24 + 0.04, 0.9, 0.96, col, M.get("siren_red" if sd > 0 else "siren_blue")))
+    out.append(shell("rear_fender", [(-1.08, 0.05, 0.7, 0.72), (-0.9, 0.12, 0.68, 0.78), (-0.5, 0.13, 0.7, 0.82)], col, "paint"))
+    out.append(kit.box("radio", -0.85, -0.55, -0.18, 0.18, 0.86, 1.1, col, M.get("white"), bev=0.04, seg=2))
+    base, lamps = parts.lightbar("bar", -0.7, 1.1, 0.2, col, length=0.1)
+    out += base + lamps
+    out.append(kit.tube("mast", [(-0.75, 0.0, 1.1), (-0.75, 0.0, 1.5)], 0.008, col, M.get("trim"), n=4))
+    out.append(kit.box("tail", -1.1, -1.07, -0.05, 0.05, 0.72, 0.77, col, M.get("tail")))
+    out.append(kit.tube("bars", [(head[0] - 0.05, -0.36, head[2] + 0.1), (head[0], 0, head[2] + 0.06), (head[0] - 0.05, 0.36, head[2] + 0.1)], 0.016, col, M.get("trim"), n=6))
+    return out
+
+
 def build(vid, st, dims, col):
+    if st["type"] == "chopper":
+        return chopper(st, col)
+    if st["type"] == "police":
+        return police(st, col, dims)
     fx, rx = st["axles"]
     r, w = st["r"], st["w"]
     dirt = st["type"] == "dirt"

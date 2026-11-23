@@ -68,7 +68,7 @@ class Car:
         w, zt, zb, cr = self.w(xf), self.zt(xf), self.zb(xf), self.cr
         h = zt - zb
         b = self.fender(xf)
-        sh = self.s.get("shoulder", 0.13)
+        sh = self.s.get("shoulder", 0.07)
         pts = [(0.0, zt), (0.55 * w, zt - 0.3 * cr + 0.35 * b), (0.88 * w, zt - cr + b), (0.975 * w, zt - cr - min(0.05, 0.15 * h) + b),
                (w, zt - cr - min(sh, 0.3 * h) + 0.85 * b), (0.995 * w, zb + 0.45 * h), (0.985 * w, zb + min(0.17, 0.3 * h)),
                (0.95 * w, zb + min(0.04, 0.08 * h)), (0.85 * w, zb), (0.0, zb)]

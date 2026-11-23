@@ -6,12 +6,14 @@ import type { EntityStore, ViewEntity } from '../net/entities';
 import { FLOOR_H, floorOf, groundOf } from '../../shared/world/levels';
 import { putCarLights } from './carLights';
 import type { Effects } from './effects';
-import { animatePed, makePed, type PedView, setPedWeapon } from './pedMesh';
+import { animatePed, HIP_H, makePed, type PedView, ridePed, setPedWeapon } from './pedMesh';
 import { lampMats, makeVehicle, sirenMats, type VehicleView } from './vehicleMesh';
 
 export interface OwnState { pid: number; vid: number; x: number; y: number; angle: number; alt: number; driving: boolean; vx: number; vy: number; trailer?: number }
 export interface PlayerTag { name: string; color: string; look?: CharLook }
 
+/** Riders shrink from the larger-than-life street size to about 1.1x life, to sit a real-size bike. */
+const RIDER_SCALE = 0.7;
 const projGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.8, 6).rotateZ(Math.PI / 2);
 const grenadeGeo = new THREE.SphereGeometry(0.16, 8, 6);
 const pickupGeo = new THREE.BoxGeometry(0.7, 0.35, 0.45);
@@ -32,6 +34,7 @@ export class WorldView {
   private time = 0;
   /** Your floor (world/levels.ts); people on other upper floors aren't drawn. */
   private myF = 0;
+  private store: EntityStore | null = null;
 
   /** A vehicle not drawn on the street (yours, while it's inside the paint shop). */
   hiddenVehicle = 0;
@@ -40,13 +43,15 @@ export class WorldView {
 
   sync(store: EntityStore, dt: number, own: OwnState | null, tags: Map<number, PlayerTag>, night: number, view: { x0: number; y0: number; x1: number; y1: number }): void {
     this.time += dt;
+    this.store = store;
     this.myF = own ? floorOf(own.x) : 0;
     const seen = new Set<number>();
+    // Vehicles first, so riders (peds sent with a vehicle and a seat) find the bike they sit on.
+    for (const e of store.all.values()) if (e.kind === EK.Veh) { seen.add(e.id); this.vehicle(e, dt, own, night); }
     for (const e of store.all.values()) {
       seen.add(e.id);
       switch (e.kind) {
         case EK.Ped: this.ped(e, dt, own, tags); break;
-        case EK.Veh: this.vehicle(e, dt, own, night); break;
         case EK.Proj: this.projectile(e); break;
         case EK.Pickup: this.pickup(e); break;
         case EK.Fire: this.fireEnt(e, night); break;
@@ -59,7 +64,7 @@ export class WorldView {
   }
 
   private prune(seen: Set<number>): void {
-    for (const [id, v] of this.peds) if (!seen.has(id)) { this.scene.remove(v.root); this.peds.delete(id); this.dropTag(id); }
+    for (const [id, v] of this.peds) if (!seen.has(id)) { v.root.removeFromParent(); this.peds.delete(id); this.dropTag(id); }
     for (const [id, v] of this.vehs) if (!seen.has(id)) { this.scene.remove(v.root); this.vehs.delete(id); }
     for (const [id, o] of this.objs) if (!seen.has(id)) { this.scene.remove(o); this.objs.delete(id); }
   }
@@ -77,13 +82,15 @@ export class WorldView {
     let v = this.peds.get(e.id);
     // A player's tag (colour, saved look) can arrive after their ped first shows: rebuild then.
     const want = tag ? `${tag.color}:${tag.look ? JSON.stringify(tag.look) : ''}` : '';
-    if (v && v.lookKey !== want) { this.scene.remove(v.root); this.peds.delete(e.id); this.dropTag(e.id); v = undefined; }
+    if (v && v.lookKey !== want) { v.root.removeFromParent(); this.peds.delete(e.id); this.dropTag(e.id); v = undefined; }
     if (!v) {
       v = makePed(e.id, d[2], tag?.color ?? null, tag?.look);
       v.lookKey = want;
       this.peds.set(e.id, v);
       this.scene.add(v.root);
     }
+    if (this.ride(e, v, tags)) return;
+    if (v.root.parent !== this.scene) { this.scene.add(v.root); v.root.scale.setScalar(1); }
     const isMe = own && own.pid === e.id && !own.vid;
     const x = isMe ? own!.x : e.x, y = isMe ? own!.y : e.y, a = isMe ? own!.angle : e.angle;
     // Jump: a 0.5 s arc, started when the server says this ped is hopping.
@@ -101,6 +108,28 @@ export class WorldView {
     animatePed(v, dt, speed, !!(flags & PF.aim), !!(flags & PF.down), !!(flags & PF.dead), !!(flags & PF.busy));
     if (flags & PF.burning && Math.random() < 0.6) this.fx.fire(x, y, 0.8);
     if (tag && !this.tagged.has(e.id)) this.addTag(e.id, v, tag, !!isMe);
+  }
+
+  /** A rider (sent with the vehicle id and seat): sits on that bike's saddle, moving with it. People
+   *  are drawn larger than life to read from the air; on a life-size bike they're scaled to fit. */
+  private ride(e: ViewEntity, v: PedView, tags: Map<number, PlayerTag>): boolean {
+    const d = e.data;
+    const vid = d[8] ?? 0, seat = d[9] ?? 0;
+    const bike = vid ? this.vehs.get(vid) : undefined;
+    const veh = vid ? this.store?.all.get(vid) : undefined;
+    const saddle = veh ? VEHICLES[veh.data[2]].saddles?.[seat] : undefined;
+    if (!bike || !saddle) return false;
+    if (v.root.parent !== bike.root) bike.root.add(v.root);
+    const k = RIDER_SCALE;
+    v.root.scale.setScalar(k);
+    v.root.rotation.set(0, 0, 0);
+    v.root.position.set(saddle.x - k * HIP_H * Math.sin(saddle.lean), saddle.z - k * HIP_H * Math.cos(saddle.lean), 0);
+    v.root.visible = bike.root.visible;
+    setPedWeapon(v, d[7]);
+    ridePed(v, saddle.lean, !!(d[6] & PF.aim));
+    const tag = tags.get(e.id);
+    if (tag && !this.tagged.has(e.id)) this.addTag(e.id, v, tag, false);
+    return true;
   }
 
   /** Other players get a floating name in their colour (no ground markers). */

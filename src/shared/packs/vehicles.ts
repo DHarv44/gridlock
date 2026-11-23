@@ -47,8 +47,10 @@ export const VEHICLES: VehicleSpec[] = [
     rearAxle: 2.1, minTurnRadius: 11, maxLateral: 3.5,
     trailer: { length: 11, width: 2.55, height: 3.6, model: M.boxTrailer(), hitch: 1.85 } },
   { ...heavy, id: 'garbage', name: 'Garbage Truck', length: 8.5, mass: 9000, maxSpeed: 20, price: 35000, colors: [18, 9, 0], roles: ['traffic'], model: M.garbage() },
-  { ...car, horn: 'horn_small', engine: 'engine_bike', id: 'streetbike', name: 'Streetbike', movement: 'bike', length: 2.1, width: 0.8, height: 1.2, mass: 220, maxSpeed: 46, accel: 15, brake: 22, grip: 10, turnRate: 3.2, hp: 150, seats: 2, openTop: true, price: 14000, colors: 'bright', roles: ['traffic', 'parked'], shape: undefined, model: M.bike() },
-  { ...car, horn: 'horn_small', engine: 'engine_bike', id: 'dirtbike', name: 'Dirt Bike', movement: 'bike', length: 2.0, width: 0.8, height: 1.2, mass: 120, maxSpeed: 36, accel: 13, brake: 18, grip: 8, turnRate: 3.4, hp: 120, seats: 1, openTop: true, price: 7000, colors: [12, 5, 18, 7], roles: ['parked'], shape: undefined, model: M.bike() },
+  { ...car, horn: 'horn_small', engine: 'engine_bike', id: 'streetbike', name: 'Streetbike', movement: 'bike', length: 2.1, width: 0.8, height: 1.2, mass: 220, maxSpeed: 46, accel: 15, brake: 22, grip: 10, turnRate: 3.2, hp: 150, seats: 2, openTop: true, price: 14000, colors: 'bright', roles: ['traffic', 'parked'], shape: undefined, model: M.bike(),
+    saddles: [{ x: -0.22, z: 0.92, lean: 0.45 }, { x: -0.55, z: 0.98, lean: 0.2 }] },
+  { ...car, horn: 'horn_small', engine: 'engine_bike', id: 'dirtbike', name: 'Dirt Bike', movement: 'bike', length: 2.0, width: 0.8, height: 1.2, mass: 120, maxSpeed: 36, accel: 13, brake: 18, grip: 8, turnRate: 3.4, hp: 120, seats: 1, openTop: true, price: 7000, colors: [12, 5, 18, 7], roles: ['parked'], shape: undefined, model: M.bike(),
+    saddles: [{ x: -0.25, z: 1.0, lean: 0.2 }] },
 
   // Emergency services
   { ...car, engine: 'engine_muscle', id: 'police', name: 'Police Cruiser', turnIn: 0.43, maxSpeed: 41, accel: 12, hp: 420, price: 0, colors: [1], roles: ['police'], siren: true, model: [...M.sedan(), ...M.stripe('white', 0.25, 0.5), ...M.lightbar()] },
@@ -78,4 +80,10 @@ export const VEHICLES: VehicleSpec[] = [
   { ...car, horn: 'horn_deep', engine: 'engine_diesel', id: 'humvee_gun', name: 'Humvee Gun Truck', shape: undefined, turnIn: 0.25, length: 4.9, width: 2.2, height: 1.85, mass: 2700, maxSpeed: 32, accel: 8.5, grip: 8.5, hp: 750, seats: 4, weapons: ['mounted_mg'], turret: 2.4, price: 0, colors: [20, 19], roles: ['military'], model: [...M.suv(), ...M.gunRing()] },
   { ...heavy, id: 'mrap', name: 'MRAP', length: 6.4, width: 2.55, height: 2.9, mass: 14000, maxSpeed: 27, accel: 5.5, brake: 13, hp: 1600, seats: 6, armored: true, price: 0, colors: [20, 19], roles: ['military'], model: M.boxTruck('olive') },
   { ...heavy, id: 'mrap_gun', name: 'MRAP Gunner', length: 6.4, width: 2.55, height: 2.9, mass: 14500, maxSpeed: 26, accel: 5.2, brake: 13, hp: 1700, seats: 6, armored: true, weapons: ['mounted_mg'], turret: 2.0, price: 0, colors: [20, 19], roles: ['military'], model: [...M.boxTruck('olive'), ...M.gunRing(0.15, 1.0)] },
+
+  // More motorbikes: a long, low chopper (you sit back in it) and the police motorcycle.
+  { ...car, horn: 'horn_deep', engine: 'engine_bike', id: 'chopper', name: 'Hellcat Chopper', movement: 'bike', length: 2.6, width: 0.95, height: 1.2, mass: 300, maxSpeed: 40, accel: 11, brake: 17, grip: 8.5, turnRate: 2.6, hp: 180, seats: 2, openTop: true, price: 22000, colors: 'bright', roles: ['traffic', 'parked'], shape: undefined, model: M.bike(),
+    saddles: [{ x: -0.3, z: 0.74, lean: -0.08 }, { x: -0.68, z: 0.86, lean: -0.05 }] },
+  { ...car, horn: 'horn_small', engine: 'engine_bike', id: 'police_bike', name: 'Police Motorcycle', movement: 'bike', length: 2.3, width: 1.0, height: 1.45, mass: 330, maxSpeed: 44, accel: 13, brake: 22, grip: 9.5, turnRate: 3.0, hp: 200, seats: 1, openTop: true, siren: true, price: 0, colors: [0], roles: ['police'], shape: undefined, model: [...M.bike(), ...M.lightbar(-0.35, 0.75)],
+    saddles: [{ x: -0.2, z: 0.9, lean: 0.12 }] },
 ];

@@ -131,6 +131,23 @@ export function setPedWeapon(v: PedView, wi: number): void {
   v.gun.scale.setScalar(S);
 }
 
+/** Hip height in the ped's own space (legs hang from here). */
+export const HIP_H = 0.86 * S;
+
+/** Seated astride a bike: leaning forward by `lean`, knees up to the pegs, hands on the bars (or the
+ *  right arm out when shooting). The caller places the root so the hips land on the saddle. */
+export function ridePed(v: PedView, lean: number, aiming: boolean): void {
+  const b = v.body;
+  v.deadT = 0;
+  b.position.y = 0;
+  b.rotation.z = -lean;
+  v.legL.rotation.z = v.legR.rotation.z = 1.3 + lean * 0.6;
+  v.legL.rotation.x = -0.12; v.legR.rotation.x = 0.12;
+  v.armL.rotation.z = 1.0 + lean * 0.8;
+  v.armL.rotation.x = 0.25;
+  v.armR.rotation.z = aiming || (v.gun.visible && v.weapon >= 0 && WEAPONS[v.weapon].kind !== 'melee') ? Math.PI / 2 + lean : 1.0 + lean * 0.8;
+}
+
 /** Poses the ped for this frame. speed in m/s. */
 export function animatePed(v: PedView, dt: number, speed: number, aiming: boolean, down: boolean, dead: boolean, busy: boolean): void {
   const b = v.body;
@@ -145,6 +162,7 @@ export function animatePed(v: PedView, dt: number, speed: number, aiming: boolea
   v.deadT = 0;
   b.rotation.z = 0;
   b.position.y = busy ? -0.55 : 0;
+  v.legL.rotation.x = v.legR.rotation.x = 0;
   v.phase += dt * Math.min(speed, 8) * 2.1;
   const swing = Math.min(1, speed / 2) * 0.7;
   const s = Math.sin(v.phase) * swing;

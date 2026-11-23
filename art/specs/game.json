@@ -445,6 +445,28 @@
    "siren": false,
    "openTop": false,
    "armored": true
+  },
+  "chopper": {
+   "name": "Hellcat Chopper",
+   "length": 2.6,
+   "width": 0.95,
+   "height": 1.2,
+   "movement": "bike",
+   "paint": null,
+   "siren": false,
+   "openTop": true,
+   "armored": false
+  },
+  "police_bike": {
+   "name": "Police Motorcycle",
+   "length": 2.3,
+   "width": 1,
+   "height": 1.45,
+   "movement": "bike",
+   "paint": "#f2f2ee",
+   "siren": true,
+   "openTop": true,
+   "armored": false
   }
  },
  "weapons": {

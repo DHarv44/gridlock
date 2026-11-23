@@ -64,6 +64,10 @@ export interface VehicleSpec {
   /** A driver-aimed turret and how fast it traverses (rad/s): tanks, gun trucks. Without one,
    *  mounted weapons fire straight ahead. */
   turret?: number;
+  /** Seats you sit on in plain sight (motorbikes), front first: where the rider's hips go
+   *  (metres from the centre, + = forward; height off the ground) and how far they lean forward
+   *  (radians). Riders are drawn; occupants of other vehicles aren't. */
+  saddles?: { x: number; z: number; lean: number }[];
   model: Part[];
   /** Plan-view body shaping (seen from above): without it the body is a straight-sided box. */
   shape?: BodyShape;
