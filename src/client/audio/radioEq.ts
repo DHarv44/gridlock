@@ -4,9 +4,10 @@
 // counts (Chrome ignores it), so each deck gets a GainNode and the radio sets its level there
 // (`gains`); the elements stay at full volume.
 
-/** Points along the line, and how quickly it follows the music (higher = twitchier). */
-const POINTS = 96;
-const FOLLOW = 14;
+/** Points along the line, how quickly a spike falls back (higher = quicker), and the bands shown. */
+const POINTS = 72;
+const FOLLOW = 6;
+const LO_HZ = 50, HI_HZ = 12000;
 
 export class RadioEq {
   private ctx: AudioContext | null = null;
@@ -33,6 +34,7 @@ export class RadioEq {
         if (this.attached || ctx.state !== 'running') return;
         const an = ctx.createAnalyser();
         an.fftSize = 2048;
+        an.smoothingTimeConstant = 0.45;
         this.gains = decks.map((d) => {
           const g = ctx.createGain();
           g.gain.value = d.volume; // carry the level over, then the element plays flat out
@@ -52,19 +54,24 @@ export class RadioEq {
 
   /** Draws the line in `color`; `gain` undoes the music volume so quiet settings still move it. */
   draw(dt: number, color: string, gain: number): void {
-    const an = this.analyser;
-    const k = Math.min(1, dt * FOLLOW);
-    if (an) {
-      an.getByteTimeDomainData(this.data);
-      const step = Math.floor(this.data.length / POINTS);
+    const an = this.analyser, ctx = this.ctx;
+    const fall = Math.min(1, dt * FOLLOW);
+    if (an && ctx) {
+      // Each point's height is the loudness of its own band (bass on the left, treble on the
+      // right): up at once on a hit, back down slowly, so beats spike instead of averaging away.
+      an.getByteFrequencyData(this.data);
+      const nyq = ctx.sampleRate / 2, n = an.frequencyBinCount;
+      const lift = Math.min(1.6, Math.max(0.7, gain * 0.7)); // quiet music settings still move it
       for (let i = 0; i < POINTS; i++) {
-        // Average each stretch of samples: a calm line, not hiss.
-        let s = 0;
-        for (let j = 0; j < step; j++) s += this.data[i * step + j] - 128;
-        const v = Math.max(-1, Math.min(1, (s / step / 128) * gain * 2.4));
-        this.wave[i] += (v - this.wave[i]) * k;
+        const f0 = LO_HZ * (HI_HZ / LO_HZ) ** (i / POINTS), f1 = LO_HZ * (HI_HZ / LO_HZ) ** ((i + 1) / POINTS);
+        const a = Math.floor((f0 / nyq) * n), b = Math.max(a + 1, Math.ceil((f1 / nyq) * n));
+        let m = 0;
+        for (let j = a; j < b; j++) m = Math.max(m, this.data[j]);
+        // Spread the loud end (0.38..0.88 of the dB scale) over the full height; treble gets a lift.
+        const v = Math.min(1, Math.max(0, (m / 255 - 0.38) / 0.5) ** 1.15 * lift * (1 + i / POINTS * 0.6));
+        this.wave[i] = v > this.wave[i] ? v : this.wave[i] + (v - this.wave[i]) * fall;
       }
-    } else for (let i = 0; i < POINTS; i++) this.wave[i] *= 1 - k;
+    } else for (let i = 0; i < POINTS; i++) this.wave[i] *= 1 - fall;
     const g = this.canvas.getContext('2d')!;
     const w = this.canvas.width, h = this.canvas.height, mid = h / 2;
     g.clearRect(0, 0, w, h);
@@ -75,7 +82,8 @@ export class RadioEq {
       for (let i = 0; i < POINTS; i++) {
         const x = (i / (POINTS - 1)) * w;
         const taper = Math.sin((i / (POINTS - 1)) * Math.PI);
-        const y = mid - this.wave[i] * taper * (mid - 6);
+        // Alternate up and down: a waveform whose swing is the band's loudness.
+        const y = mid - (i % 2 ? 1 : -1) * this.wave[i] * (0.3 + 0.7 * taper) * (mid - 4);
         if (i) g.lineTo(x, y); else g.moveTo(x, y);
       }
     };
