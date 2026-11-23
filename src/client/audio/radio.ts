@@ -67,6 +67,8 @@ export class Radio {
   private unblock: (() => void) | null = null;
   /** Scaled by the music volume setting passed to update(). */
   volume = 1;
+  /** Each deck's level (0..1): the radio's own record, since a routed element ignores its volume. */
+  private vols = [0, 0];
 
   constructor(private muted: boolean) {
     for (const d of this.decks) {
@@ -115,9 +117,17 @@ export class Radio {
     if (this.startAt && this.now() >= this.startAt) { this.startAt = 0; this.start(); }
     this.preload();
     const want = this.muted ? 0 : this.target * level * this.volume;
-    const d = this.deck, v = d.volume;
-    d.volume = Math.max(0, Math.min(1, v + Math.sign(want - v) * Math.min(Math.abs(want - v), dt / FADE_S)));
-    this.display.update(dt, this.inVehicle);
+    const v = this.vols[this.cur];
+    const nv = Math.max(0, Math.min(1, v + Math.sign(want - v) * Math.min(Math.abs(want - v), dt / FADE_S)));
+    this.setVol(this.cur, nv);
+    this.display.update(dt, this.inVehicle, nv);
+  }
+
+  /** A deck's level: on its gain once the equaliser has routed the decks, else on the element. */
+  private setVol(i: number, v: number): void {
+    this.vols[i] = v;
+    const g = this.display.eq.gains;
+    if (g) g[i].gain.value = v; else this.decks[i].volume = v;
   }
 
   /** The radio key: this car's next station (or off). Only works in a vehicle. */
@@ -130,18 +140,17 @@ export class Radio {
 
   private tune(): void {
     const s = RADIO[this.station];
-    this.display.hideCard();
     if (!s) {
       this.target = 0;
       this.stop();
-      this.display.show('Radio off', '#9aa5ad');
+      this.display.off();
       return;
     }
     this.target = 1;
-    this.display.show(s.name, s.color);
+    this.display.tuned(s.name, s.color);
     if (this.item?.station === s.id) {
       // Back in a car on the station that's still running (the grace period): carry on.
-      if (!this.item.ad) this.nowPlaying(this.item);
+      this.nowPlaying(this.item);
       if (this.deck.paused && !this.deck.ended && !this.startAt) this.start();
       return;
     }
@@ -161,7 +170,7 @@ export class Radio {
     this.queued = null;
     this.startAt = 0;
     d.src = srcOf(it);
-    if (!it.ad) this.nowPlaying(it);
+    this.nowPlaying(it);
     d.addEventListener('loadedmetadata', () => {
       if (gen !== this.gen) return;
       // Loading took a moment: start where the broadcast is now, or rejoin if this one's over.
@@ -190,13 +199,13 @@ export class Radio {
   private changeover(): void {
     const q = this.queued;
     if (!q || this.queuedFailed || q.station !== RADIO[this.station]?.id) { this.item = null; this.join(); return; }
-    const level = this.deck.volume;
+    const level = this.vols[this.cur];
     this.deck.pause();
     this.cur = 1 - this.cur;
     this.item = q;
     this.queued = null;
     const d = this.deck;
-    d.volume = level;
+    this.setVol(this.cur, level);
     // Still with the broadcast? Positive: we're early; negative: we're late.
     const early = q.start - this.now();
     if (early > RESYNC_S) {
@@ -206,12 +215,13 @@ export class Radio {
       d.currentTime = early < -RESYNC_S ? Math.min(-early, q.endsAt - q.start - 1) : 0;
       this.start();
     }
-    if (!q.ad) this.nowPlaying(q);
+    this.nowPlaying(q);
   }
 
   /** Plays the deck on air. A browser that won't play sound before the page is used gets another
    *  go on the next key press or click. */
   private start(): void {
+    this.display.eq.attach(this.decks);
     this.deck.play().catch((err: unknown) => {
       if ((err as { name?: string }).name !== 'NotAllowedError' || this.unblock) return;
       this.unblock = () => {
@@ -237,11 +247,12 @@ export class Radio {
     this.startAt = 0;
   }
 
-  /** Shows what's playing (songs only; commercials leave the card alone). */
+  /** Shows what's on air: the song (or show) and its artist (or host), or that it's a commercial. */
   private nowPlaying(it: Item): void {
     const s = RADIO.find((r) => r.id === it.station);
+    if (!s || !this.inVehicle) return;
+    if (it.ad) { this.display.nowPlaying(s.name, s.color, 'Commercial', ''); return; }
     const t = this.list(it.station).songs.find((x) => x.file === it.file);
-    if (!s || !t || !this.inVehicle) return;
-    this.display.nowPlaying(t.title ?? it.file, t.artist ? `${t.artist} · ${s.name}` : s.name, s.color);
+    if (t) this.display.nowPlaying(s.name, s.color, t.title ?? it.file.replace(/\.[^.]+$/, ''), t.artist ?? '');
   }
 }

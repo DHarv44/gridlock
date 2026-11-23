@@ -125,9 +125,9 @@
   "src": "horn_icecream"
  },
  "engine_car": {
-  "seconds": 3.2,
+  "seconds": 2.184,
   "loop": true,
-  "src": "engine_car"
+  "src": "engine_mini"
  },
  "engine_diesel": {
   "seconds": 2.813,
@@ -138,5 +138,25 @@
   "seconds": 2.84,
   "loop": true,
   "src": "engine_bike"
+ },
+ "engine_suv": {
+  "seconds": 3.32,
+  "loop": true,
+  "src": "engine_crv"
+ },
+ "engine_sport": {
+  "seconds": 2.748,
+  "loop": true,
+  "src": "engine_maserati"
+ },
+ "engine_muscle": {
+  "seconds": 2.762,
+  "loop": true,
+  "src": "engine_firebird"
+ },
+ "phone_ring": {
+  "seconds": 2.7,
+  "loop": false,
+  "src": "phone_ring"
  }
 }

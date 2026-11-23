@@ -6,12 +6,12 @@ each ends playable, tested and pushed. Ask the user before starting the next mil
 
 ## A. Find the work (small)
 Jobs existed but nobody could find them: the "booths" were gang-coloured boxes with a blinking lamp.
-- A1. Payphones look like payphones: a hooded phone on a pole with a PHONE sign readable from above;
+- A1. (done) Payphones look like payphones: a hooded phone on a pole with a PHONE sign readable from above;
   the gang's colour is a sticker on it, not the whole booth.
-- A2. A phone rings only when there's work for you: one phone per gang at a time (the nearest), heard
+- A2. (done) A phone rings only when there's work for you: one phone per gang at a time (the nearest), heard
   from the phone's spot, a pulsing phone icon on the radar and the city map (also from a car).
   Ring sound: CC0 Freesound, fetched after the user's OK.
-- A3. Radio: one quiet line at the bottom centre while the radio's on in your vehicle: station,
+- A3. (done) Radio: one quiet line at the bottom centre while the radio's on in your vehicle: station,
   title, artist and a small equaliser that moves with the music; brightens on a new song or station,
   then settles dim. Replaces the top-left card.
 Done when: a new player finds a ringing phone without being told; the radio line reads well and

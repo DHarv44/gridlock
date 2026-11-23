@@ -1,6 +1,7 @@
 // Game sounds: CC0 recordings from Freesound (ASSETS.md), prepared by tools/blender/prep_audio.py
 // into src/client/sfx/ and all levelled alike, so the mix lives in VOICES below. Distance-attenuated.
-// The siren is one looping voice that follows the nearest siren.
+// The siren is one looping voice that follows the nearest siren; engines are in engines.ts.
+import { ENGINES, EngineVoice, TRAFFIC } from './engines';
 
 /** Every voice the game plays: its recording, gain, pitch wobble (random ± fraction) and the least
  *  time between two plays (rapid-fire weapons would otherwise stack dozens of copies). */
@@ -34,20 +35,10 @@ const VOICES: Record<string, { file: string; gain: number; vary?: number; gap?: 
   phone_ring: { file: 'phone_ring', gain: 0.4 },
 };
 const SIREN_GAIN = 0.3;
-/** Your own vehicle's engine, kept under the guns and the radio. Each engine runs through its gears:
- *  within a gear the pitch (playback rate) climbs from `low` to `high`, then drops at the shift.
- *  Stopped, it idles at the recording's own pitch. `gain` is the idle level; on the throttle it rises
- *  by `push`. A diesel truck stays low and narrow; a V8 or a bike revs high. */
-const ENGINES: Record<string, { gears: number; low: number; high: number; gain: number; push: number }> = {
-  engine_car: { gears: 5, low: 1.05, high: 1.85, gain: 0.1, push: 0.6 },
-  engine_suv: { gears: 5, low: 1.0, high: 1.7, gain: 0.1, push: 0.55 },
-  engine_sport: { gears: 6, low: 1.1, high: 2.2, gain: 0.11, push: 0.8 },
-  engine_muscle: { gears: 4, low: 1.05, high: 1.95, gain: 0.12, push: 0.8 },
-  engine_diesel: { gears: 8, low: 1.0, high: 1.38, gain: 0.11, push: 0.5 },
-  engine_bike: { gears: 5, low: 1.1, high: 2.3, gain: 0.1, push: 0.7 },
-};
 /** Most sounds playing at once; past this, new ones are dropped. */
 const MAX_VOICES = 28;
+
+export interface TrafficEngine { id: number; name: string; x: number; y: number; speed: number; throttle: number }
 
 const FILES = import.meta.glob('../sfx/*.ogg', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
 const urlOf = (name: string) => FILES[`../sfx/${name}.ogg`];
@@ -60,9 +51,8 @@ export class Sound {
   private playing = 0;
   private sirenSrc: AudioBufferSourceNode | null = null;
   private sirenGain: GainNode | null = null;
-  private engineSrc: AudioBufferSourceNode | null = null;
-  private engineGain: GainNode | null = null;
-  private engineName = '';
+  private own: EngineVoice | null = null;
+  private traffic = new Map<number, EngineVoice>();
   private volume: number;
   private muted: boolean;
   listenerX = 0;
@@ -148,41 +138,34 @@ export class Sound {
     src.start(t);
   }
 
-  /** Call every frame with your vehicle's engine voice (or null on foot), its speed as a fraction of
-   *  top speed and the throttle (0..1): one loop that runs through the gears. Traffic has no engine. */
-  engine(name: string | null, speed: number, throttle: number): void {
-    const ctx = this.ctx;
-    if (!ctx || !this.master) return;
-    if (this.engineSrc && name !== this.engineName) this.stopEngine();
-    const buf = name ? this.buffers.get(name) : undefined;
-    const e = name ? ENGINES[name] : undefined;
-    if (!name || !buf || !e || this.muted) return;
-    if (!this.engineSrc) {
-      this.engineName = name;
-      this.engineSrc = ctx.createBufferSource();
-      this.engineSrc.buffer = buf;
-      this.engineSrc.loop = true;
-      this.engineGain = ctx.createGain();
-      this.engineGain.gain.value = 0;
-      this.engineSrc.connect(this.engineGain).connect(this.master);
-      this.engineSrc.start(ctx.currentTime, Math.random() * buf.duration);
-    }
-    const s = Math.max(0, Math.min(1, speed)), th = Math.max(0, Math.min(1, throttle));
-    let rate = 1; // idle
-    if (s > 0.02) {
-      const g = Math.min(e.gears - 1, Math.floor(s * e.gears));
-      const inGear = s * e.gears - g;
-      rate = e.low + (e.high - e.low) * inGear;
-    }
-    // Faster changes on the throttle (revs climb), slower when coasting.
-    this.engineSrc.playbackRate.setTargetAtTime(rate, ctx.currentTime, th > 0.1 ? 0.06 : 0.18);
-    this.engineGain!.gain.setTargetAtTime(e.gain * (1 + e.push * th) * (0.85 + 0.3 * s), ctx.currentTime, 0.1);
+  /** A new engine voice for `name`, or null when it can't play (no sound yet, muted, unknown). */
+  private voice(name: string): EngineVoice | null {
+    const buf = this.buffers.get(name);
+    if (!this.ctx || !this.master || !buf || !ENGINES[name] || this.muted) return null;
+    return new EngineVoice(this.ctx, this.master, buf, name);
   }
 
-  private stopEngine(): void {
-    this.engineSrc?.stop();
-    this.engineSrc?.disconnect(); this.engineGain?.disconnect();
-    this.engineSrc = null; this.engineGain = null; this.engineName = '';
+  /** Call every frame with your vehicle's engine voice (or null on foot), its speed as a fraction of
+   *  top speed and the throttle (0..1): one loop that runs through the gears. */
+  engine(name: string | null, speed: number, throttle: number): void {
+    if (this.own && this.own.name !== name) { this.own.stop(); this.own = null; }
+    if (!name) return;
+    this.own ??= this.voice(name);
+    this.own?.set(speed, throttle);
+  }
+
+  /** Call every frame with the nearest moving vehicles (at most TRAFFIC.max): their engines, quieter
+   *  than yours and fading with distance. Vehicles that drop off the list fade out. */
+  trafficEngines(list: TrafficEngine[]): void {
+    const keep = new Set(list.map((t) => t.id));
+    for (const [id, v] of this.traffic) if (!keep.has(id)) { v.stop(); this.traffic.delete(id); }
+    for (const t of list) {
+      let v = this.traffic.get(t.id);
+      if (!v) { const nv = this.voice(t.name); if (!nv) continue; this.traffic.set(t.id, v = nv); }
+      const d = Math.hypot(t.x - this.listenerX, t.y - this.listenerY);
+      const near = Math.max(0, 1 - d / TRAFFIC.range);
+      v.set(t.speed, t.throttle, TRAFFIC.gain * near * near);
+    }
   }
 
   /** Call every frame with the nearest siren (or null): one looping wail that follows it. */

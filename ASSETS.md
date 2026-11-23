@@ -43,9 +43,13 @@ Test with the game muted (`?mute`); never play sounds out loud while testing.
 | `horn_air` | [131930 "Industrial Air Horn"](https://freesound.org/s/131930/) | mcpable | CC0 | 2026-11-23 | Trucks' air horn |
 | `horn_bus` | [451697 "school bus truck int horn honk.flac"](https://freesound.org/s/451697/) | kyles | CC0 | 2026-11-23 | City bus horn |
 | `horn_icecream` | [128573 "Ice Cream Truck - \"The Entertainer\""](https://freesound.org/s/128573/) | sndadv | CC0 | 2026-11-23 | Ice cream van's jingle (first 4.5 s) |
-| `engine_car` | [522225 "Vehicle_Car_Peugeot_308_Idle_Exterior_Loop_Mono_02.wav"](https://freesound.org/s/522225/) | Nox_Sound | CC0 | 2026-11-23 | Your car's engine loop |
-| `engine_diesel` | [128160 "Diesel Truck Idling Front.wav"](https://freesound.org/s/128160/) | ibirdfilm | CC0 | 2026-11-23 | Your truck's, bus's or tank's engine loop |
-| `engine_bike` | [119455 "Motorbike Idling.wav"](https://freesound.org/s/119455/) | lmbubec | CC0 | 2026-11-23 | Your motorbike's engine loop |
+| `engine_car` | [269771 "car idle"](https://freesound.org/s/269771/) (2002 Mini Cooper 1.6 petrol) | seth-m | CC0 | 2026-11-23 | Ordinary cars' engine loop (replaced 522225, a Peugeot 308 idle that sounded like a diesel truck) |
+| `engine_suv` | [369054 "car_idle_ext_loop.wav"](https://freesound.org/s/369054/) (Honda CR-V) | AndrewAlexander | CC0 | 2026-11-23 | SUVs', pickups' and vans' engine loop |
+| `engine_sport` | [585215 "Car Engine: Maserati GranTurismo Switch to Sport Mode and Launch"](https://freesound.org/s/585215/) (V8, the idle before the launch) | myeclecticself | CC0 | 2026-11-23 | Sports cars' engine loop |
+| `engine_muscle` | [157142 "idle.wav"](https://freesound.org/s/157142/) (1975 Pontiac Firebird) | cr4sht3st | CC0 | 2026-11-23 | Muscle cars', lowriders' and police cruisers' engine loop |
+| `phone_ring` | [456433 "Old Rotary Phone Ringing - Western Electric Bell 500 phone"](https://freesound.org/s/456433/) | mycompasstv | CC0 | 2026-11-23 | Ringing payphones (one ring) |
+| `engine_diesel` | [128160 "Diesel Truck Idling Front.wav"](https://freesound.org/s/128160/) | ibirdfilm | CC0 | 2026-11-23 | Trucks', buses', the tank's and the ice cream van's engine loop |
+| `engine_bike` | [119455 "Motorbike Idling.wav"](https://freesound.org/s/119455/) | lmbubec | CC0 | 2026-11-23 | Motorbikes' engine loop |
 
 ## Music
 

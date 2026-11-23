@@ -50,9 +50,9 @@ JOBS = {
     # once pitched up; ordinary cars now use a petrol Mini Cooper.
     "engine_car": {"src": "engine_mini", "mode": "loop", "max": 1.8},
     "engine_suv": {"src": "engine_crv", "mode": "loop", "max": 3.0},
-    "engine_sport": {"src": "engine_maserati", "mode": "loop", "max": 2.5},
+    "engine_sport": {"src": "engine_maserati", "mode": "loop", "max": 2.5, "span": (0, 4.6)},  # the idle, before the launch
     "engine_muscle": {"src": "engine_firebird", "mode": "loop", "max": 2.6},
-    "phone_ring": {"src": "phone_ring", "mode": "first", "max": 2.2},
+    "phone_ring": {"src": "phone_ring", "mode": "first", "max": 2.7},  # one ring of the 2 s on / 4 s off cadence
     "engine_diesel": {"src": "engine_diesel", "mode": "loop", "max": 3.0},
     "engine_bike": {"src": "engine_bike", "mode": "loop", "max": 3.0},
 }

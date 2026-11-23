@@ -52,15 +52,20 @@ button:disabled { opacity: 0.4; cursor: default; }
 .garage-actions .primary { flex: none; font-size: 16px; padding: 12px; }
 .garage-price.short { color: #b0302a; }
 @media (max-width: 700px) { .garage-box { flex-direction: column; height: calc(100vh - 32px); } .garage-side { width: auto; border-left: none; border-top: 1px solid var(--line); } }
-/* Now playing: bottom left, above the radar. */
-.now-playing { position: fixed; left: 22px; top: 18px; z-index: 6; pointer-events: none; max-width: 320px;
-  padding: 7px 12px 8px 14px; border-left: 3px solid var(--np, var(--accent)); background: rgba(10, 12, 15, 0.72); border-radius: 0 4px 4px 0;
-  opacity: 0; transform: translateX(-12px); transition: opacity 0.35s ease, transform 0.35s ease; }
-.now-playing.on { opacity: 1; transform: none; }
-.now-playing .np-title { font: 700 16px Bahnschrift, "Segoe UI", sans-serif; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.now-playing .np-artist { font-size: 12px; color: var(--dim); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.radio-banner { position: fixed; top: 9vh; left: 50%; transform: translateX(-50%); z-index: 6; pointer-events: none;
-  font: 700 30px Bahnschrift, "Segoe UI", sans-serif; letter-spacing: 0.06em; text-transform: uppercase; text-shadow: 0 2px 0 #000, 0 0 12px rgba(0,0,0,0.8); }
+/* Radio: one quiet line at the bottom centre (radioDisplay.ts); bright for a moment on a change. */
+.radio-line { position: fixed; left: 50%; bottom: 20px; transform: translate(-50%, 6px); z-index: 6; pointer-events: none;
+  display: flex; align-items: center; gap: 10px; max-width: min(640px, 52vw); white-space: nowrap;
+  font: 500 15px Bahnschrift, "Segoe UI", sans-serif; text-shadow: 0 1px 0 #000, 0 0 8px rgba(0,0,0,0.85);
+  opacity: 0; transition: opacity 1.2s ease, transform 0.6s ease; }
+.radio-line.on { opacity: 0.55; transform: translate(-50%, 0); }
+.radio-line.on.bright { opacity: 1; transition: opacity 0.25s ease, transform 0.6s ease; }
+.radio-line .rl-eq { flex: none; width: 48px; height: 14px; opacity: 0.85; }
+.radio-line .rl-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.radio-line .rl-station { font-weight: 700; letter-spacing: 0.04em; }
+.radio-line .rl-title { color: #fff; }
+.radio-line .rl-title::before { content: '·'; color: var(--dim); margin: 0 9px; }
+.radio-line .rl-artist { color: var(--dim); }
+.radio-line .rl-artist::before { content: '—'; margin: 0 7px; }
 .chars { display: flex; flex-direction: column; gap: 6px; }
 .chars-head { color: var(--dim); font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; }
 .char { display: flex; align-items: center; gap: 12px; padding: 6px 10px; background: #14171c; border: 1px solid var(--line); border-radius: 4px; cursor: pointer; }
