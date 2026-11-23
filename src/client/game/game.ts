@@ -30,7 +30,7 @@ import { routeFx } from './fxRouter';
 import { makeAimAssist } from './aimAssist';
 import { Steering } from './steering';
 import { Input } from './input';
-import { lawUnits, nearestSiren, signalGlows } from './ambient';
+import { lawUnits, nearestSiren, ownEngine, signalGlows } from './ambient';
 import { Interact } from './interact';
 import { Jobs } from './jobs';
 import { Predictor } from './predict';
@@ -261,6 +261,7 @@ export class Game {
     this.water.update(dt);
     this.jobs.update(dt, this.you, own, this.fx.glow, night, vr, this.store.serverNow(), this.players.find((p) => p.id === this.myId));
     nearestSiren(this.store, own, this.sound);
+    ownEngine(this.store, this.you && this.you.mode !== Mode.Dead ? own : null, this.sound, dt);
     this.stage.render();
     this.updateHud(own);
   }

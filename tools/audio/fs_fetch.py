@@ -36,6 +36,14 @@ CHOSEN = [  # key, sound id (the page's address names the author: freesound.org/
     ("horn", 434878),
     ("siren", 52906),
     ("cash", 209578),
+    ("horn_small", 94868),
+    ("horn_deep", 450821),
+    ("horn_air", 131930),
+    ("horn_bus", 451697),
+    ("horn_icecream", 128573),
+    ("engine_car", 522225),
+    ("engine_diesel", 128160),
+    ("engine_bike", 119455),
 ]
 CC0 = "creativecommons.org/publicdomain/zero"
 

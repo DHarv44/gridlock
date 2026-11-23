@@ -98,5 +98,45 @@
   "seconds": 1.2,
   "loop": false,
   "src": "cash"
+ },
+ "horn_small": {
+  "seconds": 0.5,
+  "loop": false,
+  "src": "horn_small"
+ },
+ "horn_deep": {
+  "seconds": 0.7,
+  "loop": false,
+  "src": "horn_deep"
+ },
+ "horn_air": {
+  "seconds": 1.2,
+  "loop": false,
+  "src": "horn_air"
+ },
+ "horn_bus": {
+  "seconds": 0.97,
+  "loop": false,
+  "src": "horn_bus"
+ },
+ "horn_icecream": {
+  "seconds": 4.5,
+  "loop": false,
+  "src": "horn_icecream"
+ },
+ "engine_car": {
+  "seconds": 3.2,
+  "loop": true,
+  "src": "engine_car"
+ },
+ "engine_diesel": {
+  "seconds": 2.813,
+  "loop": true,
+  "src": "engine_diesel"
+ },
+ "engine_bike": {
+  "seconds": 2.84,
+  "loop": true,
+  "src": "engine_bike"
  }
 }

@@ -41,6 +41,14 @@ JOBS = {
     "horn": {"src": "horn", "mode": "first", "max": 0.8},
     "siren": {"src": "siren", "mode": "loop", "max": 3.5},
     "cash": {"src": "cash", "mode": "first", "max": 1.2},
+    "horn_small": {"src": "horn_small", "mode": "first", "max": 0.5},
+    "horn_deep": {"src": "horn_deep", "mode": "first", "max": 0.7, "span": (0, 3.2)},
+    "horn_air": {"src": "horn_air", "mode": "whole", "max": 1.2},
+    "horn_bus": {"src": "horn_bus", "mode": "whole", "max": 1.1, "span": (0, 1.15)},
+    "horn_icecream": {"src": "horn_icecream", "mode": "whole", "max": 4.5, "span": (0, 5)},
+    "engine_car": {"src": "engine_car", "mode": "loop", "max": 3.0},
+    "engine_diesel": {"src": "engine_diesel", "mode": "loop", "max": 3.0},
+    "engine_bike": {"src": "engine_bike", "mode": "loop", "max": 3.0},
 }
 
 

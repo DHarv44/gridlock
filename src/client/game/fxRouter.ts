@@ -1,5 +1,5 @@
 // Routes server FX events to visual effects and sounds.
-import { WEAPONS } from '../../shared/packs';
+import { VEHICLES, WEAPONS } from '../../shared/packs';
 import { FX } from '../../shared/protocol';
 import type { Sound } from '../audio/sound';
 import type { EntityStore } from '../net/entities';
@@ -31,8 +31,9 @@ export function routeFx(events: number[][], fx: Effects, sound: Sound, store: En
       case FX.Swing: case FX.Throw: case FX.Horn: {
         const ent = store.all.get(e[1]);
         if (!ent) break;
-        const voice = e[0] === FX.Horn ? 'horn' : e[0] === FX.Throw ? 'throw' : 'swing';
-        sound.play(voice, ent.x, ent.y);
+        // A horn is the vehicle's own (pack field); vehicles without one stay quiet.
+        const voice = e[0] === FX.Horn ? VEHICLES[ent.data[2]]?.horn : e[0] === FX.Throw ? 'throw' : 'swing';
+        if (voice) sound.play(voice, ent.x, ent.y);
         break;
       }
     }

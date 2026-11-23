@@ -1,4 +1,5 @@
-// Per-frame ambience: traffic-signal glows synced to the server clock, and the nearest siren's sound.
+// Per-frame ambience: traffic-signal glows synced to the server clock, the nearest siren's sound and
+// your own vehicle's engine.
 import { PEDS, VEHICLES } from '../../shared/packs';
 import { VF } from '../../shared/protocol';
 import type { Sound } from '../audio/sound';
@@ -40,4 +41,16 @@ export function nearestSiren(store: EntityStore, me: { x: number; y: number } | 
     }
   }
   sound.siren(best);
+}
+
+let lastSpeed = 0;
+/** Your vehicle's engine: how hard it works is its speed against its top speed, plus a lift while
+ *  it's picking up speed. On foot (or in a vehicle with no engine voice) it's silent. */
+export function ownEngine(store: EntityStore, own: { vid: number; vx: number; vy: number } | null, sound: Sound, dt: number): void {
+  const spec = own?.vid ? VEHICLES[store.all.get(own.vid)?.data[2] ?? -1] : undefined;
+  if (!own || !spec?.engine) { sound.engine(null, 0); lastSpeed = 0; return; }
+  const speed = Math.hypot(own.vx, own.vy);
+  const gaining = dt > 0 ? Math.max(0, Math.min(1, (speed - lastSpeed) / dt / spec.accel)) : 0;
+  lastSpeed = speed;
+  sound.engine(spec.engine, speed / spec.maxSpeed + gaining * 0.25);
 }

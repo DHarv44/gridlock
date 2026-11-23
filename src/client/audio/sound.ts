@@ -24,9 +24,18 @@ const VOICES: Record<string, { file: string; gain: number; vary?: number; gap?: 
   crash: { file: 'crash', gain: 0.4, vary: 0.1, gap: 0.08 },
   splash: { file: 'splash', gain: 0.5, vary: 0.08 },
   horn: { file: 'horn', gain: 0.35, vary: 0.03 },
+  horn_small: { file: 'horn_small', gain: 0.32, vary: 0.03 },
+  horn_deep: { file: 'horn_deep', gain: 0.38, vary: 0.03 },
+  horn_air: { file: 'horn_air', gain: 0.42, vary: 0.02 },
+  horn_bus: { file: 'horn_bus', gain: 0.4, vary: 0.02 },
+  horn_icecream: { file: 'horn_icecream', gain: 0.3, gap: 4.5 },
   cash: { file: 'cash', gain: 0.22 },
 };
 const SIREN_GAIN = 0.3;
+/** Your own vehicle's engine: kept under the guns and the radio. Idle level, and how far pitch and
+ *  level rise at top speed. */
+const ENGINE = { gain: 0.11, rise: 0.6, rate: 0.85, pitch: 0.85 };
+const ENGINES = ['engine_car', 'engine_diesel', 'engine_bike'];
 /** Most sounds playing at once; past this, new ones are dropped. */
 const MAX_VOICES = 28;
 
@@ -41,6 +50,9 @@ export class Sound {
   private playing = 0;
   private sirenSrc: AudioBufferSourceNode | null = null;
   private sirenGain: GainNode | null = null;
+  private engineSrc: AudioBufferSourceNode | null = null;
+  private engineGain: GainNode | null = null;
+  private engineName = '';
   private volume: number;
   private muted: boolean;
   listenerX = 0;
@@ -86,7 +98,7 @@ export class Sound {
       this.master.gain.value = this.muted ? 0 : this.volume * 0.6;
       const comp = ctx.createDynamicsCompressor();
       this.master.connect(comp).connect(ctx.destination);
-      const names = new Set([...Object.values(VOICES).map((v) => v.file), 'siren']);
+      const names = new Set([...Object.values(VOICES).map((v) => v.file), 'siren', ...ENGINES]);
       for (const name of names) {
         const url = urlOf(name);
         if (!url) continue;
@@ -124,6 +136,35 @@ export class Sound {
     this.playing++;
     src.onended = () => { this.playing--; src.disconnect(); gain.disconnect(); };
     src.start(t);
+  }
+
+  /** Call every frame with your vehicle's engine voice (or null on foot) and how hard it's working
+   *  (0 idle .. 1 flat out): one loop whose pitch and level follow it. Traffic has no engine sound. */
+  engine(name: string | null, load: number): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.master) return;
+    if (this.engineSrc && name !== this.engineName) this.stopEngine();
+    const buf = name ? this.buffers.get(name) : undefined;
+    if (!name || !buf || this.muted) return;
+    if (!this.engineSrc) {
+      this.engineName = name;
+      this.engineSrc = ctx.createBufferSource();
+      this.engineSrc.buffer = buf;
+      this.engineSrc.loop = true;
+      this.engineGain = ctx.createGain();
+      this.engineGain.gain.value = 0;
+      this.engineSrc.connect(this.engineGain).connect(this.master);
+      this.engineSrc.start(ctx.currentTime, Math.random() * buf.duration);
+    }
+    const k = Math.max(0, Math.min(1, load));
+    this.engineSrc.playbackRate.setTargetAtTime(ENGINE.rate + ENGINE.pitch * k, ctx.currentTime, 0.12);
+    this.engineGain!.gain.setTargetAtTime(ENGINE.gain * (1 + ENGINE.rise * k), ctx.currentTime, 0.12);
+  }
+
+  private stopEngine(): void {
+    this.engineSrc?.stop();
+    this.engineSrc?.disconnect(); this.engineGain?.disconnect();
+    this.engineSrc = null; this.engineGain = null; this.engineName = '';
   }
 
   /** Call every frame with the nearest siren (or null): one looping wail that follows it. */

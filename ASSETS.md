@@ -38,6 +38,14 @@ Test with the game muted (`?mute`); never play sounds out loud while testing.
 | `horn` | [434878 "Car Honking"](https://freesound.org/s/434878/) | MicktheMicGuy | CC0 | 2026-11-23 | Car horns |
 | `siren` | [52906 "police siren.wav"](https://freesound.org/s/52906/) | vlammenos | CC0 | 2026-11-23 | Emergency sirens (a 3.2 s loop of whole wail cycles) |
 | `cash` | [209578 "Cash Register Purchase"](https://freesound.org/s/209578/) | Zott820 | CC0 | 2026-11-23 | Money earned |
+| `horn_small` | [94868 "small horn.wav"](https://freesound.org/s/94868/) | tm1000 | CC0 | 2026-11-23 | Small cars' and motorbikes' horn |
+| `horn_deep` | [450821 "truck pickup horn honk aggressive annoyed various1.wav"](https://freesound.org/s/450821/) | kyles | CC0 | 2026-11-23 | Pickups', SUVs', vans' and muscle cars' horn (first honk) |
+| `horn_air` | [131930 "Industrial Air Horn"](https://freesound.org/s/131930/) | mcpable | CC0 | 2026-11-23 | Trucks' air horn |
+| `horn_bus` | [451697 "school bus truck int horn honk.flac"](https://freesound.org/s/451697/) | kyles | CC0 | 2026-11-23 | City bus horn |
+| `horn_icecream` | [128573 "Ice Cream Truck - \"The Entertainer\""](https://freesound.org/s/128573/) | sndadv | CC0 | 2026-11-23 | Ice cream van's jingle (first 4.5 s) |
+| `engine_car` | [522225 "Vehicle_Car_Peugeot_308_Idle_Exterior_Loop_Mono_02.wav"](https://freesound.org/s/522225/) | Nox_Sound | CC0 | 2026-11-23 | Your car's engine loop |
+| `engine_diesel` | [128160 "Diesel Truck Idling Front.wav"](https://freesound.org/s/128160/) | ibirdfilm | CC0 | 2026-11-23 | Your truck's, bus's or tank's engine loop |
+| `engine_bike` | [119455 "Motorbike Idling.wav"](https://freesound.org/s/119455/) | lmbubec | CC0 | 2026-11-23 | Your motorbike's engine loop |
 
 ## Music
 

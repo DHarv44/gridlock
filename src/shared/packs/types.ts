@@ -53,6 +53,10 @@ export interface VehicleSpec {
   colors: number[] | 'civil' | 'bright' | 'dull';
   roles: string[];      // spawn roles: traffic, parked, police, ambulance, fire, military, ...
   siren?: boolean;
+  /** Sound voices (src/client/audio/sound.ts): the horn it honks and the engine heard while you
+   *  drive it. Without them it has no horn / no engine sound. */
+  horn?: string;
+  engine?: string;
   armored?: boolean;    // occupants immune to small arms
   openTop?: boolean;    // occupants can be shot
   crushes?: boolean;    // drives over cars
