@@ -129,3 +129,10 @@ export const crossMark = (paint: Paint): Part[] => [
 ];
 
 export const canopy = (): Part[] => [b(-0.5, 0.0, -0.48, 0.48, 0.92, 1, 'olive')];
+
+/** A roof gun ring: shield and machine gun on a traversing turret (x = ring centre). */
+export const gunRing = (x = -0.05, z = 1.0): Part[] => [
+  b(x - 0.08, x + 0.08, -0.2, 0.2, z, z + 0.1, 'dark', 'turret'),
+  b(x + 0.06, x + 0.09, -0.18, 0.18, z + 0.05, z + 0.3, 'olive', 'turret'),
+  b(x + 0.05, x + 0.28, -0.02, 0.02, z + 0.12, z + 0.17, 'dark', 'barrel'),
+];

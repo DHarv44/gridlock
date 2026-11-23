@@ -69,7 +69,18 @@ def render(models, views, clay, name, w=520, h=330, dist=1.3, grid=0):
     sc.display.shading.single_color = (0.75, 0.75, 0.75)
     os.makedirs(OUT, exist_ok=True)
     rows = []
+    # Vehicles with a fixed colour (police, army...) show in it; the rest keep the review red.
+    import json
+    with open(os.path.join(ART, "specs", "game.json")) as f:
+        paints = {k: v.get("paint") for k, v in json.load(f)["vehicles"].items()}
+    paint = bpy.data.materials.get("paint")
+    base = tuple(paint.diffuse_color) if paint else None
     for mid in models:
+        if paint:
+            hexc = paints.get(mid)
+            rgb = tuple((int(hexc[i:i + 2], 16) / 255) ** 2.2 for i in (1, 3, 5)) + (1.0,) if hexc else base
+            paint.diffuse_color = rgb
+            paint.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = rgb
         c, obs = model_objs(mid)
         sc.collection.children.link(c)
         lo, hi = bounds(obs)
@@ -97,6 +108,9 @@ def render(models, views, clay, name, w=520, h=330, dist=1.3, grid=0):
             bpy.data.images.remove(img)
         sc.collection.children.unlink(c)
         rows.append(tiles)
+    if paint:
+        paint.diffuse_color = base
+        paint.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = base
     if grid:  # every tile in reading order, `grid` to a row
         flat = [t for r in rows for t in r]
         while len(flat) % grid:

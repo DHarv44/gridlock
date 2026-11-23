@@ -61,6 +61,9 @@ export interface VehicleSpec {
   openTop?: boolean;    // occupants can be shot
   crushes?: boolean;    // drives over cars
   weapons?: string[];   // vehicle weapon ids fired by the driver
+  /** A driver-aimed turret and how fast it traverses (rad/s): tanks, gun trucks. Without one,
+   *  mounted weapons fire straight ahead. */
+  turret?: number;
   model: Part[];
   /** Plan-view body shaping (seen from above): without it the body is a straight-sided box. */
   shape?: BodyShape;

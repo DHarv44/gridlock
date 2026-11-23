@@ -35,7 +35,7 @@ class Car:
         self.id, self.s, self.col = vid, st, col
         self.L, self.W, self.H = dims["length"], dims["width"], dims["height"]
         self.hw = self.W / 2
-        self.cr = st.get("crown", 0.025) * self.W
+        self.cr = st.get("crown", 0.03) * self.W
 
     # ---- the shape
     def zt(self, xf):
@@ -274,6 +274,36 @@ class Car:
                     zb = e["z"] * self.H
                     out.append(kit.box("seat", (x - 0.05) * L, (x + 0.04) * L, y - 0.24, y + 0.24, zb, zb + 0.18, col, M.get("seat"), bev=0.04, seg=2))
                     out.append(kit.box("back", (x - 0.07) * L, (x - 0.04) * L, y - 0.23, y + 0.23, zb + 0.1, zb + 0.62, col, M.get("seat"), bev=0.04, seg=2))
+            elif e["kind"] == "gunring":
+                out += parts.gun_turret(x * L, z - 0.02, col, shield=e.get("shield", True))
+            elif e["kind"] == "screen_post":
+                # A split windscreen: a post up the middle from the cowl to the roof.
+                g = s["cabin"]
+                x0, x1 = g["x"][0] * L, g["x"][1] * L
+                z0 = self.zt(g["x"][0]) - self.cr
+                z1 = curve(g["roof"], g["x"][1]) * self.H
+                out.append(kit.tube("post", [(x0 + 0.01, 0, z0), (x1 + 0.01, 0, z1)], 0.03, col, M.get("paint"), n=6))
+            elif e["kind"] == "hatch":
+                out.append(kit.lathe("hatch", [(z - 0.01, 0.36), (z + 0.07, 0.34), (z + 0.09, 0.0)], col, M.get("paint"), n=14, axis='Z', at=(x * L, 0, 0)))
+            elif e["kind"] == "pushbar":
+                # A push bumper in front of the grille: two uprights, two rails, rubber pads.
+                xf = L / 2 + 0.12
+                z0, z1 = self.zb(0.5) + 0.05, self.zt(0.5) - 0.02
+                yw = self.w(0.5) * 0.55
+                for sd in (1, -1):
+                    out.append(kit.tube("pb_up", [(xf - 0.12, sd * yw, z0), (xf, sd * yw, z0 + 0.08), (xf, sd * yw, z1), (xf - 0.1, sd * yw, z1 + 0.06)], 0.025, col, M.get("trim"), n=6))
+                    out.append(kit.box("pb_pad", xf - 0.01, xf + 0.035, sd * yw - 0.05, sd * yw + 0.05, z0 + 0.15, z1 - 0.05, col, M.get("tyre"), bev=0.01))
+                for zz in (z0 + 0.2, z1 - 0.06):
+                    out.append(kit.tube("pb_rail", [(xf, -yw, zz), (xf, yw, zz)], 0.022, col, M.get("trim"), n=6))
+            elif e["kind"] == "lettering":
+                for sd in (1, -1):
+                    out.append(parts.text("letters", e["text"], e["size"], (x * L, sd * (self.w(x) + 0.004), e["z"] * self.H),
+                                          (math.pi / 2, 0, 0 if sd < 0 else math.pi), col, e.get("mat", "white"), depth=0.004))
+            elif e["kind"] == "spotlight":
+                xa = s["cabin"]["x"][0] - 0.01
+                y = -self.w(xa) * 0.9
+                za = self.zt(xa) - self.cr + 0.15
+                out.append(kit.lathe("spot", [(0.0, 0.0), (0.0, 0.06), (0.1, 0.07), (0.11, 0.0)], col, M.get("chrome"), n=10, axis='X', at=(xa * L - 0.05, y - 0.06, za)))
             elif e["kind"] == "windscreen":
                 # Open cars: a framed screen standing on the cowl.
                 xc = e["x"]

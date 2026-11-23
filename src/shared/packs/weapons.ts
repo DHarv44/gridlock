@@ -32,4 +32,6 @@ export const WEAPONS: WeaponSpec[] = [
   W({ id: 'tank_cannon', name: 'Tank Cannon', kind: 'projectile', slot: 9, damage: 0, rate: 0.6, range: 140, spread: 0.005, auto: false, clip: 0, reload: 0, vehicleMul: 3, price: 0, ammoPrice: 0, ammoBundle: 0, tracer: '#fff', sound: 'cannon', hold: 'heavy', size: 0, vehicleOnly: true, projectile: { speed: 75, radius: 9, blast: 300 } }),
   W({ id: 'heli_gun', name: 'Chain Gun', kind: 'hitscan', slot: 6, damage: 30, rate: 14, range: 90, spread: 0.06, auto: true, clip: 0, reload: 0, vehicleMul: 1, price: 0, ammoPrice: 0, ammoBundle: 0, tracer: '#ffdf80', sound: 'minigun', hold: 'heavy', size: 0, vehicleOnly: true }),
   W({ id: 'heli_rockets', name: 'Rocket Pods', kind: 'projectile', slot: 9, damage: 0, rate: 2.2, range: 130, spread: 0.03, auto: true, clip: 0, reload: 0, vehicleMul: 3, price: 0, ammoPrice: 0, ammoBundle: 0, tracer: '#fff', sound: 'rocket', hold: 'heavy', size: 0, vehicleOnly: true, projectile: { speed: 60, radius: 7, blast: 200 } }),
+  // Appended so existing weapon indices keep their meaning.
+  W({ id: 'mounted_mg', name: '.50 Cal', kind: 'hitscan', slot: 6, damage: 36, rate: 8, range: 95, spread: 0.05, auto: true, clip: 0, reload: 0, vehicleMul: 1.3, price: 0, ammoPrice: 0, ammoBundle: 0, tracer: '#ffdf80', sound: 'rifle', hold: 'heavy', size: 0, vehicleOnly: true }),
 ];

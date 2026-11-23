@@ -47,6 +47,8 @@ def part(p, col):
         return [kit.tube("tube", [tuple(q) for q in p["pts"]], p["r"], col, m, n=p.get("n", 6))]
     if t == "ring":
         out = []
+        if p["n"] == 1:  # a single tube along x (a collar, a coupling)
+            return [kit.lathe("collar", [(p["x"][0], p["r"]), (p["x"][1], p["r"])], col, m, n=10, axis='X', at=(0, 0, p["z"]))]
         for k in range(p["n"]):
             a = 2 * math.pi * k / p["n"]
             out.append(kit.lathe("barrel", [(p["x"][0], p["r"]), (p["x"][1], p["r"])], col, m, n=8, axis='X',

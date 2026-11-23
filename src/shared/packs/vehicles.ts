@@ -61,7 +61,7 @@ export const VEHICLES: VehicleSpec[] = [
   // Military
   { ...car, horn: 'horn_deep', engine: 'engine_suv', id: 'jeep', name: 'Army Jeep', length: 4.3, width: 2.0, height: 1.7, mass: 1900, maxSpeed: 36, accel: 10, grip: 8.5, hp: 500, openTop: true, price: 0, colors: [20, 19], roles: ['military'], model: [...M.pickup()] },
   { ...heavy, id: 'army_truck', name: 'Army Truck', length: 7.8, mass: 8000, maxSpeed: 26, hp: 900, seats: 6, price: 0, colors: [19, 20], roles: ['military'], model: [...M.boxTruck('olive'), ...M.canopy()] },
-  { ...heavy, id: 'tank', name: 'Battle Tank', movement: 'tracks', length: 7.6, width: 3.6, height: 2.6, mass: 50000, maxSpeed: 14, accel: 4, brake: 12, reverse: 6, grip: 20, turnRate: 1.1, hp: 3000, seats: 1, armored: true, crushes: true, weapons: ['tank_cannon'], price: 0, colors: [20, 19], roles: ['military'], model: M.tank() },
+  { ...heavy, id: 'tank', name: 'Battle Tank', movement: 'tracks', length: 7.6, width: 3.6, height: 2.6, mass: 50000, maxSpeed: 14, accel: 4, brake: 12, reverse: 6, grip: 20, turnRate: 1.1, hp: 3000, seats: 1, armored: true, crushes: true, weapons: ['tank_cannon'], turret: 1.4, price: 0, colors: [20, 19], roles: ['military'], model: M.tank() },
 
   // Aircraft
   { ...chopper, id: 'heli_police', name: 'Police Chopper', maxSpeed: 38, hp: 700, price: 0, colors: [1], roles: ['police_air'], siren: true, model: M.heli('white') },
@@ -71,4 +71,11 @@ export const VEHICLES: VehicleSpec[] = [
 
   // Added later: appended so existing type indices (saved garages) keep their meaning.
   { ...car, engine: 'engine_sport', id: 'roadster', name: 'Spyder', turnIn: 0.4, length: 4.2, width: 1.85, height: 1.15, mass: 1150, maxSpeed: 44, accel: 13.5, brake: 28, grip: 9.5, turnRate: 2.8, hp: 260, seats: 2, openTop: true, price: 48000, colors: 'bright', roles: ['traffic', 'parked'], shape: S.roadster, model: M.roadster() },
+
+  // Military utility vehicles: the Humvee and the MRAP, each also as a gun truck whose driver
+  // aims a roof machine gun.
+  { ...car, horn: 'horn_deep', engine: 'engine_diesel', id: 'humvee', name: 'Humvee', shape: undefined, turnIn: 0.25, length: 4.9, width: 2.2, height: 1.85, mass: 2500, maxSpeed: 33, accel: 9, grip: 8.5, hp: 650, seats: 4, price: 0, colors: [20, 19], roles: ['military'], model: M.suv() },
+  { ...car, horn: 'horn_deep', engine: 'engine_diesel', id: 'humvee_gun', name: 'Humvee Gun Truck', shape: undefined, turnIn: 0.25, length: 4.9, width: 2.2, height: 1.85, mass: 2700, maxSpeed: 32, accel: 8.5, grip: 8.5, hp: 750, seats: 4, weapons: ['mounted_mg'], turret: 2.4, price: 0, colors: [20, 19], roles: ['military'], model: [...M.suv(), ...M.gunRing()] },
+  { ...heavy, id: 'mrap', name: 'MRAP', length: 6.4, width: 2.55, height: 2.9, mass: 14000, maxSpeed: 27, accel: 5.5, brake: 13, hp: 1600, seats: 6, armored: true, price: 0, colors: [20, 19], roles: ['military'], model: M.boxTruck('olive') },
+  { ...heavy, id: 'mrap_gun', name: 'MRAP Gunner', length: 6.4, width: 2.55, height: 2.9, mass: 14500, maxSpeed: 26, accel: 5.2, brake: 13, hp: 1700, seats: 6, armored: true, weapons: ['mounted_mg'], turret: 2.0, price: 0, colors: [20, 19], roles: ['military'], model: [...M.boxTruck('olive'), ...M.gunRing(0.15, 1.0)] },
 ];

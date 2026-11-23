@@ -111,8 +111,8 @@ export const ZONES: ZoneSpec[] = [
     wall: ['#6b6e52', '#7a7a60', '#5f6450'], roof: ['#4a4e3a', '#55584a'],
     trees: 0.1, parkingChance: 0.3, plazaChance: 0, pedDensity: 2,
     peds: [{ id: 'soldier', weight: 10 }],
-    trafficDensity: 0.3, traffic: [{ id: 'jeep', weight: 5 }, { id: 'army_truck', weight: 3 }],
-    parked: [{ id: 'jeep', weight: 4 }, { id: 'army_truck', weight: 3 }], parkedDensity: 0.6, roadDrop: 0, fenced: true, windows: 0.1,
+    trafficDensity: 0.3, traffic: [{ id: 'jeep', weight: 3 }, { id: 'humvee', weight: 4 }, { id: 'army_truck', weight: 3 }, { id: 'mrap', weight: 1 }],
+    parked: [{ id: 'jeep', weight: 2 }, { id: 'humvee', weight: 3 }, { id: 'army_truck', weight: 3 }, { id: 'mrap', weight: 2 }], parkedDensity: 0.6, roadDrop: 0, fenced: true, windows: 0.1,
   },
 ];
 

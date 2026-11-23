@@ -61,9 +61,9 @@ export function updateVehicles(w: World, dt: number): void {
     if (!playerDriven(w, v)) {
       const driven = !!driver && !driver.dead && !v.wrecked;
       stepVehicle(v.body, v.spec, v.ctl, dt, w.statics, driven);
-      if (driver && v.spec.movement === 'tracks') v.turret = turnTurret(v.turret, driver.aim, dt);
+      if (driver && v.spec.turret) v.turret = turnTurret(v.turret, driver.aim, dt, v.spec.turret);
     }
-    if (v.spec.movement !== 'tracks') v.turret = v.body.angle;
+    if (!v.spec.turret) v.turret = v.body.angle;
     // How long this vehicle has been sitting still for no good reason (lights/junctions don't count).
     const why = driver?.ai?.drive?.why;
     const waiting = why === 'light' || why === 'junction';
@@ -99,8 +99,8 @@ function sink(w: World, v: Vehicle, dt: number): void {
   removeVehicle(w, v);
 }
 
-export function turnTurret(cur: number, want: number, dt: number): number {
+export function turnTurret(cur: number, want: number, dt: number, rate: number): number {
   const d = angleDiff(cur, want);
-  const step = 1.4 * dt;
+  const step = rate * dt;
   return cur + Math.max(-step, Math.min(step, d));
 }

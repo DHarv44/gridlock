@@ -67,7 +67,9 @@ def assemble(set_name, mid, objs, slot):
         j.parent = root
         parts.append(j)
     cols = COLS[set_name]
-    root.location = ((slot % cols) * GRID[set_name], -(slot // cols) * GRID[set_name] * (0.55 if set_name == "vehicles" else 0.5), 0)
+    # Vehicles run from the origin toward +x; weapons sit in their own block to the left.
+    x0 = 0.0 if set_name == "vehicles" else -12.0 - cols * GRID[set_name]
+    root.location = (x0 + (slot % cols) * GRID[set_name], -(slot // cols) * GRID[set_name] * (0.55 if set_name == "vehicles" else 0.5), 0)
     return root, kit.tris(parts)
 
 

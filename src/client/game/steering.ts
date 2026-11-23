@@ -40,10 +40,11 @@ export class Steering {
     const firing = input.held('fire');
     if (inCar) {
       this.lastHeading = heading;
-      const tank = you.vt >= 0 && VEHICLES[you.vt].movement === 'tracks';
+      const rate = you.vt >= 0 ? VEHICLES[you.vt].turret ?? 0 : 0;
+      const tank = rate > 0; // any vehicle with a turret aims it (tanks, gun trucks)
       const mouse = input.mouseAim();
       if (tank && mouse !== null) this.turret = mouse - heading;
-      else if (tank) this.turret += clamp1(input.axis('turretLeft', 'turretRight') + pad.rx) * TURRET_RATE * dt;
+      else if (tank) this.turret += clamp1(input.axis('turretLeft', 'turretRight') + pad.rx) * Math.max(TURRET_RATE, rate) * dt;
       let aim = heading + this.turret;
       if (!tank) aim = assist(from.x, from.y, aim) ?? aim;
       this.facing = aim;

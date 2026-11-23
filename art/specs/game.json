@@ -6,6 +6,7 @@
    "width": 1.7,
    "height": 1.45,
    "movement": "wheels",
+   "paint": null,
    "siren": false,
    "openTop": false,
    "armored": false
@@ -16,6 +17,7 @@
    "width": 1.9,
    "height": 1.45,
    "movement": "wheels",
+   "paint": null,
    "siren": false,
    "openTop": false,
    "armored": false
@@ -26,6 +28,7 @@
    "width": 1.9,
    "height": 1.45,
    "movement": "wheels",
+   "paint": null,
    "siren": false,
    "openTop": false,
    "armored": false
@@ -36,6 +39,7 @@
    "width": 1.9,
    "height": 1.45,
    "movement": "wheels",
+   "paint": null,
    "siren": false,
    "openTop": false,
    "armored": false
@@ -46,6 +50,7 @@
    "width": 1.9,
    "height": 1.3,
    "movement": "wheels",
+   "paint": null,
    "siren": false,
    "openTop": false,
    "armored": false
@@ -56,6 +61,7 @@
    "width": 1.9,
    "height": 1.2,
    "movement": "wheels",
+   "paint": null,
    "siren": false,
    "openTop": false,
    "armored": false
@@ -66,6 +72,7 @@
    "width": 2,
    "height": 1.1,
    "movement": "wheels",
+   "paint": null,
    "siren": false,
    "openTop": false,
    "armored": false
@@ -76,6 +83,7 @@
    "width": 1.9,
    "height": 1.45,
    "movement": "wheels",
+   "paint": null,
    "siren": false,
    "openTop": false,
    "armored": false
@@ -86,6 +94,7 @@
    "width": 1.9,
    "height": 1.3,
    "movement": "wheels",
+   "paint": "#5a2a6e",
    "siren": false,
    "openTop": false,
    "armored": false
@@ -96,6 +105,7 @@
    "width": 2,
    "height": 1.7,
    "movement": "wheels",
+   "paint": null,
    "siren": false,
    "openTop": false,
    "armored": false
@@ -106,6 +116,7 @@
    "width": 2,
    "height": 1.8,
    "movement": "wheels",
+   "paint": null,
    "siren": false,
    "openTop": false,
    "armored": false
@@ -116,6 +127,7 @@
    "width": 2,
    "height": 2.2,
    "movement": "wheels",
+   "paint": "#f2f2ee",
    "siren": false,
    "openTop": false,
    "armored": false
@@ -126,6 +138,7 @@
    "width": 1.95,
    "height": 1.8,
    "movement": "wheels",
+   "paint": null,
    "siren": false,
    "openTop": false,
    "armored": false
@@ -136,6 +149,7 @@
    "width": 1.9,
    "height": 1.45,
    "movement": "wheels",
+   "paint": "#e3b30c",
    "siren": false,
    "openTop": false,
    "armored": false
@@ -146,6 +160,7 @@
    "width": 2,
    "height": 1.45,
    "movement": "wheels",
+   "paint": "#16171a",
    "siren": false,
    "openTop": false,
    "armored": false
@@ -156,6 +171,7 @@
    "width": 2.1,
    "height": 2.5,
    "movement": "wheels",
+   "paint": "#f2f2ee",
    "siren": false,
    "openTop": false,
    "armored": false
@@ -166,6 +182,7 @@
    "width": 2.6,
    "height": 3.2,
    "movement": "wheels",
+   "paint": "#2f6fb3",
    "siren": false,
    "openTop": false,
    "armored": false
@@ -176,6 +193,7 @@
    "width": 2.5,
    "height": 3.2,
    "movement": "wheels",
+   "paint": "#f2f2ee",
    "siren": false,
    "openTop": false,
    "armored": false
@@ -186,6 +204,7 @@
    "width": 2.5,
    "height": 3.2,
    "movement": "wheels",
+   "paint": "#c62a22",
    "siren": false,
    "openTop": false,
    "armored": false,
@@ -202,6 +221,7 @@
    "width": 2.5,
    "height": 3.2,
    "movement": "wheels",
+   "paint": "#2bb34a",
    "siren": false,
    "openTop": false,
    "armored": false
@@ -212,6 +232,7 @@
    "width": 0.8,
    "height": 1.2,
    "movement": "bike",
+   "paint": null,
    "siren": false,
    "openTop": true,
    "armored": false
@@ -222,6 +243,7 @@
    "width": 0.8,
    "height": 1.2,
    "movement": "bike",
+   "paint": "#d9661b",
    "siren": false,
    "openTop": true,
    "armored": false
@@ -232,6 +254,7 @@
    "width": 1.9,
    "height": 1.45,
    "movement": "wheels",
+   "paint": "#16171a",
    "siren": true,
    "openTop": false,
    "armored": false
@@ -242,6 +265,7 @@
    "width": 2,
    "height": 1.8,
    "movement": "wheels",
+   "paint": "#f2f2ee",
    "siren": true,
    "openTop": false,
    "armored": false
@@ -252,6 +276,7 @@
    "width": 2.3,
    "height": 2.6,
    "movement": "wheels",
+   "paint": "#16171a",
    "siren": true,
    "openTop": false,
    "armored": true
@@ -262,6 +287,7 @@
    "width": 2,
    "height": 1.8,
    "movement": "wheels",
+   "paint": "#16171a",
    "siren": true,
    "openTop": false,
    "armored": false
@@ -272,6 +298,7 @@
    "width": 2.2,
    "height": 2.7,
    "movement": "wheels",
+   "paint": "#f2f2ee",
    "siren": true,
    "openTop": false,
    "armored": false
@@ -282,6 +309,7 @@
    "width": 2.5,
    "height": 3,
    "movement": "wheels",
+   "paint": "#c62a22",
    "siren": true,
    "openTop": false,
    "armored": false
@@ -292,6 +320,7 @@
    "width": 2,
    "height": 1.7,
    "movement": "wheels",
+   "paint": "#575b3c",
    "siren": false,
    "openTop": true,
    "armored": false
@@ -302,6 +331,7 @@
    "width": 2.5,
    "height": 3.2,
    "movement": "wheels",
+   "paint": "#3c3f2e",
    "siren": false,
    "openTop": false,
    "armored": false
@@ -312,6 +342,7 @@
    "width": 3.6,
    "height": 2.6,
    "movement": "tracks",
+   "paint": "#575b3c",
    "siren": false,
    "openTop": false,
    "armored": true
@@ -322,6 +353,7 @@
    "width": 2.6,
    "height": 3.2,
    "movement": "rotor",
+   "paint": "#16171a",
    "siren": true,
    "openTop": false,
    "armored": false
@@ -332,6 +364,7 @@
    "width": 2.6,
    "height": 3.2,
    "movement": "rotor",
+   "paint": "#f2f2ee",
    "siren": false,
    "openTop": false,
    "armored": false
@@ -342,6 +375,7 @@
    "width": 2.2,
    "height": 3.2,
    "movement": "rotor",
+   "paint": null,
    "siren": false,
    "openTop": false,
    "armored": false
@@ -352,6 +386,7 @@
    "width": 3,
    "height": 3.2,
    "movement": "rotor",
+   "paint": "#3c3f2e",
    "siren": false,
    "openTop": false,
    "armored": true
@@ -362,9 +397,54 @@
    "width": 1.85,
    "height": 1.15,
    "movement": "wheels",
+   "paint": null,
    "siren": false,
    "openTop": true,
    "armored": false
+  },
+  "humvee": {
+   "name": "Humvee",
+   "length": 4.9,
+   "width": 2.2,
+   "height": 1.85,
+   "movement": "wheels",
+   "paint": "#575b3c",
+   "siren": false,
+   "openTop": false,
+   "armored": false
+  },
+  "humvee_gun": {
+   "name": "Humvee Gun Truck",
+   "length": 4.9,
+   "width": 2.2,
+   "height": 1.85,
+   "movement": "wheels",
+   "paint": "#575b3c",
+   "siren": false,
+   "openTop": false,
+   "armored": false
+  },
+  "mrap": {
+   "name": "MRAP",
+   "length": 6.4,
+   "width": 2.55,
+   "height": 2.9,
+   "movement": "wheels",
+   "paint": "#575b3c",
+   "siren": false,
+   "openTop": false,
+   "armored": true
+  },
+  "mrap_gun": {
+   "name": "MRAP Gunner",
+   "length": 6.4,
+   "width": 2.55,
+   "height": 2.9,
+   "movement": "wheels",
+   "paint": "#575b3c",
+   "siren": false,
+   "openTop": false,
+   "armored": true
   }
  },
  "weapons": {

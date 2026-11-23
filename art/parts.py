@@ -92,6 +92,52 @@ def mirror_box(name, x, y, z, col, side=1, size=(0.1, 0.07, 0.11)):
     return [head, glass]
 
 
+def gun_turret(x, z, col, shield=True):
+    """A roof gun ring with a .50 cal and (optionally) a gunner's shield, as one traversing part
+    (anim 'turret', pivot on the ring)."""
+    out = [kit.lathe("ring", [(z, 0.5), (z + 0.1, 0.48), (z + 0.12, 0.38), (z + 0.12, 0.0)], col, M.get("paint"), n=18, axis='Z', at=(x, 0, 0))]
+    gz = z + 0.42
+    if shield:
+        # A curved front plate with side wings, a window slot left of the gun.
+        n, rad = 7, 0.52
+        rings = []
+        for zz in (z + 0.1, z + 0.62):
+            rings.append([(x + rad * math.cos(a), rad * math.sin(a), zz) for a in [-1.0 + 2.0 * k / (n - 1) for k in range(n)]])
+        v, f = kit.loft(rings, cap0=False, cap1=False, closed=False)
+        sh = kit.recalc(kit.mesh("shield", v, f, col, M.get("paint"), smooth=True, sharp=40))
+        sh.modifiers.new("Solid", 'SOLIDIFY').thickness = 0.03
+        out.append(sh)
+        for sd in (1, -1):
+            a = sd * 1.0
+            out.append(kit.box("wing", x + rad * math.cos(a) - 0.25, x + rad * math.cos(a), sd * rad * math.sin(a) - 0.015, sd * rad * math.sin(a) + 0.015,
+                               z + 0.1, z + 0.5, col, M.get("paint")))
+        out.append(kit.box("slot", x + rad - 0.01, x + rad + 0.02, 0.12, 0.3, z + 0.5, z + 0.58, col, M.get("glass")))
+    # The gun: receiver, barrel with its perforated jacket, spade grips, ammo can.
+    out.append(kit.box("receiver", x - 0.05, x + 0.32, -0.06, 0.06, gz - 0.06, gz + 0.06, col, M.get("trim"), bev=0.01))
+    out.append(kit.lathe("barrel", [(x + 0.3, 0.032), (x + 0.62, 0.032), (x + 0.64, 0.018), (x + 1.25, 0.016), (x + 1.25, 0.024), (x + 1.31, 0.024), (x + 1.31, 0.0)],
+                         col, M.get("trim"), n=10, axis='X', at=(0, 0, gz)))
+    for sd in (1, -1):
+        out.append(kit.tube("grip", [(x - 0.05, sd * 0.05, gz), (x - 0.16, sd * 0.05, gz - 0.02), (x - 0.16, sd * 0.05, gz - 0.12)], 0.014, col, M.get("trim"), n=6))
+    out.append(kit.box("ammo", x + 0.0, x + 0.2, -0.22, -0.07, gz - 0.12, gz + 0.02, col, M.get("olive"), bev=0.01))
+    out.append(kit.box("cradle", x - 0.02, x + 0.1, -0.03, 0.03, z + 0.12, gz - 0.06, col, M.get("trim")))
+    for o in out:
+        o["anim"], o["pivot"] = "turret", (x, 0.0, z)
+    return out
+
+
+def text(name, body, size, loc, rot, col, mat, depth=0.006):
+    """Raised lettering (livery like SWAT, POLICE) as real geometry."""
+    cu = bpy.data.curves.new(name, 'FONT')
+    cu.body, cu.size, cu.extrude = body, size, depth
+    cu.align_x, cu.align_y = 'CENTER', 'CENTER'
+    cu.resolution_u = 1  # straight-edged glyphs: a font's curves cost thousands of triangles
+    ob = bpy.data.objects.new(name, cu)
+    col.objects.link(ob)
+    ob.location, ob.rotation_euler = loc, rot
+    ob.data.materials.append(M.get(mat))
+    return ob
+
+
 def lightbar(name, x, z, half_w, col, length=0.26):
     """Police/ambulance light bar: red on the left half, blue on the right, on a dark base."""
     base = kit.box(name + "_base", x - length / 2, x + length / 2, -half_w, half_w, z, z + 0.05, col, M.get("trim"), bev=0.015)
