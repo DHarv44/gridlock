@@ -1,5 +1,5 @@
 // What each place's pane offers. Content comes from the packs; this only maps verbs to rows.
-import { PROPERTIES, RULES, SERVICES, VEHICLES, WEAPONS, vehicleIndex, weaponIndex } from '../../shared/packs';
+import { FACTIONS, GANGS, PROPERTIES, RESPECT, RULES, SERVICES, VEHICLES, WEAPONS, vehicleIndex, weaponIndex } from '../../shared/packs';
 import { type BuyKind, Mode, type Profile, type YouState } from '../../shared/protocol';
 import type { Place } from '../../shared/world/cityTypes';
 import type { PaneContent, PaneRow } from './pane';
@@ -65,6 +65,31 @@ export function serviceContent(place: Place, you: YouState, buy: Buy): PaneConte
   return { title: place.name, rows };
 }
 
+/** Your business: the safe, any crew at the door, and what the place does for you (packs `perk`). */
+function businessRows(place: Place, you: YouState, profile: Profile, buy: Buy): PaneRow[] {
+  const spec = PROPERTIES[place.spec];
+  const rows: PaneRow[] = [];
+  const trouble = profile.trouble?.find((t) => t[0] === place.id);
+  if (trouble) {
+    const price = spec.income * RULES.payoffHours;
+    const gang = FACTIONS.find((f) => f.id === trouble[1])?.name ?? trouble[1];
+    rows.push({ name: `Pay off the ${gang}`, sub: 'Or deal with them yourself before they hit the safe', price: $(price), affordable: you.cash + you.bank >= price, group: 'Trouble', onClick: () => buy('payoff', '', place.id) });
+  }
+  const safe = profile.safes?.find((s) => s[0] === place.id)?.[1] ?? 0;
+  rows.push({ name: 'Empty the safe', sub: `Holds up to ${$(spec.income * RULES.safeHours)}. Left at midnight, it goes to your bank less ${Math.round(RULES.safeSweepFee * 100)}%`,
+    price: $(safe), disabled: safe <= 0 || !!trouble, group: 'Safe', onClick: () => buy('collect', '', place.id) });
+  if (spec.perk === 'club') {
+    GANGS.forEach((g, i) => {
+      if ((you.rs[i] ?? 0) < RESPECT.noWorkBelow) return;
+      const name = FACTIONS.find((f) => f.id === g)?.name ?? g;
+      rows.push({ name: `Meet the ${name}`, sub: 'They have work, paid like a phone job', group: 'In the back room', onClick: () => buy('meet', g, place.id) });
+    });
+  }
+  if (spec.perk === 'wash') rows.push({ name: 'Drive onto the wash bay', sub: 'Your own wash takes the heat off', group: 'Perk', disabled: true });
+  if (spec.perk === 'fence') rows.push({ name: 'Drive a stolen car into the loading bay', sub: `Sold at ${RULES.fenceMul}× what the chop shop pays`, group: 'Perk', disabled: true });
+  return rows;
+}
+
 export function propertyContent(place: Place, you: YouState, profile: Profile, owner: string | null, myName: string, buy: Buy): PaneContent {
   const spec = PROPERTIES[place.spec];
   const mine = owner === myName.toLowerCase();
@@ -78,6 +103,7 @@ export function propertyContent(place: Place, you: YouState, profile: Profile, o
     rows.push({ name: `Owned by ${owner}`, sub: info, disabled: true });
   } else {
     rows.push({ name: 'You own this', sub: info, disabled: true });
+    if (spec.kind === 'business') rows.push(...businessRows(place, you, profile, buy));
     if (spec.kind === 'home') {
       const seen = new Set<number>();
       for (const vi of profile.garage) {

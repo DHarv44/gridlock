@@ -324,10 +324,15 @@ export class Game {
     const owned = new Set(this.profile.owned);
     const wp = this.waypoint;
     wp.update(own);
-    this.radar.drawRadar(ctx, 220, own.x, own.y, own.angle, range, this.players, this.myId, owned, hostiles, this.jobs.blips(you), wp.point, wp.route);
+    // Job blips, plus a red marker on any of your businesses a gang is leaning on.
+    const blips = [...this.jobs.blips(you), ...(this.profile.trouble ?? []).map(([id]) => {
+      const p = this.map.city.properties[id];
+      return { x: p.x, y: p.y, color: '#ff3b30', shape: 'star' as const };
+    })];
+    this.radar.drawRadar(ctx, 220, own.x, own.y, own.angle, range, this.players, this.myId, owned, hostiles, blips, wp.point, wp.route);
     if (this.bigMap.isOpen) {
       this.bigMap.draw({ me: { x: own.x, y: own.y, angle: own.angle }, players: this.players, meId: this.myId, owned, owners: this.owners,
-        blips: this.jobs.blips(you), waypoint: wp.point, route: wp.route });
+        blips, waypoint: wp.point, route: wp.route });
     }
   }
 

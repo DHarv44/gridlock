@@ -246,6 +246,10 @@ export interface PropertySpec {
   signText?: string;            // storefront sign (businesses)
   signColor?: string;
   atm?: boolean;                // an ATM on the wall beside the door
+  /** What owning it does besides income: `wash` drive onto its pad and your wanted level clears;
+   *  `fence` drive a stolen car onto its pad to sell it above chop-shop prices; `club` meet any gang
+   *  that will work with you at its door. */
+  perk?: 'wash' | 'fence' | 'club';
 }
 
 export interface Squad { vehicle: string; crew: string[] }

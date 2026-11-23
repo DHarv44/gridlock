@@ -7,6 +7,7 @@ import type { Player } from './game/entities';
 import { removeVehicle, unseatPed } from './game/factory';
 import { Missions } from './game/missions/engine';
 import { Cell, newCell } from './game/missions/cell';
+import { Business } from './game/systems/business';
 import { Rounds } from './rounds';
 import { resolveContacts } from './game/systems/contacts';
 import { Dispatch } from './game/systems/dispatch';
@@ -55,6 +56,10 @@ export class Room {
     this.econ = new Economy(w);
     this.missions = new Missions(w);
     this.cell = new Cell(w, this.missions);
+    this.business = new Business(w, this.econ.owners, this.missions);
+    this.econ.business = this.business;
+    this.business.onChange = (pl) => this.sendProfile(pl);
+    for (const [id, amount] of save?.safes ?? []) this.business.safes.set(id, amount);
     this.rounds = new Rounds(save?.mode ?? mode);
     for (const [id, name] of save?.owners ?? []) this.econ.owners.set(id, name);
     this.econ.onChange = () => { this.sendOwners(); this.persist(); for (const pl of w.players.values()) this.sendProfile(pl); };
@@ -70,6 +75,7 @@ export class Room {
 
   readonly missions: Missions;
   readonly cell: Cell;
+  readonly business: Business;
   readonly rounds: Rounds;
 
   get size(): number {
@@ -183,7 +189,7 @@ export class Room {
   }
 
   private sendProfile(pl: Player): void {
-    pl.send({ t: 'profile', p: { garage: pl.garage, owned: pl.owned, felonies: pl.felonies } } satisfies S2C);
+    pl.send({ t: 'profile', p: { garage: pl.garage, owned: pl.owned, felonies: pl.felonies, ...this.business.profileOf(pl) } } satisfies S2C);
   }
 
   private sendOwners(): void {
@@ -202,7 +208,7 @@ export class Room {
 
   persist(): void {
     for (const pl of this.world.players.values()) this.storeProfile(pl);
-    const save: RoomSave = { version: 1, seed: this.world.seed, mode: this.rounds.mode.id, gameMinutes: this.world.gameMinutes, owners: [...this.econ.owners.entries()], profiles: this.profiles };
+    const save: RoomSave = { version: 1, seed: this.world.seed, mode: this.rounds.mode.id, gameMinutes: this.world.gameMinutes, owners: [...this.econ.owners.entries()], safes: [...this.business.safes.entries()], profiles: this.profiles };
     saveRoom(this.code, save);
   }
 
@@ -254,6 +260,7 @@ export class Room {
     this.econ.update();
     this.missions.update();
     this.cell.update();
+    this.business.update();
     this.tickCount++;
     if (this.tickCount % TICK_HZ === 0) this.rounds.check(w);
     if (this.tickCount % SNAP_EVERY === 0) {

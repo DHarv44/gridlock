@@ -65,6 +65,18 @@ export const RULES = {
   gameMinutesPerSecond: 1,   // a day lasts 24 real minutes
   armorPrice: 600,
   healPrice: 200,
+  // Businesses (server/game/systems/business.ts). Income piles up in each business's safe, up to
+  // this many game hours of it; whatever's left at midnight goes to the bank, less the fee.
+  safeHours: 8,
+  safeSweepFee: 0.1,
+  // Once a game day, a gang that respects you less than this may lean on a business on its turf.
+  troubleBelow: 15,
+  troubleChance: 0.5,
+  troubleCrew: 3,
+  troubleSeconds: 150,       // deal with them by then or they empty the safe
+  payoffHours: 4,            // paying them off costs this many hours of the place's income...
+  payoffRespect: 6,          // ...and they think better of you for it
+  fenceMul: 1.6,             // your warehouse pays this much over the chop shop for a stolen car
   pedCap: 260,
   carCap: 140,
   vehicleCap: 300,           // all vehicles incl. parked

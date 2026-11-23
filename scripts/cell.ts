@@ -79,12 +79,13 @@ room.missions.offer(pl, g2, 10);
 check((pl.mission?.reward ?? 0) >= 10_000, 'phone work pays the cell multiplier');
 room.missions.drop(pl);
 
-// Business income comes as a text from the bank.
-const biz = w.city.properties.find((p) => PROPERTIES[p.spec].kind === 'business')!;
-(room as unknown as { econ: { owners: Map<number, string>; payIncome: () => void } }).econ.owners.set(biz.id, pl.name.toLowerCase());
+// Business income reaching the bank at midnight comes with a text from the bank.
+const biz = w.city.properties.find((p) => PROPERTIES[p.spec].kind === 'business' && PROPERTIES[p.spec].income > 0)!;
+room.econ.owners.set(biz.id, pl.name.toLowerCase());
 k = msgs.length;
-(room as unknown as { econ: { payIncome: () => void } }).econ.payIncome();
-check(texts(k).some((t) => t.from === 'Harbor Trust' && t.body.includes('paid')), 'business income: a text from the bank');
+const hourly = (h: number) => (room.business as unknown as { hourly: (h: number) => void }).hourly(h);
+hourly(23); hourly(0);
+check(texts(k).some((t) => t.from === 'Harbor Trust' && t.body.includes('Night pickup')), 'business income: a text from the bank');
 
 console.log(failures ? `${failures} check(s) failed` : 'all cell phone checks passed');
 process.exit(failures ? 1 : 0);

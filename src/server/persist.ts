@@ -10,6 +10,8 @@ export interface RoomSave {
   mode?: string;
   gameMinutes: number;
   owners: [number, string][];
+  /** Business safes: [property id, dollars]. */
+  safes?: [number, number][];
   profiles: Record<string, SavedProfile>;
 }
 

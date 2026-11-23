@@ -43,10 +43,15 @@ canopy on pillars, a pole price sign at the street corner, canopy light pooling 
 Not built (ask first): exploding pumps, a kiosk counter, a fuel gauge.
 
 ## D. Businesses that matter (medium)
-- D1. Income collects in the business's safe; collect it in person or have it paid into the bank.
-- D2. Gangs that don't respect you lean on your businesses; you get a text and go deal with it.
-- D3. A perk per type: the warehouse buys stolen cars and goods above chop-shop prices, the car wash
-  clears your wanted level, the nightclub is where gang contacts reach you.
+- D1. (done) Income fills each business's safe (up to RULES.safeHours of it, a text when full); empty
+  it at the door as cash, or the midnight armoured car takes it to the bank less RULES.safeSweepFee.
+- D2. (done) Each game hour a gang that respects you under RULES.troubleBelow may send a crew to the
+  door of a business on its turf (text + red marker): kill them, pay them off at the door (respect
+  up), or after RULES.troubleSeconds they empty the safe.
+- D3. (done) Perks (packs `perk`): your car wash's bay takes the heat off, your warehouse's bay fences
+  stolen cars at RULES.fenceMul x chop price, your nightclub's back room meets any gang that will work
+  with you. ("Goods" have no system yet.)
+server/game/systems/business.ts; `npx tsx scripts/business.ts`.
 
 ## E. Tag (small)
 A room mode next to free roam, frag race and money race: one player is "it", marked on everyone's map;

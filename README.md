@@ -53,11 +53,15 @@ own character's last spot, in that vehicle.
   enough and that gang jumps you on sight and stops offering work.
 - **Cell phone** (P, controller LB): Contacts, Messages and Bank. Do payphone work for a gang until
   it trusts you and it texts you its number; then its people call with work (paying a bit more), and
-  you can ring them to ask. Your bank texts you business income.
+  you can ring them to ask. Your businesses and your bank text you too.
 - **Banks and ATMs**: dying drops some of the cash you carry and getting busted costs a fine, but
   money in the bank is safe. Bank it at an ATM (on the walls of banks, corner stores, diners, clubs,
   car washes and gas station kiosks) or a bank's counter. Shops take your cash first, then the bank for the rest.
-  Business income is paid into the bank.
+- **Businesses**: income fills each one's safe (up to 8 game hours of it). Empty it at the door, or
+  at midnight an armoured car takes it to your bank (less 10%). Gangs that don't respect you send a
+  crew to lean on your places: kill them, pay them off at the door, or lose the safe. Your car wash
+  takes the heat off, your warehouse fences stolen cars above chop-shop prices, and your nightclub's
+  back room puts you in touch with any gang that will work with you.
 - **Kill-frenzy crates**: red-and-black crates in parks and lots. Grab one for a weapon and a timer.
 - **Room modes** (picked when creating a game): Free roam, Frag race (first to 10 player kills),
   Money race (first to earn $50,000). The winner is announced and a new round starts.

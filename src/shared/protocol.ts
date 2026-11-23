@@ -20,7 +20,9 @@ export const EDGE_BUTTONS = BTN.enter | BTN.interact | BTN.reload | BTN.next | B
 export type InputMsg = [number, number, number, number, number, number, number, number];
 
 /** `deposit` / `withdraw`: id is dollars or 'all'; place is a bank's service id, or -1 - an ATM's id. */
-export type BuyKind = 'weapon' | 'ammo' | 'armor' | 'heal' | 'vehicle' | 'property' | 'garage' | 'respray' | 'chop' | 'sell' | 'deposit' | 'withdraw';
+/** `collect` / `payoff`: your business's safe, a crew at its door; `meet`: id is a gang, at your club. */
+export type BuyKind = 'weapon' | 'ammo' | 'armor' | 'heal' | 'vehicle' | 'property' | 'garage' | 'respray' | 'chop' | 'sell' | 'deposit' | 'withdraw'
+  | 'collect' | 'payoff' | 'meet';
 
 export type C2S =
   /** `char`: the player's character from their browser; without it `name` plays an unsaved guest. */
@@ -95,6 +97,10 @@ export interface Profile {
   garage: number[];        // vehicle type indexes
   owned: number[];         // property ids
   felonies?: Record<string, number>; // crime kind → times committed
+  /** Your businesses' safes: [property id, dollars inside]. */
+  safes?: [number, number][];
+  /** Gangs leaning on your businesses: [property id, gang id, when they clean out the safe (server ms)]. */
+  trouble?: [number, string, number][];
 }
 
 export type S2C =

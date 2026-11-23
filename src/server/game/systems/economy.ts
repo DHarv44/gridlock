@@ -5,7 +5,10 @@ import { type BuyKind, Mode, PK } from '../../../shared/protocol';
 import { type Atm, atmsOf } from '../../../shared/world/atms';
 import type { Place } from '../../../shared/world/cityTypes';
 import { bankMove } from './banking';
-import { textTo } from '../missions/cell';
+import type { Business } from './business';
+
+/** Pad ids for owned properties, kept apart from service ids. */
+const PROP_PAD = 100000;
 import type { Player } from '../entities';
 import { giveWeapon, removeVehicle, spawnVehicle, unseatPed } from '../factory';
 import type { World } from '../world';
@@ -14,11 +17,12 @@ import { clearHeat, lawCanSee } from './wanted';
 export class Economy {
   /** property id -> owner name (lower-case key is the profile name). */
   readonly owners = new Map<number, string>();
-  private lastHour = -1;
   onChange: () => void = () => {};
 
   /** Every ATM in the city (shared/world/atms.ts: the clients work out the same list). */
   readonly atms: Atm[];
+  /** Safes, trouble and perks of owned businesses (set by the room once missions exist). */
+  business: Business | null = null;
 
   constructor(private w: World) {
     this.atms = atmsOf(w.city);
@@ -35,15 +39,21 @@ export class Economy {
       const p = w.peds.get(pl.pid);
       const v = p?.vehicle && p.seat === 0 ? w.vehicles.get(p.vehicle) : undefined;
       if (!v) { this.onPad.delete(pl.id); continue; }
+      // Chop-shop pads (service ids), and the pads of your own car wash / warehouse (PROP_PAD + id).
       let on = -1;
       for (const s of w.city.services) {
         const verb = SERVICES[s.spec].verb;
         if (verb === 'chopshop' && s.pad && dist(v.body.x, v.body.y, s.pad.x, s.pad.y) < 6) on = s.id;
       }
+      for (const id of pl.owned) {
+        const pr = w.city.properties[id];
+        if (PROPERTIES[pr.spec].perk && PROPERTIES[pr.spec].perk !== 'club' && pr.pad && dist(v.body.x, v.body.y, pr.pad.x, pr.pad.y) < 6) on = PROP_PAD + id;
+      }
       const was = this.onPad.get(pl.id) ?? -1;
       // Too fast: don't count as arrived yet, so it triggers once the car slows down on the pad.
       this.onPad.set(pl.id, on >= 0 && Math.hypot(v.body.vx, v.body.vy) > 8 ? -1 : on);
       if (on < 0 || on === was || this.onPad.get(pl.id) !== on) continue;
+      if (on >= PROP_PAD) { this.business?.onPad(pl, v, on - PROP_PAD); continue; }
       const err = this.buy(pl, 'chop', '', on);
       if (err) w.notify('warn', err, pl);
     }
@@ -52,9 +62,6 @@ export class Economy {
   update(): void {
     this.garages();
     this.pickups();
-    const hour = Math.floor(this.w.gameMinutes / 60);
-    if (this.lastHour >= 0 && hour !== this.lastHour) this.payIncome();
-    this.lastHour = hour;
   }
 
   private pickups(): void {
@@ -88,24 +95,6 @@ export class Economy {
     }
   }
 
-  private payIncome(): void {
-    const w = this.w;
-    const byName = new Map<string, Player>();
-    for (const pl of w.players.values()) byName.set(pl.name.toLowerCase(), pl);
-    const totals = new Map<Player, number>();
-    for (const [propId, owner] of this.owners) {
-      const spec = PROPERTIES[w.city.properties[propId].spec];
-      const pl = byName.get(owner);
-      if (!pl || spec.income <= 0) continue;
-      totals.set(pl, (totals.get(pl) ?? 0) + spec.income);
-    }
-    // Business income is paid into the bank, where it's safe, and the bank texts you about it.
-    for (const [pl, amount] of totals) {
-      w.earnToBank(pl, amount);
-      textTo(pl, 'Harbor Trust', `Your businesses paid $${amount.toLocaleString('en-US')} into your account. Balance $${pl.bank.toLocaleString('en-US')}.`);
-    }
-  }
-
   ownerList(): [number, string | null][] {
     return this.w.city.properties.map((p) => [p.id, this.owners.get(p.id) ?? null]);
   }
@@ -113,6 +102,7 @@ export class Economy {
   /** Validates and performs a purchase. Returns an error message or null. */
   buy(pl: Player, kind: BuyKind, id: string, placeId: number): string | null {
     if (kind === 'deposit' || kind === 'withdraw') return bankMove(this.w, this.atms, pl, kind, id, placeId);
+    if (kind === 'collect' || kind === 'payoff' || kind === 'meet') return this.business ? this.business.act(pl, kind, id, placeId) : 'Not now.';
     const w = this.w;
     const p = w.peds.get(pl.pid);
     if (!p || p.dead || pl.mode >= Mode.Dead) return 'Not now.';

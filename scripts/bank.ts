@@ -20,7 +20,7 @@ const pl = room.join('ignored', { send: () => {}, close: () => {} }, c);
 if (typeof pl === 'string') throw new Error(pl);
 room.stop();
 const w = room.world;
-const econ = (room as unknown as { econ: { atms: { id: number; x: number; y: number }[]; buy: (...a: unknown[]) => string | null; owners: Map<number, string>; payIncome: () => void } }).econ;
+const econ = room.econ;
 const me = w.peds.get(pl.pid)!;
 const banks = w.city.services.filter((s) => SERVICES[s.spec].verb === 'bank');
 check(banks.length === 3, `3 banks in the city (found ${banks.length})`);
@@ -56,12 +56,15 @@ pl.cash = 1000; pl.bank = 5000;
 killPed(w, me, null);
 check(pl.cash === 1000 - Math.floor(1000 * RULES.deathCashLoss) && pl.bank === 5000, 'dying drops some cash; the bank is untouched');
 
-// Business income is paid into the bank.
-const biz = w.city.properties.find((p) => PROPERTIES[p.spec].kind === 'business')!;
+// Business income: whatever's in the safes at midnight goes to the bank (less the armoured-car fee).
+const biz = w.city.properties.find((p) => PROPERTIES[p.spec].kind === 'business' && PROPERTIES[p.spec].income > 0)!;
 econ.owners.set(biz.id, pl.name.toLowerCase());
+const hourly = (h: number) => (room.business as unknown as { hourly: (h: number) => void }).hourly(h);
+room.business.safes.clear(); // a previous run's room save may have left money in them
 const b0 = pl.bank, c0 = pl.cash;
-econ.payIncome();
-check(pl.bank === b0 + PROPERTIES[biz.spec].income && pl.cash === c0, 'business income lands in the bank');
+hourly(23); hourly(0);
+const inc = PROPERTIES[biz.spec].income * 2; // 23:00 and midnight's own hour, then the sweep
+check(pl.bank === b0 + inc - Math.round(inc * RULES.safeSweepFee) && pl.cash === c0, 'business income reaches the bank at midnight');
 check(progressOf(pl).bank === pl.bank, 'saves carry the bank balance');
 
 console.log(failures ? `${failures} check(s) failed` : 'all bank checks passed');
