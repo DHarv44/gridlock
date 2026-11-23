@@ -69,7 +69,10 @@ export class Radio {
       else { this.target = 0; this.grace = GRACE_S; }
     }
     if (!this.inVehicle && this.playing && (this.grace -= dt) <= 0) this.stop();
-    if (this.playing && (this.checkT -= dt) <= 0) { this.checkT = 1; this.follow(); }
+    // Keep on the broadcast, and keep trying to tune in if nothing is playing yet (the station list
+    // may still have been loading when you got in).
+    const tuned = this.inVehicle && this.target > 0;
+    if ((this.playing || tuned) && (this.checkT -= dt) <= 0) { this.checkT = 1; this.follow(); }
     const want = this.muted ? 0 : this.target * level * this.volume;
     const v = this.audio.volume + Math.sign(want - this.audio.volume) * Math.min(Math.abs(want - this.audio.volume), dt / FADE_S);
     this.audio.volume = Math.max(0, Math.min(1, v));
@@ -84,12 +87,12 @@ export class Radio {
     this.tune(true);
   }
 
-  private tune(announce: boolean): void {
+  private tune(_announce: boolean): void {
     const s = RADIO[this.station];
     if (!s) {
       this.target = 0;
       this.stop();
-      if (announce) this.show('Radio off', '#9aa5ad');
+      this.show('Radio off', '#9aa5ad');
       return;
     }
     this.target = 1;
@@ -107,7 +110,7 @@ export class Radio {
     const src = `/radio/${encodeURIComponent(s.id)}/${air.file.split('/').map(encodeURIComponent).join('/')}`;
     if (this.playing === src) {
       if (!this.audio.seeking && Math.abs(this.audio.currentTime - air.offset) > DRIFT_S) this.audio.currentTime = air.offset;
-      if (this.audio.paused) void this.audio.play().catch(() => {});
+      if (this.audio.paused) this.start();
       return;
     }
     this.playing = src;
@@ -118,10 +121,29 @@ export class Radio {
       const live = onAir(s.id, this.stations[s.id] ?? NONE, this.now());
       this.audio.currentTime = live && live.file === air.file ? Math.min(live.offset, this.audio.duration - 0.1) : 0;
       this.loading = false;
-      void this.audio.play().catch(() => {});
+      this.start();
     }, { once: true });
-    this.audio.addEventListener('error', () => { this.loading = false; }, { once: true });
+    // A track that won't load: forget it so the next check tries again.
+    this.audio.addEventListener('error', () => { this.loading = false; this.playing = ''; console.warn('[radio] could not load', src); }, { once: true });
   }
+
+  /** Starts playback. A browser that won't play sound before the page is used gets another go on
+   *  the next key press or click. */
+  private start(): void {
+    this.audio.play().catch((err: unknown) => {
+      if ((err as { name?: string }).name !== 'NotAllowedError' || this.unblock) return;
+      this.unblock = () => {
+        window.removeEventListener('keydown', this.unblock!);
+        window.removeEventListener('pointerdown', this.unblock!);
+        this.unblock = null;
+        if (this.playing && this.target > 0) void this.audio.play().catch(() => {});
+      };
+      window.addEventListener('keydown', this.unblock);
+      window.addEventListener('pointerdown', this.unblock);
+    });
+  }
+
+  private unblock: (() => void) | null = null;
 
   private stop(): void {
     this.audio.pause();
