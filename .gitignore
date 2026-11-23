@@ -3,3 +3,5 @@ dist/
 data/
 *.log
 data-smoke/
+# Local music library paths for radio stations (see src/server/radio.ts).
+radio.local.json

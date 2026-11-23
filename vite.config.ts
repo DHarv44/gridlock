@@ -17,6 +17,7 @@ export default defineConfig({
     proxy: {
       '/ws': { target: `ws://localhost:${SERVER_PORT}`, ws: true },
       '/api': { target: `http://localhost:${SERVER_PORT}` },
+      '/radio': { target: `http://localhost:${SERVER_PORT}` },
     },
   },
 });

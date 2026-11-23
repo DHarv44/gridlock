@@ -14,7 +14,7 @@ const isPlayStation = (id: string) => /054c|dualshock|dualsense|wireless control
 /** Raw button indices used to drive menus (fixed, so menus always work). */
 export const PAD = { a: 0, b: 1, lb: 4, rb: 5, up: 12, down: 13, left: 14, right: 15 } as const;
 
-export type PadAction = 'fire' | 'action' | 'jump' | 'sprint' | 'prevWeapon' | 'nextWeapon' | 'horn' | 'map' | 'scores' | 'menu';
+export type PadAction = 'fire' | 'action' | 'jump' | 'sprint' | 'prevWeapon' | 'nextWeapon' | 'horn' | 'radio' | 'map' | 'scores' | 'menu';
 
 /** Button actions with their default buttons. Sticks and triggers are fixed (see padAxes). */
 export const PAD_ACTIONS: { id: PadAction; label: string; button: number }[] = [
@@ -25,6 +25,7 @@ export const PAD_ACTIONS: { id: PadAction; label: string; button: number }[] = [
   { id: 'prevWeapon', label: 'Previous weapon', button: 14 },
   { id: 'nextWeapon', label: 'Next weapon', button: 15 },
   { id: 'horn', label: 'Horn / siren', button: 10 },
+  { id: 'radio', label: 'Radio station', button: 12 },
   { id: 'map', label: 'City map', button: 8 },
   { id: 'scores', label: 'Scores (hold)', button: 13 },
   { id: 'menu', label: 'Pause menu', button: 9 },

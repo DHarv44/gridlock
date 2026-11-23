@@ -4,7 +4,7 @@
 
 export type Action =
   | 'forward' | 'back' | 'left' | 'right' | 'fire' | 'aim' | 'action' | 'handbrake' | 'jump' | 'sprint' | 'climb' | 'descend'
-  | 'prevWeapon' | 'nextWeapon' | 'horn' | 'turretLeft' | 'turretRight'
+  | 'prevWeapon' | 'nextWeapon' | 'horn' | 'radio' | 'turretLeft' | 'turretRight'
   | 'chat' | 'map' | 'scores';
 
 export type ActionKind = 'held' | 'edge' | 'ui';
@@ -25,6 +25,7 @@ export const ACTIONS: ActionDef[] = [
   { id: 'action', label: 'Action: get in/out, shops, properties', kind: 'ui', group: 'Movement', keys: ['KeyE', 'KeyF'] },
   { id: 'handbrake', label: 'Handbrake', kind: 'held', group: 'Vehicles', keys: ['Space'] },
   { id: 'horn', label: 'Horn / siren', kind: 'edge', group: 'Vehicles', keys: ['KeyH'] },
+  { id: 'radio', label: 'Radio station', kind: 'ui', group: 'Vehicles', keys: ['KeyR'] },
   { id: 'climb', label: 'Helicopter climb', kind: 'held', group: 'Vehicles', keys: ['Space'] },
   { id: 'descend', label: 'Helicopter descend', kind: 'held', group: 'Vehicles', keys: ['ShiftLeft'] },
   { id: 'turretLeft', label: 'Tank turret left', kind: 'held', group: 'Vehicles', keys: ['Comma'] },

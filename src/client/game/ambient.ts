@@ -1,4 +1,5 @@
 // Per-frame ambience: traffic-signal glows synced to the server clock, and the nearest siren's sound.
+import { PEDS, VEHICLES } from '../../shared/packs';
 import { VF } from '../../shared/protocol';
 import type { Sound } from '../audio/sound';
 import type { EntityStore } from '../net/entities';
@@ -15,6 +16,18 @@ export function signalGlows(props: StreetProps, store: EntityStore, glow: Partic
     const [r, g, b] = st === 2 ? [0.2, 1, 0.4] : st === 1 ? [1, 0.7, 0.1] : [1, 0.15, 0.1];
     glow.put(s.x, s.y, 5.9, 1.5 + night * 1.5, 1, 0, r, g, b, 0.45 + night * 0.4);
   }
+}
+
+const LAW = new Set(PEDS.map((p, i) => (p.behaviour === 'police' || p.behaviour === 'military' ? i : -1)).filter((i) => i >= 0));
+const LAW_RIDE = new Set(VEHICLES.map((v, i) => (v.roles.some((r) => r.startsWith('police') || r.startsWith('military')) ? i : -1)).filter((i) => i >= 0));
+
+/** Police and military in view (on foot and alive, or driving a law vehicle), for the radar. */
+export function lawUnits(store: EntityStore): { x: number; y: number }[] {
+  const out: { x: number; y: number }[] = [];
+  for (const e of store.all.values()) {
+    if ((e.kind === 0 && LAW.has(e.data[2]) && !(e.data[6] & 1)) || (e.kind === 1 && LAW_RIDE.has(e.data[2]) && e.data[7] & VF.driven)) out.push(e);
+  }
+  return out;
 }
 
 export function nearestSiren(store: EntityStore, me: { x: number; y: number } | null, sound: Sound): void {

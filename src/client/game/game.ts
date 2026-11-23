@@ -1,8 +1,8 @@
 // Client game: owns rendering, input, prediction and HUD for one connected session.
-import { PEDS, VEHICLES } from '../../shared/packs';
-import { type InputMsg, Mode, type PlayerInfo, type Profile, type S2C, TICK_HZ, VF, type YouState } from '../../shared/protocol';
+import { type InputMsg, Mode, type PlayerInfo, type Profile, type S2C, TICK_HZ, type YouState } from '../../shared/protocol';
 import { CityMap, generateCity } from '../../shared/world/city';
 import { StaticWorld } from '../../shared/world/collision';
+import { Radio } from '../audio/radio';
 import { Sound } from '../audio/sound';
 import { Hud } from '../hud/hud';
 import { openMenu } from '../hud/menu';
@@ -28,14 +28,13 @@ import { routeFx } from './fxRouter';
 import { makeAimAssist } from './aimAssist';
 import { Steering } from './steering';
 import { Input } from './input';
-import { nearestSiren, signalGlows } from './ambient';
+import { lawUnits, nearestSiren, signalGlows } from './ambient';
 import { Interact } from './interact';
 import { Jobs } from './jobs';
 import { Predictor } from './predict';
 import { QualityGovernor } from './quality';
 
 const STEP = 1 / TICK_HZ;
-const LAW = new Set(PEDS.map((p, i) => (p.behaviour === 'police' || p.behaviour === 'military' ? i : -1)).filter((i) => i >= 0));
 
 export class Game {
   private map: CityMap;
@@ -53,6 +52,7 @@ export class Game {
   private interact: Interact;
   private jobs: Jobs;
   private sound = new Sound();
+  private radio = new Radio(new URLSearchParams(location.search).has('mute'));
   private you: YouState | null = null;
   private players: PlayerInfo[] = [];
   private owners = new Map<number, string>();
@@ -146,6 +146,7 @@ export class Game {
         if (this.pane.isOpen) this.pane.close();
         else openMenu({ pane: this.pane, sound: this.sound, quality: this.quality, input: this.input, code: this.code, record: () => this.profile.felonies ?? {}, leave: () => this.leave() });
         break;
+      case 'radio': this.radio.next(); break;
       case 'scoreOn': this.hud.showScore(true, this.players, this.code); break;
       case 'scoreOff': this.hud.showScore(false, this.players, this.code); break;
     }
@@ -229,6 +230,7 @@ export class Game {
     }
     if (this.acc > STEP * 4) this.acc = 0;
     this.predict.decay(dt);
+    this.radio.update(dt, !!this.you?.vid && this.you.mode !== Mode.Dead, this.sound.level);
     if (this.you && !document.hidden) this.quality.sample(dt);
     this.store.update();
     const own = this.ownState(this.acc / STEP);
@@ -282,12 +284,7 @@ export class Game {
     this.pane.refresh();
     const ctx = this.hud.radar.getContext('2d')!;
     const range = own.vid ? 260 : 170;
-    const hostiles: { x: number; y: number }[] = [];
-    if (you.wl > 0) {
-      for (const e of this.store.all.values()) {
-        if ((e.kind === 0 && LAW.has(e.data[2]) && !(e.data[6] & 1)) || (e.kind === 1 && (VEHICLES[e.data[2]].roles.some((r) => r.startsWith('police') || r.startsWith('military'))) && (e.data[7] & VF.driven))) hostiles.push(e);
-      }
-    }
+    const hostiles = you.wl > 0 ? lawUnits(this.store) : [];
     const owned = new Set(this.profile.owned);
     const wp = this.waypoint;
     wp.update(own);

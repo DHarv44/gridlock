@@ -6,6 +6,7 @@ import { extname, join, normalize, resolve } from 'node:path';
 import { WebSocketServer } from 'ws';
 import { characterApi } from './characterApi';
 import { Lobby } from './lobby';
+import { radioRoutes } from './radio';
 
 const PORT = Number(process.env.GRIDLOCK_PORT ?? process.env.PORT ?? 5228);
 const DIST = resolve(process.cwd(), 'dist');
@@ -25,6 +26,7 @@ const server = createServer((req, res) => {
     return;
   }
   if (characterApi(req, res, url.pathname)) return;
+  if (radioRoutes(req, res, url.pathname)) return;
   if (url.pathname === '/api/health') {
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ ok: true, ...lobby.stats() }));

@@ -5,7 +5,7 @@ import { BTN } from '../../shared/protocol';
 import { type Action, ACTIONS, Bindings } from './controls';
 import { PAD, Pad, PAD_ACTIONS, type PadAction } from './gamepad';
 
-export type UiAction = 'action' | 'chat' | 'map' | 'menu' | 'scoreOn' | 'scoreOff';
+export type UiAction = 'action' | 'chat' | 'map' | 'menu' | 'radio' | 'scoreOn' | 'scoreOff';
 export type NavCmd = 'up' | 'down' | 'left' | 'right' | 'ok' | 'back' | 'zoomIn' | 'zoomOut';
 
 const EDGE_BTN: Partial<Record<Action, number>> = { prevWeapon: BTN.prev, nextWeapon: BTN.next, horn: BTN.horn };
@@ -140,6 +140,7 @@ export class Input {
     if (pad.released('scores')) this.onUi('scoreOff');
     if (pad.pressed('action')) this.onUi('action');
     if (pad.pressed('map')) this.onUi('map');
+    if (pad.pressed('radio')) this.onUi('radio');
     if (!this.enabled) return;
     for (const d of PAD_ACTIONS) {
       if (!pad.pressed(d.id)) continue;

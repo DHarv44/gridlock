@@ -19,6 +19,13 @@ Open http://localhost:5228, pick a name, **Create game**, then send friends the 
   Room saves and characters live in `data/` (or `GRIDLOCK_DATA`); on Railway mount a volume
   there to keep them across deploys.
 
+**Radio:** in any vehicle press R (controller: D-pad up) to cycle Off and the stations
+(src/shared/packs/radio.ts; the first is Weather Station). A station plays every audio file
+(.m4a, .mp3, .ogg, .wav) in its folder: `radio/<station id>/` in the project, or a local
+library folder named in `radio.local.json` (not committed), e.g.
+`{ "weather": "D:/Music/weather" }`. Folders are read live, so new songs just show up.
+Deployed servers only have what is in `radio/` (or a mounted volume).
+
 **Characters:** each browser keeps up to 5 saved characters (name and look). Cash, cars,
 respect and stats follow a character into any room; properties belong to the room's city. The
 browser holds a random key in local storage (the server stores only its hash), so clearing site
@@ -64,4 +71,5 @@ The semi tows an articulated trailer: it swings wide on turns, can jackknife, an
 | E or F | Action: get in/out of vehicles (carjack, ride with a friend), or use the shop/property door you're at (paint shop: stop on its pad and pick a colour, previewed on your car, which also repairs it and loses the cops; chop shop: just drive in) |
 | Z / X / wheel / 1–9 | Previous / next / pick weapon (no reloading: you fire until the ammo runs out) |
 | H | Horn (siren in emergency vehicles) |
+| R | Radio: next station / off (in vehicles) |
 | T / M / Tab / Esc | Chat / city map / scores / menu |
