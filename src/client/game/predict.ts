@@ -19,7 +19,11 @@ export class Predictor {
   errX = 0;
   errY = 0;
 
-  constructor(private world: StaticWorld, private map: CityMap) {}
+  private onRoad: (x: number, y: number) => boolean;
+
+  constructor(private world: StaticWorld, private map: CityMap) {
+    this.onRoad = (x, y) => map.onRoad(x, y);
+  }
 
   private step(inp: InputMsg): void {
     const [, mx, my, throttle, steer, , btn] = inp;
@@ -31,7 +35,7 @@ export class Predictor {
     c.down = (btn & BTN.down) !== 0;
     const b = this.body;
     if (this.mode === Mode.Driver && this.vtype >= 0) {
-      stepVehicle(b, VEHICLES[this.vtype], c, DT, this.world, true);
+      stepVehicle(b, VEHICLES[this.vtype], c, DT, this.world, true, this.onRoad);
     } else {
       const ox = b.x, oy = b.y;
       stepFoot(b, c, PEDS[PLAYER_ARCHETYPE].runSpeed * (c.sprint ? 1.3 : 1), DT, this.world);

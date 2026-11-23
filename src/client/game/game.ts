@@ -16,9 +16,11 @@ import { Effects } from '../render/effects';
 import { Ground } from '../render/ground';
 import { Stage } from '../render/scene';
 import type { StreetProps } from '../render/streetProps';
+import { Storefronts } from '../render/storefronts';
 import { Water } from '../render/water';
 import { type OwnState, type PlayerTag, WorldView } from '../render/worldView';
 import { routeFx } from './fxRouter';
+import { makeAimAssist } from './aimAssist';
 import { Steering } from './steering';
 import { Input } from './input';
 import { Interact } from './interact';
@@ -65,7 +67,7 @@ export class Game {
     this.ground = new Ground(this.stage.scene, this.map, this.stage.renderer.capabilities.getMaxAnisotropy());
     const meshes = new CityMeshes(this.stage.scene, city);
     this.fx = new Effects(this.stage.scene, this.stage.flash);
-    this.view = new WorldView(this.stage.scene, this.fx, city, meshes.lamps);
+    this.view = new WorldView(this.stage.scene, this.fx, meshes.lamps);
     this.input = new Input(canvas);
     this.predict = new Predictor(statics, this.map);
     this.radar = new Minimap(this.map);
@@ -78,6 +80,7 @@ export class Game {
     this.buildingUniforms = meshes.uniforms;
     this.props = meshes.props;
     this.water = new Water(this.stage.scene, this.map);
+    this.storefronts = new Storefronts(this.stage.scene, city);
     this.quality = new QualityGovernor(this.stage);
     this.quality.onAuto = (q) => this.hud.notify(`Graphics set to ${q} for a smoother frame rate (Esc to change)`, 'info');
     requestAnimationFrame(() => this.frame());
@@ -86,6 +89,7 @@ export class Game {
   private buildingUniforms: { uNight: { value: number } };
   private props: StreetProps;
   private water: Water;
+  private storefronts: Storefronts;
   private quality: QualityGovernor;
 
   /** Signal lamps follow the server clock; they also cast a small coloured glow. */
@@ -133,7 +137,10 @@ export class Game {
         routeFx(m.fx, this.fx, this.sound, this.store, this.cam);
         break;
       case 'players': this.players = m.list; break;
-      case 'owners': this.owners = new Map(m.list.filter((o): o is [number, string] => o[1] !== null)); break;
+      case 'owners':
+        this.owners = new Map(m.list.filter((o): o is [number, string] => o[1] !== null));
+        this.storefronts.setOwners(this.owners);
+        break;
       case 'profile': this.profile = m.p; break;
       case 'msg':
         if (m.kind === 'chat') this.hud.chatLine(m.text);
@@ -163,12 +170,13 @@ export class Game {
   private aimAngle = 0;
   private hudFrame = 0;
   private steering = new Steering();
+  private autoAim = makeAimAssist(this.store, () => this.you?.pid ?? 0);
 
   private tick(own: OwnState | null): void {
     const inp = this.input;
     if (!this.you || !own) return;
     const cursor = this.cam.screenToWorld(inp.mouseX, inp.mouseY, own.alt > 3 ? 1 : 0);
-    const c = this.steering.step(inp, this.you, own.angle, STEP, own, cursor);
+    const c = this.steering.step(inp, this.you, own.angle, STEP, own, cursor, this.autoAim);
     this.aimAngle = c.aim;
     const msg: InputMsg = [
       ++this.seq, c.mx, c.my, c.throttle, c.steer,
@@ -202,7 +210,7 @@ export class Game {
       // On foot the camera leans toward the cursor (mouse style) or a little ahead of you (classic).
       const mouse = this.input.bindings.scheme === 'mouse';
       const cur = mouse ? this.cam.screenToWorld(this.input.mouseX, this.input.mouseY) : null;
-      const ax = cur ? cur.x : own.x + Math.cos(this.aimAngle) * 20, ay = cur ? cur.y : own.y + Math.sin(this.aimAngle) * 20;
+      const ax = cur ? cur.x : own.x, ay = cur ? cur.y : own.y;
       this.cam.update(dt, own.x, own.y, own.vx, own.vy, own.alt, ax, ay, !!own.vid);
       this.sound.listenerX = own.x; this.sound.listenerY = own.y;
     }
@@ -215,6 +223,7 @@ export class Game {
     const night = this.stage.lighting.night;
     this.buildingUniforms.uNight.value = night;
     this.signals(night, vr);
+    this.storefronts.putGlows(this.fx.glow, night, vr);
     this.view.sync(this.store, dt, own, this.tags(), night, vr);
     this.fx.update(dt);
     this.water.update(dt);

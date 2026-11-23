@@ -28,11 +28,6 @@ export class CityMeshes {
       const ms = massesFor(b, rng);
       masses.push(...ms);
       decorate(b, city.lots[b.lot], ms, rng, out);
-      if (b.sign) {
-        // Coloured sign band wrapped around the storefront.
-        const r = b.rect;
-        out.box.add((r.x0 + r.x1) / 2, 3.2, (r.y0 + r.y1) / 2, r.x1 - r.x0 + 0.3, 1.3, r.y1 - r.y0 + 0.3, b.sign);
-      }
     }
     this.uniforms = this.buildMasses(scene, masses, rng);
     for (const batch of Object.values(out)) batch.build(scene);

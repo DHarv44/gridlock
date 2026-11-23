@@ -107,7 +107,7 @@ export function decorate(b: Building, lot: Lot | undefined, masses: Mass[], rng:
       if (sw) out.box.add(cx(sw), y, cy(sw), 5, 3.5, 6, shade(m.wall, 0.9));
       if (rng.chance(0.3) && W(m.r) > 22 && D(m.r) > 22) helipad(m, out);
       else if (rng.chance(0.5)) {
-        out.cyl.add(cx(m.r) + rng.range(-3, 3), y, cy(m.r) + rng.range(-3, 3), 0.25, rng.range(7, 14), 0.25, '#b9bcc0');
+        out.cyl.add(cx(m.r) + rng.range(-3, 3), y, cy(m.r) + rng.range(-3, 3), 0.25, rng.range(3, 6), 0.25, '#b9bcc0');
       }
     } else if (rng.chance(0.6)) {
       const sw = plan.place(3, 4);

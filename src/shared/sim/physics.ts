@@ -1,5 +1,5 @@
 // Deterministic movement steps shared by the server simulation and client prediction.
-import { approach, clamp } from '../math';
+import { approach, clamp, wrapAngle } from '../math';
 import type { VehicleSpec } from '../packs';
 import type { StaticWorld } from '../world/collision';
 
@@ -40,10 +40,9 @@ export function stepFoot(b: Body, c: Controls, speed: number, dt: number, world:
   let mx = c.mx, my = c.my;
   const m = Math.hypot(mx, my);
   if (m > 1) { mx /= m; my /= m; }
-  const tx = mx * speed, ty = my * speed;
-  const k = Math.min(1, 14 * dt);
-  b.vx += (tx - b.vx) * k;
-  b.vy += (ty - b.vy) * k;
+  // GTA2-style: full speed the instant a key is down, dead stop when released.
+  b.vx = mx * speed;
+  b.vy = my * speed;
   b.x += b.vx * dt;
   b.y += b.vy * dt;
   const hit = world.resolveCircle(b, PED_RADIUS, 0);
@@ -54,8 +53,15 @@ export function stepFoot(b: Body, c: Controls, speed: number, dt: number, world:
   return hit !== null;
 }
 
-/** Vehicle movement (wheels, bikes, tracks, rotors). Returns impact speed against static geometry. */
-export function stepVehicle(b: Body, spec: VehicleSpec, c: Controls, dt: number, world: StaticWorld, driven: boolean): number {
+const QUARTER = Math.PI / 2;
+const ASSIST_CONE = (25 * Math.PI) / 180;
+
+/**
+ * Vehicle movement (wheels, bikes, tracks, rotors). Returns impact speed against static geometry.
+ * `onRoad`, when given, enables GTA2's steer assist: with gas on and no steering, a car on a road
+ * within 25° of the road's axis is eased straight along it.
+ */
+export function stepVehicle(b: Body, spec: VehicleSpec, c: Controls, dt: number, world: StaticWorld, driven: boolean, onRoad?: (x: number, y: number) => boolean): number {
   if (spec.movement === 'rotor') return stepHeli(b, spec, c, dt, world, driven);
   const fx = Math.cos(b.angle), fy = Math.sin(b.angle);
   let vf = b.vx * fx + b.vy * fy;
@@ -76,19 +82,29 @@ export function stepVehicle(b: Body, spec: VehicleSpec, c: Controls, dt: number,
   if (hand) vf = approach(vf, 0, spec.brake * 0.45 * dt);
   vf -= vf * 0.04 * dt;
 
-  const grip = hand ? spec.grip * 0.14 : spec.grip;
-  vl *= Math.exp(-grip * dt);
-
   const speedK = clamp(Math.abs(vf) / spec.maxSpeed, 0, 1);
+  // Oversteer while turning (GTA2 turn_in): the rear lets go a little as you steer at speed.
+  const turnIn = spec.turnIn ?? 0.15;
+  let grip = spec.grip * (1 - turnIn * Math.abs(steer) * speedK * 1.6);
+  if (hand) grip = spec.grip * 0.12;
+  vl *= Math.exp(-Math.max(0.3, grip) * dt);
+
   let targetAv: number;
   if (spec.movement === 'tracks') {
     targetAv = steer * spec.turnRate * (vf < -0.5 ? -1 : 1);
   } else {
-    const low = clamp(Math.abs(vf) / 5, 0, 1);
-    targetAv = steer * spec.turnRate * low * Math.sign(vf) * (1 - 0.38 * speedK) * (hand ? 1.45 : 1);
+    // Tight at low speed, much lazier at top speed (GTA2: ~1.25x down to ~0.5x).
+    const low = clamp(Math.abs(vf) / 3.5, 0, 1);
+    const bySpeed = 1.25 - 0.75 * speedK;
+    targetAv = steer * spec.turnRate * low * Math.sign(vf) * bySpeed * (hand ? 1.5 : 1);
   }
-  b.av += (targetAv - b.av) * Math.min(1, 9 * dt);
+  b.av += (targetAv - b.av) * Math.min(1, 12 * dt);
   b.angle += b.av * dt;
+  if (onRoad && steer === 0 && throttle > 0 && vf > 3 && !hand && onRoad(b.x, b.y)) {
+    const axis = Math.round(b.angle / QUARTER) * QUARTER;
+    const off = wrapAngle(axis - b.angle);
+    if (Math.abs(off) < ASSIST_CONE) b.angle += clamp(off, -spec.turnRate * 0.5 * dt, spec.turnRate * 0.5 * dt);
+  }
 
   const nfx = Math.cos(b.angle), nfy = Math.sin(b.angle);
   b.vx = nfx * vf - nfy * vl;

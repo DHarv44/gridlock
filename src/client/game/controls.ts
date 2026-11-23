@@ -22,29 +22,29 @@ export interface ActionDef {
 }
 
 export const ACTIONS: ActionDef[] = [
-  { id: 'forward', label: 'Up / accelerate', kind: 'held', group: 'Movement', mouse: ['KeyW', 'ArrowUp'], classic: ['ArrowUp'] },
-  { id: 'back', label: 'Down / brake, reverse', kind: 'held', group: 'Movement', mouse: ['KeyS', 'ArrowDown'], classic: ['ArrowDown'] },
-  { id: 'left', label: 'Left / steer left', kind: 'held', group: 'Movement', mouse: ['KeyA', 'ArrowLeft'], classic: ['ArrowLeft'] },
-  { id: 'right', label: 'Right / steer right', kind: 'held', group: 'Movement', mouse: ['KeyD', 'ArrowRight'], classic: ['ArrowRight'] },
+  { id: 'forward', label: 'Forward / accelerate', kind: 'held', group: 'Movement', mouse: ['KeyW', 'ArrowUp'], classic: ['KeyW', 'ArrowUp'] },
+  { id: 'back', label: 'Back / brake, reverse', kind: 'held', group: 'Movement', mouse: ['KeyS', 'ArrowDown'], classic: ['KeyS', 'ArrowDown'] },
+  { id: 'left', label: 'Turn / steer left', kind: 'held', group: 'Movement', mouse: ['KeyA', 'ArrowLeft'], classic: ['KeyA', 'ArrowLeft'] },
+  { id: 'right', label: 'Turn / steer right', kind: 'held', group: 'Movement', mouse: ['KeyD', 'ArrowRight'], classic: ['KeyD', 'ArrowRight'] },
   { id: 'sprint', label: 'Sprint', kind: 'held', group: 'Movement', mouse: ['ShiftLeft'], classic: ['ShiftLeft'] },
-  { id: 'fire', label: 'Fire', kind: 'held', group: 'Weapons', mouse: ['Mouse0'], classic: ['ControlLeft', 'ControlRight'] },
+  { id: 'fire', label: 'Fire', kind: 'held', group: 'Weapons', mouse: ['Mouse0'], classic: ['ControlLeft', 'Mouse0'] },
   { id: 'reload', label: 'Reload', kind: 'edge', group: 'Weapons', mouse: ['KeyR'], classic: ['KeyR'] },
   { id: 'prevWeapon', label: 'Previous weapon', kind: 'edge', group: 'Weapons', mouse: ['KeyQ'], classic: ['KeyZ'] },
   { id: 'nextWeapon', label: 'Next weapon', kind: 'edge', group: 'Weapons', mouse: ['KeyX'], classic: ['KeyX'] },
-  { id: 'enter', label: 'Get in / out', kind: 'edge', group: 'Vehicles', mouse: ['KeyF', 'Enter'], classic: ['Enter'] },
+  { id: 'enter', label: 'Get in / out', kind: 'edge', group: 'Vehicles', mouse: ['KeyF', 'Enter'], classic: ['Enter', 'KeyF'] },
   { id: 'handbrake', label: 'Handbrake', kind: 'held', group: 'Vehicles', mouse: ['Space'], classic: ['Space'] },
   { id: 'horn', label: 'Horn / siren', kind: 'edge', group: 'Vehicles', mouse: ['KeyH'], classic: ['KeyH'] },
   { id: 'climb', label: 'Helicopter climb', kind: 'held', group: 'Vehicles', mouse: ['Space'], classic: ['Space'] },
   { id: 'descend', label: 'Helicopter descend', kind: 'held', group: 'Vehicles', mouse: ['ShiftLeft'], classic: ['ShiftLeft'] },
-  { id: 'turretLeft', label: 'Turret left', kind: 'held', group: 'Vehicles', mouse: [], classic: ['KeyA'], classicOnly: true },
-  { id: 'turretRight', label: 'Turret right', kind: 'held', group: 'Vehicles', mouse: [], classic: ['KeyD'], classicOnly: true },
+  { id: 'turretLeft', label: 'Turret left', kind: 'held', group: 'Vehicles', mouse: [], classic: ['Comma'], classicOnly: true },
+  { id: 'turretRight', label: 'Turret right', kind: 'held', group: 'Vehicles', mouse: [], classic: ['Period'], classicOnly: true },
   { id: 'interact', label: 'Shop / property', kind: 'ui', group: 'Other', mouse: ['KeyE'], classic: ['KeyE'] },
   { id: 'chat', label: 'Chat', kind: 'ui', group: 'Other', mouse: ['KeyT'], classic: ['KeyT'] },
   { id: 'map', label: 'City map', kind: 'ui', group: 'Other', mouse: ['KeyM'], classic: ['KeyM'] },
   { id: 'scores', label: 'Scores (hold)', kind: 'ui', group: 'Other', mouse: ['Tab'], classic: ['Tab'] },
 ];
 
-const STORE = 'gridlock.controls.v2';
+const STORE = 'gridlock.controls.v3';
 const MAX_KEYS = 2;
 
 /** Readable name for a key code or mouse button. */
@@ -57,12 +57,13 @@ export function keyName(code: string): string {
   const named: Record<string, string> = {
     ControlLeft: 'Left Ctrl', ControlRight: 'Right Ctrl', ShiftLeft: 'Left Shift', ShiftRight: 'Right Shift',
     AltLeft: 'Left Alt', AltRight: 'Right Alt', Space: 'Space', Enter: 'Enter', Tab: 'Tab', Backspace: 'Backspace',
+    Comma: ',', Period: '.', Slash: '/', Semicolon: ';', Quote: "'", BracketLeft: '[', BracketRight: ']',
   };
   return named[code] ?? code;
 }
 
 export class Bindings {
-  scheme: Scheme = 'mouse';
+  scheme: Scheme = 'classic';
   private map = new Map<Action, string[]>();
   private byKey = new Map<string, Action[]>();
 

@@ -1,8 +1,7 @@
 // Syncs interpolated entities to meshes each frame, plus per-entity effects and night glows.
 import * as THREE from 'three';
-import { SERVICES, VEHICLES, WEAPONS } from '../../shared/packs';
+import { VEHICLES, WEAPONS } from '../../shared/packs';
 import { EK, PF, PK, VF } from '../../shared/protocol';
-import type { City } from '../../shared/world/cityTypes';
 import type { EntityStore, ViewEntity } from '../net/entities';
 import type { Effects } from './effects';
 import { animatePed, makePed, type PedView, setPedWeapon } from './pedMesh';
@@ -14,7 +13,6 @@ export interface PlayerTag { name: string; color: string }
 const projGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.8, 6).rotateZ(Math.PI / 2);
 const grenadeGeo = new THREE.SphereGeometry(0.16, 8, 6);
 const pickupGeo = new THREE.BoxGeometry(0.7, 0.35, 0.45);
-const ringGeo = new THREE.RingGeometry(1.1, 1.5, 28).rotateX(-Math.PI / 2);
 const darkMat = new THREE.MeshLambertMaterial({ color: '#2a2c2e' });
 const cashMat = new THREE.MeshLambertMaterial({ color: '#3fae4a', emissive: '#0f3a12' });
 const gunMat = new THREE.MeshLambertMaterial({ color: '#4a4e54', emissive: '#202428' });
@@ -24,21 +22,10 @@ export class WorldView {
   private vehs = new Map<number, VehicleView>();
   private objs = new Map<number, THREE.Object3D>();
   private labels = new Map<number, THREE.Sprite>();
-  private rings = new Map<number, THREE.Mesh>();
+  private tagged = new Set<number>();
   private time = 0;
 
-  constructor(private scene: THREE.Scene, private fx: Effects, city: City, private lamps: { x: number; y: number }[]) {
-    // Door markers for shops, services and properties.
-    const places = [...city.services.map((s) => ({ ...s, color: SERVICES[s.spec].sign })), ...city.properties.map((p) => ({ ...p, color: '#6fe08a' }))];
-    const inst = new THREE.InstancedMesh(ringGeo, new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.75 }), places.length);
-    const m = new THREE.Matrix4();
-    places.forEach((p, i) => {
-      m.makeTranslation(p.x, 0.06, p.y);
-      inst.setMatrixAt(i, m);
-      inst.setColorAt(i, new THREE.Color(p.color === '#f2f2ee' ? '#ffffff' : p.color));
-    });
-    scene.add(inst);
-  }
+  constructor(private scene: THREE.Scene, private fx: Effects, private lamps: { x: number; y: number }[]) {}
 
   sync(store: EntityStore, dt: number, own: OwnState | null, tags: Map<number, PlayerTag>, night: number, view: { x0: number; y0: number; x1: number; y1: number }): void {
     this.time += dt;
@@ -67,8 +54,7 @@ export class WorldView {
   private dropTag(id: number): void {
     const l = this.labels.get(id);
     if (l) { l.removeFromParent(); (l.material as THREE.SpriteMaterial).map?.dispose(); l.material.dispose(); this.labels.delete(id); }
-    const r = this.rings.get(id);
-    if (r) { r.removeFromParent(); this.rings.delete(id); }
+    this.tagged.delete(id);
   }
 
   private ped(e: ViewEntity, dt: number, own: OwnState | null, tags: Map<number, PlayerTag>): void {
@@ -89,14 +75,12 @@ export class WorldView {
     const speed = isMe ? Math.hypot(own!.vx, own!.vy) : Math.hypot(e.vx, e.vy);
     animatePed(v, dt, speed, !!(flags & PF.aim), !!(flags & PF.down), !!(flags & PF.dead), !!(flags & PF.busy));
     if (flags & PF.burning && Math.random() < 0.6) this.fx.fire(x, y, 0.8);
-    if (tag && !this.rings.has(e.id)) this.addTag(e.id, v, tag, !!isMe);
+    if (tag && !this.tagged.has(e.id)) this.addTag(e.id, v, tag, !!isMe);
   }
 
+  /** Other players get a floating name in their colour (no ground markers). */
   private addTag(id: number, v: PedView, tag: PlayerTag, isMe: boolean): void {
-    const ring = new THREE.Mesh(new THREE.RingGeometry(1.0, 1.25, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: tag.color, transparent: true, opacity: 0.9 }));
-    ring.position.y = 0.05;
-    v.root.add(ring);
-    this.rings.set(id, ring);
+    this.tagged.add(id);
     if (isMe) return;
     const c = document.createElement('canvas');
     c.width = 256; c.height = 64;

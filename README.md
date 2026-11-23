@@ -21,17 +21,20 @@ Open http://localhost:5228, pick a name, **Create game**, then send friends the 
 
 ## Controls
 
-Mouse-aim layout by default. Esc → Change controls switches to the Classic style (arrows turn,
-Ctrl fires straight ahead) and rebinds any action to a key or mouse button.
+Classic GTA2-style by default: turn and run where you face, shots auto-aim at whoever is
+ahead of you (±16°). Esc → Change controls switches to Mouse aim (WASD screen movement, face the
+cursor) and rebinds any action to a key or mouse button.
 
 | Key | Action |
 | --- | --- |
-| WASD | Move up/left/down/right on screen · in vehicles gas / steer / brake |
-| Mouse / left click | Aim (you face the cursor) / shoot; drive-bys and tank turrets aim at the cursor too |
+| W/S or Up/Down | Run forward / back where you face · in vehicles gas / brake, reverse |
+| A/D or Left/Right | Turn · steer |
+| Left Ctrl or left click | Fire ahead (auto-aims at the nearest person in front) |
+| , / . | Tank turret left / right |
 | Shift | Sprint · descend in helicopters |
 | Space | Handbrake · climb in helicopters |
 | F or Enter | Get in/out, carjack, ride as passenger with a friend |
 | E | Use a shop, hospital, dealer, respray, chop shop, property |
-| R / Q / X / wheel / 1–9 | Reload / previous / next / pick weapon |
+| R / Z / X / wheel / 1–9 | Reload / previous / next / pick weapon |
 | H | Horn (siren in emergency vehicles) |
 | T / M / Tab / Esc | Chat / city map / scores / menu |

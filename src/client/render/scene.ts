@@ -29,7 +29,8 @@ export class Stage {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
-    this.camera = new THREE.PerspectiveCamera(40, 1, 2, 900);
+    // Wide lens close to the ground: buildings lean out from the centre like GTA2's.
+    this.camera = new THREE.PerspectiveCamera(50, 1, 1.5, 900);
     this.camera.up.set(0, 0, -1);
     this.scene.add(this.hemi);
     this.sun.castShadow = true;

@@ -5,8 +5,8 @@ import type { Input } from '../game/input';
 import type { Pane, PaneRow } from './pane';
 
 const STYLES: { s: Scheme; label: string; sub: string }[] = [
+  { s: 'classic', label: 'Classic (GTA2-style)', sub: 'Turn and run where you face, shots auto-aim at whoever is ahead of you' },
   { s: 'mouse', label: 'Mouse aim', sub: 'WASD moves up/down/left/right on screen, you face the cursor, click to shoot' },
-  { s: 'classic', label: 'Classic', sub: 'Arrows turn and move where you face, Ctrl fires straight ahead' },
 ];
 
 export function openControls(pane: Pane, input: Input, back: () => void): void {

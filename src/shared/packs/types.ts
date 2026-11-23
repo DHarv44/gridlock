@@ -28,6 +28,7 @@ export interface VehicleSpec {
   brake: number;        // m/s^2
   reverse: number;      // max reverse speed m/s
   grip: number;         // lateral grip (1/s)
+  turnIn?: number;      // oversteer when steering at speed, 0..0.5 (GTA2 turn_in); default 0.15
   turnRate: number;     // rad/s at full lock
   hp: number;
   seats: number;
@@ -138,6 +139,7 @@ export interface ServiceSpec {
   zones: string[];
   count: number;
   sign: string;
+  signText: string;             // short text on the storefront sign
   stock?: string[];             // weapon ids (gunshop) or vehicle ids (dealer)
   spawns?: { vehicle: string; count: number }[];
   guards?: { archetype: string; count: number }[];
@@ -153,6 +155,8 @@ export interface PropertySpec {
   price: number;
   income: number;               // dollars per game hour (businesses)
   garage: number;               // cars stored (homes)
+  signText?: string;            // storefront sign (businesses)
+  signColor?: string;
 }
 
 export interface Squad { vehicle: string; crew: string[] }
