@@ -17,6 +17,15 @@ export type Paint = 'body' | 'glass' | 'dark' | 'chrome' | 'trim' | 'headlight' 
 
 export type Movement = 'wheels' | 'bike' | 'tracks' | 'rotor';
 
+/** Fractions of the body width lost toward the ends and the top. */
+export interface BodyShape {
+  nose: number;     // width lost at the very front (rounded corners)
+  tail: number;     // width lost at the very back
+  tumble: number;   // width lost at the roof (cabin narrower than the body)
+  round?: number;   // length fraction over which the ends curve in; default 0.16
+  hips?: number;    // extra width over the rear wheels (sports cars), fraction of width
+}
+
 export interface VehicleSpec {
   id: string;
   name: string;
@@ -41,6 +50,8 @@ export interface VehicleSpec {
   crushes?: boolean;    // drives over cars
   weapons?: string[];   // vehicle weapon ids fired by the driver
   model: Part[];
+  /** Plan-view body shaping (seen from above): without it the body is a straight-sided box. */
+  shape?: BodyShape;
   /** Articulated trailer hitched at the back of the vehicle (semis). */
   trailer?: { length: number; width: number; height: number; model: Part[] };
 }

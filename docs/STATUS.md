@@ -43,5 +43,6 @@
   vehicle entity index 11 (0 for vehicles without a trailer).
 
 ## Known gaps / next
-- Trucks, bus, tank and aircraft still use box models (cars got the profile treatment).
+- Trucks, bus, tank and aircraft still use box models. Cars have per-style models (packs/carModels.ts)
+  plus a plan-view `shape` (rounded nose/tail, cabin tumblehome, hips) applied by render/bodyShape.ts.
 - Hosting for internet play: see README (port-forward, or deploy; ask the user before deploying).

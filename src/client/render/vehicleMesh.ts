@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { PALETTE, type Paint, type Part, VEHICLES, type VehicleSpec } from '../../shared/packs';
 import { hitchOffset } from '../../shared/sim/physics';
+import { densify, shapeGeometry, widthAt } from './bodyShape';
 
 const NAMED: Record<string, string> = {
   glass: '#1b2632', dark: '#202326', chrome: '#c9ccd0', trim: '#2a2c30', headlight: '#fff6d8', taillight: '#c4161c',
@@ -21,7 +22,8 @@ function profileGeometry(spec: VehicleSpec, part: Part): THREE.BufferGeometry {
   const L = spec.length, W = spec.width, H = spec.height;
   const depth = (part.y[1] - part.y[0]) * W;
   const bevel = Math.min(0.08, depth * 0.08, H * 0.05);
-  const shape = new THREE.Shape(part.profile!.map(([x, z]) => new THREE.Vector2(x * L, z * H)));
+  const pts = spec.shape ? densify(part.profile!, 0.05) : part.profile!;
+  const shape = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x * L, z * H)));
   const g = new THREE.ExtrudeGeometry(shape, { depth: Math.max(0.02, depth - bevel * 2), bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel * 0.8, bevelSegments: 2, curveSegments: 1 });
   g.translate(0, 0, part.y[0] * W + bevel);
   g.clearGroups();
@@ -34,7 +36,9 @@ function partGeometry(spec: VehicleSpec, part: Part, color: THREE.Color): THREE.
   if (part.profile) g = profileGeometry(spec, part);
   else {
     const sx = (part.x[1] - part.x[0]) * L, sy = (part.z[1] - part.z[0]) * H, sz = (part.y[1] - part.y[0]) * W;
-    g = new THREE.BoxGeometry(Math.max(sx, 0.02), Math.max(sy, 0.02), Math.max(sz, 0.02));
+    // Shaped bodies bend boxes along the length too, so long boxes (stripes) need segments.
+    const segs = spec.shape ? Math.max(1, Math.ceil((part.x[1] - part.x[0]) / 0.06)) : 1;
+    g = new THREE.BoxGeometry(Math.max(sx, 0.02), Math.max(sy, 0.02), Math.max(sz, 0.02), segs);
     g.translate(((part.x[0] + part.x[1]) / 2) * L, ((part.z[0] + part.z[1]) / 2) * H, ((part.y[0] + part.y[1]) / 2) * W);
   }
   const n = g.attributes.position.count;
@@ -60,8 +64,10 @@ function wheels(spec: VehicleSpec, axleOverride?: number[]): THREE.BufferGeometr
     return g.toNonIndexed();
   };
   for (const ax of axles) {
+    // Tuck wheels in where a shaped body narrows toward its ends.
+    const tuck = spec.shape ? Math.min(1, widthAt({ ...spec.shape, hips: 0 }, ax, 0.3)) : 1;
     for (const s of sides) {
-      const z = s * (spec.width / 2 - 0.13);
+      const z = s * (spec.width / 2 * tuck - 0.13);
       const t = new THREE.CylinderGeometry(r, r, 0.28, 14).rotateX(Math.PI / 2).translate(ax * spec.length, r, z);
       out.push(coloured(t, tyre));
       if (s !== 0) {
@@ -94,7 +100,7 @@ function build(type: number, colorIdx: number, wrecked: boolean): Built {
   if (spec.trailer) {
     // The trailer is built as its own "vehicle" with only rear axles.
     const t = spec.trailer;
-    const tspec: VehicleSpec = { ...spec, length: t.length, width: t.width, height: t.height, model: t.model, trailer: undefined };
+    const tspec: VehicleSpec = { ...spec, length: t.length, width: t.width, height: t.height, model: t.model, trailer: undefined, shape: undefined };
     built.trailer = buildParts(tspec, t.model, body, wrecked, [-0.28, -0.4]);
   }
   cache.set(key, built);
@@ -110,6 +116,7 @@ function buildParts(spec: VehicleSpec, model: Part[], body: string, wrecked: boo
     const col = new THREE.Color(paintColor(part.paint, body, wrecked));
     const raw = partGeometry(spec, part, col);
     const g = raw.index ? raw.toNonIndexed() : raw;
+    if (spec.shape) shapeGeometry(g, spec.shape, spec.length, spec.height);
     if (part.tag === 'rotor' || part.tag === 'tailrotor' || part.tag === 'turret' || part.tag === 'barrel' || part.tag === 'siren') {
       g.computeBoundingBox();
       const offset = g.boundingBox!.getCenter(new THREE.Vector3());
