@@ -41,6 +41,8 @@ export interface VehicleSpec {
   crushes?: boolean;    // drives over cars
   weapons?: string[];   // vehicle weapon ids fired by the driver
   model: Part[];
+  /** Articulated trailer hitched at the back of the vehicle (semis). */
+  trailer?: { length: number; width: number; height: number; model: Part[] };
 }
 
 export type WeaponKind = 'melee' | 'hitscan' | 'projectile' | 'thrown' | 'flame';

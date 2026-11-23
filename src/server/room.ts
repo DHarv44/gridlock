@@ -13,6 +13,7 @@ import { Economy } from './game/systems/economy';
 import { updateNpcPeds, updateVehicles } from './game/systems/movement';
 import { equipStart, makeAvatar, processPlayers } from './game/systems/players';
 import { updateFires, updateProjectiles } from './game/systems/projectiles';
+import { updateTrailers } from './game/systems/trailers';
 import { buildSnapshot, playerList } from './game/systems/snapshot';
 import { Population } from './game/systems/population';
 import { updateWanted } from './game/systems/wanted';
@@ -210,6 +211,7 @@ export class Room {
     updateVehicles(w, DT);
     w.rebuildHashes();
     resolveContacts(w);
+    updateTrailers(w, DT);
     updateProjectiles(w, DT);
     updateFires(w, DT);
     updateWanted(w, DT);

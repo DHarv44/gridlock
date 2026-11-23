@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { PALETTE, type Paint, type Part, VEHICLES, type VehicleSpec } from '../../shared/packs';
+import { hitchOffset } from '../../shared/sim/physics';
 
 const NAMED: Record<string, string> = {
   glass: '#1b2632', dark: '#202326', chrome: '#c9ccd0', trim: '#2a2c30', headlight: '#fff6d8', taillight: '#c4161c',
@@ -43,12 +44,12 @@ function partGeometry(spec: VehicleSpec, part: Part, color: THREE.Color): THREE.
   return g;
 }
 
-function wheels(spec: VehicleSpec): THREE.BufferGeometry[] {
+function wheels(spec: VehicleSpec, axleOverride?: number[]): THREE.BufferGeometry[] {
   if (spec.movement === 'rotor') return [];
   const out: THREE.BufferGeometry[] = [];
   const r = spec.movement === 'bike' ? 0.32 : spec.movement === 'tracks' ? 0 : Math.min(0.48, spec.height * 0.24);
   if (r === 0) return out;
-  const axles = spec.length > 9 ? [0.36, -0.2, -0.36] : spec.movement === 'bike' ? [0.38, -0.38] : [0.33, -0.33];
+  const axles = axleOverride ?? (spec.length > 9 ? [0.36, -0.2, -0.36] : spec.movement === 'bike' ? [0.38, -0.38] : spec.trailer ? [0.33, -0.25, -0.38] : [0.33, -0.33]);
   const sides = spec.movement === 'bike' ? [0] : [-1, 1];
   const tyre = new THREE.Color('#1c1c1c'), rim = new THREE.Color(spec.movement === 'bike' ? '#3a3a3a' : '#9da2a8');
   const coloured = (g: THREE.BufferGeometry, c: THREE.Color) => {
@@ -79,6 +80,7 @@ interface Built {
   shiny: THREE.BufferGeometry | null;
   lights: THREE.BufferGeometry | null;
   animated: { tag: Part['tag']; geo: THREE.BufferGeometry; offset: THREE.Vector3 }[];
+  trailer?: Built;
 }
 const cache = new Map<string, Built>();
 
@@ -88,11 +90,23 @@ function build(type: number, colorIdx: number, wrecked: boolean): Built {
   if (hit) return hit;
   const spec = VEHICLES[type];
   const body = PALETTE[colorIdx] ?? '#888888';
-  const staticParts: THREE.BufferGeometry[] = [...wheels(spec)];
+  const built = buildParts(spec, spec.model, body, wrecked);
+  if (spec.trailer) {
+    // The trailer is built as its own "vehicle" with only rear axles.
+    const t = spec.trailer;
+    const tspec: VehicleSpec = { ...spec, length: t.length, width: t.width, height: t.height, model: t.model, trailer: undefined };
+    built.trailer = buildParts(tspec, t.model, body, wrecked, [-0.28, -0.4]);
+  }
+  cache.set(key, built);
+  return built;
+}
+
+function buildParts(spec: VehicleSpec, model: Part[], body: string, wrecked: boolean, axles?: number[]): Built {
+  const staticParts: THREE.BufferGeometry[] = [...wheels(spec, axles)];
   const shinyParts: THREE.BufferGeometry[] = [];
   const lightParts: THREE.BufferGeometry[] = [];
   const animated: Built['animated'] = [];
-  for (const part of spec.model) {
+  for (const part of model) {
     const col = new THREE.Color(paintColor(part.paint, body, wrecked));
     const raw = partGeometry(spec, part, col);
     const g = raw.index ? raw.toNonIndexed() : raw;
@@ -105,14 +119,12 @@ function build(type: number, colorIdx: number, wrecked: boolean): Built {
     else if (SHINY.has(part.paint) && !wrecked) shinyParts.push(g);
     else staticParts.push(g);
   }
-  const built: Built = {
+  return {
     body: mergeGeometries(staticParts)!,
     shiny: shinyParts.length ? mergeGeometries(shinyParts) : null,
     lights: lightParts.length ? mergeGeometries(lightParts) : null,
     animated,
   };
-  cache.set(key, built);
-  return built;
 }
 
 // Paint reflects the scene environment (set up in Stage); glass and chrome are mirror-like.
@@ -131,6 +143,8 @@ export interface VehicleView {
   rotors: THREE.Mesh[];
   tailRotors: THREE.Mesh[];
   sirens: THREE.Mesh[];
+  /** Pivot at the hitch; rotate it by (trailer angle - vehicle angle). */
+  trailer: THREE.Group | null;
   key: string;
 }
 
@@ -144,7 +158,21 @@ export function makeVehicle(type: number, colorIdx: number, wrecked: boolean): V
   root.add(body);
   if (b.shiny) root.add(new THREE.Mesh(b.shiny, shinyMat));
   if (b.lights) root.add(new THREE.Mesh(b.lights, lightMat));
-  const view: VehicleView = { root, turret: null, rotors: [], tailRotors: [], sirens: [], key: `${type}:${colorIdx}:${wrecked}` };
+  const view: VehicleView = { root, turret: null, rotors: [], tailRotors: [], sirens: [], trailer: null, key: `${type}:${colorIdx}:${wrecked}` };
+  if (b.trailer && spec.trailer) {
+    const pivot = new THREE.Group();
+    pivot.position.x = -hitchOffset(spec);
+    const tb = new THREE.Group();
+    tb.position.x = -spec.trailer.length / 2; // the trailer's front edge sits on the hitch
+    const tm = new THREE.Mesh(b.trailer.body, bodyMat);
+    tm.castShadow = true; tm.receiveShadow = true;
+    tb.add(tm);
+    if (b.trailer.shiny) tb.add(new THREE.Mesh(b.trailer.shiny, shinyMat));
+    if (b.trailer.lights) tb.add(new THREE.Mesh(b.trailer.lights, lightMat));
+    pivot.add(tb);
+    root.add(pivot);
+    view.trailer = pivot;
+  }
   for (const a of b.animated) {
     const m = new THREE.Mesh(a.geo, a.tag === 'siren' ? sirenMats.redDim : animMat);
     m.castShadow = true;

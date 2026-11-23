@@ -1,15 +1,26 @@
-// Keyboard + mouse buttons mapped through rebindable actions. Edge actions latch until the next
-// sim tick consumes them; UI actions fire callbacks immediately.
+// Keyboard, mouse buttons and gamepad buttons mapped through rebindable actions. Edge actions latch
+// until the next sim tick consumes them; UI actions fire callbacks immediately. Analog sticks and
+// triggers are read by Steering straight from `pad`.
 import { BTN } from '../../shared/protocol';
 import { type Action, ACTIONS, Bindings } from './controls';
+import { PAD, Pad, PAD_ACTIONS, type PadAction } from './gamepad';
 
 export type UiAction = 'action' | 'chat' | 'map' | 'menu' | 'scoreOn' | 'scoreOff';
+export type NavCmd = 'up' | 'down' | 'left' | 'right' | 'ok' | 'back';
 
 const EDGE_BTN: Partial<Record<Action, number>> = { prevWeapon: BTN.prev, nextWeapon: BTN.next, horn: BTN.horn };
 const KIND = new Map(ACTIONS.map((a) => [a.id, a.kind]));
+/** Vehicle twins of the on-foot pad buttons (the same button does both). */
+const PAD_ALIAS: Partial<Record<Action, PadAction>> = { handbrake: 'jump', climb: 'jump', descend: 'sprint' };
+const NAV: [number, NavCmd][] = [[PAD.up, 'up'], [PAD.down, 'down'], [PAD.left, 'left'], [PAD.right, 'right'], [PAD.a, 'ok'], [PAD.b, 'back']];
 
 export class Input {
   readonly bindings = new Bindings();
+  readonly pad = new Pad();
+  /** On foot the right trigger fires (in vehicles it is the gas); set by Steering each tick. */
+  triggerFires = true;
+  onNav: (c: NavCmd) => void = () => {};
+  private navRepeat = -1;
   private down = new Set<string>();
   private edges = 0;
   private pressed = new Set<Action>(); // held actions pressed since the last tick (taps shorter than a tick)
@@ -48,6 +59,7 @@ export class Input {
     }
     const target = e.target as HTMLElement | null;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+    if (isDown) this.pad.active = false;
     if (isDown && code === 'Escape') { this.onUi('menu'); return; }
     const actions = this.bindings.actionsFor(code);
     // Keep the browser from acting on game keys (Ctrl+R reload, Space scroll, Tab focus...).
@@ -74,7 +86,48 @@ export class Input {
   held(a: Action): boolean {
     if (!this.enabled) return false;
     if (this.pressed.has(a)) return true;
-    return this.bindings.keys(a).some((k) => this.down.has(k));
+    if (this.bindings.keys(a).some((k) => this.down.has(k))) return true;
+    if (this.navMode) return false;
+    if (a === 'fire' && this.triggerFires && this.pad.rt > 0.35) return true;
+    const pa = PAD_ALIAS[a] ?? (a as PadAction);
+    return PAD_ACTIONS.some((d) => d.id === pa) && this.pad.held(pa);
+  }
+
+  /** While a menu pane is open the pad drives it instead of the game. */
+  private navMode = false;
+
+  /** Polls the controller once per frame: buttons become actions (or menu navigation). */
+  pollPad(dt: number, navMode: boolean): void {
+    const pad = this.pad;
+    pad.poll();
+    this.navMode = navMode;
+    const ly = pad.ly;
+    // Sticks and triggers don't reach the game while a menu or chat has the controller.
+    if (navMode || !this.enabled) pad.lx = pad.ly = pad.rx = pad.ry = pad.lt = pad.rt = 0;
+    if (!pad.connected || pad.capture) return;
+    if (pad.pressed('menu')) { this.onUi('menu'); return; }
+    if (navMode) {
+      for (const [b, c] of NAV) if (pad.rawPressed(b)) this.onNav(c);
+      // Holding the stick or D-pad scrolls through the list after a short delay.
+      const dir = ly < -0.6 || pad.rawHeld(PAD.up) ? 'up' : ly > 0.6 || pad.rawHeld(PAD.down) ? 'down' : null;
+      if (!dir) this.navRepeat = -1;
+      else if (this.navRepeat < 0) {
+        if (!pad.rawPressed(PAD.up) && !pad.rawPressed(PAD.down)) this.onNav(dir);
+        this.navRepeat = 0.4;
+      } else if ((this.navRepeat -= dt) <= 0) { this.onNav(dir); this.navRepeat = 0.12; }
+      return;
+    }
+    if (pad.pressed('scores')) this.onUi('scoreOn');
+    if (pad.released('scores')) this.onUi('scoreOff');
+    if (pad.pressed('action')) this.onUi('action');
+    if (pad.pressed('map')) this.onUi('map');
+    if (!this.enabled) return;
+    for (const d of PAD_ACTIONS) {
+      if (!pad.pressed(d.id)) continue;
+      const kind = KIND.get(d.id as Action);
+      if (kind === 'edge') this.edges |= EDGE_BTN[d.id as Action] ?? 0;
+      else if (kind === 'held') this.pressed.add(d.id as Action);
+    }
   }
 
   axis(neg: Action, pos: Action): number {

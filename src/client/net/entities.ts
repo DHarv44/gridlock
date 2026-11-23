@@ -9,7 +9,7 @@ export interface ViewEntity {
   kind: number;
   samples: Sample[];
   // Interpolated state (filled by Interp.update)
-  x: number; y: number; angle: number; alt: number; turret: number;
+  x: number; y: number; angle: number; alt: number; turret: number; trailer: number;
   vx: number; vy: number;
   data: number[];            // latest raw data
   seen: number;              // snapshot serial when last present
@@ -33,7 +33,7 @@ export class EntityStore {
       const id = d[0];
       let e = this.all.get(id);
       if (!e || e.kind !== d[1]) {
-        e = { id, kind: d[1], samples: [], x: 0, y: 0, angle: 0, alt: 0, turret: 0, vx: 0, vy: 0, data: d, seen: 0 };
+        e = { id, kind: d[1], samples: [], x: 0, y: 0, angle: 0, alt: 0, turret: 0, trailer: 0, vx: 0, vy: 0, data: d, seen: 0 };
         this.all.set(id, e);
       }
       e.data = d;
@@ -64,9 +64,9 @@ export class EntityStore {
 }
 
 /** Index of x/y/angle fields per entity kind. */
-const LAYOUT: Record<number, { x: number; y: number; a: number; alt?: number; turret?: number }> = {
+const LAYOUT: Record<number, { x: number; y: number; a: number; alt?: number; turret?: number; trailer?: number }> = {
   [EK.Ped]: { x: 3, y: 4, a: 5 },
-  [EK.Veh]: { x: 3, y: 4, a: 5, alt: 8, turret: 9 },
+  [EK.Veh]: { x: 3, y: 4, a: 5, alt: 8, turret: 9, trailer: 11 },
   [EK.Proj]: { x: 3, y: 4, a: 5, alt: 6 },
   [EK.Pickup]: { x: 3, y: 4, a: -1 },
   [EK.Fire]: { x: 2, y: 3, a: -1 },
@@ -89,6 +89,7 @@ function interpolate(e: ViewEntity, rt: number): void {
   if (L.a >= 0) e.angle = lerpAngle(a.d[L.a], b.d[L.a], t);
   if (L.alt !== undefined) e.alt = lerp(a.d[L.alt], b.d[L.alt], t);
   if (L.turret !== undefined) e.turret = lerpAngle(a.d[L.turret], b.d[L.turret], t);
+  if (L.trailer !== undefined) e.trailer = lerpAngle(a.d[L.trailer] ?? a.d[L.a], b.d[L.trailer] ?? b.d[L.a], t);
   if (span > 0) {
     e.vx = (b.d[L.x] - a.d[L.x]) / (span / 1000);
     e.vy = (b.d[L.y] - a.d[L.y]) / (span / 1000);

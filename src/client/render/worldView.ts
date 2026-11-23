@@ -128,6 +128,8 @@ export class WorldView {
     v.root.position.set(x, alt, y);
     v.root.rotation.y = -a;
     if (v.turret) v.turret.rotation.y = -(e.turret - e.angle);
+    // Trailer swing relative to the cab (server-simulated angle, interpolated).
+    if (v.trailer) v.trailer.rotation.y = -(e.trailer - e.angle);
     const spinning = (flags & VF.driven) || alt > 0.3;
     for (const r of v.rotors) r.rotation.y += dt * (spinning ? 32 : 0);
     for (const r of v.tailRotors) r.rotation.z += dt * (spinning ? 40 : 0);

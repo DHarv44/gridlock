@@ -144,3 +144,15 @@ button:disabled { opacity: 0.4; cursor: default; }
 .pane .keys kbd { font-family: inherit; color: var(--accent); }
 .pane .field { padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--dim); }
 .pane .field input[type=range] { width: 100%; }
+.pane.wide { width: min(560px, 96vw); }
+.pane .tabs { display: flex; gap: 4px; margin-top: 14px; border-bottom: 1px solid var(--line); }
+.pane .tab { background: none; border: 0; border-bottom: 2px solid transparent; color: var(--dim); font: inherit; font-size: 15px; padding: 8px 14px; cursor: pointer; }
+.pane .tab:hover { color: var(--ink); }
+.pane .tab.on { color: var(--ink); border-bottom-color: var(--accent); }
+.pane .item.slotted { cursor: default; }
+.pane .item.slotted:hover { background: none; }
+.pane .slot { width: 128px; flex: none; background: #14171c; border: 1px solid var(--line); border-radius: 3px; color: var(--ink); font: inherit; font-size: 14px; padding: 6px 8px; cursor: pointer; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pane .slot:hover { border-color: var(--dim); }
+.pane .slot.empty { color: var(--dim); }
+.pane .slot.on { border-color: var(--accent); color: var(--accent); }
+.pane .focus { outline: 2px solid var(--accent); outline-offset: -2px; }

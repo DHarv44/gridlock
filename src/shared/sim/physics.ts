@@ -116,6 +116,37 @@ export function stepVehicle(b: Body, spec: VehicleSpec, c: Controls, dt: number,
   return collideStatic(b, spec, world, 0);
 }
 
+/** Where the trailer hitch sits: this far behind the vehicle's centre. */
+export const hitchOffset = (spec: VehicleSpec): number => spec.length / 2 - 0.9;
+
+/**
+ * Advances an articulated trailer's heading. The trailer pivots on the hitch and its rear axle
+ * can't slide sideways, so it swings toward the path of the hitch (classic trailer kinematics).
+ */
+export function stepTrailer(b: Body, spec: VehicleSpec, trailerAngle: number, dt: number): number {
+  const t = spec.trailer;
+  if (!t) return b.angle;
+  const c = Math.cos(b.angle), s = Math.sin(b.angle);
+  const off = hitchOffset(spec);
+  // Hitch velocity = body velocity + spin × (hitch offset behind the centre).
+  const hvx = b.vx + b.av * (s * off), hvy = b.vy - b.av * (c * off);
+  const axle = t.length * 0.8;
+  const rate = (hvx * -Math.sin(trailerAngle) + hvy * Math.cos(trailerAngle)) / axle;
+  let a = trailerAngle + rate * dt;
+  // Jackknife limit.
+  const rel = wrapAngle(a - b.angle);
+  if (Math.abs(rel) > 1.45) a = b.angle + Math.sign(rel) * 1.45;
+  return a;
+}
+
+/** Centre of the trailer box for a given trailer heading. */
+export function trailerCentre(b: Body, spec: VehicleSpec, trailerAngle: number): { x: number; y: number } {
+  const off = hitchOffset(spec);
+  const hx = b.x - Math.cos(b.angle) * off, hy = b.y - Math.sin(b.angle) * off;
+  const half = (spec.trailer?.length ?? 0) / 2;
+  return { x: hx - Math.cos(trailerAngle) * half, y: hy - Math.sin(trailerAngle) * half };
+}
+
 function stepHeli(b: Body, spec: VehicleSpec, c: Controls, dt: number, world: StaticWorld, driven: boolean): number {
   const flying = b.alt > 1.5;
   if (driven && c.up) b.alt = Math.min(HELI_MAX_ALT, b.alt + HELI_CLIMB * dt);

@@ -1,6 +1,6 @@
-// Player actions and their key bindings. GTA2-style keyboard layout by default (WASD or arrows
-// turn and move where you face, Ctrl fires ahead); every action can be rebound. The mouse pointer
-// position never matters; mouse buttons can be bound like keys.
+// Player actions and their key bindings: two slots per action, each rebindable. On foot WASD are
+// screen directions; in vehicles W/S gas and brake, A/D steer. The mouse pointer position never
+// matters; mouse buttons can be bound like keys.
 
 export type Action =
   | 'forward' | 'back' | 'left' | 'right' | 'fire' | 'action' | 'handbrake' | 'jump' | 'sprint' | 'climb' | 'descend'
@@ -35,7 +35,7 @@ export const ACTIONS: ActionDef[] = [
 
 // New key: drops settings saved while the old mouse-aim style existed.
 const STORE = 'gridlock.controls.v7';
-const MAX_KEYS = 2;
+export const MAX_KEYS = 2;
 
 /** Readable name for a key code or mouse button. */
 export function keyName(code: string): string {
@@ -65,23 +65,33 @@ export class Bindings {
     this.index();
   }
 
+  /** Bound keys (empty slots skipped). */
   keys(a: Action): string[] {
-    return this.map.get(a) ?? [];
+    return this.slots(a).filter(Boolean);
+  }
+
+  /** Both slots in order; '' is an empty slot. */
+  slots(a: Action): string[] {
+    const s = this.map.get(a) ?? [];
+    return Array.from({ length: MAX_KEYS }, (_, i) => s[i] ?? '');
   }
 
   actionsFor(code: string): Action[] {
     return this.byKey.get(code) ?? [];
   }
 
-  /** Binds `code` to `a` (dropping its oldest key if full). Twins that never apply at the same
-   *  time may share a key; any other action using the key loses it. */
-  bind(a: Action, code: string): void {
-    for (const def of ACTIONS) {
-      if (def.id === a || sharable(def.id, a)) continue;
-      this.map.set(def.id, this.keys(def.id).filter((k) => k !== code));
+  /** Puts `code` in one slot of `a` ('' clears it). Twins that never apply at the same time may
+   *  share a key; any other action using the key loses it. */
+  setSlot(a: Action, slot: number, code: string): void {
+    if (code) {
+      for (const def of ACTIONS) {
+        if (def.id === a || sharable(def.id, a)) continue;
+        this.map.set(def.id, this.slots(def.id).map((k) => (k === code ? '' : k)));
+      }
     }
-    const cur = this.keys(a).filter((k) => k !== code);
-    this.map.set(a, [code, ...cur].slice(0, MAX_KEYS));
+    const cur = this.slots(a).map((k) => (k === code ? '' : k));
+    cur[slot] = code;
+    this.map.set(a, cur);
     this.save();
   }
 
@@ -103,6 +113,7 @@ export class Bindings {
     this.byKey.clear();
     for (const [a, keys] of this.map) {
       for (const k of keys) {
+        if (!k) continue;
         const list = this.byKey.get(k) ?? [];
         list.push(a);
         this.byKey.set(k, list);

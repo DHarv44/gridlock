@@ -93,6 +93,7 @@ export interface Vehicle {
   stolenBy: number;         // player id who stole it (for chop shop)
   fireCalled: boolean;
   horn: boolean;
+  trailer: number;          // articulated trailer heading (semis), else = body angle
 }
 
 export interface Projectile {

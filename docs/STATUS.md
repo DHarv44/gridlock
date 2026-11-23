@@ -36,8 +36,12 @@
   hit, torch, steal, courier, frenzy) with content in packs/missions.ts, gang respect (saved per player,
   drives gang hostility), kill-frenzy crates, room modes (free / frag race / money race) in
   server/rounds.ts. `npx tsx scripts/missions.ts` runs every job kind headlessly.
+- Controls (2026-11-23): gamepad via the browser Gamepad API (client/game/gamepad.ts): analog stick
+  movement/steer, progressive triggers, right-stick aim, rebindable buttons, pad-driven menus
+  (Pane.nav). Controls editor has Keyboard / Mouse (2 slots per action) and Controller tabs.
+- Semi trailer: articulated (shared/sim/physics stepTrailer, server/systems/trailers.ts), angle at
+  vehicle entity index 11 (0 for vehicles without a trailer).
 
 ## Known gaps / next
 - Trucks, bus, tank and aircraft still use box models (cars got the profile treatment).
-- Gamepad not supported.
 - Hosting for internet play: see README (port-forward, or deploy; ask the user before deploying).

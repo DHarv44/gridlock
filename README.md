@@ -32,9 +32,18 @@ Open http://localhost:5228, pick a name, **Create game**, then send friends the 
 
 ## Controls
 
-Keyboard only. On foot W/A/S/D (or arrows) run north/west/south/east on screen and you face the
-way you run; shots go that way and auto-aim at whoever is ahead of you (±16°). The mouse pointer
-plays no part. Esc → Change controls rebinds any action.
+Keyboard or controller. On foot W/A/S/D (or arrows) run north/west/south/east on screen and you
+face the way you run; shots go that way and auto-aim at whoever is ahead of you (±16°). The mouse
+pointer plays no part. Esc → Change controls has a Keyboard / Mouse tab (two keys per action;
+Delete clears a slot) and a Controller tab (rebind buttons).
+
+**Controller** (any standard-mapped pad, no setup): the left stick moves in any direction and how far
+you push sets the pace; the right stick aims (tank turret in a tank). In vehicles the left stick
+steers in proportion, RT is the gas, LT the brake and reverse. RT also fires on foot. Defaults: RB fire, Y action,
+A jump/handbrake/climb, B sprint/descend, D-pad left/right weapons, D-pad down scores, View map,
+Menu pause. Menus: D-pad or stick to move, A to choose, B to go back.
+
+The semi tows an articulated trailer: it swings wide on turns, can jackknife, and scrapes on walls.
 
 | Key | Action |
 | --- | --- |

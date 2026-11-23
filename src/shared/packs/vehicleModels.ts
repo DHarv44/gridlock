@@ -129,6 +129,27 @@ export const semi = (): Part[] => [
   ...lights(0.5, -0.5, 0.2, 0.32),
 ];
 
+/** Semi tractor unit on its own (the trailer is a separate articulated piece). */
+export const semiTractor = (): Part[] => [
+  p([[-0.1, 0.15], [0.5, 0.15], [0.5, 0.52], [0.42, 0.8], [-0.1, 0.86]], -0.5, 0.5, 'body'),
+  b(0.28, 0.42, -0.47, 0.47, 0.55, 0.78, 'glass'),
+  b(-0.12, 0.0, -0.5, -0.44, 0.55, 1.0, 'chrome'),
+  b(-0.12, 0.0, 0.44, 0.5, 0.55, 1.0, 'chrome'),
+  b(-0.5, -0.1, -0.42, 0.42, 0.12, 0.3, 'dark'),     // chassis rails
+  b(-0.42, -0.2, -0.35, 0.35, 0.3, 0.36, 'trim'),    // fifth-wheel plate
+  b(0.47, 0.51, -0.5, 0.5, 0.12, 0.24, 'trim'),
+  ...lights(0.5, -0.5, 0.2, 0.32),
+];
+
+/** Box trailer: x runs from its front (+0.5, at the hitch) to its rear doors (-0.5). */
+export const boxTrailer = (): Part[] => [
+  b(-0.5, 0.5, -0.5, 0.5, 0.25, 1, 'white'),
+  b(-0.5, 0.5, -0.505, 0.505, 0.96, 1.0, 'trim'),
+  b(-0.505, -0.49, -0.45, 0.45, 0.3, 0.95, 'trim'),
+  b(-0.505, -0.49, -0.45, -0.28, 0.28, 0.36, 'taillight', 'taillight'),
+  b(-0.505, -0.49, 0.28, 0.45, 0.28, 0.36, 'taillight', 'taillight'),
+];
+
 export const bus = (stripe: Paint = 'white'): Part[] => [
   p([[-0.5, 0.12], [0.5, 0.12], [0.5, 0.9], [0.47, 0.98], [-0.48, 0.98], [-0.5, 0.9]], -0.5, 0.5, 'body'),
   b(-0.48, 0.48, -0.505, 0.505, 0.55, 0.8, 'glass'),

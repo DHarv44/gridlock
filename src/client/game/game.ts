@@ -78,6 +78,7 @@ export class Game {
     this.interact = new Interact(city, this.pane);
     this.hud.onChat = (text) => conn.send({ t: 'chat', text });
     this.input.onUi = (a) => this.ui(a);
+    this.input.onNav = (c) => this.pane.nav(c);
     conn.on((m) => this.onMessage(m));
     // Ctrl is the default fire key: guard against Ctrl+W / Ctrl+R closing the game by accident.
     if (import.meta.env.PROD) window.onbeforeunload = (e) => { if (this.running) e.preventDefault(); };
@@ -193,6 +194,7 @@ export class Game {
     const now = performance.now();
     const dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
+    this.input.pollPad(dt, this.pane.isOpen);
     this.acc += dt;
     let n = 0;
     while (this.acc >= STEP && n < 4) {

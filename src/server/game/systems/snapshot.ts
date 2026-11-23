@@ -53,7 +53,7 @@ export function buildSnapshot(w: World, pl: Player): S2C {
     const air = v.spec.movement === 'rotor' && v.body.alt > 3;
     if (!near(v.body.x, v.body.y, air ? R2 * 1.7 : R2)) continue;
     const dmg = v.wrecked ? 3 : v.hp < v.spec.hp * 0.35 ? 2 : v.hp < v.spec.hp * 0.7 ? 1 : 0;
-    e.push([v.id, EK.Veh, v.type, r2(v.body.x), r2(v.body.y), a2(v.body.angle), v.color, vehFlags(w, v), a2(v.body.alt), a2(v.turret), dmg]);
+    e.push([v.id, EK.Veh, v.type, r2(v.body.x), r2(v.body.y), a2(v.body.angle), v.color, vehFlags(w, v), a2(v.body.alt), a2(v.turret), dmg, v.spec.trailer ? a2(v.trailer) : 0]);
   }
   for (const pr of w.projectiles.values()) {
     if (near(pr.x, pr.y)) e.push([pr.id, EK.Proj, pr.weapon, r2(pr.x), r2(pr.y), a2(pr.angle), a2(pr.z)]);
