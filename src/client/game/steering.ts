@@ -1,7 +1,5 @@
-// Turns held actions into the input fields the server understands, for either control style.
-//  classic (default, GTA2): left/right turn with GTA2's turn curve, forward/back move along the
-//           facing, weapons fire ahead with GTA2-style auto-aim onto the nearest target in a cone.
-//  mouse:   WASD moves in screen directions, the character faces the cursor.
+// GTA2-style steering: left/right turn with GTA2's turn curve, forward/back move along the facing,
+// weapons fire ahead with auto-aim onto the nearest target in a cone. The mouse plays no part.
 import { VEHICLES } from '../../shared/packs';
 import { Mode, type YouState } from '../../shared/protocol';
 import type { Input } from './input';
@@ -27,11 +25,8 @@ export class Steering {
   private lastMode = -1;
   private lastHeading = 0;
 
-  /**
-   * One sim tick. `heading` is the current vehicle (or ped) angle; `cursor` is the mouse's ground
-   * point and `from` the player's position.
-   */
-  step(input: Input, you: YouState, heading: number, dt: number, from: { x: number; y: number }, cursor: { x: number; y: number }, assist: AimAssist): SteerOut {
+  /** One sim tick. `heading` is the current vehicle (or ped) angle, `from` the player's position. */
+  step(input: Input, you: YouState, heading: number, dt: number, from: { x: number; y: number }, assist: AimAssist): SteerOut {
     const mode = you.mode;
     const inCar = mode === Mode.Driver || mode === Mode.Passenger;
     if (mode !== this.lastMode) {
@@ -43,24 +38,14 @@ export class Steering {
     const turn = input.axis('left', 'right');
     const fwd = input.axis('back', 'forward');
     const firing = input.held('fire');
-    const classic = input.bindings.scheme === 'classic';
-    const mouseAim = Math.atan2(cursor.y - from.y, cursor.x - from.x);
     if (inCar) {
       this.lastHeading = heading;
-      let aim = mouseAim;
-      if (classic) {
-        const tank = you.vt >= 0 && VEHICLES[you.vt].movement === 'tracks';
-        if (tank) this.turret += input.axis('turretLeft', 'turretRight') * TURRET_RATE * dt;
-        aim = heading + this.turret;
-        if (!tank) aim = assist(from.x, from.y, aim) ?? aim;
-      }
+      const tank = you.vt >= 0 && VEHICLES[you.vt].movement === 'tracks';
+      if (tank) this.turret += input.axis('turretLeft', 'turretRight') * TURRET_RATE * dt;
+      let aim = heading + this.turret;
+      if (!tank) aim = assist(from.x, from.y, aim) ?? aim;
       this.facing = aim;
       return mode === Mode.Driver ? { mx: 0, my: 0, throttle: fwd, steer: turn, aim } : { mx: 0, my: 0, throttle: 0, steer: 0, aim };
-    }
-    if (!classic) {
-      // Screen-relative: W is always up the screen, whatever way you face.
-      this.facing = mouseAim;
-      return { mx: turn, my: -fwd, throttle: 0, steer: 0, aim: mouseAim };
     }
     // GTA2 turning: builds up quickly to a cap, stops dead on release.
     if (turn === 0) this.turnSpeed = 0;

@@ -32,15 +32,14 @@ Open http://localhost:5228, pick a name, **Create game**, then send friends the 
 
 ## Controls
 
-Classic GTA2-style by default: turn and run where you face, shots auto-aim at whoever is
-ahead of you (±16°). Esc → Change controls switches to Mouse aim (WASD screen movement, face the
-cursor) and rebinds any action to a key or mouse button.
+Keyboard only, GTA2-style: turn and run where you face, shots auto-aim at whoever is ahead of
+you (±16°). The mouse pointer plays no part. Esc → Change controls rebinds any action.
 
 | Key | Action |
 | --- | --- |
 | W/S or Up/Down | Run forward / back where you face · in vehicles gas / brake, reverse |
 | A/D or Left/Right | Turn · steer |
-| Left Ctrl or left click | Fire ahead (auto-aims at the nearest person in front) |
+| Ctrl | Fire ahead (auto-aims at the nearest person in front) |
 | , / . | Tank turret left / right |
 | Shift | Sprint · descend in helicopters |
 | Space | Handbrake · climb in helicopters |

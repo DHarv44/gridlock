@@ -65,7 +65,6 @@ export class Game {
     this.map = new CityMap(city);
     const statics = new StaticWorld(city);
     const canvas = document.getElementById('view') as HTMLCanvasElement;
-    this.canvas = canvas;
     this.stage = new Stage(canvas);
     this.cam = new ChaseCamera(this.stage.camera);
     this.ground = new Ground(this.stage.scene, this.map, this.stage.renderer.capabilities.getMaxAnisotropy());
@@ -95,7 +94,6 @@ export class Game {
   private props: StreetProps;
   private water: Water;
   private storefronts: Storefronts;
-  private canvas: HTMLCanvasElement;
   private quality: QualityGovernor;
 
   /** Signal lamps follow the server clock; they also cast a small coloured glow. */
@@ -174,8 +172,7 @@ export class Game {
   private tick(own: OwnState | null): void {
     const inp = this.input;
     if (!this.you || !own) return;
-    const cursor = this.cam.screenToWorld(inp.mouseX, inp.mouseY, own.alt > 3 ? 1 : 0);
-    const c = this.steering.step(inp, this.you, own.angle, STEP, own, cursor, this.autoAim);
+    const c = this.steering.step(inp, this.you, own.angle, STEP, own, this.autoAim);
     this.aimAngle = c.aim;
     const msg: InputMsg = [
       ++this.seq, c.mx, c.my, c.throttle, c.steer,
@@ -206,11 +203,8 @@ export class Game {
     this.store.update();
     const own = this.ownState(this.acc / STEP);
     if (own) {
-      // On foot the camera leans toward the cursor (mouse style) or a little ahead of you (classic).
-      const mouse = this.input.bindings.scheme === 'mouse';
-      const cur = mouse ? this.cam.screenToWorld(this.input.mouseX, this.input.mouseY) : null;
-      const ax = cur ? cur.x : own.x, ay = cur ? cur.y : own.y;
-      this.cam.update(dt, own.x, own.y, own.vx, own.vy, own.alt, ax, ay, !!own.vid);
+      // GTA2: centred on you on foot; leads along travel in vehicles.
+      this.cam.update(dt, own.x, own.y, own.vx, own.vy, own.alt, own.x, own.y, !!own.vid);
       this.sound.listenerX = own.x; this.sound.listenerY = own.y;
     }
     const vr = this.cam.viewRect();
@@ -246,9 +240,6 @@ export class Game {
     if (!you || !own) return;
     const seen = you.wl > 0;
     this.hud.update(you, this.gameMinutes, seen);
-    // Classic (GTA2) is keyboard-driven: no pointer over the game. Mouse-aim keeps a crosshair.
-    const cursor = this.input.bindings.scheme === 'mouse' ? 'crosshair' : 'none';
-    if (this.canvas.style.cursor !== cursor) this.canvas.style.cursor = cursor;
     // Radar, place lookup and pane refresh don't need full frame rate.
     if ((this.hudFrame = (this.hudFrame + 1) % 2) !== 0) return;
     const spot = this.interact.find(own.x, own.y, you);
