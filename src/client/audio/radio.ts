@@ -121,6 +121,8 @@ export class Radio {
     }
     this.target = 1;
     this.show(s.name, s.color);
+    // Still loading another station's track: drop it and tune straight to this one.
+    this.loading = false;
     this.follow();
     // Tuning in mid-song: say what it is.
     const air = onAir(s.id, this.stations[s.id] ?? NONE, this.now());
@@ -145,6 +147,7 @@ export class Radio {
     this.audio.src = src;
     if (!air.ad) this.nowPlaying(s.id, air.file);
     this.audio.addEventListener('loadedmetadata', () => {
+      if (this.playing !== src) return; // retuned while this was loading
       // Loading took a moment: seek to where the broadcast is now, not where it was.
       const live = onAir(s.id, this.stations[s.id] ?? NONE, this.now());
       this.audio.currentTime = live && live.file === air.file ? Math.min(live.offset, this.audio.duration - 0.1) : 0;
@@ -152,7 +155,7 @@ export class Radio {
       this.start();
     }, { once: true });
     // A track that won't load: forget it so the next check tries again.
-    this.audio.addEventListener('error', () => { this.loading = false; this.playing = ''; console.warn('[radio] could not load', src); }, { once: true });
+    this.audio.addEventListener('error', () => { if (this.playing !== src) return; this.loading = false; this.playing = ''; console.warn('[radio] could not load', src); }, { once: true });
   }
 
   /** Starts playback. A browser that won't play sound before the page is used gets another go on

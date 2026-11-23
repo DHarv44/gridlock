@@ -5,4 +5,5 @@ export interface RadioStation { id: string; name: string; color: string }
 export const RADIO: RadioStation[] = [
   // id is the station's folder (radio/weather/); name is what players see.
   { id: 'weather', name: '98.2 The Spa', color: '#7fd1e8' },
+  { id: 'jazzy', name: '99.9 Jazzy J', color: '#e8b04c' },
 ];
