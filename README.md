@@ -21,7 +21,7 @@ Open http://localhost:5228, pick a name, **Create game**, then send friends the 
 
 **Radio:** each vehicle's radio comes tuned to its own station; press R (controller: D-pad up)
 to cycle that vehicle's radio through Off and the stations
-(src/shared/packs/radio.ts: 97.1 The Eagle, 98.2 The Spa, 99.9 Jazzy J, 102.2 Funk in the Trunk, 106.1 KISS FM). Stations are broadcasts on the server's
+(src/shared/packs/radio.ts: 97.1 The Eagle, 98.2 The Spa, 99.9 Jazzy J, 102.2 Funk in the Trunk, 103.3 The Talking Heads, 106.1 KISS FM). Stations are broadcasts on the server's
 clock: every player on a station hears the same song at the same moment, and switching cars
 never restarts anything (you join whatever is on air). A station plays every audio file
 (.m4a, .mp3, .wav; lengths are read from the files) in its folder, with commercial breaks

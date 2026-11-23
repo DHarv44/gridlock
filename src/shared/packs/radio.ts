@@ -8,5 +8,6 @@ export const RADIO: RadioStation[] = [
   { id: 'weather', name: '98.2 The Spa', color: '#7fd1e8' },
   { id: 'jazzy', name: '99.9 Jazzy J', color: '#e8b04c' },
   { id: 'trunk', name: '102.2 Funk in the Trunk', color: '#ff5fa2' },
+  { id: 'talk', name: '103.3 The Talking Heads', color: '#b9a4ff' },
   { id: 'kiss', name: '106.1 KISS FM', color: '#ff3b3b' },
 ];
