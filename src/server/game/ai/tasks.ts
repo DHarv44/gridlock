@@ -5,6 +5,7 @@ import { Mode } from '../../../shared/protocol';
 import type { Ped, TaskName } from '../entities';
 import { freeSeat, seatPed } from '../factory';
 import type { World } from '../world';
+import { reachDist } from './doors';
 import { soldierHostile } from './soldiers';
 import { route } from '../systems/lifts';
 
@@ -134,12 +135,13 @@ export function attack(w: World, p: Ped, dt: number): boolean {
   if (p.spec.behaviour === 'military' && !soldierHostile(w, p, t)) { p.trigger = false; return true; }
   armBest(p);
   const pos = w.pedPos(t);
-  const d = dist(p.body.x, p.body.y, pos.x, pos.y);
+  // On another floor: as far as the way round through the building, and out of sight.
+  const { d, sameFloor } = reachDist(p.body.x, p.body.y, pos.x, pos.y);
   if (d > 110 || (d > 70 && ai.t > 20)) { p.trigger = false; return true; }
   const spec = WEAPONS[p.weapons[p.wi].w];
   const want = Math.atan2(pos.y - p.body.y, pos.x - p.body.x);
   const range = spec.kind === 'melee' ? 1.1 : Math.min(spec.range * 0.75, 32);
-  const los = !w.statics.raycast(p.body.x, p.body.y, pos.x, pos.y, 1.2);
+  const los = sameFloor && !w.statics.raycast(p.body.x, p.body.y, pos.x, pos.y, 1.2);
   if (d > range || !los) {
     moveToward(w, p, pos.x, pos.y, p.spec.runSpeed, dt);
     p.aim = want;
@@ -159,11 +161,11 @@ export function arrest(w: World, p: Ped, dt: number): boolean {
   const pl = t?.player;
   if (!t || !pl || t.dead || pl.wanted === 0 || pl.mode >= Mode.Dead) return true;
   const pos = w.pedPos(t);
-  const d = dist(p.body.x, p.body.y, pos.x, pos.y);
+  const { d, sameFloor } = reachDist(p.body.x, p.body.y, pos.x, pos.y);
   p.trigger = false;
   if (d > 100) return true;
   const reach = t.vehicle ? (w.vehicles.get(t.vehicle)?.spec.width ?? 2) / 2 + 1.6 : 1.5;
-  if (d > reach) { moveToward(w, p, pos.x, pos.y, p.spec.runSpeed, dt); return false; }
+  if (d > reach || !sameFloor) { moveToward(w, p, pos.x, pos.y, p.spec.runSpeed, dt); return false; }
   stop(p);
   p.aim = Math.atan2(pos.y - p.body.y, pos.x - p.body.x);
   const tv = t.vehicle ? w.vehicles.get(t.vehicle) : undefined;

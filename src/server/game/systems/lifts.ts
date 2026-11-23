@@ -4,6 +4,7 @@
 import { dist } from '../../../shared/math';
 import type { Interior } from '../../../shared/world/interiors';
 import { floorOf, groundOf } from '../../../shared/world/levels';
+import { doorway } from '../ai/doors';
 import type { Ped, Player } from '../entities';
 import type { World } from '../world';
 
@@ -34,17 +35,18 @@ export function ride(w: World, pl: Player, k: number, to: number): string | null
   return null;
 }
 
-/** AI heading for a point on another floor: where to walk now (the door, then the lift), or null
- *  when there's no way (not a building with lifts). Arriving at the lift takes them up or down. */
+/** AI heading for a point: where to walk now when the way isn't straight. On the same floor, through
+ *  a walk-in place's doorway (ai/doors.ts); on another floor, in through the door, to the lift, and
+ *  arriving at the lift takes them up or down. Null when they can head straight there. */
 export function route(w: World, p: Ped, tx: number, ty: number): { x: number; y: number } | null {
   const tf = floorOf(tx), mf = floorOf(p.body.x);
-  if (tf === mf) return null;
+  if (tf === mf) return mf === 0 ? doorway(w, p, tx, ty) : null;
   const i = liftBuilding(w, tf > 0 ? tx : p.body.x, tf > 0 ? ty : p.body.y);
   if (!i) return null;
-  // On the street outside: to the door first.
-  if (mf === 0 && !inRoom(i, p.body.x, p.body.y)) return { x: i.place.x, y: i.place.y };
   const here = liftOn(i, mf), there = liftOn(i, tf);
   if (!here || !there) return null;
+  // On the ground floor (in the street, or in another shop): through the doors to the lobby lift.
+  if (mf === 0) { const via = doorway(w, p, here.x, here.y); if (via) return via; }
   if (dist(p.body.x, p.body.y, here.x, here.y) < 1.3) { moveTo(p, there); return there; }
   return here;
 }

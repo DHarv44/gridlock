@@ -7,6 +7,7 @@ import type { Ped, Vehicle } from '../entities';
 import { unseatPed } from '../factory';
 import type { World } from '../world';
 import { BEHAVIOURS } from './behaviours';
+import { streetGoal } from './doors';
 import { cruise, driveTo } from './driving';
 import { soldierHostile } from './soldiers';
 import { armBest, arrest, attack, extinguish, flee, returnToVehicle, revive, setTask, standAt, wander } from './tasks';
@@ -106,11 +107,14 @@ function pursue(w: World, p: Ped, v: Vehicle, dt: number): void {
     gunner(w, p, v, pos, lethal);
     return;
   }
-  const d = driveTo(w, v, p, pos.x, pos.y, dt, { stopAt: lethal ? 4 : 8, ram: lethal && !!tv });
+  // Someone indoors (a shop, an upper floor): drive to the street outside the door and go in on foot.
+  const goal = tv ? { x: pos.x, y: pos.y, indoors: false } : streetGoal(w, pos.x, pos.y);
+  const d = driveTo(w, v, p, goal.x, goal.y, dt, { stopAt: goal.indoors ? 2 : lethal ? 4 : 8, ram: lethal && !!tv });
   if (v.spec.weapons?.length) { gunner(w, p, v, pos, lethal); if (d > 12) return; }
   const tSlow = tv ? Math.hypot(tv.body.vx, tv.body.vy) < 2 : true;
   const mySlow = Math.abs(forwardSpeed(v.body)) < 3;
-  if (d < (tv ? 14 : lethal ? 20 : 12) && tSlow && mySlow && !v.spec.weapons?.length) {
+  const reach = goal.indoors ? 8 : tv ? 14 : lethal ? 20 : 12;
+  if (d < reach && tSlow && mySlow && !v.spec.weapons?.length) {
     crewExit(w, v, (c) => setTask(c, lethal || c.spec.behaviour === 'military' ? 'attack' : 'arrest', t!.id));
   }
 }

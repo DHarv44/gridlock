@@ -55,6 +55,10 @@
   reviewed as contact sheets (art/review.py), exported Draco-compressed to src/client/models/*.glb
   (~1.1 MB). render/models.ts loads them at startup; vehicleMesh/weaponMesh build from them (the
   packs' box models stay as a fallback). See art/README.md for the commands.
+- Indoor chases (2026-11-23): AI on foot reaches people inside walk-in places through the door gap
+  (and follows them out), and up to tower/apartment floors by the lift; pursuing drivers park at the
+  door and their crew goes in. Distances to someone on another floor are measured through the
+  building. server/game/ai/doors.ts; `npx tsx scripts/indoors.ts`.
 - Sirens (2026-11-23): civilian traffic pulls over for any siren coming up behind or head-on in
   its road (player or AI driving it): eases to the kerb, stops, and moves off a few seconds after
   it's gone (ai/driving.ts sirenApproaching, cruise). AI emergency drivers pass yielding traffic on

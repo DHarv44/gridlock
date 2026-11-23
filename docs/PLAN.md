@@ -70,7 +70,9 @@ world, so friends see you inside and the city keeps running around you.
   solid; the building hides (render/hideable.ts) when you're at or in it on foot; a clerk behind
   each counter; business happens at the counter. Ground floor only, so no "floor" field yet: the
   walls are ordinary collision (bullets and sight stop at them). `npx tsx scripts/interiors.ts`.
-  Not yet: police and gangs pathing in through doors; the dealership office; owners' back-room desk.
+  Police and gangs follow you in and out through the door gap, and patrol cars stop at the door and
+  send their crew in (server/game/ai/doors.ts; 2026-11-23, `npx tsx scripts/indoors.ts`).
+  Not yet: the dealership office; owners' back-room desk.
 - F2. (done) Hand-made plans (packs/interiorPlans.ts) for the bank (lobby, tellers' counter, office,
   vault) and the police precinct (front desk with a desk sergeant, three barred cells, office). The
   bank job: the vault door is a collision gate; an explosion at it blows it open for everyone

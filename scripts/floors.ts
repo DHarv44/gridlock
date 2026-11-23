@@ -81,7 +81,7 @@ check(nearby > 0, `street life around the building while upstairs (${nearby} ped
 const chaser = spawnPed(w, 0, tw.place.x + 6, tw.place.y + 6);
 const target = fl.lift;
 const v1 = route(w, chaser, target.x, target.y);
-check(!!v1 && Math.hypot(v1.x - tw.place.x, v1.y - tw.place.y) < 0.1, 'a chaser outside heads for the door');
+check(!!v1 && Math.hypot(v1.x - tw.place.x, v1.y - tw.place.y) < 3, 'a chaser outside heads for the door');
 chaser.body.x = tw.lift!.x + 0.5; chaser.body.y = tw.lift!.y;
 route(w, chaser, target.x, target.y);
 check(floorOf(chaser.body.x) === top, 'a chaser at the lift comes up after you');
