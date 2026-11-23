@@ -55,6 +55,8 @@
   reviewed as contact sheets (art/review.py), exported Draco-compressed to src/client/models/*.glb
   (~1.1 MB). render/models.ts loads them at startup; vehicleMesh/weaponMesh build from them (the
   packs' box models stay as a fallback). See art/README.md for the commands.
+- Hold-ups (2026-11-23): see docs/PLAN.md "Shop robberies". Aim is now sent to the server
+  (BTN.aim) and clerks raise their hands (PF.hands); protocol 12. `npx tsx scripts/robbery.ts`.
 - Indoor chases (2026-11-23): AI on foot reaches people inside walk-in places through the door gap
   (and follows them out), and up to tower/apartment floors by the lift; pursuing drivers park at the
   door and their crew goes in. Distances to someone on another floor are measured through the

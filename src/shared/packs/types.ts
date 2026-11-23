@@ -241,7 +241,12 @@ export interface ServiceSpec {
   price?: number;               // respray cost
   atm?: boolean;                // an ATM on the wall beside the door
   interior?: InteriorLayout;    // walk in: the ground floor is laid out like this (world/interiors.ts)
+  robbery?: RobberySpec;        // the counter can be held up
 }
+
+/** A walk-in place's counter can be held up at gunpoint: what its till holds when full, and the
+ *  chance the clerk pulls a gun instead of handing it over. */
+export interface RobberySpec { till: number; fightBack: number }
 
 /** How an enterable place's ground floor is laid out (shared/world/interiors.ts): generated for the
  *  first five, hand-made (packs/interiorPlans.ts) for the rest. */
@@ -280,6 +285,8 @@ export interface PropertySpec {
    *  that will work with you at its door. */
   perk?: 'wash' | 'fence' | 'club';
   interior?: InteriorLayout;    // walk in: the ground floor is laid out like this
+  /** The counter can be held up. Owned by another player, a hold-up takes from its safe instead. */
+  robbery?: RobberySpec;
 }
 
 export interface Squad { vehicle: string; crew: string[] }

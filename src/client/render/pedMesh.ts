@@ -159,7 +159,7 @@ export function ridePed(v: PedView, lean: number, aiming: boolean): void {
 }
 
 /** Poses the ped for this frame. speed in m/s. */
-export function animatePed(v: PedView, dt: number, speed: number, aiming: boolean, down: boolean, dead: boolean, busy: boolean): void {
+export function animatePed(v: PedView, dt: number, speed: number, aiming: boolean, down: boolean, dead: boolean, busy: boolean, hands = false): void {
   const b = v.body;
   if (dead || down) {
     v.deadT = Math.min(1, v.deadT + dt * 5);
@@ -179,7 +179,11 @@ export function animatePed(v: PedView, dt: number, speed: number, aiming: boolea
   v.legL.rotation.z = s; v.legR.rotation.z = -s;
   const armed = v.gun.visible && v.weapon >= 0 && WEAPONS[v.weapon].kind !== 'melee';
   const twoHanded = armed && (WEAPONS[v.weapon].hold === 'two' || WEAPONS[v.weapon].hold === 'heavy');
-  if (aiming || armed) {
+  if (hands) {
+    // Held up: both hands raised, a little forward and apart.
+    v.armL.rotation.z = v.armR.rotation.z = 2.75;
+    v.armL.rotation.x = -0.25; v.armR.rotation.x = 0.25;
+  } else if (aiming || armed) {
     v.armR.rotation.z = Math.PI / 2;
     v.armL.rotation.z = twoHanded ? Math.PI / 2.3 : -s;
     v.armL.rotation.x = twoHanded ? 0.5 : 0;
@@ -187,4 +191,5 @@ export function animatePed(v: PedView, dt: number, speed: number, aiming: boolea
     v.armL.rotation.z = -s; v.armR.rotation.z = s;
     v.armL.rotation.x = 0;
   }
+  if (!hands) v.armR.rotation.x = 0;
 }

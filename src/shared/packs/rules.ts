@@ -36,6 +36,7 @@ export const CRIMES = {
   explosion: { heat: 15, felony: 'Arson', cooldown: 3 },
   trespass: { heat: 30, felony: 'Trespassing on a military base', cooldown: 60 },
   bankRobbery: { heat: 200, felony: 'Bank robbery', cooldown: 30 },
+  robbery: { heat: 30, felony: 'Armed robbery', cooldown: 20 },
 } satisfies Record<string, CrimeSpec>;
 
 export type CrimeKind = keyof typeof CRIMES;
@@ -85,6 +86,14 @@ export const RULES = {
   vaultCash: [2500, 4000] as [number, number], // per pile (six piles)
   vaultWanted: 4,            // the alarm puts the robber on at least this many stars
   vaultReset: 600,           // seconds before the vault is closed and restocked (once empty of people)
+  // Hold-ups (server/game/systems/robbery.ts): point a gun at a clerk from inside the shop.
+  robRange: 7,               // metres from the clerk
+  robStart: 0.6,             // seconds of covering them before they put their hands up
+  robSeconds: 10,            // to empty a full till while you keep them covered
+  robGrace: 1.5,             // seconds you can look away before they stop handing it over
+  robAlarm: 4,               // seconds in, the silent alarm goes off...
+  robWanted: 2,              // ...putting you on at least this many stars
+  tillRefill: 900,           // seconds for an emptied till to fill up again
   pedCap: 260,
   carCap: 140,
   vehicleCap: 300,           // all vehicles incl. parked

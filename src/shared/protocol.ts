@@ -4,7 +4,7 @@ import type { CharacterProgress, CharacterSave, CharLook } from './packs/charact
 export const TICK_HZ = 30;
 export const SNAP_EVERY = 2;             // snapshots at 15 Hz
 export const INTERP_DELAY_MS = 120;
-export const PROTOCOL_VERSION = 11;
+export const PROTOCOL_VERSION = 12;
 /** Every Nth snapshot carries every entity in full (others list unchanged ones in `k`). */
 export const FULL_SNAP_EVERY = 30;
 
@@ -12,6 +12,7 @@ export const FULL_SNAP_EVERY = 30;
 export const BTN = {
   fire: 1, handbrake: 2, sprint: 4, up: 8, down: 16,
   enter: 32, interact: 64, reload: 128, next: 256, prev: 512, horn: 1024, jump: 2048,
+  aim: 4096, // deliberately aiming (Aim held / right stick): what a hold-up takes
 } as const;
 /** Edge-triggered buttons must not repeat when the server re-uses a stale input. */
 export const EDGE_BUTTONS = BTN.enter | BTN.interact | BTN.reload | BTN.next | BTN.prev;
@@ -37,7 +38,7 @@ export type C2S =
 
 export const EK = { Ped: 0, Veh: 1, Proj: 2, Pickup: 3, Fire: 4 } as const;
 
-export const PF = { dead: 1, fast: 2, aim: 4, burning: 8, down: 16, player: 32, busy: 64, jump: 128 } as const;
+export const PF = { dead: 1, fast: 2, aim: 4, burning: 8, down: 16, player: 32, busy: 64, jump: 128, hands: 256 } as const;
 export const VF = { siren: 1, wreck: 2, burning: 4, brake: 8, lights: 16, driven: 32, smoke: 64, reverse: 128 } as const;
 export const PK = { cash: 0, weapon: 1, health: 2, armor: 3, frenzy: 4 } as const;
 

@@ -27,6 +27,8 @@ export class Input {
   private pressed = new Set<Action>(); // held actions pressed since the last tick (taps shorter than a tick)
   weaponWish = -1;
   enabled = true;
+  /** Set by steering each tick: aiming on purpose (Aim held with the mouse, or the right stick). */
+  aimingNow = false;
   /** When set, the next key or mouse button is handed to this callback instead of the game. */
   capture: ((code: string) => void) | null = null;
   onUi: (a: UiAction) => void = () => {};
@@ -163,6 +165,7 @@ export class Input {
     if (this.held('jump')) b |= BTN.jump;
     if (this.held('sprint')) b |= BTN.sprint;
     if (this.held('descend')) b |= BTN.down;
+    if (this.aimingNow && this.enabled) b |= BTN.aim;
     this.pressed.clear();
     return this.enabled ? b : b & ~BTN.fire;
   }

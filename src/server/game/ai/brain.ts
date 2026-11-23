@@ -41,6 +41,13 @@ function footTask(w: World, p: Ped, dt: number): void {
     case 'stand': case 'guard': standAt(w, p, dt); break;
     case 'flee': done = flee(w, p, dt); break;
     case 'cower': p.ctl.mx = 0; p.ctl.my = 0; done = ai.t > 3; if (done) setTask(p, 'flee', 0, ai.tx, ai.ty); return;
+    // Held up (systems/robbery.ts ends it): hands up, facing whoever's holding the gun.
+    case 'surrender': {
+      p.ctl.mx = 0; p.ctl.my = 0;
+      const t = w.peds.get(ai.target);
+      if (t) p.aim = Math.atan2(t.body.y - p.body.y, t.body.x - p.body.x);
+      return;
+    }
     case 'attack': done = attack(w, p, dt); break;
     case 'arrest': done = arrest(w, p, dt); break;
     case 'revive': done = revive(w, p, dt); break;

@@ -105,7 +105,7 @@ export class WorldView {
     v.root.rotation.y = -a;
     setPedWeapon(v, d[7]);
     const speed = isMe ? Math.hypot(own!.vx, own!.vy) : Math.hypot(e.vx, e.vy);
-    animatePed(v, dt, speed, !!(flags & PF.aim), !!(flags & PF.down), !!(flags & PF.dead), !!(flags & PF.busy));
+    animatePed(v, dt, speed, !!(flags & PF.aim), !!(flags & PF.down), !!(flags & PF.dead), !!(flags & PF.busy), !!(flags & PF.hands));
     if (flags & PF.burning && Math.random() < 0.6) this.fx.fire(x, y, 0.8);
     if (tag && !this.tagged.has(e.id)) this.addTag(e.id, v, tag, !!isMe);
   }

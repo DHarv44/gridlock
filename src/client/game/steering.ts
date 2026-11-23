@@ -63,6 +63,7 @@ export class Steering {
     if (mouse !== null) this.facing = mouse;
     else if (pad.rx || pad.ry) this.facing = Math.atan2(pad.ry, pad.rx);
     else if (mx || my) this.facing = Math.atan2(my, mx);
+    input.aimingNow = mouse !== null || !!(pad.rx || pad.ry);
     input.facingHint = this.facing;
     const aim = firing ? assist(from.x, from.y, this.facing) ?? this.facing : this.facing;
     return { mx, my, throttle: 0, steer: 0, aim };

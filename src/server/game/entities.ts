@@ -6,7 +6,7 @@ import type { Body, Controls } from '../../shared/sim/physics';
 export interface HeldWeapon { w: number; ammo: number; clip: number }
 
 export type TaskName = 'wander' | 'stand' | 'flee' | 'attack' | 'arrest' | 'drive' | 'pursue' | 'respond'
-  | 'revive' | 'extinguish' | 'return' | 'cower' | 'guard' | 'none';
+  | 'revive' | 'extinguish' | 'return' | 'cower' | 'guard' | 'surrender' | 'none';
 
 export interface DriveState {
   pts: { x: number; y: number; stop?: number; axis?: 'h' | 'v' }[];
@@ -58,6 +58,8 @@ export interface Ped {
   wi: number;
   fireCd: number; reloadT: number;
   trigger: boolean; triggerPrev: boolean;
+  /** Players: aiming on purpose this tick (BTN.aim), as a hold-up needs. */
+  aimHeld?: boolean;
   aim: number;
   cash: number;
   vehicle: number; seat: number;

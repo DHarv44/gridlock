@@ -49,7 +49,7 @@ function returnOrWander(w: World, p: Ped): void {
 
 function fleeNoise(w: World, p: Ped, x: number, y: number, lethal: boolean): void {
   const ai = p.ai!;
-  if (ai.task === 'flee' || ai.task === 'attack' || ai.task === 'cower') return;
+  if (ai.task === 'flee' || ai.task === 'attack' || ai.task === 'cower' || ai.task === 'surrender') return;
   // Drivers only spook at danger close by: a few seconds of fleeing, then back to normal.
   if (p.vehicle) {
     if (p.seat === 0 && lethal && Math.hypot(p.body.x - x, p.body.y - y) < 25) ai.panicT = Math.max(ai.panicT, 6);

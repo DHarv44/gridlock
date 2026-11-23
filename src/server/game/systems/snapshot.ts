@@ -19,6 +19,7 @@ function pedFlags(p: Ped): number {
   if (p.player) f |= PF.player;
   if (p.ai && (p.ai.task === 'revive' || p.ai.task === 'extinguish') && p.ai.workT > 0) f |= PF.busy;
   if (p.jumpT > 0) f |= PF.jump;
+  if (p.ai?.task === 'surrender') f |= PF.hands;
   return f;
 }
 

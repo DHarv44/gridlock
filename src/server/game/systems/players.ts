@@ -46,6 +46,7 @@ function applyInput(w: World, pl: Player, p: Ped, inp: InputMsg, dt: number): vo
   if (p.dead) return;
   const [, mx, my, throttle, steer, aim, btn, wish] = inp;
   p.aim = aim;
+  p.aimHeld = (btn & BTN.aim) !== 0;
   p.trigger = (btn & BTN.fire) !== 0;
   if (btn & BTN.enter) toggleVehicle(w, pl, p);
   const v = p.vehicle ? w.vehicles.get(p.vehicle) : undefined;

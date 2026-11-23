@@ -89,6 +89,15 @@ world, so friends see you inside and the city keeps running around you.
   floors aren't drawn, and sounds muffle per floor between you. Upstairs, snapshots still carry the
   street around the building. `npx tsx scripts/floors.ts`.
 
+## Shop robberies (asked 2026-11-23; done)
+Hold up the counter of a walk-in place whose pack spec has `robbery` (gun shops, gas kiosks, corner
+stores, diners, nightclubs): hold Aim with a gun on the clerk and their hands go up; the till comes
+out a little at a time while you keep them covered (RULES.robSeconds empties it). A few seconds in,
+the silent alarm puts you on RULES.robWanted stars and an armed robbery on the record. Look away
+too long, shoot the clerk or leave and it's over; some clerks go for a gun (`fightBack`). Tills
+refill over RULES.tillRefill; another player's business is robbed from its safe and they get a
+text; your own staff won't play along. server/game/systems/robbery.ts; `npx tsx scripts/robbery.ts`.
+
 ## G. Mobile (parked, 2026-11-23)
 The user wants the website usable on a phone: not a mobile port (no touch-control scheme, app install
 or radio re-encodes unless asked). Parked for now; when it comes back, keep it to that.
