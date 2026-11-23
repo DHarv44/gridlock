@@ -66,8 +66,11 @@ const ASSIST_CONE = (25 * Math.PI) / 180;
 export function stepVehicle(b: Body, spec: VehicleSpec, c: Controls, dt: number, world: StaticWorld, driven: boolean, onRoad?: (x: number, y: number) => boolean): number {
   if (spec.movement === 'rotor') return stepHeli(b, spec, c, dt, world, driven);
   const fx = Math.cos(b.angle), fy = Math.sin(b.angle);
+  // Vehicles that pivot on their rear axle: the centre's sideways motion from turning is part of
+  // the turn, not a skid, so it's taken out before grip acts on the slip.
+  const pivot = spec.rearAxle ?? 0;
   let vf = b.vx * fx + b.vy * fy;
-  let vl = -b.vx * fy + b.vy * fx;
+  let vl = -b.vx * fy + b.vy * fx - b.av * pivot;
   const throttle = driven ? c.throttle : 0;
   const steer = driven ? c.steer : 0;
   const hand = driven && c.handbrake;
@@ -94,6 +97,12 @@ export function stepVehicle(b: Body, spec: VehicleSpec, c: Controls, dt: number,
   let targetAv: number;
   if (spec.movement === 'tracks') {
     targetAv = steer * spec.turnRate * (vf < -0.5 ? -1 : 1);
+  } else if (spec.minTurnRadius) {
+    // Truck: turning rate follows the steering geometry (v / radius) up to the grip a heavy rig
+    // has (lateral accel / v), so it turns tight at a crawl and wide at speed.
+    const sp = Math.abs(vf);
+    const most = Math.min(sp / spec.minTurnRadius, (spec.maxLateral ?? 4) / Math.max(sp, 0.5));
+    targetAv = steer * most * Math.sign(vf) * (hand ? 1.3 : 1);
   } else {
     // Tight at low speed, much lazier at top speed (GTA2: ~1.25x down to ~0.5x).
     const low = clamp(Math.abs(vf) / 3.5, 0, 1);
@@ -109,15 +118,16 @@ export function stepVehicle(b: Body, spec: VehicleSpec, c: Controls, dt: number,
   }
 
   const nfx = Math.cos(b.angle), nfy = Math.sin(b.angle);
-  b.vx = nfx * vf - nfy * vl;
-  b.vy = nfy * vf + nfx * vl;
+  const lat = vl + b.av * pivot;
+  b.vx = nfx * vf - nfy * lat;
+  b.vy = nfy * vf + nfx * lat;
   b.x += b.vx * dt;
   b.y += b.vy * dt;
   return collideStatic(b, spec, world, 0);
 }
 
 /** Where the trailer hitch sits: this far behind the vehicle's centre. */
-export const hitchOffset = (spec: VehicleSpec): number => spec.length / 2 - 0.9;
+export const hitchOffset = (spec: VehicleSpec): number => spec.trailer?.hitch ?? spec.length / 2 - 0.9;
 
 /**
  * Advances an articulated trailer's heading. The trailer pivots on the hitch and its rear axle

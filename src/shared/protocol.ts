@@ -46,7 +46,7 @@ export interface YouState {
   pid: number;
   vid: number;
   mode: Mode;
-  body: number[];          // [x, y, angle, vx, vy, av, alt]
+  body: number[];          // [x, y, angle, vx, vy, av, alt, trailer angle]
   hp: number;
   ar: number;
   cash: number;

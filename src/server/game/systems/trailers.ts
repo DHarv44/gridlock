@@ -5,8 +5,9 @@ import { damagePed } from '../combat/damage';
 import type { Vehicle } from '../entities';
 import type { World } from '../world';
 
-/** Swings tried (radians, smallest first) to free a trailer caught on a wall. */
-const NUDGES = [0.02, -0.02, 0.05, -0.05, 0.09, -0.09, 0.14, -0.14, 0.2, -0.2, 0.28, -0.28, 0.4, -0.4];
+/** Swings tried (radians, smallest first) to free a trailer caught on a wall: at most 8° a tick,
+ *  so scraping never visibly snaps it; caught any harder, the rig stops instead. */
+const NUDGES = [0.02, -0.02, 0.05, -0.05, 0.09, -0.09, 0.14, -0.14];
 
 export function updateTrailers(w: World, dt: number): void {
   for (const v of w.vehicles.values()) {

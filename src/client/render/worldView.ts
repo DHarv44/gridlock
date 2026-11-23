@@ -7,7 +7,7 @@ import type { Effects } from './effects';
 import { animatePed, makePed, type PedView, setPedWeapon } from './pedMesh';
 import { makeVehicle, sirenMats, type VehicleView } from './vehicleMesh';
 
-export interface OwnState { pid: number; vid: number; x: number; y: number; angle: number; alt: number; driving: boolean; vx: number; vy: number }
+export interface OwnState { pid: number; vid: number; x: number; y: number; angle: number; alt: number; driving: boolean; vx: number; vy: number; trailer?: number }
 export interface PlayerTag { name: string; color: string; look?: CharLook }
 
 const projGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.8, 6).rotateZ(Math.PI / 2);
@@ -137,8 +137,9 @@ export class WorldView {
     v.root.position.set(x, alt, y);
     v.root.rotation.y = -a;
     if (v.turret) v.turret.rotation.y = -(e.turret - e.angle);
-    // Trailer swing relative to the cab (server-simulated angle, interpolated).
-    if (v.trailer) v.trailer.rotation.y = -(e.trailer - e.angle);
+    // Trailer swing relative to the cab: your own rig's is predicted with the cab; others' come
+    // from the server, interpolated.
+    if (v.trailer) v.trailer.rotation.y = mine && own!.trailer !== undefined ? -(own!.trailer - a) : -(e.trailer - e.angle);
     const spinning = (flags & VF.driven) || alt > 0.3;
     for (const r of v.rotors) r.rotation.y += dt * (spinning ? 32 : 0);
     for (const r of v.tailRotors) r.rotation.z += dt * (spinning ? 40 : 0);

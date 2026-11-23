@@ -1,7 +1,7 @@
 // Client-side prediction of the local avatar (on foot or driving) with server reconciliation.
 import { PEDS, PLAYER_ARCHETYPE, VEHICLES } from '../../shared/packs';
 import { BTN, type InputMsg, Mode, type YouState } from '../../shared/protocol';
-import { type Body, type Controls, copyBody, DT, emptyControls, newBody, SPRINT, stepFoot, stepVehicle } from '../../shared/sim/physics';
+import { type Body, type Controls, copyBody, DT, emptyControls, newBody, SPRINT, stepFoot, stepTrailer, stepVehicle } from '../../shared/sim/physics';
 import type { CityMap } from '../../shared/world/city';
 import type { StaticWorld } from '../../shared/world/collision';
 
@@ -15,6 +15,9 @@ export class Predictor {
   private vtype = -1;
   private ctl: Controls = emptyControls();
   active = false;
+  /** Predicted trailer heading (rigs), now and at the previous tick for interpolation. */
+  trailer = 0;
+  prevTrailer = 0;
   /** Visual error offset that decays after corrections. */
   errX = 0;
   errY = 0;
@@ -35,7 +38,10 @@ export class Predictor {
     c.down = (btn & BTN.down) !== 0;
     const b = this.body;
     if (this.mode === Mode.Driver && this.vtype >= 0) {
-      stepVehicle(b, VEHICLES[this.vtype], c, DT, this.world, true, this.onRoad);
+      const spec = VEHICLES[this.vtype];
+      stepVehicle(b, spec, c, DT, this.world, true, this.onRoad);
+      // A rig's trailer is predicted with the cab, so it answers the steering without lag.
+      this.trailer = spec.trailer ? stepTrailer(b, spec, this.trailer, DT) : b.angle;
     } else {
       const ox = b.x, oy = b.y;
       stepFoot(b, c, PEDS[PLAYER_ARCHETYPE].runSpeed * (c.sprint ? SPRINT : 1), DT, this.world);
@@ -47,6 +53,7 @@ export class Predictor {
   apply(inp: InputMsg): void {
     if (!this.active) return;
     copyBody(this.prev, this.body);
+    this.prevTrailer = this.trailer;
     this.pending.push({ seq: inp[0], inp });
     if (this.pending.length > 90) this.pending.shift();
     this.step(inp);
@@ -58,15 +65,17 @@ export class Predictor {
     this.mode = you.mode;
     this.vtype = you.vt;
     if (!predictable) { this.active = false; this.pending.length = 0; return; }
-    const [x, y, angle, vx, vy, av, alt] = you.body;
+    const [x, y, angle, vx, vy, av, alt, trailer] = you.body;
     const beforeX = this.body.x, beforeY = this.body.y;
     const b = this.body;
     b.x = x; b.y = y; b.angle = angle; b.vx = vx; b.vy = vy; b.av = av; b.alt = alt;
+    this.trailer = trailer ?? angle;
     this.pending = this.pending.filter((p) => p.seq > ack);
     for (const p of this.pending) this.step(p.inp);
     if (changed) {
       this.active = true;
       copyBody(this.prev, b);
+      this.prevTrailer = this.trailer;
       this.errX = 0; this.errY = 0;
       return;
     }

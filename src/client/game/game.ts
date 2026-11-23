@@ -189,7 +189,8 @@ export class Game {
       const b = p.body, a = p.prev;
       const lerp = (u: number, v: number) => u + (v - u) * alpha;
       return { pid: y.pid, vid: y.vid, driving: y.mode === Mode.Driver, x: lerp(a.x, b.x) + p.errX, y: lerp(a.y, b.y) + p.errY,
-        angle: y.mode === Mode.Driver ? a.angle + (b.angle - a.angle) * alpha : this.aimAngle, alt: lerp(a.alt, b.alt), vx: b.vx, vy: b.vy };
+        angle: y.mode === Mode.Driver ? a.angle + (b.angle - a.angle) * alpha : this.aimAngle, alt: lerp(a.alt, b.alt), vx: b.vx, vy: b.vy,
+        trailer: p.prevTrailer + Math.atan2(Math.sin(p.trailer - p.prevTrailer), Math.cos(p.trailer - p.prevTrailer)) * alpha };
     }
     const ent = this.store.all.get(y.vid || y.pid);
     if (ent) return { pid: y.pid, vid: y.vid, driving: false, x: ent.x, y: ent.y, angle: ent.angle, alt: ent.alt, vx: ent.vx, vy: ent.vy };

@@ -60,8 +60,14 @@ export interface VehicleSpec {
   model: Part[];
   /** Plan-view body shaping (seen from above): without it the body is a straight-sided box. */
   shape?: BodyShape;
-  /** Articulated trailer hitched at the back of the vehicle (semis). */
-  trailer?: { length: number; width: number; height: number; model: Part[] };
+  /** Metres behind the centre that the vehicle pivots on when it turns (its rear axle). Without it,
+   *  vehicles turn about their centre (arcade cars). */
+  rearAxle?: number;
+  /** Truck-style turning: tightest circle at a crawl (m) and most cornering force (m/s²). */
+  minTurnRadius?: number;
+  maxLateral?: number;
+  /** Articulated trailer; `hitch` is metres behind the vehicle's centre (the fifth wheel). */
+  trailer?: { length: number; width: number; height: number; model: Part[]; hitch?: number };
 }
 
 export type WeaponKind = 'melee' | 'hitscan' | 'projectile' | 'thrown' | 'flame';
