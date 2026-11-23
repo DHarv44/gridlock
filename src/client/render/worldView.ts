@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { type CharLook, VEHICLES, WEAPONS } from '../../shared/packs';
 import { EK, PF, PK, VF } from '../../shared/protocol';
 import type { EntityStore, ViewEntity } from '../net/entities';
+import { FLOOR_H, floorOf, groundOf } from '../../shared/world/levels';
 import { putCarLights } from './carLights';
 import type { Effects } from './effects';
 import { animatePed, makePed, type PedView, setPedWeapon } from './pedMesh';
@@ -29,6 +30,8 @@ export class WorldView {
   private labels = new Map<number, THREE.Sprite>();
   private tagged = new Set<number>();
   private time = 0;
+  /** Your floor (world/levels.ts); people on other upper floors aren't drawn. */
+  private myF = 0;
 
   /** A vehicle not drawn on the street (yours, while it's inside the paint shop). */
   hiddenVehicle = 0;
@@ -37,6 +40,7 @@ export class WorldView {
 
   sync(store: EntityStore, dt: number, own: OwnState | null, tags: Map<number, PlayerTag>, night: number, view: { x0: number; y0: number; x1: number; y1: number }): void {
     this.time += dt;
+    this.myF = own ? floorOf(own.x) : 0;
     const seen = new Set<number>();
     for (const e of store.all.values()) {
       seen.add(e.id);
@@ -86,7 +90,11 @@ export class WorldView {
     if (flags & PF.jump && v.hop <= 0) v.hop = 0.5;
     v.hop = Math.max(0, v.hop - dt);
     const lift = v.hop > 0 ? Math.sin(Math.PI * (1 - v.hop / 0.5)) * 0.9 : 0;
-    v.root.position.set(x, lift, y);
+    // Upstairs (world/levels.ts): over the building, at the floor's height.
+    const g = groundOf(x, y);
+    v.root.position.set(g.x, lift + g.f * FLOOR_H, g.y);
+    // Only your floor is drawn: people on another upper floor would float in mid-air.
+    v.root.visible = g.f === 0 || g.f === this.myF;
     v.root.rotation.y = -a;
     setPedWeapon(v, d[7]);
     const speed = isMe ? Math.hypot(own!.vx, own!.vy) : Math.hypot(e.vx, e.vy);
@@ -183,7 +191,9 @@ export class WorldView {
       this.objs.set(e.id, o);
       this.scene.add(o);
     }
-    o.position.set(e.x, Math.max(0.15, e.alt), e.y);
+    const g = groundOf(e.x, e.y);
+    o.position.set(g.x, Math.max(0.15, e.alt) + g.f * FLOOR_H, g.y);
+    o.visible = g.f === 0 || g.f === this.myF;
     o.rotation.y = -e.angle;
     if (!spec.projectile?.arc) {
       this.fx.alpha.spawn({ x: e.x, y: e.y, z: e.alt, size: 0.6, grow: 2.5, max: 1.2, r: 0.75, g: 0.75, b: 0.72, a: 0.5, drag: 1 });
@@ -200,7 +210,9 @@ export class WorldView {
       this.objs.set(e.id, o);
       this.scene.add(o);
     }
-    o.position.set(e.x, 0.6 + Math.sin(this.time * 3 + e.id) * 0.15, e.y);
+    const g = groundOf(e.x, e.y);
+    o.position.set(g.x, 0.6 + Math.sin(this.time * 3 + e.id) * 0.15 + g.f * FLOOR_H, g.y);
+    o.visible = g.f === 0 || g.f === this.myF;
     o.rotation.y = this.time * 2 + e.id;
     const col = type === PK.cash ? [0.3, 1, 0.4] : [1, 0.85, 0.4];
     this.fx.glow.put(e.x, e.y, 0.07, 2.4, 1, 0, col[0], col[1], col[2], 0.35);

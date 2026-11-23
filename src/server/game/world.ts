@@ -4,6 +4,7 @@ import { Rng } from '../../shared/rng';
 import { CityMap, generateCity } from '../../shared/world/city';
 import type { City } from '../../shared/world/cityTypes';
 import { StaticWorld } from '../../shared/world/collision';
+import { groundOf } from '../../shared/world/levels';
 import type { Fire, Pickup, Ped, Player, Projectile, Squad, Vehicle } from './entities';
 import { SpatialHash } from './spatial';
 
@@ -84,7 +85,9 @@ export class World {
       const p = this.peds.get(pl.pid);
       if (!p) continue;
       const pos = this.pedPos(p);
-      best = Math.min(best, dist2(x, y, pos.x, pos.y));
+      // Upstairs counts as over the building too, so the street round it stays alive.
+      const g = groundOf(pos.x, pos.y);
+      best = Math.min(best, dist2(x, y, pos.x, pos.y), dist2(x, y, g.x, g.y));
     }
     return best;
   }

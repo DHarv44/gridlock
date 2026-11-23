@@ -238,7 +238,7 @@ export interface ServiceSpec {
 
 /** How an enterable place's ground floor is laid out (shared/world/interiors.ts): generated for the
  *  first five, hand-made (packs/interiorPlans.ts) for the rest. */
-export type InteriorLayout = 'shop' | 'diner' | 'club' | 'warehouse' | 'kiosk' | 'bank' | 'precinct';
+export type InteriorLayout = 'shop' | 'diner' | 'club' | 'warehouse' | 'kiosk' | 'bank' | 'precinct' | 'tower' | 'apartments';
 
 /** A hand-made ground floor, in metres: `a` across the room from its left inside corner (seen from the
  *  street), `d` in from the front wall. Rects are [a0, a1, d0, d1]. The shell (with the street door)

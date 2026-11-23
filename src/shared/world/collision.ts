@@ -2,6 +2,8 @@
 // bucketed in a uniform grid. Used by server physics and client-side prediction alike.
 import type { City } from './cityTypes';
 import { MAP_SIZE } from './cityTypes';
+import { FLAT_PROPS } from './interiors';
+import { WORLD_X } from './levels';
 
 /** `gate`: a box that can open (a vault door: its interior's index); open gates are passed through. */
 export interface Box2 { x0: number; y0: number; x1: number; y1: number; h: number; gate?: number }
@@ -10,6 +12,8 @@ export interface Hit { nx: number; ny: number; depth: number }
 export interface RayHit { t: number; nx: number; ny: number }
 
 const CELL = 24;
+// The grid covers the map and, east of it, the strips upper floors live in (world/levels.ts).
+const NX = Math.ceil(WORLD_X / CELL);
 const N = Math.ceil(MAP_SIZE / CELL);
 const TRUNK_R = 0.45;
 
@@ -18,8 +22,8 @@ export class StaticWorld {
   readonly circles: Circle2[] = [];
   /** Gates standing open right now (interior indexes): the server sets them, clients mirror it. */
   readonly openGates = new Set<number>();
-  private boxCells: number[][] = Array.from({ length: N * N }, () => []);
-  private circleCells: number[][] = Array.from({ length: N * N }, () => []);
+  private boxCells: number[][] = Array.from({ length: NX * N }, () => []);
+  private circleCells: number[][] = Array.from({ length: NX * N }, () => []);
   private stamp: Uint32Array;
   private stampC: Uint32Array;
   private q = 1;
@@ -31,8 +35,13 @@ export class StaticWorld {
     city.buildings.forEach((b, bi) => { if (!open.has(bi)) this.addBox({ ...b.rect, h: b.h }); });
     city.interiors.forEach((i, k) => {
       for (const w of [...i.walls, ...i.rest]) this.addBox({ ...w.rect, h: w.h });
-      for (const p of i.props) if (p.kind !== 'dance') this.addBox({ ...p.rect, h: p.h });
+      for (const p of i.props) if (!FLAT_PROPS.has(p.kind)) this.addBox({ ...p.rect, h: p.h });
       if (i.vault) this.addBox({ ...i.vault.door, h: 3.2, gate: k });
+      // Upper floors, out in their strips east of the map (world/levels.ts).
+      for (const fl of i.floors) {
+        for (const w of fl.walls) this.addBox({ ...w.rect, h: w.h });
+        for (const p of fl.props) if (!FLAT_PROPS.has(p.kind)) this.addBox({ ...p.rect, h: p.h });
+      }
     });
     for (const o of city.obstacles) this.addBox({ ...o.rect, h: o.h });
     for (const t of city.trees) this.addCircle({ x: t.x, y: t.y, r: TRUNK_R, h: 7 });
@@ -41,20 +50,21 @@ export class StaticWorld {
   }
 
   private static cellRange(x0: number, y0: number, x1: number, y1: number): [number, number, number, number] {
-    const c = (v: number) => Math.max(0, Math.min(N - 1, Math.floor(v / CELL)));
-    return [c(x0), c(y0), c(x1), c(y1)];
+    const cx = (v: number) => Math.max(0, Math.min(NX - 1, Math.floor(v / CELL)));
+    const cy = (v: number) => Math.max(0, Math.min(N - 1, Math.floor(v / CELL)));
+    return [cx(x0), cy(y0), cx(x1), cy(y1)];
   }
 
   private addBox(b: Box2): void {
     const id = this.boxes.push(b) - 1;
     const [i0, j0, i1, j1] = StaticWorld.cellRange(b.x0, b.y0, b.x1, b.y1);
-    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) this.boxCells[j * N + i].push(id);
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) this.boxCells[j * NX + i].push(id);
   }
 
   private addCircle(c: Circle2): void {
     const id = this.circles.push(c) - 1;
     const [i0, j0, i1, j1] = StaticWorld.cellRange(c.x - c.r, c.y - c.r, c.x + c.r, c.y + c.r);
-    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) this.circleCells[j * N + i].push(id);
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) this.circleCells[j * NX + i].push(id);
   }
 
   /** Calls fn for each box/circle overlapping the query rect (each once). */
@@ -63,7 +73,7 @@ export class StaticWorld {
     const [i0, j0, i1, j1] = StaticWorld.cellRange(x0, y0, x1, y1);
     for (let j = j0; j <= j1; j++) {
       for (let i = i0; i <= i1; i++) {
-        for (const id of this.boxCells[j * N + i]) {
+        for (const id of this.boxCells[j * NX + i]) {
           if (this.stamp[id] === q) continue;
           this.stamp[id] = q;
           const b = this.boxes[id];
@@ -71,7 +81,7 @@ export class StaticWorld {
           box(b);
         }
         if (!circle) continue;
-        for (const id of this.circleCells[j * N + i]) {
+        for (const id of this.circleCells[j * NX + i]) {
           if (this.stampC[id] === q) continue;
           this.stampC[id] = q;
           circle(this.circles[id]);

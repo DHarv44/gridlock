@@ -2,6 +2,7 @@
 import { type BuyKind, type InputMsg, Mode, type PlayerInfo, type Profile, type S2C, TICK_HZ, type YouState } from '../../shared/protocol';
 import { CityMap, generateCity } from '../../shared/world/city';
 import { StaticWorld } from '../../shared/world/collision';
+import { FLOOR_H, groundOf } from '../../shared/world/levels';
 import { Radio } from '../audio/radio';
 import { Sound } from '../audio/sound';
 import { Hud } from '../hud/hud';
@@ -282,10 +283,13 @@ export class Game {
     if (this.you && !document.hidden) this.quality.sample(dt);
     this.store.update();
     const own = this.ownState(this.acc / STEP);
-    if (own) {
+    // Where you are over the map (upstairs, world/levels.ts: over your building, at your floor's height).
+    const up = own ? groundOf(own.x, own.y) : null;
+    const disp = own && up ? { ...own, x: up.x, y: up.y } : null;
+    if (own && disp && up) {
       // GTA2: centred on you on foot; leads along travel in vehicles.
-      this.cam.update(dt, own.x, own.y, own.vx, own.vy, own.alt, own.x, own.y, !!own.vid);
-      this.sound.listenerX = own.x; this.sound.listenerY = own.y;
+      this.cam.update(dt, disp.x, disp.y, own.vx, own.vy, own.alt + up.f * FLOOR_H, disp.x, disp.y, !!own.vid);
+      this.sound.listenerX = disp.x; this.sound.listenerY = disp.y; this.sound.listenerF = up.f;
     }
     const vr = this.cam.viewRect();
     this.ground.update(vr);
@@ -301,25 +305,26 @@ export class Game {
     const it = this.itSpot();
     if (it) this.fx.glow.put(it.x, it.y, 0.09, 3.2 + Math.sin(performance.now() / 160) * 0.7, 1, 0, 1, 0.12, 0.08, 0.7);
     this.gas.putGlows(this.fx.glow, night, vr);
-    if (own) this.interiors.update(own.x, own.y, !own.vid);
+    if (own && up) this.interiors.update(up.x, up.y, !own.vid, up.f);
     this.interiors.putGlows(this.fx.glow, night);
     this.view.sync(this.store, dt, own, this.tags(), night, vr);
     this.fx.update(dt);
     this.water.update(dt);
-    this.jobs.update(dt, this.you, own, this.fx.glow, night, vr, this.store.serverNow(), this.players.find((p) => p.id === this.myId), this.sound);
-    nearestSiren(this.store, own, this.sound);
+    this.jobs.update(dt, this.you, disp, this.fx.glow, night, vr, this.store.serverNow(), this.players.find((p) => p.id === this.myId), this.sound);
+    nearestSiren(this.store, disp, this.sound);
     ownEngine(this.store, this.you && this.you.mode !== Mode.Dead ? own : null, this.sound, dt);
-    trafficEngines(this.store, own, this.sound, dt);
+    trafficEngines(this.store, disp, this.sound, dt);
     this.stage.render();
-    this.offscreen.update(this.stage.camera, this.players, this.myId, (p) => this.store.all.get(p.pid) ?? p, this.jobs.it);
-    this.updateHud(own);
+    this.offscreen.update(this.stage.camera, this.players, this.myId, (p) => { const e = this.store.all.get(p.pid); return e ? groundOf(e.x, e.y) : p; }, this.jobs.it);
+    this.updateHud(own, disp);
   }
 
   /** Tag: where whoever's it is now (their smooth on-screen position when known). */
   private itSpot(): { x: number; y: number } | null {
     const id = this.jobs.it;
     const p = id ? this.players.find((x) => x.id === id) : undefined;
-    return p ? this.store.all.get(p.pid) ?? p : null;
+    const e = p ? this.store.all.get(p.pid) : undefined;
+    return e ? groundOf(e.x, e.y) : p ?? null;
   }
 
   private tags(): Map<number, PlayerTag> {
@@ -331,9 +336,10 @@ export class Game {
   }
 
 
-  private updateHud(own: OwnState | null): void {
+  /** `own` where you really are (lifts, doors); `disp` where you are over the map (radar, map, route). */
+  private updateHud(own: OwnState | null, disp: OwnState | null): void {
     const you = this.you;
-    if (!you || !own) return;
+    if (!you || !own || !disp) return;
     const seen = you.wl > 0;
     this.hud.update(you, this.gameMinutes, seen);
     // Radar, place lookup and pane refresh don't need full frame rate.
@@ -351,7 +357,7 @@ export class Game {
     const hostiles = you.wl > 0 ? lawUnits(this.store) : [];
     const owned = new Set(this.profile.owned);
     const wp = this.waypoint;
-    wp.update(own);
+    wp.update(disp);
     // Job blips, a red marker on any of your businesses a gang is leaning on, and (tag) whoever's it.
     const blips = [...this.jobs.blips(you), ...(this.profile.trouble ?? []).map(([id]) => {
       const p = this.map.city.properties[id];
@@ -359,9 +365,9 @@ export class Game {
     })];
     const it = this.itSpot();
     if (it && this.jobs.it !== this.myId) blips.push({ x: it.x, y: it.y, color: '#ff2a2a', shape: 'star' });
-    this.radar.drawRadar(ctx, 220, own.x, own.y, own.angle, range, this.players, this.myId, owned, hostiles, blips, wp.point, wp.route);
+    this.radar.drawRadar(ctx, 220, disp.x, disp.y, own.angle, range, this.players, this.myId, owned, hostiles, blips, wp.point, wp.route);
     if (this.bigMap.isOpen) {
-      this.bigMap.draw({ me: { x: own.x, y: own.y, angle: own.angle }, players: this.players, meId: this.myId, owned, owners: this.owners,
+      this.bigMap.draw({ me: { x: disp.x, y: disp.y, angle: own.angle }, players: this.players, meId: this.myId, owned, owners: this.owners,
         blips, waypoint: wp.point, route: wp.route });
     }
   }

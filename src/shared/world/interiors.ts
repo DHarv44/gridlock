@@ -6,8 +6,12 @@
 import type { Rect } from '../math';
 import { INTERIOR_PLANS, type InteriorLayout, PROPERTIES, SERVICES } from '../packs';
 import { DIR_VEC, Dir, type Lot, type Place } from './cityTypes';
+import { floorsFor, type UpperFloor, upperFloors } from './floors';
 
-export type PropKind = 'counter' | 'shelf' | 'table' | 'booth' | 'bar' | 'rack' | 'desk' | 'stool' | 'dance' | 'bench' | 'bars';
+export type PropKind = 'counter' | 'shelf' | 'table' | 'booth' | 'bar' | 'rack' | 'desk' | 'stool' | 'dance' | 'bench' | 'bars'
+  | 'lift' | 'stairs' | 'bed';
+/** Not solid: drawn on the floor only. */
+export const FLAT_PROPS = new Set<PropKind>(['dance', 'stairs']);
 export interface Box { rect: Rect; h: number }
 export interface Prop extends Box { kind: PropKind }
 export interface Spot { x: number; y: number; angle: number }
@@ -30,12 +34,15 @@ export interface Interior {
   guards: { spot: Spot; arch: string }[];
   /** A strongroom (the bank): its steel door is a gate in the collision world that explosions open. */
   vault?: { door: Rect; room: Rect; cash: { x: number; y: number }[] };
+  /** Towers and apartment blocks: the lobby's lift (elevator or stairs) and the floors above. */
+  lift?: Spot;
+  floors: UpperFloor[];
 }
 
 const T = 0.3, GAP = 1.6, WALL_H = 2.8;
 /** Largest room per layout (across the frontage, then in depth); smaller buildings use all they have. */
 const SIZE: Partial<Record<InteriorLayout, [number, number]>> = {
-  shop: [16, 13], kiosk: [16, 8], diner: [18, 14], club: [22, 18], warehouse: [28, 22],
+  shop: [16, 13], kiosk: [16, 8], diner: [18, 14], club: [22, 18], warehouse: [28, 22], tower: [22, 18], apartments: [18, 15],
 };
 
 /** The local frame: `a` across the frontage, `d` in from the front wall. */
@@ -101,6 +108,31 @@ function build(place: Place, property: boolean, building: number, lot: Lot, layo
       counter: P(plan.counter, F.inward), clerk: P(plan.clerk, front), clerkArch: plan.clerkArch ?? 'clerk',
       guards: (plan.guards ?? []).map((g) => ({ spot: P(g.at, front), arch: g.arch })),
       ...(plan.vault ? { vault: { door: R(plan.vault.door), room: R(plan.vault.room), cash: plan.vault.cash.map((c) => F.point(a0 + c[0], c[1])) } } : {}),
+      floors: [],
+    };
+  }
+  const at = (a: number, d: number, face: number): Spot => ({ ...F.point(a, d), angle: face });
+  if (layout === 'tower' || layout === 'apartments') {
+    // A lobby: the reception desk (towers) or mailboxes (apartments), the lift at the back in the
+    // middle (an elevator bank or a stairwell), and the floors above (world/floors.ts).
+    const am = (ia0 + ia1) / 2;
+    const tower = layout === 'tower';
+    prop(tower ? 'lift' : 'stairs', am - 1.2, am + 1.2, iD - 1.0, iD, tower ? WALL_H : 0.05);
+    let counter: Spot, clerk: Spot;
+    if (tower) {
+      prop('counter', ia1 - 4.6, ia1 - 0.6, 3, 3.8, 1.1);
+      prop('bench', ia0 + 0.5, ia0 + 1.0, 2, 4.6, 0.5);
+      counter = at(ia1 - 2.6, 2.1, F.inward);
+      clerk = at(ia1 - 2.6, 4.6, front);
+    } else {
+      prop('shelf', ia0, ia0 + 0.4, 2, 4, 1.6); // mailboxes
+      counter = at(ia0 + 1.2, 3, F.inward - Math.PI / 2);
+      clerk = counter;
+    }
+    return {
+      place, property, building, layout, room: F.rect(ia0, ia1, T, iD), wallH: WALL_H, walls, rest, props, counter, clerk,
+      clerkArch: tower ? 'clerk' : '', guards: [], lift: at(am, iD - 1.8, front),
+      floors: upperFloors(layout, floorsFor(h), ia0, ia1, T, iD, F.rect, F.point, front),
     };
   }
   // A back room behind a partition when the room is deep enough (door gap on the far side from the counter).
@@ -111,7 +143,6 @@ function build(place: Place, property: boolean, building: number, lot: Lot, layo
     wall(backDoor + 1.2, ia1, back - T / 2, back + T / 2, WALL_H);
   }
   let counter: Spot, clerk: Spot;
-  const at = (a: number, d: number, face: number): Spot => ({ ...F.point(a, d), angle: face });
   if (layout === 'shop' || layout === 'kiosk') {
     // Counter across the right of the room, aisle on the left to the back room; shelves on the left wall.
     const cd = Math.min(back - 2.4, Math.max(3.2, (back) * 0.55));
@@ -153,7 +184,7 @@ function build(place: Place, property: boolean, building: number, lot: Lot, layo
     counter = at(ia0 + 1.6, 3.0, front + Math.PI);
     clerk = at(ia0 + 1.6, 0.9 + T, F.inward);
   }
-  return { place, property, building, layout, room: F.rect(ia0, ia1, T, iD), wallH: WALL_H, walls, rest, props, counter, clerk, clerkArch: 'clerk', guards: [] };
+  return { place, property, building, layout, room: F.rect(ia0, ia1, T, iD), wallH: WALL_H, walls, rest, props, counter, clerk, clerkArch: 'clerk', guards: [], floors: [] };
 }
 
 /** Every walk-in place in the city. */

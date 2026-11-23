@@ -20,8 +20,20 @@ function bankContent(place: Place, you: YouState, buy: Buy): PaneContent {
   return { title: place.name, subtitle: `Cash ${$(you.cash)} · Bank ${$(you.bank)}`, rows };
 }
 
+/** A tower's elevator or an apartment block's stairs (game/interact.ts: id is the interior index,
+ *  `spec` how many floors are above the lobby, `lot` the floor this lift stop is on). */
+function liftContent(place: Place, buy: Buy): PaneContent {
+  const rows: PaneRow[] = [];
+  for (let f = place.spec; f >= 0; f--) {
+    rows.push({ name: f === 0 ? 'Lobby' : `Floor ${f + 1}`, sub: f === place.lot ? 'You are here' : undefined, disabled: f === place.lot,
+      onClick: () => buy('floor', String(f), place.id) });
+  }
+  return { title: place.name, rows };
+}
+
 export function serviceContent(place: Place, you: YouState, buy: Buy): PaneContent {
   if (place.verb === 'atm' || place.verb === 'bank') return bankContent(place, you, buy);
+  if (place.verb === 'lift') return liftContent(place, buy);
   const spec = SERVICES[place.spec];
   const cash = you.cash + you.bank; // shops take cash first, then the bank
   const rows: PaneRow[] = [];

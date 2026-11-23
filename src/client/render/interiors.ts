@@ -4,20 +4,24 @@
 // hidden (render/hideable.ts): you see the floor plan from the same camera, in the same world.
 import * as THREE from 'three';
 import type { City } from '../../shared/world/cityTypes';
-import type { Interior, PropKind } from '../../shared/world/interiors';
+import { FLAT_PROPS as FLAT, type Interior, type PropKind } from '../../shared/world/interiors';
+import { FLOOR_H, groundOf } from '../../shared/world/levels';
 import { setHidden } from './hideable';
 import { Batch, lambert, UNIT } from './instancing';
 import type { ParticleLayer } from './particles';
 
 const FLOOR: Record<Interior['layout'], string> = {
   shop: '#d9d4c7', kiosk: '#d6d2c6', diner: '#e3d7c0', club: '#2b2531', warehouse: '#8f8d86', bank: '#cfc6b4', precinct: '#a9aeb3',
+  tower: '#bfc3c6', apartments: '#b89a78',
 };
 const WALL: Record<Interior['layout'], string> = {
   shop: '#ece8df', kiosk: '#ece8df', diner: '#efe4d2', club: '#3d3346', warehouse: '#b8b5ad', bank: '#e9e2d2', precinct: '#d8dbdd',
+  tower: '#e6e8ea', apartments: '#ebe3d6',
 };
 const PROP: Record<PropKind, string> = {
   counter: '#6e5136', shelf: '#b9bdc2', table: '#7a5a3a', booth: '#a63a3a', bar: '#4a2a1a',
   rack: '#a9773d', desk: '#5f6368', stool: '#2a2a2a', dance: '#7a3aa0', bench: '#7a5a3a', bars: '#4a4e54',
+  lift: '#8d949b', stairs: '#6d6a64', bed: '#d9d2c4',
 };
 const CUT = '#2f3136';
 /** How close (m) outside a walk-in place you must be for it to open up. */
@@ -28,7 +32,9 @@ export class Interiors {
   /** Vault doors by interior index (hidden when blown open). */
   private vaultDoors = new Map<number, THREE.Object3D>();
 
-  constructor(scene: THREE.Scene, private city: City) {
+  private unit = UNIT.box();
+
+  constructor(private scene: THREE.Scene, private city: City) {
     // Vault doors: a thick steel slab with a wheel, standing in the gap in the vault wall.
     const steel = new THREE.MeshStandardMaterial({ color: '#7d848c', metalness: 0.7, roughness: 0.35 });
     const dark = new THREE.MeshLambertMaterial({ color: '#3a3e44' });
@@ -52,24 +58,58 @@ export class Interiors {
       add(i.room, 0, 0.06, FLOOR[i.layout]);
       for (const w of i.walls) add(w.rect, 0, i.wallH, WALL[i.layout]);
       for (const r of i.rest) add(r.rect, 0, i.wallH, CUT);
-      for (const p of i.props) add(p.rect, p.kind === 'dance' ? 0.06 : 0, p.h, PROP[p.kind]);
+      for (const p of i.props) add(p.rect, FLAT.has(p.kind) ? 0.06 : 0, p.h, PROP[p.kind]);
     }
     box.build(scene);
   }
 
-  /** Opens the walk-in place you're at or in (on foot); closes it again when you leave. */
-  update(x: number, y: number, onFoot: boolean): void {
-    let want = -1;
-    if (onFoot) {
+  /** Opens the walk-in place you're at or in (on foot); closes it again when you leave. (x, y) is
+   *  where you are over the map and `f` your floor: upstairs, that floor is drawn at its height. */
+  update(x: number, y: number, onFoot: boolean, f = 0): void {
+    let want = -1, inside: Interior | undefined;
+    if (onFoot || f > 0) {
       for (const i of this.city.interiors) {
         const r = i.room;
-        if (x > r.x0 - NEAR && x < r.x1 + NEAR && y > r.y0 - NEAR && y < r.y1 + NEAR) { want = i.building; break; }
+        if (x > r.x0 - NEAR && x < r.x1 + NEAR && y > r.y0 - NEAR && y < r.y1 + NEAR) { want = i.building; inside = i; break; }
       }
     }
+    this.showFloor(f > 0 && inside ? inside : null, f);
     if (want === this.open) return;
     if (this.open >= 0) setHidden(this.open, false);
     if (want >= 0) setHidden(want, true);
     this.open = want;
+  }
+
+  /** Upper floors are built when someone's on one and dropped when they leave. */
+  private floor: { key: string; group: THREE.Group } | null = null;
+
+  private showFloor(i: Interior | null, f: number): void {
+    const key = i ? `${i.building}:${f}` : '';
+    if ((this.floor?.key ?? '') === key) return;
+    if (this.floor) {
+      this.scene.remove(this.floor.group);
+      this.floor.group.traverse((o) => { if (o instanceof THREE.Mesh) (o.material as THREE.Material).dispose(); });
+      this.floor = null;
+    }
+    const fl = i?.floors[f - 1];
+    if (!i || !fl) return;
+    const group = new THREE.Group();
+    const base = f * FLOOR_H;
+    const add = (r: { x0: number; y0: number; x1: number; y1: number }, y: number, h: number, color: string) => {
+      const m = new THREE.Mesh(this.unit, new THREE.MeshLambertMaterial({ color }));
+      const g0 = groundOf(r.x0, r.y0), g1 = groundOf(r.x1, r.y1);
+      m.position.set((g0.x + g1.x) / 2, base + y, (g0.y + g1.y) / 2);
+      m.scale.set(g1.x - g0.x, h, g1.y - g0.y);
+      m.castShadow = h > 0.3;
+      m.receiveShadow = true;
+      group.add(m);
+    };
+    // The floor slab (a little thicker than the room so it reads as a floor), then walls and furniture.
+    add(fl.rect, -0.25, 0.3, FLOOR[i.layout]);
+    for (const w of fl.walls) add(w.rect, 0, w.h, WALL[i.layout]);
+    for (const p of fl.props) add(p.rect, FLAT.has(p.kind) ? 0.05 : 0, Math.max(0.05, p.h), PROP[p.kind]);
+    this.scene.add(group);
+    this.floor = { key, group };
   }
 
   /** Vault doors blown open (interior indexes) are gone until the vault shuts again. */

@@ -22,7 +22,16 @@ export class Interact {
 
   constructor(private city: City, private pane: Pane) {
     this.atms = atmsOf(city).map((a) => ({ id: -1 - a.id, lot: -1, verb: 'atm', spec: -1, x: a.x, y: a.y, name: 'ATM' }));
+    // Every lift stop (lobby and each floor, in world coords): id the interior, lot the floor, spec the floors above.
+    city.interiors.forEach((i, k) => {
+      if (!i.lift) return;
+      const name = i.layout === 'tower' ? 'Elevator' : 'Stairs';
+      [i.lift, ...i.floors.map((f) => f.lift)].forEach((s, f) =>
+        this.lifts.push({ id: k, lot: f, verb: 'lift', spec: i.floors.length, x: s.x, y: s.y, name }));
+    });
   }
+
+  private lifts: Place[] = [];
 
   /** Nearest usable place for the current position/mode, or null. */
   find(x: number, y: number, you: YouState): Spot | null {
@@ -43,6 +52,7 @@ export class Interact {
     for (const s of this.city.services) if (!AUTOMATIC.has(SERVICES[s.spec].verb)) consider(s, false);
     for (const p of this.city.properties) consider(p, true);
     for (const a of this.atms) consider(a, false);
+    for (const l of this.lifts) if (Math.hypot(l.x - x, l.y - y) < 2.3) consider(l, false);
     return best;
   }
 

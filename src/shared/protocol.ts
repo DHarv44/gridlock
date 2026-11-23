@@ -4,7 +4,7 @@ import type { CharacterProgress, CharacterSave, CharLook } from './packs/charact
 export const TICK_HZ = 30;
 export const SNAP_EVERY = 2;             // snapshots at 15 Hz
 export const INTERP_DELAY_MS = 120;
-export const PROTOCOL_VERSION = 8;
+export const PROTOCOL_VERSION = 9;
 /** Every Nth snapshot carries every entity in full (others list unchanged ones in `k`). */
 export const FULL_SNAP_EVERY = 30;
 
@@ -22,7 +22,7 @@ export type InputMsg = [number, number, number, number, number, number, number, 
 /** `deposit` / `withdraw`: id is dollars or 'all'; place is a bank's service id, or -1 - an ATM's id. */
 /** `collect` / `payoff`: your business's safe, a crew at its door; `meet`: id is a gang, at your club. */
 export type BuyKind = 'weapon' | 'ammo' | 'armor' | 'heal' | 'vehicle' | 'property' | 'garage' | 'respray' | 'chop' | 'sell' | 'deposit' | 'withdraw'
-  | 'collect' | 'payoff' | 'meet';
+  | 'collect' | 'payoff' | 'meet' | 'floor';  // floor: id is the floor to ride to, place the interior index
 
 export type C2S =
   /** `char`: the player's character from their browser; without it `name` plays an unsaved guest. */

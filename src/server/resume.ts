@@ -3,6 +3,7 @@
 import { type CharacterLast, PALETTE, VEHICLES } from '../shared/packs';
 import { Mode } from '../shared/protocol';
 import { LAND0, LAND1 } from '../shared/world/cityTypes';
+import { groundOf } from '../shared/world/levels';
 import type { Ped, Player } from './game/entities';
 import { seatPed, spawnVehicle } from './game/factory';
 import type { World } from './game/world';
@@ -36,7 +37,10 @@ export function lastOf(w: World, pl: Player, room: string): CharacterLast | unde
   const p = w.peds.get(pl.pid);
   if (!p || p.dead || pl.mode === Mode.Dead || pl.mode === Mode.Busted) return undefined;
   const v = p.vehicle ? w.vehicles.get(p.vehicle) : undefined;
-  const pos = w.pedPos(p);
+  // Upstairs (world/levels.ts): pick up again in the lobby below.
+  const up = groundOf(w.pedPos(p).x, w.pedPos(p).y);
+  const lobby = up.f > 0 ? w.city.interiors.find((i) => i.lift && up.x > i.room.x0 && up.x < i.room.x1 && up.y > i.room.y0 && up.y < i.room.y1)?.lift : undefined;
+  const pos = lobby ?? up;
   const r = (n: number) => Math.round(n * 10) / 10;
   return {
     room, x: r(pos.x), y: r(pos.y), angle: Math.round((v ? v.body.angle : p.body.angle) * 100) / 100,

@@ -1,7 +1,7 @@
 // Uniform-grid spatial hash for moving entities, rebuilt every tick.
 
 const CELL = 16;
-const DIM = 160; // covers 2560 m
+const DIM = 2048; // row stride in cells: covers 32 km east, the map and the upper-floor strips (world/levels.ts)
 
 export class SpatialHash<T extends { id: number }> {
   private cells = new Map<number, T[]>();

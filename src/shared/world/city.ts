@@ -4,6 +4,7 @@ import { Rng } from '../rng';
 import { type Block, type City, LAND0, LAND1, type ParkSpot, type RoadNode, type Segment } from './cityTypes';
 import { LotBuilder } from './lotgen';
 import { interiorsOf } from './interiors';
+import { LEVEL_BAND } from './levels';
 import { PlaceBuilder } from './placegen';
 import { genGraph, genLayout } from './roadgen';
 
@@ -87,6 +88,7 @@ export class CityMap {
   }
 
   cellAt(x: number, y: number): number {
+    if (x >= LEVEL_BAND) return -1; // an upper floor (world/levels.ts): indoors, no street cell
     const i = lowerIndex(this.city.xs, x), j = lowerIndex(this.city.ys, y);
     return i < 0 || j < 0 ? -1 : j * this.nx + i;
   }
@@ -116,6 +118,7 @@ export class CityMap {
   }
 
   isWater(x: number, y: number): boolean {
+    if (x >= LEVEL_BAND) return false; // an upper floor: dry
     if (x < LAND0 || x > LAND1 || y < LAND0 || y > LAND1) return true;
     const r = this.river;
     if (y > r.y0 && y < r.y1) {

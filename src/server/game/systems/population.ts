@@ -8,6 +8,7 @@ import { setTask } from '../ai/tasks';
 import type { World } from '../world';
 import { gangCarColor, gangMember, pedPool, turfGang } from '../../../shared/world/gangTurf';
 import { laneSpawn, pedSpawn } from './spawnPoints';
+import { groundOf } from '../../../shared/world/levels';
 
 /** Gang rides added to the traffic on turf. */
 const GANG_CARS = VEHICLES.filter((v) => v.roles.includes('gang')).map((v) => ({ id: v.id, weight: 2.5 }));
@@ -40,7 +41,7 @@ export class Population {
     const w = this.w;
     // A clerk behind every walk-in counter (world/interiors.ts), kept like the services' guards.
     for (const i of w.city.interiors) {
-      this.guards.push({ x: i.clerk.x, y: i.clerk.y, angle: i.clerk.angle, arch: pedIndex(i.clerkArch), ped: 0, readyAt: 0, indoor: true });
+      if (i.clerkArch) this.guards.push({ x: i.clerk.x, y: i.clerk.y, angle: i.clerk.angle, arch: pedIndex(i.clerkArch), ped: 0, readyAt: 0, indoor: true });
       for (const g of i.guards) this.guards.push({ x: g.spot.x, y: g.spot.y, angle: g.spot.angle, arch: pedIndex(g.arch), ped: 0, readyAt: 0, indoor: true });
     }
     for (const place of w.city.services) {
@@ -91,7 +92,7 @@ export class Population {
     for (const pl of this.w.players.values()) {
       const p = this.w.peds.get(pl.pid);
       if (!p) continue;
-      const pos = this.w.pedPos(p);
+      const pos = groundOf(this.w.pedPos(p).x, this.w.pedPos(p).y); // upstairs: the street below
       this.ambientPeds(pos.x, pos.y);
       this.traffic(pos.x, pos.y);
     }

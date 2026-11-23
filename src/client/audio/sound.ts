@@ -1,6 +1,7 @@
 // Game sounds: CC0 recordings from Freesound (ASSETS.md), prepared by tools/blender/prep_audio.py
 // into src/client/sfx/ and all levelled alike, so the mix lives in VOICES below. Distance-attenuated.
 // The siren is one looping voice that follows the nearest siren; engines are in engines.ts.
+import { FLOOR_H, groundOf } from '../../shared/world/levels';
 import { ENGINES, EngineVoice, TRAFFIC } from './engines';
 
 /** Every voice the game plays: its recording, gain, pitch wobble (random ± fraction) and the least
@@ -59,6 +60,8 @@ export class Sound {
   private muted: boolean;
   listenerX = 0;
   listenerY = 0;
+  /** The floor you're on (0 = the street). */
+  listenerF = 0;
 
   /** Music (radio) volume, 1–100, separate from the game's sounds. */
   private music: number;
@@ -114,7 +117,10 @@ export class Sound {
   /** Distance gain for a world position (null = at the listener). */
   private falloff(x: number | null, y: number | null): number {
     if (x === null || y === null) return 1;
-    const d = Math.hypot(x - this.listenerX, y - this.listenerY);
+    // Upper floors sit off the map (world/levels.ts): back over the street, and each floor between
+    // you and the sound muffles it like a good stretch of distance.
+    const g = groundOf(x, y);
+    const d = Math.hypot(g.x - this.listenerX, g.y - this.listenerY, (g.f - this.listenerF) * FLOOR_H * 4);
     return 1 / (1 + (d / 30) ** 2);
   }
 

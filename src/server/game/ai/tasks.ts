@@ -6,6 +6,7 @@ import type { Ped, TaskName } from '../entities';
 import { freeSeat, seatPed } from '../factory';
 import type { World } from '../world';
 import { soldierHostile } from './soldiers';
+import { route } from '../systems/lifts';
 
 export function setTask(p: Ped, task: TaskName, target = 0, tx = 0, ty = 0): void {
   const ai = p.ai!;
@@ -20,6 +21,9 @@ function stop(p: Ped): void {
 /** Steers toward a point with simple unsticking. Returns remaining distance. */
 export function moveToward(w: World, p: Ped, tx: number, ty: number, speed: number, dt: number): number {
   const ai = p.ai!;
+  // Someone on another floor of a building (world/levels.ts): go via its door and lift.
+  const via = route(w, p, tx, ty);
+  if (via) { tx = via.x; ty = via.y; }
   const dx = tx - p.body.x, dy = ty - p.body.y;
   const d = Math.hypot(dx, dy);
   if (d < 0.05) { stop(p); return d; }

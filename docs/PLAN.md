@@ -77,8 +77,15 @@ world, so friends see you inside and the city keeps running around you.
   (`gates` message), six cash piles lie inside, the alarm goes out, the robber gets 4+ stars and a
   bank robbery on the record; it shuts and clears after RULES.vaultReset once nobody's inside
   (server/game/systems/vaults.ts). `npx tsx scripts/vault.ts`.
-- F3. Multi-storey: stairs and elevators; the camera shows your floor, hides everything above and dims
-  the floor below.
+- F3. (done) Upper floors in the 3 office towers (elevator, offices off a corridor) and 12 apartment
+  blocks (stairs, flats with a bed and a booth): up to 5 floors by building height. Each floor lives
+  on its own strip off the map (shared/world/levels.ts, x + f·2560), so collision, the spatial hash,
+  bullets and sight need no floor field: different floors simply never meet. Stand at the lift and
+  press E for a floor list (server/game/systems/lifts.ts); AI chasing you walks to the door, the lift,
+  and comes up after you. The client maps strip positions back over the building at the floor's
+  height: the building hides, only your floor is drawn (render/interiors.ts), people on other upper
+  floors aren't drawn, and sounds muffle per floor between you. Upstairs, snapshots still carry the
+  street around the building. `npx tsx scripts/floors.ts`.
 
 ## G. Mobile (parked, 2026-11-23)
 The user wants the website usable on a phone: not a mobile port (no touch-control scheme, app install

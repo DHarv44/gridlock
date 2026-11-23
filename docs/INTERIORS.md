@@ -58,11 +58,17 @@ Floor {
   shop and you see in, so friends see you inside, like the "in place" idea.
 - (b) Only for people who are inside it themselves. Others see the roof.
 
-## Upper floors (F3)
-- Stairs and elevators are rooms: stand in one and press E to go up or down (a short fade, not a climb).
-- The camera shows your floor: floors above are hidden, the floor below dims under a translucent floor.
-- People on other floors of your building are hidden; outside, nobody sees upper floors unless they're up
-  there.
+## Upper floors (F3, as built)
+- Each upper floor sits on its own strip east of the map: floor f of a building is at
+  `x + f * LEVEL_BAND` (shared/world/levels.ts). Collision, the server's spatial hash, bullets and
+  sight work unchanged, because two floors are thousands of metres apart; nothing needed a `floor`
+  field, and the snapshot format didn't change (protocol 9 is for the new city layout).
+- Stand at the elevator or stairs and press E: a list of floors; picking one moves you there.
+- The client maps strip positions back over the building (`groundOf`), lifted by `FLOOR_H` per floor.
+  The camera follows your floor; the building hides and only your floor is drawn; people on other
+  upper floors aren't drawn; effects and sounds land where they happen, sounds muffled per floor.
+- Upstairs, the server's interest also covers the street around your building, and ambient people and
+  traffic keep spawning around it.
 
 ## Floor plans: generated, with a few hand-made
 - **Generated** from the footprint and the place's type, by room layouts per type:

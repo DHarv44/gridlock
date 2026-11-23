@@ -5,6 +5,7 @@ import { objectivePoint } from '../missions/kinds';
 import { EK, FULL_SNAP_EVERY, FX, Mode, PF, type PlayerInfo, type S2C, VF, type YouState } from '../../../shared/protocol';
 import type { Ped, Player, Vehicle } from '../entities';
 import type { World } from '../world';
+import { groundOf } from '../../../shared/world/levels';
 
 const a2 = (v: number) => Math.round(v * 100) / 100;
 
@@ -40,16 +41,21 @@ function vehFlags(w: World, v: Vehicle): number {
 export function buildSnapshot(w: World, pl: Player): S2C {
   const me = w.peds.get(pl.pid);
   const center = me ? w.pedPos(me) : { x: 1000, y: 1000 };
+  // Upstairs (world/levels.ts) you also see the street round your building.
+  const below = groundOf(center.x, center.y);
   const R = RULES.interestRadius;
   const R2 = R * R;
   const e: number[][] = [];
-  const near = (x: number, y: number, r2 = R2) => (x - center.x) ** 2 + (y - center.y) ** 2 < r2;
+  const near = (x: number, y: number, r2 = R2) => (x - center.x) ** 2 + (y - center.y) ** 2 < r2
+    || (below.f > 0 && (x - below.x) ** 2 + (y - below.y) ** 2 < r2);
 
-  w.pedHash.query(center.x, center.y, R, (p) => {
+  const addPed = (p: Ped) => {
     if (p.vehicle || !near(p.body.x, p.body.y)) return;
     const h = p.weapons[p.wi];
     e.push([p.id, EK.Ped, p.arch, r2(p.body.x), r2(p.body.y), a2(p.body.angle), pedFlags(p), h ? h.w : -1]);
-  });
+  };
+  w.pedHash.query(center.x, center.y, R, addPed);
+  if (below.f > 0) w.pedHash.query(below.x, below.y, R, addPed);
   for (const v of w.vehicles.values()) {
     const air = v.spec.movement === 'rotor' && v.body.alt > 3;
     if (!near(v.body.x, v.body.y, air ? R2 * 1.7 : R2)) continue;
@@ -120,7 +126,8 @@ function objectiveOf(w: World, pl: Player): number[] | null {
 export function playerList(w: World): PlayerInfo[] {
   return [...w.players.values()].map((pl) => {
     const p = w.peds.get(pl.pid);
-    const pos = p ? w.pedPos(p) : { x: 0, y: 0 };
+    // Where on the map (players upstairs show at their building).
+    const pos = p ? groundOf(w.pedPos(p).x, w.pedPos(p).y) : { x: 0, y: 0 };
     return { id: pl.id, name: pl.name, color: pl.color, pid: pl.pid, x: r2(pos.x), y: r2(pos.y), cash: pl.cash, felonies: Object.values(pl.felonies).reduce((a, n) => a + n, 0), deaths: pl.deaths, wl: pl.wanted, ping: pl.ping, frags: pl.frags, earned: pl.earned, itS: Math.round(pl.itTime), ...(pl.look ? { look: pl.look } : {}) };
   });
 }

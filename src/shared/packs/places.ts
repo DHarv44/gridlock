@@ -29,13 +29,13 @@ export const SERVICES: ServiceSpec[] = [
 export const PROPERTIES: PropertySpec[] = [
   { id: 'bungalow', name: 'Bungalow', kind: 'home', zones: ['suburbs'], count: 10, price: 45000, income: 0, garage: 2 },
   { id: 'family_home', name: 'Family Home', kind: 'home', zones: ['suburbs'], count: 6, price: 90000, income: 0, garage: 4 },
-  { id: 'apartment', name: 'Apartment', kind: 'home', zones: ['residential', 'midtown', 'barrio'], count: 8, price: 30000, income: 0, garage: 1 },
+  { id: 'apartment', name: 'Apartment', kind: 'home', zones: ['residential', 'midtown', 'barrio'], count: 8, price: 30000, income: 0, garage: 1, interior: 'apartments' },
   { id: 'loft', name: 'Warehouse Loft', kind: 'home', zones: ['industrial'], count: 3, price: 65000, income: 0, garage: 6 },
-  { id: 'penthouse', name: 'Penthouse', kind: 'home', zones: ['downtown'], count: 4, price: 350000, income: 0, garage: 8 },
+  { id: 'penthouse', name: 'Penthouse', kind: 'home', zones: ['downtown'], count: 4, price: 350000, income: 0, garage: 8, interior: 'apartments' },
   { id: 'corner_store', name: 'Corner Store', kind: 'business', zones: ['commercial', 'residential', 'barrio', 'projects'], count: 8, price: 25000, income: 450, garage: 0, signText: '24/7', signColor: '#2bb34a', atm: true, interior: 'shop' },
   { id: 'diner', name: 'Diner', kind: 'business', zones: ['commercial', 'midtown'], count: 4, price: 50000, income: 900, garage: 0, signText: 'DINER', signColor: '#e04e8c', atm: true, interior: 'diner' },
   { id: 'car_wash', name: 'Car Wash', kind: 'business', zones: ['commercial', 'industrial'], count: 3, price: 70000, income: 1300, garage: 0, signText: 'CAR WASH', signColor: '#3ab0e0', atm: true, perk: 'wash' },
   { id: 'nightclub', name: 'Nightclub', kind: 'business', zones: ['midtown', 'downtown'], count: 3, price: 180000, income: 3500, garage: 0, signText: 'CLUB', signColor: '#a040ff', atm: true, perk: 'club', interior: 'club' },
   { id: 'warehouse', name: 'Warehouse', kind: 'business', zones: ['industrial', 'docks'], count: 4, price: 120000, income: 2200, garage: 0, signText: 'STORAGE', signColor: '#d9661b', perk: 'fence', interior: 'warehouse' },
-  { id: 'office_tower', name: 'Office Tower', kind: 'business', zones: ['downtown'], count: 3, price: 600000, income: 11000, garage: 0, signText: 'OFFICES', signColor: '#9fb4c4' },
+  { id: 'office_tower', name: 'Office Tower', kind: 'business', zones: ['downtown'], count: 3, price: 600000, income: 11000, garage: 0, signText: 'OFFICES', signColor: '#9fb4c4', interior: 'tower' },
 ];
