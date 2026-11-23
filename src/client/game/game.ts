@@ -7,6 +7,7 @@ import { Sound } from '../audio/sound';
 import { Hud } from '../hud/hud';
 import { openMenu } from '../hud/menu';
 import { GunShop } from '../hud/gunShop';
+import { OffscreenPlayers } from '../hud/offscreenPlayers';
 import { PaintGarage } from '../hud/paintGarage';
 import { SERVICES } from '../../shared/packs';
 import type { Place } from '../../shared/world/cityTypes';
@@ -54,6 +55,7 @@ export class Game {
   private pane = new Pane();
   private garage = new PaintGarage();
   private gunShop = new GunShop();
+  private offscreen: OffscreenPlayers;
   private interact: Interact;
   private jobs: Jobs;
   private sound = new Sound();
@@ -86,6 +88,7 @@ export class Game {
     this.predict = new Predictor(statics, this.map);
     this.radar = new Minimap(this.map);
     this.jobs = new Jobs(this.stage.scene, this.hud.root, city);
+    this.offscreen = new OffscreenPlayers(this.hud.root);
     this.interact = new Interact(city, this.pane);
     this.hud.onChat = (text) => conn.send({ t: 'chat', text });
     this.input.onUi = (a) => this.ui(a);
@@ -269,6 +272,7 @@ export class Game {
     ownEngine(this.store, this.you && this.you.mode !== Mode.Dead ? own : null, this.sound, dt);
     trafficEngines(this.store, own, this.sound, dt);
     this.stage.render();
+    this.offscreen.update(this.stage.camera, this.players, this.myId, (p) => this.store.all.get(p.pid) ?? p);
     this.updateHud(own);
   }
 
