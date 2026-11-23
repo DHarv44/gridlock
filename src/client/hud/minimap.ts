@@ -22,6 +22,7 @@ export const PLACE_ICON: Record<string, { color: string; label: string; glyph: s
   helipad: { color: '#e8e8e8', label: 'Heliport', glyph: 'H' },
   military: { color: '#7fa05a', label: 'Military base', glyph: 'M' },
   bank: { color: '#3fbf7f', label: 'Bank', glyph: '$' },
+  gas: { color: '#ff7a45', label: 'Gas station', glyph: '⛽' },
   atm: { color: '#8fe0b0', label: 'ATM', glyph: 'A' },
 };
 

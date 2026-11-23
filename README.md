@@ -55,8 +55,8 @@ own character's last spot, in that vehicle.
   it trusts you and it texts you its number; then its people call with work (paying a bit more), and
   you can ring them to ask. Your bank texts you business income.
 - **Banks and ATMs**: dying drops some of the cash you carry and getting busted costs a fine, but
-  money in the bank is safe. Bank it at an ATM (on the walls of banks, corner stores, diners, clubs
-  and car washes) or a bank's counter. Shops take your cash first, then the bank for the rest.
+  money in the bank is safe. Bank it at an ATM (on the walls of banks, corner stores, diners, clubs,
+  car washes and gas station kiosks) or a bank's counter. Shops take your cash first, then the bank for the rest.
   Business income is paid into the bank.
 - **Kill-frenzy crates**: red-and-black crates in parks and lots. Grab one for a weapon and a timer.
 - **Room modes** (picked when creating a game): Free roam, Frag race (first to 10 player kills),

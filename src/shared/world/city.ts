@@ -41,7 +41,7 @@ export function generateCity(seed: number): City {
   layout.clusters.forEach((c, ci) => {
     for (let j = c.j0; j <= c.j1; j++) for (let i = c.i0; i <= c.i1; i++) cellBlock[j * nx + i] = ci;
   });
-  const places = new PlaceBuilder(rng, lo.lots, lo.blocks);
+  const places = new PlaceBuilder(rng, lo.lots, lo.blocks, lo.obstacles);
   places.build();
   lotBuilder.plantTrees();
   const buildings = lo.lots.filter((l) => l.building).map((l) => l.building!);

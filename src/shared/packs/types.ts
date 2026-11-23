@@ -217,7 +217,7 @@ export interface DistrictSpec {
 }
 
 export type ServiceVerb = 'gunshop' | 'dealer' | 'respray' | 'chopshop' | 'hospital' | 'police'
-  | 'fire' | 'military' | 'helipad' | 'bank';
+  | 'fire' | 'military' | 'helipad' | 'bank' | 'gas';
 
 export interface ServiceSpec {
   id: string;

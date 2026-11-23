@@ -28,6 +28,7 @@ import { Stage } from '../render/scene';
 import type { StreetProps } from '../render/streetProps';
 import { Storefronts } from '../render/storefronts';
 import { addAtms } from '../render/atms';
+import { GasStations } from '../render/gasStations';
 import { atmsOf } from '../../shared/world/atms';
 import { Water } from '../render/water';
 import { type OwnState, type PlayerTag, WorldView } from '../render/worldView';
@@ -60,6 +61,7 @@ export class Game {
   private gunShop = new GunShop();
   private offscreen: OffscreenPlayers;
   private phone: Phone;
+  private gas: GasStations;
   private interact: Interact;
   private jobs: Jobs;
   private sound = new Sound();
@@ -126,6 +128,7 @@ export class Game {
     this.water = new Water(this.stage.scene, this.map);
     this.storefronts = new Storefronts(this.stage.scene, city);
     addAtms(this.stage.scene, atmsOf(city));
+    this.gas = new GasStations(this.stage.scene, city);
     new Graffiti(this.stage.scene, city, meshes.graffitiSpots);
     this.quality = new QualityGovernor(this.stage);
     this.quality.onAuto = (q) => this.hud.notify(`Graphics set to ${q} for a smoother frame rate (Esc to change)`, 'info');
@@ -278,6 +281,7 @@ export class Game {
     this.buildingUniforms.uNight.value = night;
     signalGlows(this.props, this.store, this.fx.glow, night, vr);
     this.storefronts.putGlows(this.fx.glow, night, vr);
+    this.gas.putGlows(this.fx.glow, night, vr);
     this.view.sync(this.store, dt, own, this.tags(), night, vr);
     this.fx.update(dt);
     this.water.update(dt);

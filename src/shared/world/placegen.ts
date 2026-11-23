@@ -2,7 +2,8 @@
 import { dist2, rectH, rectW } from '../math';
 import { DISTRICTS, PROPERTIES, SERVICES, ZONES, zoneIndex } from '../packs';
 import type { Rng } from '../rng';
-import { type Block, DIR_VEC, Dir, type Lot, type Place, SIDEWALK_W } from './cityTypes';
+import { type Block, DIR_VEC, Dir, type Lot, type Obstacle, type Place, SIDEWALK_W } from './cityTypes';
+import { GAS_MIN_DEPTH, GAS_MIN_FRONTAGE, gasLayout, KIOSK_DEPTH } from './gas';
 
 const DRIVE_IN = new Set(['dealer', 'respray', 'chopshop', 'hospital', 'police', 'fire']);
 const INWARD = [Math.PI / 2, Math.PI, -Math.PI / 2, 0];
@@ -42,20 +43,44 @@ function carvePad(lot: Lot): boolean {
   return rectW(b) >= 8 && rectH(b) >= 8;
 }
 
+/** Gas station: the building shrinks to a single-storey kiosk at the back of the lot; the front is
+ *  the forecourt, whose pump islands and price-sign pole become solid obstacles (world/gas.ts). */
+function makeGasStation(lot: Lot, obstacles: Obstacle[]): void {
+  const b = lot.building!, r = b.rect;
+  const along = lot.front === Dir.N || lot.front === Dir.S;
+  const a0 = along ? r.x0 : r.y0, a1 = along ? r.x1 : r.y1;
+  const w = Math.min(16, a1 - a0 - 6), am = (a0 + a1) / 2;
+  switch (lot.front) {
+    case Dir.N: b.rect = { x0: am - w / 2, x1: am + w / 2, y0: r.y1 - KIOSK_DEPTH, y1: r.y1 }; break;
+    case Dir.S: b.rect = { x0: am - w / 2, x1: am + w / 2, y0: r.y0, y1: r.y0 + KIOSK_DEPTH }; break;
+    case Dir.W: b.rect = { x0: r.x1 - KIOSK_DEPTH, x1: r.x1, y0: am - w / 2, y1: am + w / 2 }; break;
+    default: b.rect = { x0: r.x0, x1: r.x0 + KIOSK_DEPTH, y0: am - w / 2, y1: am + w / 2 };
+  }
+  b.h = 4.2;
+  b.kind = 'block';
+  const g = gasLayout(lot);
+  for (const rect of g.islands) obstacles.push({ rect, h: 1.7, color: '#d9dde2', kind: 'pump' });
+  obstacles.push({ rect: { x0: g.sign.x - 0.25, x1: g.sign.x + 0.25, y0: g.sign.y - 0.25, y1: g.sign.y + 0.25 }, h: 7, color: '#c9ccd0', kind: 'pole' });
+}
+
+const frontage = (l: Lot) => (l.front === Dir.N || l.front === Dir.S ? rectW(l.rect) : rectH(l.rect));
+
 export class PlaceBuilder {
   readonly services: Place[] = [];
   readonly properties: Place[] = [];
 
-  constructor(private rng: Rng, private lots: Lot[], private blocks: Block[]) {}
+  constructor(private rng: Rng, private lots: Lot[], private blocks: Block[], private obstacles: Obstacle[]) {}
 
   build(): void {
     SERVICES.forEach((spec, si) => {
       const zones = new Set(spec.zones.map(zoneIndex));
       const want = (l: Lot) => zones.has(l.zone) && this.free(l)
         && (spec.verb === 'military' ? l.use === 'pad' : spec.verb === 'helipad' ? l.use === 'building' && l.front >= 0
+          : spec.verb === 'gas' ? l.use === 'building' && l.front >= 0 && frontDepth(l) >= GAS_MIN_DEPTH && frontage(l) >= GAS_MIN_FRONTAGE
           : l.use === 'building' && l.front >= 0 && (!DRIVE_IN.has(spec.verb) || frontDepth(l) >= PAD_DEPTH + 12));
       for (const lot of this.choose(want, spec.count, 260)) {
         if (DRIVE_IN.has(spec.verb) && !carvePad(lot)) continue;
+        if (spec.verb === 'gas') makeGasStation(lot, this.obstacles);
         lot.service = si;
         const name = `${spec.name}, ${this.districtOf(lot)}`;
         lot.name = name;
@@ -68,6 +93,11 @@ export class PlaceBuilder {
         }
         lot.building!.sign = spec.sign;
         const p = frontPoints(lot);
+        if (spec.verb === 'gas') {
+          // Cars pull up at the pumps: the pad is the canopy's middle.
+          const c = gasLayout(lot).canopy;
+          p.pad = { x: (c.x0 + c.x1) / 2, y: (c.y0 + c.y1) / 2, angle: INWARD[lot.front] };
+        }
         lot.door = p.door;
         lot.pad = p.pad;
         this.services.push({ id: this.services.length, lot: lot.id, verb: spec.verb, spec: si, x: p.door.x, y: p.door.y, pad: p.pad, name });

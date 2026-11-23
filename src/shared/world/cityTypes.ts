@@ -85,7 +85,7 @@ export interface Obstacle {
   rect: Rect;
   h: number;
   color: string;
-  kind: 'container' | 'fence' | 'wall' | 'crane';
+  kind: 'container' | 'fence' | 'wall' | 'crane' | 'pump' | 'pole'; // pump islands, sign poles: gas stations
 }
 
 export interface ParkSpot { x: number; y: number; angle: number; zone: number; lot?: number }

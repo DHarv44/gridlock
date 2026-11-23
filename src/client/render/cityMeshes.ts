@@ -43,6 +43,7 @@ export class CityMeshes {
     // Containers, fences.
     const obs = new Batch(UNIT.box(), lambert());
     for (const o of city.obstacles) {
+      if (o.kind === 'pump' || o.kind === 'pole') continue; // gas stations draw their own (gasStations.ts)
       const r = o.rect;
       obs.add((r.x0 + r.x1) / 2, 0, (r.y0 + r.y1) / 2, r.x1 - r.x0, o.h, r.y1 - r.y0, o.color);
     }

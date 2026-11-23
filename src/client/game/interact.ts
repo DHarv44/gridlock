@@ -8,7 +8,7 @@ import { type Buy, propertyContent, serviceContent } from '../hud/places';
 
 // Respray and chop shop work like GTA2 garages: just drive in (handled by the server).
 const DRIVE_IN = new Set(['dealer']);
-const AUTOMATIC = new Set(['respray', 'chopshop', 'military', 'helipad']);
+const AUTOMATIC = new Set(['respray', 'chopshop', 'military', 'helipad', 'gas']); // gas: no counter (yet); its ATM works
 
 export interface Spot { place: Place; property: boolean }
 

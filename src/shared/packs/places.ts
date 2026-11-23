@@ -23,6 +23,7 @@ export const SERVICES: ServiceSpec[] = [
     spawns: [{ vehicle: 'tank', count: 2 }, { vehicle: 'gunship', count: 1 }, { vehicle: 'army_truck', count: 1 }, { vehicle: 'jeep', count: 2 }],
     guards: [{ archetype: 'soldier', count: 6 }] },
   { id: 'bank', name: 'Harbor Trust Bank', verb: 'bank', zones: ['downtown', 'midtown', 'commercial'], count: 3, sign: '#1e5a46', signText: 'BANK', atm: true },
+  { id: 'gas', name: 'Gas & Go', verb: 'gas', zones: ['commercial', 'residential', 'suburbs', 'industrial', 'midtown', 'barrio'], count: 6, sign: '#d8402f', signText: 'GAS & GO', atm: true },
 ];
 
 export const PROPERTIES: PropertySpec[] = [

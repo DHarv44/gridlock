@@ -36,9 +36,11 @@ Done when: money survives death in the bank and purchases draw on it. `npx tsx s
 - C3. (done for income) The bank texts business income. "Trouble" texts come with milestone D.
 `npx tsx scripts/cell.ts` checks it.
 
-## Gas stations (asked 2026-11-23; right after C)
-Forecourts in the city: a canopy over pump islands, a kiosk shop, a tall price sign. Pumps go up when
-shot or rammed hard (the GTA way). No fuel gauge unless the user asks for one.
+## Gas stations (asked 2026-11-23; done)
+Six "Gas & Go" forecourts (packs service `gas`; layout shared/world/gas.ts; render/gasStations.ts):
+the building shrinks to a kiosk at the back (sign + ATM), two solid pump islands under a branded
+canopy on pillars, a pole price sign at the street corner, canopy light pooling at night.
+Not built (ask first): exploding pumps, a kiosk counter, a fuel gauge.
 
 ## D. Businesses that matter (medium)
 - D1. Income collects in the business's safe; collect it in person or have it paid into the bank.
