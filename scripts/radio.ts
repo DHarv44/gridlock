@@ -40,6 +40,24 @@ check(gaps === 0, `two hours: ${plays} plays (${ads} commercials), each starts w
 check(ads > 0 && adRuns === 0, 'one commercial per break, never two in a row');
 check(runs.length > 0 && runs.every((n) => n >= 2 && n <= 4), `2 to 4 songs between commercials (seen: ${[...new Set(runs)].sort().join(', ')})`);
 check(repeats === 0, 'nothing plays twice in a row');
+// Every station, a day of air: a song only comes back after half the station's others have played.
+for (const id of readdirSync('radio').filter((d) => statSync(join('radio', d)).isDirectory())) {
+  const st: StationList = { songs: read(join('radio', id), ''), ads: read(join('radio', id, 'commercials'), 'commercials/') };
+  if (st.songs.length < 2) continue;
+  const need = Math.ceil((st.songs.length - 1) / 2);
+  const last = new Map<string, number>();
+  let n = 0, closest = Infinity;
+  for (let s = t0; s < t0 + 86400;) {
+    const a = onAir(id, st, s)!;
+    if (!a.ad) {
+      const seen = last.get(a.file);
+      if (seen !== undefined) closest = Math.min(closest, n - seen - 1);
+      last.set(a.file, n++);
+    }
+    s = a.endsAt + 1e-4;
+  }
+  check(closest >= need, `${id}: ${st.songs.length} songs, a day of air, at least ${need} others between repeats (closest: ${closest})`);
+}
 // Same moment, asked cold (forces a replay from the start date) and warm: same answer.
 const warm = onAir('weather', list, t0 + 1234.5)!;
 onAir('weather', list, Date.UTC(2026, 0, 2) / 1000);

@@ -1,12 +1,21 @@
 // In-vehicle radio, as a broadcast: each station plays on the clock (shared/radioSchedule.ts), so
-// tuning in joins whatever is on air and every player on a station hears the same moment. The
-// radio key cycles Off → each station. Getting out fades the sound but the stream keeps running
+// tuning in joins whatever is on air and every player on a station hears the same moment. Like
+// GTA2, the radio belongs to the car: each one comes tuned to its own station (picked from its id),
+// and the radio key cycles that car's radio through the stations and Off, which it remembers for
+// the next time you get in it. Getting out fades the sound but the stream keeps running
 // for a few seconds, so hopping into another car just fades it back in; after that it stops, and
 // the next car tunes in to the live broadcast again. The station name shows briefly on screen.
 import { RADIO } from '../../shared/packs';
 import { onAir, type RadioListing, type StationList } from '../../shared/radioSchedule';
 
 const NONE: StationList = { songs: [], ads: [] };
+
+/** The station a car's radio comes tuned to: scrambled from its id, so neighbouring cars differ. */
+function carStation(vid: number): number {
+  let h = Math.imul(vid ^ (vid >>> 16), 0x45d9f3b);
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+  return ((h ^ (h >>> 16)) >>> 0) % Math.max(1, RADIO.length);
+}
 
 const FADE_S = 0.35;
 /** Seconds the stream keeps running silently after you get out. */
@@ -20,9 +29,12 @@ export class Radio {
   private stations: Record<string, StationList> = {};
   /** Server clock minus ours (ms). */
   private clock = 0;
-  /** -1 = off, else index into RADIO. */
-  private station = (() => { try { return Number(localStorage.getItem('gridlock.radio') ?? 0); } catch { return 0; } })();
+  /** The car you're in: -1 = off, else index into RADIO. */
+  private station = 0;
   private inVehicle = false;
+  /** The car you're in (0 = none), and the cars whose radio you've retuned. */
+  private vehicle = 0;
+  private retuned = new Map<number, number>();
   private target = 0;
   private grace = 0;
   private playing = '';
@@ -49,7 +61,6 @@ export class Radio {
     this.card.className = 'now-playing';
     this.card.innerHTML = '<div class="np-title"></div><div class="np-artist"></div>';
     document.body.appendChild(this.card);
-    if (!Number.isInteger(this.station) || this.station >= RADIO.length) this.station = 0;
     void this.load();
   }
 
@@ -68,13 +79,20 @@ export class Radio {
     return (Date.now() + this.clock) / 1000;
   }
 
-  /** Call every frame with whether you're in a vehicle. */
-  update(dt: number, inVehicle: boolean, level: number): void {
+  /** Call every frame with the vehicle you're in (0 = on foot). */
+  update(dt: number, vehicle: number, level: number): void {
     if ((this.refreshT -= dt) <= 0) { this.refreshT = REFRESH_S; void this.load(); }
-    if (inVehicle !== this.inVehicle) {
-      this.inVehicle = inVehicle;
-      if (inVehicle) this.tune(false);
-      else { this.target = 0; this.grace = GRACE_S; }
+    if (vehicle && vehicle !== this.vehicle) {
+      // Into a car (or straight from one into another): its radio, on its station.
+      this.vehicle = vehicle;
+      this.inVehicle = true;
+      this.station = this.retuned.get(vehicle) ?? carStation(vehicle);
+      this.tune(false);
+    } else if (!vehicle && this.inVehicle) {
+      this.vehicle = 0;
+      this.inVehicle = false;
+      this.target = 0;
+      this.grace = GRACE_S;
     }
     if (!this.inVehicle && this.playing && (this.grace -= dt) <= 0) this.stop();
     // Keep on the broadcast, and keep trying to tune in if nothing is playing yet (the station list
@@ -103,11 +121,11 @@ export class Radio {
     this.cardT = 7;
   }
 
-  /** The radio key: next station (or off). Only works in a vehicle. */
+  /** The radio key: this car's next station (or off). Only works in a vehicle. */
   next(): void {
     if (!this.inVehicle) return;
     this.station = this.station + 1 >= RADIO.length ? -1 : this.station + 1;
-    try { localStorage.setItem('gridlock.radio', String(this.station)); } catch { /* ignore */ }
+    this.retuned.set(this.vehicle, this.station);
     this.tune(true);
   }
 

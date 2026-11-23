@@ -237,7 +237,7 @@ export class Game {
     }
     if (this.acc > STEP * 4) this.acc = 0;
     this.predict.decay(dt);
-    this.radio.update(dt, !!this.you?.vid && this.you.mode !== Mode.Dead, this.sound.musicLevel);
+    this.radio.update(dt, this.you && this.you.mode !== Mode.Dead ? this.you.vid : 0, this.sound.musicLevel);
     if (this.you && !document.hidden) this.quality.sample(dt);
     this.store.update();
     const own = this.ownState(this.acc / STEP);

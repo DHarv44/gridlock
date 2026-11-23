@@ -1,7 +1,9 @@
 // The broadcast: what each station is playing at any moment, worked out from the clock alone.
 // Since a fixed start date the station has played its songs in loops, each loop in a fresh order
 // shuffled from (station, loop number), with commercial breaks between songs: one spot per break,
-// after no fewer than 2 and no more than 4 songs, never the same spot twice running. Anyone who knows the playlist and the time works out the same thing, so tuning in
+// after no fewer than 2 and no more than 4 songs, never the same spot twice running. A song never
+// comes back until at least half the station's other songs have played, across loops too.
+// Anyone who knows the playlist and the time works out the same thing, so tuning in
 // joins what's on air; there's nothing to pause or resume.
 import { Rng } from './rng';
 
@@ -26,14 +28,26 @@ function hash(s: string): number {
 }
 
 interface Slot { track: RadioTrack; ad: boolean }
-/** State carried from one loop into the next (so breaks and spots don't bunch across loops). */
-interface Carry { run: number; lastAd: number; lastSong: number }
+/** State carried from one loop into the next (so breaks, spots and songs don't bunch across
+ *  loops); `tail` is the end of the last loop's song order, most recent last. */
+interface Carry { run: number; lastAd: number; tail: number[] }
 
-/** One loop: the songs in shuffled order with breaks between them. */
+/** Songs that must play between two plays of the same song: half the rest of the station's list. */
+const gapFor = (songs: number) => Math.ceil((songs - 1) / 2);
+
+/** One loop: the songs in shuffled order with breaks between them. A song from the end of the last
+ *  loop waits until enough others have played before it comes round again. */
 function buildLoop(station: string, list: StationList, loop: number, carry: Carry): { slots: Slot[]; carry: Carry } {
   const rng = new Rng(hash(station) ^ Math.imul(loop, 0x9e3779b1));
-  const order = rng.shuffle([...list.songs.keys()]);
-  if (order.length > 1 && order[0] === carry.lastSong) [order[0], order[1]] = [order[1], order[0]];
+  const gap = gapFor(list.songs.length);
+  // Earliest place in this loop for each of the last loop's closing songs.
+  const earliest = new Map(carry.tail.map((s, j) => [s, gap - (carry.tail.length - 1 - j)]));
+  const pool = rng.shuffle([...list.songs.keys()]);
+  const order: number[] = [];
+  while (pool.length) {
+    const k = pool.findIndex((i) => (earliest.get(i) ?? 0) <= order.length);
+    order.push(pool.splice(Math.max(0, k), 1)[0]);
+  }
   const slots: Slot[] = [];
   let { run, lastAd } = carry;
   for (const i of order) {
@@ -47,7 +61,7 @@ function buildLoop(station: string, list: StationList, loop: number, carry: Carr
       run = 0;
     }
   }
-  return { slots, carry: { run, lastAd, lastSong: order[order.length - 1] } };
+  return { slots, carry: { run, lastAd, tail: gap ? order.slice(-gap) : [] } };
 }
 
 const span = (slots: Slot[]) => slots.reduce((a, s) => a + s.track.dur, 0);
@@ -60,7 +74,7 @@ export function onAir(station: string, list: StationList, t: number): OnAir | nu
   if (!list.songs.length) return null;
   const sig = [...list.songs, ...list.ads].map((x) => `${x.file}:${x.dur}`).join('|');
   let c = cache.get(station);
-  if (!c || c.sig !== sig || t < c.start) c = { sig, loop: 0, start: EPOCH, carry: { run: 0, lastAd: -1, lastSong: -1 } };
+  if (!c || c.sig !== sig || t < c.start) c = { sig, loop: 0, start: EPOCH, carry: { run: 0, lastAd: -1, tail: [] } };
   t = Math.max(t, EPOCH);
   for (;;) {
     const { slots, carry } = buildLoop(station, list, c.loop, c.carry);
