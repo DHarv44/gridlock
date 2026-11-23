@@ -39,7 +39,10 @@ export class Population {
   private buildFixed(): void {
     const w = this.w;
     // A clerk behind every walk-in counter (world/interiors.ts), kept like the services' guards.
-    for (const i of w.city.interiors) this.guards.push({ x: i.clerk.x, y: i.clerk.y, angle: i.clerk.angle, arch: pedIndex('clerk'), ped: 0, readyAt: 0, indoor: true });
+    for (const i of w.city.interiors) {
+      this.guards.push({ x: i.clerk.x, y: i.clerk.y, angle: i.clerk.angle, arch: pedIndex(i.clerkArch), ped: 0, readyAt: 0, indoor: true });
+      for (const g of i.guards) this.guards.push({ x: g.spot.x, y: g.spot.y, angle: g.spot.angle, arch: pedIndex(g.arch), ped: 0, readyAt: 0, indoor: true });
+    }
     for (const place of w.city.services) {
       const spec = SERVICES[place.spec];
       const pad = place.pad ?? { x: place.x, y: place.y, angle: 0 };

@@ -14,7 +14,7 @@ export const SERVICES: ServiceSpec[] = [
   { id: 'hospital', name: 'General Hospital', verb: 'hospital', zones: ['residential', 'midtown', 'downtown', 'suburbs'], count: 3, sign: '#f2f2ee', signText: 'HOSPITAL',
     spawns: [{ vehicle: 'ambulance', count: 1 }] },
   { id: 'precinct', name: 'Police Precinct', verb: 'police', zones: ['midtown', 'residential', 'commercial', 'downtown'], count: 3, sign: '#1d3557', signText: 'POLICE',
-    spawns: [{ vehicle: 'police', count: 2 }] },
+    spawns: [{ vehicle: 'police', count: 2 }], interior: 'precinct' },
   { id: 'firehouse', name: 'Fire Station', verb: 'fire', zones: ['residential', 'commercial', 'industrial'], count: 2, sign: '#9e1b32', signText: 'FIRE DEPT',
     spawns: [{ vehicle: 'firetruck', count: 1 }] },
   { id: 'helipad', name: 'Heliport', verb: 'helipad', zones: ['docks', 'downtown', 'industrial'], count: 2, sign: '#f2f2ee', signText: 'HELIPORT',
@@ -22,7 +22,7 @@ export const SERVICES: ServiceSpec[] = [
   { id: 'armory', name: 'Fort Calder Motor Pool', verb: 'military', zones: ['base'], count: 1, sign: '#5d7a3a', signText: 'MOTOR POOL',
     spawns: [{ vehicle: 'tank', count: 2 }, { vehicle: 'gunship', count: 1 }, { vehicle: 'army_truck', count: 1 }, { vehicle: 'jeep', count: 2 }],
     guards: [{ archetype: 'soldier', count: 6 }] },
-  { id: 'bank', name: 'Harbor Trust Bank', verb: 'bank', zones: ['downtown', 'midtown', 'commercial'], count: 3, sign: '#1e5a46', signText: 'BANK', atm: true },
+  { id: 'bank', name: 'Harbor Trust Bank', verb: 'bank', zones: ['downtown', 'midtown', 'commercial'], count: 3, sign: '#1e5a46', signText: 'BANK', atm: true, interior: 'bank' },
   { id: 'gas', name: 'Gas & Go', verb: 'gas', zones: ['commercial', 'residential', 'suburbs', 'industrial', 'midtown', 'barrio'], count: 6, sign: '#d8402f', signText: 'GAS & GO', atm: true, interior: 'kiosk' },
 ];
 

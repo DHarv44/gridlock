@@ -122,6 +122,8 @@ export type S2C =
   | { t: 'call'; gang: string; state: 'ring' | 'missed' | 'end'; text?: string }
   /** A text message to the phone. */
   | { t: 'text'; from: string; body: string }
+  /** Vault doors standing open (interior indexes; world/interiors.ts). */
+  | { t: 'gates'; open: number[] }
   /** The character's progress, for the browser to save (sent every few seconds and after buys). */
   | { t: 'save'; id: string; p: CharacterProgress };
 

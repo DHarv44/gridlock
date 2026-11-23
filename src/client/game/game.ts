@@ -69,6 +69,8 @@ export class Game {
   private phone: Phone;
   private gas: GasStations;
   private interiors: Interiors;
+  /** The client's collision world (prediction); vault gates mirror the server's. */
+  private statics: StaticWorld;
   private interact: Interact;
   private jobs: Jobs;
   private sound = new Sound();
@@ -89,7 +91,7 @@ export class Game {
   constructor(private conn: Connection, private myId: number, private myName: string, private code: string, seed: number, private onLeave: () => void) {
     const city = generateCity(seed);
     this.map = new CityMap(city);
-    const statics = new StaticWorld(city);
+    const statics = this.statics = new StaticWorld(city);
     const canvas = document.getElementById('view') as HTMLCanvasElement;
     this.stage = new Stage(canvas);
     this.cam = new ChaseCamera(this.stage.camera);
@@ -201,6 +203,11 @@ export class Game {
         routeFx(m.fx, this.fx, this.sound, this.store, this.cam);
         break;
       case 'players': this.players = m.list; this.jobs.players = m.list; break;
+      case 'gates':
+        this.statics.openGates.clear();
+        for (const k of m.open) this.statics.openGates.add(k);
+        this.interiors.setVaults(m.open);
+        break;
       case 'owners':
         this.owners = new Map(m.list.filter((o): o is [number, string] => o[1] !== null));
         this.storefronts.setOwners(this.owners);

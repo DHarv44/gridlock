@@ -137,6 +137,7 @@ export function explode(w: World, x: number, y: number, radius: number, dmg: num
   });
   if (w.rng.chance(0.35) && !w.map.isWater(x, y)) spawnFire(w, x, y, 2.5, 8, attackerId);
   onNoise(w, x, y, 70, attackerId, true);
+  w.onExplosion(x, y, radius, attackerId);
 }
 
 export function spawnFire(w: World, x: number, y: number, r: number, life: number, owner: number): void {

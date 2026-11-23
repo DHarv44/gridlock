@@ -71,7 +71,12 @@ world, so friends see you inside and the city keeps running around you.
   each counter; business happens at the counter. Ground floor only, so no "floor" field yet: the
   walls are ordinary collision (bullets and sight stop at them). `npx tsx scripts/interiors.ts`.
   Not yet: police and gangs pathing in through doors; the dealership office; owners' back-room desk.
-- F2. Banks with a vault (hand-made layout); the bank job.
+- F2. (done) Hand-made plans (packs/interiorPlans.ts) for the bank (lobby, tellers' counter, office,
+  vault) and the police precinct (front desk with a desk sergeant, three barred cells, office). The
+  bank job: the vault door is a collision gate; an explosion at it blows it open for everyone
+  (`gates` message), six cash piles lie inside, the alarm goes out, the robber gets 4+ stars and a
+  bank robbery on the record; it shuts and clears after RULES.vaultReset once nobody's inside
+  (server/game/systems/vaults.ts). `npx tsx scripts/vault.ts`.
 - F3. Multi-storey: stairs and elevators; the camera shows your floor, hides everything above and dims
   the floor below.
 

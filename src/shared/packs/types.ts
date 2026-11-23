@@ -236,8 +236,25 @@ export interface ServiceSpec {
   interior?: InteriorLayout;    // walk in: the ground floor is laid out like this (world/interiors.ts)
 }
 
-/** How an enterable place's ground floor is laid out (shared/world/interiors.ts). */
-export type InteriorLayout = 'shop' | 'diner' | 'club' | 'warehouse' | 'kiosk';
+/** How an enterable place's ground floor is laid out (shared/world/interiors.ts): generated for the
+ *  first five, hand-made (packs/interiorPlans.ts) for the rest. */
+export type InteriorLayout = 'shop' | 'diner' | 'club' | 'warehouse' | 'kiosk' | 'bank' | 'precinct';
+
+/** A hand-made ground floor, in metres: `a` across the room from its left inside corner (seen from the
+ *  street), `d` in from the front wall. Rects are [a0, a1, d0, d1]. The shell (with the street door)
+ *  is added around it. */
+export interface InteriorPlan {
+  w: number; d: number;
+  walls: { r: [number, number, number, number]; h?: number }[];
+  props: { r: [number, number, number, number]; h: number; kind: 'counter' | 'shelf' | 'table' | 'booth' | 'bar' | 'rack' | 'desk' | 'stool' | 'dance' | 'bench' | 'bars' }[];
+  counter: [number, number];
+  clerk: [number, number];
+  /** Who works the counter (a ped archetype); the generated layouts use the clerk. */
+  clerkArch?: string;
+  guards?: { at: [number, number]; arch: string }[];
+  /** A strongroom: its door (a gate that explosions open), the room behind it, where the cash lies. */
+  vault?: { door: [number, number, number, number]; room: [number, number, number, number]; cash: [number, number][] };
+}
 
 export interface PropertySpec {
   id: string;

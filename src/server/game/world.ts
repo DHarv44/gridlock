@@ -33,6 +33,8 @@ export class World {
   onCrate: (pl: Player, pickup: Pickup) => void = () => {};
   /** A felony went on a player's record. */
   onFelony: (pl: Player) => void = () => {};
+  /** Something blew up (bank vault doors care). */
+  onExplosion: (x: number, y: number, radius: number, attackerId: number) => void = () => {};
   /** Adds money to a player (counts toward money-race rounds). */
   earn: (pl: Player, amount: number) => void = (pl, amount) => { pl.cash += amount; };
   /** Adds money straight to a player's bank (business income); counts toward money races too. */

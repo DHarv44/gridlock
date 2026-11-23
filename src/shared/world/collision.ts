@@ -3,7 +3,8 @@
 import type { City } from './cityTypes';
 import { MAP_SIZE } from './cityTypes';
 
-export interface Box2 { x0: number; y0: number; x1: number; y1: number; h: number }
+/** `gate`: a box that can open (a vault door: its interior's index); open gates are passed through. */
+export interface Box2 { x0: number; y0: number; x1: number; y1: number; h: number; gate?: number }
 export interface Circle2 { x: number; y: number; r: number; h: number }
 export interface Hit { nx: number; ny: number; depth: number }
 export interface RayHit { t: number; nx: number; ny: number }
@@ -15,6 +16,8 @@ const TRUNK_R = 0.45;
 export class StaticWorld {
   readonly boxes: Box2[] = [];
   readonly circles: Circle2[] = [];
+  /** Gates standing open right now (interior indexes): the server sets them, clients mirror it. */
+  readonly openGates = new Set<number>();
   private boxCells: number[][] = Array.from({ length: N * N }, () => []);
   private circleCells: number[][] = Array.from({ length: N * N }, () => []);
   private stamp: Uint32Array;
@@ -26,10 +29,11 @@ export class StaticWorld {
     // instead of one solid box.
     const open = new Set(city.interiors.map((i) => i.building));
     city.buildings.forEach((b, bi) => { if (!open.has(bi)) this.addBox({ ...b.rect, h: b.h }); });
-    for (const i of city.interiors) {
+    city.interiors.forEach((i, k) => {
       for (const w of [...i.walls, ...i.rest]) this.addBox({ ...w.rect, h: w.h });
       for (const p of i.props) if (p.kind !== 'dance') this.addBox({ ...p.rect, h: p.h });
-    }
+      if (i.vault) this.addBox({ ...i.vault.door, h: 3.2, gate: k });
+    });
     for (const o of city.obstacles) this.addBox({ ...o.rect, h: o.h });
     for (const t of city.trees) this.addCircle({ x: t.x, y: t.y, r: TRUNK_R, h: 7 });
     this.stamp = new Uint32Array(this.boxes.length);
@@ -62,7 +66,9 @@ export class StaticWorld {
         for (const id of this.boxCells[j * N + i]) {
           if (this.stamp[id] === q) continue;
           this.stamp[id] = q;
-          box(this.boxes[id]);
+          const b = this.boxes[id];
+          if (b.gate !== undefined && this.openGates.has(b.gate)) continue; // an open vault door
+          box(b);
         }
         if (!circle) continue;
         for (const id of this.circleCells[j * N + i]) {

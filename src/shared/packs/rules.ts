@@ -32,6 +32,7 @@ export const CRIMES = {
   vehicleTheft: { heat: 4, felony: 'Grand theft auto' },
   explosion: { heat: 15, felony: 'Arson', cooldown: 3 },
   trespass: { heat: 30, felony: 'Trespassing on a military base', cooldown: 60 },
+  bankRobbery: { heat: 200, felony: 'Bank robbery', cooldown: 30 },
 } satisfies Record<string, CrimeSpec>;
 
 export type CrimeKind = keyof typeof CRIMES;
@@ -77,6 +78,10 @@ export const RULES = {
   payoffHours: 4,            // paying them off costs this many hours of the place's income...
   payoffRespect: 6,          // ...and they think better of you for it
   fenceMul: 1.6,             // your warehouse pays this much over the chop shop for a stolen car
+  // The bank job: blow the vault door; it pays out in cash piles, the alarm brings the law.
+  vaultCash: [2500, 4000] as [number, number], // per pile (six piles)
+  vaultWanted: 4,            // the alarm puts the robber on at least this many stars
+  vaultReset: 600,           // seconds before the vault is closed and restocked (once empty of people)
   pedCap: 260,
   carCap: 140,
   vehicleCap: 300,           // all vehicles incl. parked

@@ -8,6 +8,7 @@ import { removeVehicle, unseatPed } from './game/factory';
 import { Missions } from './game/missions/engine';
 import { Cell, newCell } from './game/missions/cell';
 import { Business } from './game/systems/business';
+import { Vaults } from './game/systems/vaults';
 import { Rounds } from './rounds';
 import { resolveContacts } from './game/systems/contacts';
 import { Dispatch } from './game/systems/dispatch';
@@ -59,6 +60,9 @@ export class Room {
     this.business = new Business(w, this.econ.owners, this.missions);
     this.econ.business = this.business;
     this.business.onChange = (pl) => this.sendProfile(pl);
+    this.vaults = new Vaults(w);
+    this.vaults.onChange = () => w.broadcast({ t: 'gates', open: this.vaults.open() } satisfies S2C);
+    w.onExplosion = (x, y, r, by) => this.vaults.explosion(x, y, r, by);
     for (const [id, amount] of save?.safes ?? []) this.business.safes.set(id, amount);
     this.rounds = new Rounds(save?.mode ?? mode);
     for (const [id, name] of save?.owners ?? []) this.econ.owners.set(id, name);
@@ -77,6 +81,7 @@ export class Room {
   readonly missions: Missions;
   readonly cell: Cell;
   readonly business: Business;
+  readonly vaults: Vaults;
   readonly rounds: Rounds;
 
   get size(): number {
@@ -121,6 +126,7 @@ export class Room {
     this.sendProfile(pl);
     this.sendOwners();
     pl.send(this.rounds.modeMsg());
+    pl.send({ t: 'gates', open: this.vaults.open() } satisfies S2C);
     w.notify('info', `${name} joined`);
     this.start();
     return pl;
@@ -262,6 +268,7 @@ export class Room {
     this.missions.update();
     this.cell.update();
     this.business.update();
+    this.vaults.update();
     this.tickCount++;
     if (this.tickCount % TICK_HZ === 0) this.rounds.check(w);
     this.rounds.tick(w, DT);

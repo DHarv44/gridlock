@@ -59,7 +59,11 @@ own character's last spot, in that vehicle.
   car washes and gas station kiosks) or a bank's counter. Shops take your cash first, then the bank for the rest.
 - **Walk-in places**: gun shops, corner stores, gas station kiosks, diners, nightclubs and warehouses
   open up when you walk to their door: the roof comes off and you walk in, past the shelves and booths
-  to the counter, where the clerk is and where you do business.
+  to the counter, where the clerk is and where you do business. Banks and police precincts open up
+  too.
+- **The bank job**: blow the vault door with an explosion (grenade, rocket, car bomb) and the cash
+  inside is yours, if you can get away: the alarm goes out to the whole city and you're on four stars.
+  The vault shuts and restocks after a while.
 - **Businesses**: income fills each one's safe (up to 8 game hours of it). Empty it at the door, or
   at midnight an armoured car takes it to your bank (less 10%). Gangs that don't respect you send a
   crew to lean on your places: kill them, pay them off at the door, or lose the safe. Your car wash
