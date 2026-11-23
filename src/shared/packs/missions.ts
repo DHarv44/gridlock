@@ -18,16 +18,16 @@ export const MISSIONS: MissionSpec[] = [
     reward: [2000, 3500], respect: 12, rivalRespect: 12, time: 120, distance: [0, 0], target: { count: 8 } },
 
   // Gang-specific work.
-  { id: 'vipers_wheels', kind: 'steal', giver: 'vipers', title: 'Green Machine',
+  { id: 'v22_wheels', kind: 'steal', giver: 'v22', title: 'Green Machine',
     brief: 'A {vehicle} is sitting pretty in {place}. Lift it and bring it to the drop. ${reward}.',
     reward: [2500, 3500], respect: 12, rivalRespect: 0, time: 300, distance: [300, 700], target: { vehicle: 'sports' } },
-  { id: 'dogs_haul', kind: 'steal', giver: 'irondogs', title: 'Heavy Lifting',
+  { id: 'd9_haul', kind: 'steal', giver: 'd9', title: 'Heavy Lifting',
     brief: 'Need a {vehicle} for a job. One is parked in {place}. Bring it in one piece. ${reward}.',
     reward: [2000, 3200], respect: 12, rivalRespect: 0, time: 300, distance: [300, 700], target: { vehicle: 'semi' } },
-  { id: 'sol_limo', kind: 'steal', giver: 'sol', title: 'Executive Transport',
+  { id: 'oro7_limo', kind: 'steal', giver: 'oro7', title: 'Executive Transport',
     brief: "El jefe wants a {vehicle}. There's one in {place}. Deliver it clean. ${reward}.",
     reward: [3000, 4500], respect: 12, rivalRespect: 0, time: 300, distance: [300, 700], target: { vehicle: 'limo' } },
-  { id: 'dogs_cop_car', kind: 'torch', giver: 'irondogs', title: 'Pig Roast',
+  { id: 'd9_cop_car', kind: 'torch', giver: 'd9', title: 'Pig Roast',
     brief: 'A cop cruiser is parked up in {place}. Make it a bonfire. ${reward}.',
     reward: [3000, 4500], respect: 14, rivalRespect: 0, time: 200, distance: [250, 600], target: { vehicle: 'police' } },
 
