@@ -51,9 +51,9 @@ button:disabled { opacity: 0.4; cursor: default; }
 .garage-actions { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
 .garage-actions .primary { flex: none; font-size: 16px; padding: 12px; }
 .garage-price.short { color: #b0302a; }
-/* Gun shop: the paint shop's layout with a wider counter of picture cards (hud/gunShop.ts). */
-.gun-shop .garage-box { width: min(1120px, calc(100vw - 32px)); height: min(640px, calc(100vh - 32px)); }
-.gun-shop .garage-side { width: 400px; gap: 10px; }
+/* Shop counters (gun shop, dealership): the paint shop's layout with picture cards (hud/showroom.ts). */
+.showroom .garage-box { width: min(1120px, calc(100vw - 32px)); height: min(640px, calc(100vh - 32px)); }
+.showroom .garage-side { width: 400px; gap: 10px; }
 .gs-cash { color: var(--cash); font-size: 15px; font-variant-numeric: tabular-nums; }
 .gs-cards { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: min-content; gap: 7px; overflow: hidden auto; min-height: 0; flex: 1 1 auto; padding: 2px; scrollbar-width: thin; scrollbar-color: #3a3f47 transparent; }
 .gs-card { display: flex; flex-direction: column; align-items: stretch; gap: 2px; padding: 6px 6px 7px; background: #14171c; border: 1px solid var(--line); border-radius: 6px; cursor: pointer; text-align: left; letter-spacing: 0; }
@@ -71,7 +71,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 .gs-stat b { color: var(--ink); font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
 .gs-bar { height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
 .gs-bar > div { height: 100%; background: var(--accent); border-radius: 3px; }
-.gun-shop .garage-actions { margin-top: 0; flex: none; }
+.showroom .garage-actions { margin-top: 0; flex: none; }
 .gs-buy span { color: var(--cash); margin-left: 6px; }
 .gs-buy.short span { color: #b0302a; }
 @media (max-width: 700px) { .garage-box { flex-direction: column; height: calc(100vh - 32px); } .garage-side { width: auto; border-left: none; border-top: 1px solid var(--line); } }
