@@ -6,7 +6,7 @@ import { createReadStream, existsSync, readdirSync, readFileSync, statSync } fro
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { basename, extname, join, resolve } from 'node:path';
 import { RADIO } from '../shared/packs';
-import type { RadioListing, RadioTrack } from '../shared/radioSchedule';
+import type { RadioListing, RadioTrack, StationList } from '../shared/radioSchedule';
 import { audioDuration } from './audioDuration';
 
 const ROOT = resolve(process.cwd(), 'radio');
@@ -36,12 +36,20 @@ function lengthOf(full: string): number | null {
   return d;
 }
 
-/** Every station's playlist with track lengths: what the broadcast schedule is built from. */
-function playlists(): Record<string, RadioTrack[]> {
-  return Object.fromEntries(Object.entries(folders()).map(([id, dir]) => [id, tracks(dir).flatMap((file) => {
-    const dur = lengthOf(join(dir, file));
-    return dur && dur > 1 ? [{ file, dur: Math.round(dur * 1000) / 1000 }] : [];
-  })]));
+/** Commercials (idents, jingles, ads) sit in this subfolder of a station's folder. */
+const ADS = 'commercials';
+
+/** Tracks in a folder with their lengths; `prefix` is the path the client asks for them by. */
+function listed(dir: string, prefix: string): RadioTrack[] {
+  return tracks(dir).flatMap((f) => {
+    const dur = lengthOf(join(dir, f));
+    return dur && dur > 1 ? [{ file: prefix + f, dur: Math.round(dur * 1000) / 1000 }] : [];
+  });
+}
+
+/** Every station's songs and commercials with lengths: what the broadcast schedule is built from. */
+function playlists(): Record<string, StationList> {
+  return Object.fromEntries(Object.entries(folders()).map(([id, dir]) => [id, { songs: listed(dir, ''), ads: listed(join(dir, ADS), `${ADS}/`) }]));
 }
 
 /** Handles /api/radio and /radio/<station>/<file>; false if not ours. */
@@ -54,10 +62,13 @@ export function radioRoutes(req: IncomingMessage, res: ServerResponse, path: str
     return true;
   }
   if (!path.startsWith('/radio/')) return false;
-  const [, , station, raw] = path.split('/');
-  const dir = folders()[station ?? ''];
-  const file = basename(decodeURIComponent(raw ?? ''));
-  // Only files the listing would show: no paths outside the station's folder.
+  // /radio/<station>/<file> or /radio/<station>/commercials/<file>
+  const parts = path.split('/');
+  const station = folders()[parts[2] ?? ''];
+  const ad = parts.length === 5 && parts[3] === ADS;
+  const dir = station && (ad ? join(station, ADS) : parts.length === 4 ? station : '');
+  const file = basename(decodeURIComponent(parts[parts.length - 1] ?? ''));
+  // Only files the listing would show: no paths outside the station's folders.
   if (!dir || !tracks(dir).includes(file)) { res.writeHead(404).end(); return true; }
   const full = join(dir, file);
   const size = statSync(full).size;

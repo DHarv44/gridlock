@@ -4,7 +4,9 @@
 // for a few seconds, so hopping into another car just fades it back in; after that it stops, and
 // the next car tunes in to the live broadcast again. The station name shows briefly on screen.
 import { RADIO } from '../../shared/packs';
-import { onAir, type RadioListing, type RadioTrack } from '../../shared/radioSchedule';
+import { onAir, type RadioListing, type StationList } from '../../shared/radioSchedule';
+
+const NONE: StationList = { songs: [], ads: [] };
 
 const FADE_S = 0.35;
 /** Seconds the stream keeps running silently after you get out. */
@@ -15,7 +17,7 @@ const REFRESH_S = 120;
 
 export class Radio {
   private audio = new Audio();
-  private stations: Record<string, RadioTrack[]> = {};
+  private stations: Record<string, StationList> = {};
   /** Server clock minus ours (ms). */
   private clock = 0;
   /** -1 = off, else index into RADIO. */
@@ -99,9 +101,10 @@ export class Radio {
    *  second. Already there? Only nudges it back if it has drifted. */
   private follow(): void {
     const s = RADIO[this.station];
-    const air = s && !this.muted ? onAir(s.id, this.stations[s.id] ?? [], this.now()) : null;
+    const air = s && !this.muted ? onAir(s.id, this.stations[s.id] ?? NONE, this.now()) : null;
     if (!s || !air || this.loading) return;
-    const src = `/radio/${encodeURIComponent(s.id)}/${encodeURIComponent(air.file)}`;
+    // Songs are `file`, commercials `commercials/file`: encode each path segment.
+    const src = `/radio/${encodeURIComponent(s.id)}/${air.file.split('/').map(encodeURIComponent).join('/')}`;
     if (this.playing === src) {
       if (!this.audio.seeking && Math.abs(this.audio.currentTime - air.offset) > DRIFT_S) this.audio.currentTime = air.offset;
       if (this.audio.paused) void this.audio.play().catch(() => {});
@@ -112,7 +115,7 @@ export class Radio {
     this.audio.src = src;
     this.audio.addEventListener('loadedmetadata', () => {
       // Loading took a moment: seek to where the broadcast is now, not where it was.
-      const live = onAir(s.id, this.stations[s.id] ?? [], this.now());
+      const live = onAir(s.id, this.stations[s.id] ?? NONE, this.now());
       this.audio.currentTime = live && live.file === air.file ? Math.min(live.offset, this.audio.duration - 0.1) : 0;
       this.loading = false;
       void this.audio.play().catch(() => {});
