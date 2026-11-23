@@ -6,7 +6,8 @@ Headless: blender -b --factory-startup -P art/build.py -- --set vehicles --expor
 Sizes come from art/specs/game.json (written from the packs by scripts/model-specs.ts); looks come
 from art/specs/vehicles.json and art/specs/weapons.json. Each model is one collection holding an
 empty named after the game id, its static mesh, and any moving parts (rotor, tailrotor, turret)
-with their origins at their pivots. Export: public/models/<set>.glb.
+with their origins at their pivots. Export: src/client/models/<set>.glb (Draco-compressed; the
+client imports them by URL, render/models.ts).
 """
 import importlib
 import json
@@ -60,7 +61,8 @@ def assemble(set_name, mid, objs, slot):
     for o in anim:
         groups.setdefault(o["anim"], []).append(o)
     for tag, obs in groups.items():
-        pivot = obs[0].get("pivot", (0, 0, 0))
+        # Copy it out now: the join deletes these objects, and their property with them.
+        pivot = tuple(obs[0].get("pivot", (0, 0, 0)))
         j = kit.join("%s.%s" % (mid, tag), obs, col)
         kit.origin_to(j, pivot)
         j["anim"] = tag
@@ -110,20 +112,28 @@ def build_weapons(only):
 
 
 def export(set_name):
-    path = os.path.join(ROOT, "public", "models", set_name + ".glb")
+    path = os.path.join(ROOT, "src", "client", "models", set_name + ".glb")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     c = bpy.data.collections[set_name]
-    for o in bpy.context.view_layer.objects:
-        o.select_set(False)
+    sc = kit.scene()
+    vl = sc.view_layers[0]
+    for o in vl.objects:
+        o.select_set(False, view_layer=vl)
     moved = []
     for o in c.all_objects:
-        o.select_set(True)
+        o.select_set(True, view_layer=vl)
         if o.get("model"):
             moved.append((o, tuple(o.location)))
             o.location = (0, 0, 0)  # every model at the origin in the file
-    bpy.ops.export_scene.gltf(filepath=path, export_format='GLB', use_selection=True, export_apply=True,
-                              export_yup=True, export_extras=True, export_lights=False, export_cameras=False,
-                              export_animations=False, export_texcoords=False, export_tangents=False)
+    # Only this build's scene: headless its scene isn't the active one, and other scenes open in the
+    # same Blender (other projects) must not leak in.
+    with bpy.context.temp_override(scene=sc, view_layer=vl):
+        bpy.ops.export_scene.gltf(filepath=path, export_format='GLB', use_selection=True, use_active_scene=True, export_apply=True,
+                                  export_yup=True, export_extras=True, export_lights=False, export_cameras=False,
+                                  export_animations=False, export_texcoords=False, export_tangents=False,
+                                  # Draco: about a sixth of the size over the wire (decoder ships with three).
+                                  export_draco_mesh_compression_enable=True, export_draco_mesh_compression_level=7,
+                                  export_draco_position_quantization=14, export_draco_normal_quantization=10)
     for o, loc in moved:
         o.location = loc
     print("exported %s (%d KB)" % (path, os.path.getsize(path) // 1024))

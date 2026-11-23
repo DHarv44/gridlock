@@ -50,9 +50,15 @@
   the heading. `npx tsx scripts/signals.ts` measures stop-line crossings by light state (0.3% on red,
   was ~50%).
 - Map (M) with waypoints and road routes; radio (R) with stations from packs/radio.ts.
+- Models (2026-11-23): all 43 vehicles (incl. the semi's trailer) and 21 weapons are built in Blender
+  by art/build.py from art/specs/*.json (sizes from the packs via `npx tsx scripts/model-specs.ts`),
+  reviewed as contact sheets (art/review.py), exported Draco-compressed to src/client/models/*.glb
+  (~1.1 MB). render/models.ts loads them at startup; vehicleMesh/weaponMesh build from them (the
+  packs' box models stay as a fallback). See art/README.md for the commands.
+- Riders on bikes are drawn (spec `saddles`, protocol 11); gun trucks (Humvee, MRAP) traverse a roof
+  gun like the tank (spec `turret`). `npx tsx scripts/riders.ts`, `npx tsx scripts/turret.ts`.
 
 ## Known gaps / next
 - **The plan: docs/PLAN.md** (milestones A–G, agreed 2026-11-23). Work milestone by milestone.
-- Trucks, bus, tank and aircraft still use box models. Cars have per-style models (packs/carModels.ts)
-  plus a plan-view `shape` (rounded nose/tail, cabin tumblehome, hips) applied by render/bodyShape.ts.
+- Body armour on the gun shop turntable is still a box model (packs/weaponModels.ts ARMOR_MODEL).
 - Hosting for internet play: see README (port-forward, or deploy; ask the user before deploying).

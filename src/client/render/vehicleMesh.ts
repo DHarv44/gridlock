@@ -5,6 +5,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { PALETTE, type Paint, type Part, VEHICLES, type VehicleSpec } from '../../shared/packs';
 import { hitchOffset } from '../../shared/sim/physics';
 import { densify, shapeGeometry, widthAt } from './bodyShape';
+import { type Model, type ModelPart, vehicleModel } from './models';
 
 const NAMED: Record<string, string> = {
   glass: '#1b2632', dark: '#202326', chrome: '#c9ccd0', trim: '#2a2c30', headlight: '#fff6d8', taillight: '#c4161c',
@@ -85,10 +86,50 @@ interface Built {
   body: THREE.BufferGeometry;
   shiny: THREE.BufferGeometry | null;
   lights: THREE.BufferGeometry | null;
-  animated: { tag: Part['tag']; geo: THREE.BufferGeometry; offset: THREE.Vector3 }[];
+  /** `glb`: from the Blender model (geometry already relative to `offset`, the pivot). */
+  animated: { tag: Part['tag']; geo: THREE.BufferGeometry; offset: THREE.Vector3; glb?: boolean; blue?: boolean }[];
   trailer?: Built;
 }
 const cache = new Map<string, Built>();
+
+/** A model part's geometry with its colour baked in as vertex colours. */
+function tinted(p: ModelPart, body: string, wrecked: boolean): THREE.BufferGeometry {
+  const c = wrecked
+    ? new THREE.Color(p.role === 'paint' ? '#26221f' : p.material === 'glass' ? '#0c0c0c' : '#1c1b1a')
+    : p.role === 'paint' ? new THREE.Color(body) : p.color;
+  const g = p.geometry.clone();
+  const n = g.attributes.position.count;
+  const cols = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) cols.set([c.r, c.g, c.b], i * 3);
+  g.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+  return g;
+}
+
+/** A Blender model split into the same draw groups as the box models: body (paint and fixed parts),
+ *  shiny (glass, chrome), lamp lenses, and the moving parts (rotors, turret, siren halves). */
+function fromModel(m: Model, body: string, wrecked: boolean): Built {
+  const statics: THREE.BufferGeometry[] = [], shiny: THREE.BufferGeometry[] = [], lights: THREE.BufferGeometry[] = [];
+  const animated: Built['animated'] = [];
+  for (const p of m.parts) {
+    const g = tinted(p, body, wrecked);
+    if (p.role === 'siren_red' || p.role === 'siren_blue') {
+      if (wrecked) statics.push(g);
+      else animated.push({ tag: 'siren', geo: g, offset: new THREE.Vector3(), glb: true, blue: p.role === 'siren_blue' });
+    } else if (p.role === 'shiny' && !wrecked) shiny.push(g);
+    else if ((p.role === 'head' || p.role === 'tail') && !wrecked) lights.push(g);
+    else statics.push(g);
+  }
+  for (const a of m.anim) {
+    const geo = mergeGeometries(a.parts.map((p) => tinted(p, body, wrecked)));
+    if (geo) animated.push({ tag: a.tag as Part['tag'], geo, offset: a.pivot.clone(), glb: true });
+  }
+  return {
+    body: mergeGeometries(statics)!,
+    shiny: shiny.length ? mergeGeometries(shiny) : null,
+    lights: lights.length ? mergeGeometries(lights) : null,
+    animated,
+  };
+}
 
 function build(type: number, colorIdx: number, wrecked: boolean): Built {
   const key = `${type}:${colorIdx}:${wrecked ? 1 : 0}`;
@@ -96,8 +137,11 @@ function build(type: number, colorIdx: number, wrecked: boolean): Built {
   if (hit) return hit;
   const spec = VEHICLES[type];
   const body = PALETTE[colorIdx] ?? '#888888';
-  const built = buildParts(spec, spec.model, body, wrecked);
-  if (spec.trailer) {
+  const model = vehicleModel(spec.id);
+  const built = model ? fromModel(model, body, wrecked) : buildParts(spec, spec.model, body, wrecked);
+  const trailerModel = spec.trailer ? vehicleModel(`${spec.id}_trailer`) : undefined;
+  if (trailerModel) built.trailer = fromModel(trailerModel, body, wrecked);
+  else if (spec.trailer) {
     // The trailer is built as its own "vehicle" with only rear axles.
     const t = spec.trailer;
     const tspec: VehicleSpec = { ...spec, length: t.length, width: t.width, height: t.height, model: t.model, trailer: undefined, shape: undefined };
@@ -189,6 +233,25 @@ export function makeVehicle(type: number, colorIdx: number, wrecked: boolean): V
   for (const a of b.animated) {
     const m = new THREE.Mesh(a.geo, a.tag === 'siren' ? sirenMats.redDim : animMat);
     m.castShadow = true;
+    if (a.glb) {
+      // Blender parts: the turret / rotors sit on their pivot; siren halves carry their colour.
+      if (a.tag === 'turret') {
+        view.turret = new THREE.Group();
+        view.turret.position.copy(a.offset);
+        view.turret.add(m);
+        root.add(view.turret);
+      } else if (a.tag === 'rotor' || a.tag === 'tailrotor') {
+        m.position.copy(a.offset);
+        (a.tag === 'rotor' ? view.rotors : view.tailRotors).push(m);
+        root.add(m);
+      } else {
+        m.userData.blue = !!a.blue;
+        m.material = a.blue ? sirenMats.blueDim : sirenMats.redDim;
+        view.sirens.push(m);
+        root.add(m);
+      }
+      continue;
+    }
     if (a.tag === 'turret' || a.tag === 'barrel') {
       if (!view.turret) {
         view.turret = new THREE.Group();

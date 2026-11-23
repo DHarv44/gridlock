@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { WeaponMat, WeaponPart } from '../../shared/packs';
+import { type ModelPart, weaponGlb } from './models';
 
 const LOOK: Record<string, { color: string; metal: number; rough: number }> = {
   steel: { color: '#6f757b', metal: 0.8, rough: 0.38 },
@@ -51,14 +52,38 @@ function partGeometry(p: WeaponPart): THREE.BufferGeometry {
 
 const cache = new Map<string, { mat: WeaponMat; geo: THREE.BufferGeometry }[]>();
 
-/** Merged geometry per material for a model (cached by `key`). */
-function merged(key: string, parts: WeaponPart[]): { mat: WeaponMat; geo: THREE.BufferGeometry }[] {
-  let out = cache.get(key);
+/** The Blender model's parts grouped by look (its materials are named w_<look>), or null. */
+function fromGlb(key: string, shop: boolean): Map<WeaponMat, THREE.BufferGeometry[]> | null {
+  const m = weaponGlb(key);
+  if (!m) return null;
+  const by = new Map<WeaponMat, THREE.BufferGeometry[]>();
+  const add = (parts: ModelPart[], at?: THREE.Matrix4) => {
+    for (const p of parts) {
+      const look = p.material.replace(/^w_/, '') as WeaponMat;
+      const g = at ? p.geometry.clone().applyMatrix4(at) : p.geometry;
+      (by.get(look) ?? by.set(look, []).get(look)!).push(g);
+    }
+  };
+  add(m.parts);
+  // On the gun shop's turntable a backpack weapon (flamethrower) shows its pack standing behind it.
+  const pack = shop ? weaponGlb(`${key}_pack`) : undefined;
+  if (pack) add(pack.parts, new THREE.Matrix4().makeTranslation(-0.42, -0.35, 0));
+  return by;
+}
+
+/** Merged geometry per material for a model (cached by `key`): the Blender model when there is one,
+ *  else the pack's box parts. */
+function merged(key: string, parts: WeaponPart[], shop = false): { mat: WeaponMat; geo: THREE.BufferGeometry }[] {
+  const ck = shop ? `${key}:shop` : key;
+  let out = cache.get(ck);
   if (!out) {
-    const by = new Map<WeaponMat, THREE.BufferGeometry[]>();
-    for (const p of parts) (by.get(p.mat) ?? by.set(p.mat, []).get(p.mat)!).push(partGeometry(p));
+    let by = fromGlb(key, shop);
+    if (!by) {
+      by = new Map<WeaponMat, THREE.BufferGeometry[]>();
+      for (const p of parts) (by.get(p.mat) ?? by.set(p.mat, []).get(p.mat)!).push(partGeometry(p));
+    }
     out = [...by].map(([mat, gs]) => ({ mat, geo: mergeGeometries(gs)! }));
-    cache.set(key, out);
+    cache.set(ck, out);
   }
   return out;
 }
@@ -66,7 +91,7 @@ function merged(key: string, parts: WeaponPart[]): { mat: WeaponMat; geo: THREE.
 /** A model as a group of meshes (sharing cached geometry). `shop` for the turntable's lit look. */
 export function weaponModel(key: string, parts: WeaponPart[], shop = false): THREE.Group {
   const g = new THREE.Group();
-  for (const { mat, geo } of merged(key, parts)) {
+  for (const { mat, geo } of merged(key, parts, shop)) {
     const m = new THREE.Mesh(geo, material(mat, shop));
     m.castShadow = true;
     g.add(m);
@@ -74,9 +99,16 @@ export function weaponModel(key: string, parts: WeaponPart[], shop = false): THR
   return g;
 }
 
-/** The model's bounding box (for framing it). */
-export function modelBounds(parts: WeaponPart[]): THREE.Box3 {
+/** The model's bounding box as the turntable shows it (for framing it). */
+export function modelBounds(key: string, parts: WeaponPart[]): THREE.Box3 {
   const b = new THREE.Box3();
+  if (weaponGlb(key)) {
+    for (const { geo } of merged(key, parts, true)) {
+      geo.computeBoundingBox();
+      b.union(geo.boundingBox!);
+    }
+    return b;
+  }
   for (const p of parts) b.union(new THREE.Box3(new THREE.Vector3(p.x[0], p.y[0], p.z[0]), new THREE.Vector3(p.x[1], p.y[1], p.z[1])));
   return b;
 }

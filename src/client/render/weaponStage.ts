@@ -60,7 +60,7 @@ export class WeaponStage {
     if (key === this.key) return;
     this.key = key;
     if (this.item) this.turntable.remove(this.item);
-    const b = modelBounds(parts), c = b.getCenter(new THREE.Vector3()), size = b.getSize(new THREE.Vector3());
+    const b = modelBounds(key, parts), c = b.getCenter(new THREE.Vector3()), size = b.getSize(new THREE.Vector3());
     const r = Math.max(0.12, size.length() / 2);
     const m = weaponModel(key, parts, true);
     // Centred on the turntable, resting just above the floor.
@@ -110,7 +110,7 @@ export function weaponThumbs(items: { key: string; parts: WeaponPart[] }[]): Map
   studio(r, scene);
   const cam = new THREE.PerspectiveCamera(22, 2, 0.01, 50);
   for (const { key, parts } of todo) {
-    const b = modelBounds(parts), c = b.getCenter(new THREE.Vector3()), size = b.getSize(new THREE.Vector3());
+    const b = modelBounds(key, parts), c = b.getCenter(new THREE.Vector3()), size = b.getSize(new THREE.Vector3());
     const m = weaponModel(key, parts, true);
     m.position.set(-c.x, -c.y, -c.z);
     scene.add(m);

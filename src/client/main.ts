@@ -4,8 +4,12 @@ import type { RoomListing } from '../shared/protocol';
 import { Game } from './game/game';
 import { CharacterPicker } from './lobby/characters';
 import { Connection } from './net/connection';
+import { loadModels } from './render/models';
 
-const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+// The Blender-built vehicles and weapons load while you're in the lobby.
+const modelsReady = loadModels();
+
+const $ =<T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const codeInput = $<HTMLInputElement>('code');
 const errorEl = $('lobby-error');
 const lobby = $('lobby');
@@ -69,12 +73,12 @@ function start(create: boolean, room: string, resume = false): void {
       history.replaceState(null, '', `#${m.room}`);
       lobby.hidden = true;
       loading.hidden = false;
-      // Let the loading screen paint before the city builds.
-      setTimeout(() => {
+      // Let the loading screen paint before the city builds (and the models have arrived).
+      void modelsReady.then(() => setTimeout(() => {
         const game = new Game(conn, m.id, name, m.room, m.seed, () => { location.hash = ''; location.reload(); });
         (window as unknown as { __game: Game }).__game = game; // dev/debug hook
         // The loading screen stays up until the first snapshot arrives (Game hides it).
-      }, 30);
+      }, 30));
     }
   });
 }

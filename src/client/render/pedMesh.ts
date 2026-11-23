@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { hash32 } from '../../shared/math';
 import { CHARACTER_LOOKS, type CharLook, HAIR, PEDS, SHOES, WEAPONS } from '../../shared/packs';
+import { weaponGlb } from './models';
 import { weaponModel } from './weaponMesh';
 
 const S = 1.55; // drawn larger than life so people read from the air
@@ -44,6 +45,8 @@ export interface PedView {
   armL: THREE.Mesh; armR: THREE.Mesh;
   /** Holds the weapon model in the hand (empty when unarmed). */
   gun: THREE.Group;
+  /** On the back: a weapon's pack (the flamethrower's fuel tanks), when it has one. */
+  pack: THREE.Group;
   weapon: number;
   phase: number;
   deadT: number;
@@ -111,9 +114,14 @@ export function makePed(id: number, arch: number, playerColor: string | null, ch
   const gun = new THREE.Group();
   gun.visible = false;
   body.add(gun);
+  // The pack's frame sits against the back of the chest, its tanks from the belt to the shoulders.
+  const pack = new THREE.Group();
+  pack.position.set(-0.28 * S, 0.86 * S, 0);
+  pack.scale.setScalar(S);
+  body.add(pack);
   const build = look.build ?? 1;
   body.scale.set(build, 1, build);
-  return { root, body, legL, legR, armL, armR, gun, weapon: -1, phase: (h % 100) / 16, deadT: 0, hop: 0 };
+  return { root, body, legL, legR, armL, armR, gun, pack, weapon: -1, phase: (h % 100) / 16, deadT: 0, hop: 0 };
 }
 
 export function setPedWeapon(v: PedView, wi: number): void {
@@ -121,6 +129,8 @@ export function setPedWeapon(v: PedView, wi: number): void {
   v.weapon = wi;
   const spec = wi >= 0 ? WEAPONS[wi] : null;
   v.gun.clear();
+  v.pack.clear();
+  if (spec && weaponGlb(`${spec.id}_pack`)) v.pack.add(weaponModel(`${spec.id}_pack`, []));
   v.gun.visible = !!spec?.model && spec.size > 0;
   if (!spec?.model || !v.gun.visible) return;
   // The ped is drawn larger than life (S), so its weapon is too.
