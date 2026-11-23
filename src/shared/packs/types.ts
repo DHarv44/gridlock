@@ -122,7 +122,9 @@ export interface FactionSpec {
   lawful?: boolean;       // reports/punishes crime
   gang?: boolean;         // has respect, payphones and missions
   carColor?: number;      // palette index gang cars are painted on their turf
-  tags?: string[];        // graffiti they spray on their turf
+  /** Gang brand: the symbol they spray (a kind the renderer knows how to draw) and a second colour. */
+  brand?: { symbol: string; accent: string };
+  tags?: string[];        // words they spray on their turf
 }
 
 export type MissionKind = 'hit' | 'torch' | 'steal' | 'courier' | 'frenzy';

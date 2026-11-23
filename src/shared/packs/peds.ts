@@ -13,9 +13,12 @@ export const FACTIONS: FactionSpec[] = [
   { id: 'police', name: 'Bayhaven PD', color: '#2f6fb3', hostile: [], lawful: true },
   { id: 'military', name: 'National Guard', color: '#5d7a3a', hostile: [], lawful: true },
   { id: 'services', name: 'City Services', color: '#e8e2d0', hostile: [] },
-  { id: 'vipers', name: 'Green Vipers', color: '#2bb34a', hostile: ['irondogs', 'sol'], gang: true, carColor: 18, tags: ['VIPERS', 'VPR', 'GV', 'SSSS'] },
-  { id: 'irondogs', name: 'Iron Dogs', color: '#c62a22', hostile: ['vipers', 'sol'], gang: true, carColor: 5, tags: ['IRON DOGS', 'IDX', 'DOGS', 'ID'] },
-  { id: 'sol', name: 'Cartel del Sol', color: '#e3b30c', hostile: ['vipers', 'irondogs'], gang: true, carColor: 11, tags: ['DEL SOL', 'CDS', 'SOL', 'XIII'] },
+  { id: 'vipers', name: 'Green Vipers', color: '#2bb34a', hostile: ['irondogs', 'sol'], gang: true, carColor: 18,
+    brand: { symbol: 'serpent', accent: '#f2d43a' }, tags: ['VIPERS', 'VPR', 'GV', 'SSSS'] },
+  { id: 'irondogs', name: 'Iron Dogs', color: '#c62a22', hostile: ['vipers', 'sol'], gang: true, carColor: 5,
+    brand: { symbol: 'hound', accent: '#c9ccd0' }, tags: ['IRON DOGS', 'IDX', 'DOGS', 'ID'] },
+  { id: 'sol', name: 'Cartel del Sol', color: '#e3b30c', hostile: ['vipers', 'irondogs'], gang: true, carColor: 11,
+    brand: { symbol: 'sun', accent: '#d9661b' }, tags: ['DEL SOL', 'CDS', 'SOL', 'XIII'] },
   { id: 'street', name: 'Street Trade', color: '#e04e8c', hostile: [] },
 ];
 
