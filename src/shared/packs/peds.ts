@@ -12,9 +12,9 @@ export const FACTIONS: FactionSpec[] = [
   { id: 'police', name: 'Bayhaven PD', color: '#2f6fb3', hostile: [], lawful: true },
   { id: 'military', name: 'National Guard', color: '#5d7a3a', hostile: [], lawful: true },
   { id: 'services', name: 'City Services', color: '#e8e2d0', hostile: [] },
-  { id: 'vipers', name: 'Green Vipers', color: '#2bb34a', hostile: ['irondogs', 'sol'] },
-  { id: 'irondogs', name: 'Iron Dogs', color: '#c62a22', hostile: ['vipers', 'sol'] },
-  { id: 'sol', name: 'Cartel del Sol', color: '#e3b30c', hostile: ['vipers', 'irondogs'] },
+  { id: 'vipers', name: 'Green Vipers', color: '#2bb34a', hostile: ['irondogs', 'sol'], gang: true },
+  { id: 'irondogs', name: 'Iron Dogs', color: '#c62a22', hostile: ['vipers', 'sol'], gang: true },
+  { id: 'sol', name: 'Cartel del Sol', color: '#e3b30c', hostile: ['vipers', 'irondogs'], gang: true },
   { id: 'street', name: 'Street Trade', color: '#e04e8c', hostile: [] },
 ];
 

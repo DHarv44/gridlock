@@ -23,7 +23,9 @@ import { routeFx } from './fxRouter';
 import { makeAimAssist } from './aimAssist';
 import { Steering } from './steering';
 import { Input } from './input';
+import { nearestSiren, signalGlows } from './ambient';
 import { Interact } from './interact';
+import { Jobs } from './jobs';
 import { Predictor } from './predict';
 import { QualityGovernor } from './quality';
 
@@ -44,6 +46,7 @@ export class Game {
   private radar: Minimap;
   private pane = new Pane();
   private interact: Interact;
+  private jobs: Jobs;
   private sound = new Sound();
   private you: YouState | null = null;
   private players: PlayerInfo[] = [];
@@ -72,7 +75,8 @@ export class Game {
     this.input = new Input(canvas);
     this.predict = new Predictor(statics, this.map);
     this.radar = new Minimap(this.map);
-    this.interact = new Interact(city, this.pane);
+    this.jobs = new Jobs(this.stage.scene, this.hud.root, city);
+    this.interact = new Interact(city, this.pane, this.jobs.booths);
     this.hud.onChat = (text) => conn.send({ t: 'chat', text });
     this.input.onUi = (a) => this.ui(a);
     conn.on((m) => this.onMessage(m));
@@ -95,20 +99,12 @@ export class Game {
   private quality: QualityGovernor;
 
   /** Signal lamps follow the server clock; they also cast a small coloured glow. */
-  private signals(night: number, vr: { x0: number; y0: number; x1: number; y1: number }): void {
-    const t = this.store.serverNow() / 1000;
-    for (const s of this.props.updateSignals(t)) {
-      if (s.x < vr.x0 || s.x > vr.x1 || s.y < vr.y0 || s.y > vr.y1) continue;
-      const st = this.props.stateOf(s, t);
-      const [r, g, b] = st === 2 ? [0.2, 1, 0.4] : st === 1 ? [1, 0.7, 0.1] : [1, 0.15, 0.1];
-      this.fx.glow.put(s.x, s.y, 5.9, 1.5 + night * 1.5, 1, 0, r, g, b, 0.45 + night * 0.4);
-    }
-  }
 
   private ui(a: string): void {
     switch (a) {
       case 'interact':
-        if (this.you) this.interact.toggle(() => this.you!, () => this.profile, this.owners, this.myName, (kind, id, place) => this.conn.send({ t: 'buy', kind, id, place }));
+        if (this.interact.booth && !this.pane.isOpen) this.conn.send({ t: 'job', booth: this.interact.booth.id });
+        else if (this.you) this.interact.toggle(() => this.you!, () => this.profile, this.owners, this.myName, (kind, id, place) => this.conn.send({ t: 'buy', kind, id, place }));
         break;
       case 'chat':
         if (this.chatting) return;
@@ -129,6 +125,7 @@ export class Game {
   }
 
   private onMessage(m: S2C): void {
+    if (this.jobs.onMessage(m)) return;
     switch (m.t) {
       case 's':
         if (!this.you) document.getElementById('loading')!.hidden = true;
@@ -224,12 +221,13 @@ export class Game {
     this.stage.setTime(forced ?? this.gameMinutes, this.cam.x, this.cam.y);
     const night = this.stage.lighting.night;
     this.buildingUniforms.uNight.value = night;
-    this.signals(night, vr);
+    signalGlows(this.props, this.store, this.fx.glow, night, vr);
     this.storefronts.putGlows(this.fx.glow, night, vr);
     this.view.sync(this.store, dt, own, this.tags(), night, vr);
     this.fx.update(dt);
     this.water.update(dt);
-    this.sirens(own);
+    this.jobs.update(dt, this.you, own, this.fx.glow, night, vr, this.store.serverNow(), this.players.find((p) => p.id === this.myId));
+    nearestSiren(this.store, own, this.sound);
     this.stage.render();
     this.updateHud(own);
   }
@@ -242,16 +240,6 @@ export class Game {
     return m;
   }
 
-  private sirens(own: OwnState | null): void {
-    if (!own) return;
-    let best: { x: number; y: number } | null = null, bd = 90;
-    for (const e of this.store.all.values()) {
-      if (e.kind !== 1 || !(e.data[7] & VF.siren)) continue;
-      const d = Math.hypot(e.x - own.x, e.y - own.y);
-      if (d < bd) { bd = d; best = e; }
-    }
-    if (best) this.sound.siren(best.x, best.y);
-  }
 
   private updateHud(own: OwnState | null): void {
     const you = this.you;
@@ -265,7 +253,8 @@ export class Game {
     if ((this.hudFrame = (this.hudFrame + 1) % 2) !== 0) return;
     const spot = this.interact.find(own.x, own.y, you);
     this.interact.current = spot;
-    this.hud.setPrompt(this.pane.isOpen ? null : this.interact.promptText(spot, this.owners, this.myName));
+    const booth = (this.interact.booth = this.interact.findBooth(own.x, own.y, you));
+    this.hud.setPrompt(this.pane.isOpen ? null : booth ? this.interact.boothPrompt(booth) : this.interact.promptText(spot, this.owners, this.myName));
     this.interact.tick(own.x, own.y);
     this.pane.refresh();
     const ctx = this.hud.radar.getContext('2d')!;
@@ -277,7 +266,7 @@ export class Game {
       }
     }
     const owned = new Set(this.profile.owned);
-    this.radar.drawRadar(ctx, 220, own.x, own.y, own.angle, range, this.players, this.myId, owned, hostiles);
+    this.radar.drawRadar(ctx, 220, own.x, own.y, own.angle, range, this.players, this.myId, owned, hostiles, this.jobs.blips(you));
     if (this.mapOpen) {
       const c = this.hud.bigmapCanvas;
       const size = Math.min(window.innerWidth * 0.9, window.innerHeight * 0.9);

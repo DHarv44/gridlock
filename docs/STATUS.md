@@ -32,8 +32,12 @@
   raw, ~1.1 KB deflated (≈17 KB/s per player). Server steady state ~1.6 ms/tick with 6 players.
 - Live: https://gridlock-production-8d9b4188.up.railway.app/ (Railway, deploys from GitHub `main`).
 
+- Jobs (2026-11-22): gang payphones (shared/world/gangSpots.ts), five job kinds (server/game/missions:
+  hit, torch, steal, courier, frenzy) with content in packs/missions.ts, gang respect (saved per player,
+  drives gang hostility), kill-frenzy crates, room modes (free / frag race / money race) in
+  server/rounds.ts. `npx tsx scripts/missions.ts` runs every job kind headlessly.
+
 ## Known gaps / next
-- No missions/jobs yet; sandbox only.
 - Trucks, bus, tank and aircraft still use box models (cars got the profile treatment).
 - Gamepad not supported.
 - Hosting for internet play: see README (port-forward, or deploy; ask the user before deploying).

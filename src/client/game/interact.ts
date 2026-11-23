@@ -1,7 +1,8 @@
 // Finds the shop/property the player is standing at and drives its pane.
-import { PROPERTIES, SERVICES } from '../../shared/packs';
+import { FACTIONS, PROPERTIES, SERVICES } from '../../shared/packs';
 import { Mode, type Profile, type YouState } from '../../shared/protocol';
 import type { City, Place } from '../../shared/world/cityTypes';
+import type { Booth } from '../../shared/world/gangSpots';
 import type { Pane } from '../hud/pane';
 import { type Buy, propertyContent, serviceContent } from '../hud/places';
 
@@ -11,9 +12,25 @@ export interface Spot { place: Place; property: boolean }
 
 export class Interact {
   current: Spot | null = null;
+  /** Payphone within reach (takes priority over shops). */
+  booth: Booth | null = null;
   private openSpot: Spot | null = null;
 
-  constructor(private city: City, private pane: Pane) {}
+  constructor(private city: City, private pane: Pane, private booths: Booth[]) {}
+
+  findBooth(x: number, y: number, you: YouState): Booth | null {
+    if (you.mode !== Mode.Foot) return null;
+    let best: Booth | null = null, bd = 2.6;
+    for (const b of this.booths) {
+      const d = Math.hypot(b.x - x, b.y - y);
+      if (d < bd) { bd = d; best = b; }
+    }
+    return best;
+  }
+
+  boothPrompt(b: Booth): string {
+    return `Answer the phone · ${FACTIONS.find((f) => f.id === b.gang)?.name ?? ''}`;
+  }
 
   /** Nearest usable place for the current position/mode, or null. */
   find(x: number, y: number, you: YouState): Spot | null {

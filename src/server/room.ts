@@ -5,6 +5,8 @@ import { DT } from '../shared/sim/physics';
 import { updateAi } from './game/ai/brain';
 import type { Player } from './game/entities';
 import { removeVehicle, unseatPed } from './game/factory';
+import { Missions } from './game/missions/engine';
+import { Rounds } from './rounds';
 import { resolveContacts } from './game/systems/contacts';
 import { Dispatch } from './game/systems/dispatch';
 import { Economy } from './game/systems/economy';
@@ -36,17 +38,28 @@ export class Room {
   tickMs = 0;
   emptySince = Date.now();
 
-  constructor(readonly code: string, seed: number) {
+  constructor(readonly code: string, seed: number, mode?: string) {
     const save = loadRoom(code);
-    this.world = new World(save?.seed ?? seed);
-    if (save) this.world.gameMinutes = save.gameMinutes;
+    const w = (this.world = new World(save?.seed ?? seed));
+    if (save) w.gameMinutes = save.gameMinutes;
     this.profiles = save?.profiles ?? {};
-    this.pop = new Population(this.world);
-    this.dispatch = new Dispatch(this.world);
-    this.econ = new Economy(this.world);
+    this.pop = new Population(w);
+    this.dispatch = new Dispatch(w);
+    this.econ = new Economy(w);
+    this.missions = new Missions(w);
+    this.rounds = new Rounds(save?.mode ?? mode);
     for (const [id, name] of save?.owners ?? []) this.econ.owners.set(id, name);
-    this.econ.onChange = () => { this.sendOwners(); this.persist(); for (const pl of this.world.players.values()) this.sendProfile(pl); };
+    this.econ.onChange = () => { this.sendOwners(); this.persist(); for (const pl of w.players.values()) this.sendProfile(pl); };
+    w.onKill = (killer, victim) => {
+      this.missions.onKill(killer, victim);
+      if (killer?.player && victim.player && killer !== victim) killer.player.frags++;
+    };
+    w.onCrate = (pl, pk) => this.missions.onCrate(pl, pk);
+    w.earn = (pl, amount) => { pl.cash += amount; pl.earned += amount; };
   }
+
+  readonly missions: Missions;
+  readonly rounds: Rounds;
 
   get size(): number {
     return this.world.players.size;
@@ -61,7 +74,7 @@ export class Room {
     if (w.players.size >= RULES.maxPlayers) return 'Room is full.';
     if ([...w.players.values()].some((p) => p.name.toLowerCase() === name.toLowerCase())) return 'That name is already playing in this room.';
     const key = name.toLowerCase();
-    const prof = this.profiles[key] ?? { cash: RULES.startCash, garage: [], owned: [], kills: 0, deaths: 0 };
+    const prof: SavedProfile = this.profiles[key] ?? { cash: RULES.startCash, garage: [], owned: [], kills: 0, deaths: 0 };
     const used = new Set([...w.players.values()].map((p) => p.color));
     const color = PLAYER_COLORS.find((c) => !used.has(c)) ?? PLAYER_COLORS[0];
     const pl: Player = {
@@ -70,6 +83,7 @@ export class Room {
       respawnT: 0, garage: [...prof.garage].filter((v) => v < VEHICLES.length), owned: [...prof.owned].filter((id) => this.econ.owners.get(id) === key),
       garageCar: 0, ping: 0, send: (m) => conn.send(JSON.stringify(m)), sendRaw: (s) => conn.send(s),
       spawnCdT: 0, bustT: 0, lastPlace: -1, gunCrimeT: -9, seenCheckT: 0, sent: new Map(), snapCount: 0,
+      respect: { ...(prof.respect ?? {}) }, mission: null, boothCd: new Map(), frags: 0, earned: 0,
     };
     const spawn = this.spawnPoint(pl);
     const ped = makeAvatar(w, pl, spawn.x, spawn.y);
@@ -78,6 +92,7 @@ export class Room {
     pl.send({ t: 'welcome', id: pl.id, room: this.code, seed: w.seed, maxPlayers: RULES.maxPlayers } satisfies S2C);
     this.sendProfile(pl);
     this.sendOwners();
+    pl.send(this.rounds.modeMsg());
     w.notify('info', `${name} joined`);
     this.start();
     return pl;
@@ -96,6 +111,7 @@ export class Room {
   leave(pl: Player): void {
     const w = this.world;
     this.storeProfile(pl);
+    this.missions.drop(pl);
     const p = w.peds.get(pl.pid);
     if (p) {
       if (p.vehicle) unseatPed(w, p, false);
@@ -126,14 +142,15 @@ export class Room {
         if (text) this.world.broadcast({ t: 'msg', kind: 'chat', text: `${pl.name}: ${text}` } satisfies S2C);
         break;
       }
+      case 'job': {
+        const err = this.missions.answer(pl, Number(msg.booth));
+        if (err) pl.send({ t: 'msg', kind: 'warn', text: err } satisfies S2C);
+        break;
+      }
       case 'ping':
         pl.send({ t: 'pong', ts: msg.ts, st: Math.round(this.world.time * 1000) } satisfies S2C);
         break;
     }
-  }
-
-  setPing(pl: Player, ms: number): void {
-    pl.ping = Math.round(ms);
   }
 
   private sendProfile(pl: Player): void {
@@ -145,12 +162,12 @@ export class Room {
   }
 
   private storeProfile(pl: Player): void {
-    this.profiles[pl.name.toLowerCase()] = { cash: pl.cash, garage: pl.garage, owned: pl.owned, kills: pl.kills, deaths: pl.deaths };
+    this.profiles[pl.name.toLowerCase()] = { cash: pl.cash, garage: pl.garage, owned: pl.owned, kills: pl.kills, deaths: pl.deaths, respect: pl.respect };
   }
 
   persist(): void {
     for (const pl of this.world.players.values()) this.storeProfile(pl);
-    const save: RoomSave = { version: 1, seed: this.world.seed, gameMinutes: this.world.gameMinutes, owners: [...this.econ.owners.entries()], profiles: this.profiles };
+    const save: RoomSave = { version: 1, seed: this.world.seed, mode: this.rounds.mode.id, gameMinutes: this.world.gameMinutes, owners: [...this.econ.owners.entries()], profiles: this.profiles };
     saveRoom(this.code, save);
   }
 
@@ -199,7 +216,9 @@ export class Room {
     this.dispatch.update(DT);
     this.pop.update(DT);
     this.econ.update();
+    this.missions.update();
     this.tickCount++;
+    if (this.tickCount % TICK_HZ === 0) this.rounds.check(w);
     if (this.tickCount % SNAP_EVERY === 0) {
       for (const pl of w.players.values()) pl.sendRaw(JSON.stringify(buildSnapshot(w, pl)));
       w.fx = [];

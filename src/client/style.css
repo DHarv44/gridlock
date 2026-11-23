@@ -97,6 +97,32 @@ button:disabled { opacity: 0.4; cursor: default; }
 .hud-bigmap { position: absolute; inset: 4vh 4vw; background: rgba(8, 10, 13, 0.94); border: 1px solid var(--line); border-radius: 4px; display: grid; place-items: center; }
 .hud-bigmap canvas { max-width: 100%; max-height: 100%; }
 
+/* Jobs, respect, modes */
+.hud-mission { position: absolute; top: 18px; left: 22px; max-width: 420px; background: var(--panel); border-left: 4px solid var(--accent); padding: 9px 14px; border-radius: 3px; }
+.hud-mission .hm-title { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+.hud-mission .hm-obj { font-size: 19px; margin-top: 3px; }
+.hud-mission .hm-meta { font-size: 16px; color: var(--dim); margin-top: 3px; font-variant-numeric: tabular-nums; }
+.hud-mission .hm-meta.urgent { color: var(--warn); }
+.hud-banner { position: absolute; top: 30%; left: 50%; transform: translateX(-50%); text-align: center; text-shadow: 0 3px 0 #000, 0 0 20px rgba(0,0,0,0.7); max-width: min(720px, 90vw); }
+.hud-banner.brief { font-size: 22px; background: var(--panel); padding: 12px 18px; border-radius: 4px; text-shadow: none; }
+.hud-banner.passed { font-size: 64px; font-weight: 700; color: #6fe08a; letter-spacing: 0.06em; }
+.hud-banner.failed { font-size: 64px; font-weight: 700; color: #e8433a; letter-spacing: 0.06em; }
+.hud-respect { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.hud-respect .hr-row { display: flex; align-items: center; gap: 6px; }
+.hud-respect i { width: 10px; height: 10px; border-radius: 2px; box-shadow: 0 1px 2px #000; }
+.hud-respect .hr-bar { position: relative; width: 120px; height: 6px; background: rgba(0,0,0,0.55); border-radius: 2px; overflow: hidden; }
+.hud-respect .hr-bar::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.4); }
+.hud-respect .hr-bar > div { position: absolute; top: 0; bottom: 0; background: #cfd3d8; }
+.hud-respect .hr-bar > div.good { background: #6fe08a; }
+.hud-respect .hr-bar > div.bad { background: #e8433a; }
+.hud-mode { margin-top: 6px; font-size: 16px; font-weight: 700; color: var(--accent); text-shadow: 0 2px 2px #000; }
+.hud-results { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 18px 24px; min-width: 360px; }
+.hud-results .hres-title { font-size: 28px; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
+.hud-results .hres-row { display: flex; justify-content: space-between; font-size: 18px; padding: 3px 0; }
+.hud-results .hres-next { margin-top: 10px; color: var(--dim); font-size: 14px; }
+.lobby-card select { background: #14171c; border: 1px solid var(--line); color: var(--ink); padding: 10px 12px; font-size: 16px; border-radius: 4px; font-family: inherit; }
+.lobby-card .mode-blurb { margin: -6px 0 0; color: var(--dim); font-size: 13px; }
+
 /* Slide-in side pane (shops, properties, menu) */
 .pane { position: fixed; top: 0; left: 0; bottom: 0; width: min(380px, 92vw); background: rgba(12, 14, 18, 0.95); border-right: 1px solid var(--line); transform: translateX(-102%); transition: transform 0.18s ease-out; z-index: 10; display: flex; flex-direction: column; pointer-events: auto; }
 .pane.open { transform: none; }

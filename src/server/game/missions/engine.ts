@@ -1,0 +1,164 @@
+// Missions: payphone offers, kill-frenzy crates, gang respect, per-player job progress.
+import { dist } from '../../../shared/math';
+import { faction, GANGS, MISSIONS, RESPECT, weaponIndex } from '../../../shared/packs';
+import { type MissionInfo, Mode, PK, type S2C } from '../../../shared/protocol';
+import { type Booth, type CrateSpot, gangSpots } from '../../../shared/world/gangSpots';
+import type { MissionState, Pickup, Ped, Player } from '../entities';
+import { giveWeapon } from '../factory';
+import type { World } from '../world';
+import { factionName, fill, markName, release } from './helpers';
+import { KINDS, objectivePoint } from './kinds';
+
+const clampR = (v: number) => Math.max(RESPECT.min, Math.min(RESPECT.max, v));
+
+export class Missions {
+  readonly booths: Booth[];
+  readonly crates: CrateSpot[];
+  private crateState: { pickup: number; readyAt: number }[];
+
+  constructor(private w: World) {
+    const s = gangSpots(w.city);
+    this.booths = s.booths;
+    this.crates = s.crates;
+    this.crateState = this.crates.map(() => ({ pickup: 0, readyAt: 0 }));
+  }
+
+  respectOf(pl: Player, gang: string): number {
+    return pl.respect[gang] ?? 0;
+  }
+
+  /** A player answers a payphone. Returns an error to show, or null when a job started. */
+  answer(pl: Player, boothId: number): string | null {
+    const w = this.w;
+    const booth = this.booths[boothId];
+    const p = w.peds.get(pl.pid);
+    if (!booth || !p || p.dead || p.vehicle || pl.mode !== Mode.Foot) return 'Not now.';
+    if (dist(p.body.x, p.body.y, booth.x, booth.y) > 4) return 'Too far from the phone.';
+    if (pl.mission) return 'Finish the job you have first.';
+    if (this.respectOf(pl, booth.gang) < RESPECT.noWorkBelow) return `The ${factionName(booth.gang)} won't work with you.`;
+    if ((pl.boothCd.get(boothId) ?? 0) > w.time) return 'Nobody on the line. Try again later.';
+    const pool = MISSIONS.map((m, i) => ({ m, i })).filter(({ m }) => m.giver === booth.gang || m.giver === 'gang');
+    const { i } = pool[Math.floor(w.rng.next() * pool.length)];
+    const rivals = faction(booth.gang).hostile.filter((f) => GANGS.includes(f));
+    pl.boothCd.set(boothId, w.time + RESPECT.phoneCooldown);
+    this.begin(pl, i, booth.gang, rivals[Math.floor(w.rng.next() * rivals.length)] ?? '', booth);
+    return null;
+  }
+
+  private begin(pl: Player, specIndex: number, giver: string, rival: string, from: { x: number; y: number }): void {
+    const w = this.w;
+    const spec = MISSIONS[specIndex];
+    const r = spec.reward[0] + w.rng.next() * (spec.reward[1] - spec.reward[0]);
+    const st: MissionState = {
+      spec: specIndex, giver, rival, stage: 0, ends: spec.time ? w.time + spec.time : 0, targets: [], focus: 0,
+      point: null, dest: null, kills: 0, reward: Math.round(r / 50) * 50, place: '', name: markName(w), weapon: -1, sentKey: '',
+    };
+    KINDS[spec.kind].start(w, pl, st, from);
+    if (spec.target?.weapon) {
+      const p = w.peds.get(pl.pid)!;
+      const wi = weaponIndex(spec.target.weapon);
+      const had = p.weapons.some((h) => h.w === wi);
+      p.wi = giveWeapon(p, wi, 9999);
+      if (!had) st.weapon = wi;
+    }
+    pl.mission = st;
+    this.send(pl, true);
+  }
+
+  private info(st: MissionState): MissionInfo {
+    const spec = MISSIONS[st.spec];
+    const kind = KINDS[spec.kind];
+    return {
+      title: spec.title, giver: st.giver, brief: fill(spec.brief, st), objective: kind.objective(st),
+      ends: st.ends ? Math.round(st.ends * 1000) : 0, progress: kind.progress?.(st),
+    };
+  }
+
+  private send(pl: Player, force = false): void {
+    const st = pl.mission;
+    if (!st) return;
+    const m = this.info(st);
+    const key = `${m.objective}|${m.progress ?? ''}`;
+    if (!force && key === st.sentKey) return;
+    st.sentKey = key;
+    pl.send({ t: 'mission', m } satisfies S2C);
+  }
+
+  private end(pl: Player, passed: boolean): void {
+    const st = pl.mission;
+    if (!st) return;
+    const w = this.w;
+    const spec = MISSIONS[st.spec];
+    pl.mission = null;
+    release(w, st);
+    if (st.weapon >= 0) {
+      const p = w.peds.get(pl.pid);
+      if (p) { p.weapons = p.weapons.filter((h) => h.w !== st.weapon); p.wi = Math.min(p.wi, p.weapons.length - 1); }
+    }
+    if (passed) {
+      w.earn(pl, st.reward);
+      if (st.giver) this.adjust(pl, st.giver, spec.respect);
+      if (st.rival && spec.rivalRespect) this.adjust(pl, st.rival, -spec.rivalRespect);
+      w.notify('money', `+$${st.reward.toLocaleString('en-US')} · ${spec.title} passed`, pl);
+    } else {
+      if (st.giver) this.adjust(pl, st.giver, -Math.ceil(spec.respect / 3));
+    }
+    pl.send({ t: 'mission', m: null, result: passed ? 'passed' : 'failed' } satisfies S2C);
+  }
+
+  private adjust(pl: Player, gang: string, delta: number): void {
+    pl.respect[gang] = clampR((pl.respect[gang] ?? 0) + delta);
+  }
+
+  /** Kills feed frenzies and move respect. */
+  onKill(killer: Ped | null, victim: Ped): void {
+    if (victim.player?.mission) this.end(victim.player, false);
+    const pl = killer?.player;
+    if (!pl || killer === victim) return;
+    if (pl.mission) KINDS[MISSIONS[pl.mission.spec].kind].onKill?.(pl.mission, victim);
+    if (!GANGS.includes(victim.faction)) return;
+    this.adjust(pl, victim.faction, RESPECT.killMember);
+    for (const g of GANGS) if (faction(g).hostile.includes(victim.faction)) this.adjust(pl, g, RESPECT.killRival);
+  }
+
+  /** A player walked over a kill-frenzy crate. */
+  onCrate(pl: Player, pk: Pickup): void {
+    const i = pk.value;
+    if (this.crateState[i]) { this.crateState[i].pickup = 0; this.crateState[i].readyAt = this.w.time + RESPECT.frenzyRespawn; }
+    const pool = MISSIONS.map((m, k) => ({ m, k })).filter(({ m }) => m.giver === 'crate');
+    const { k } = pool[Math.floor(this.w.rng.next() * pool.length)];
+    this.begin(pl, k, '', '', pk);
+  }
+
+  update(): void {
+    const w = this.w;
+    for (const pl of w.players.values()) {
+      const st = pl.mission;
+      if (!st) continue;
+      if ((st.ends && w.time > st.ends) || pl.mode === Mode.Busted) { this.end(pl, false); continue; }
+      const out = KINDS[MISSIONS[st.spec].kind].tick(w, pl, st);
+      if (out !== 'run') { this.end(pl, out === 'pass'); continue; }
+      this.send(pl);
+    }
+    this.crateState.forEach((c, i) => {
+      if (c.pickup && w.pickups.has(c.pickup)) return;
+      if (w.time < c.readyAt) return;
+      const spot = this.crates[i];
+      const id = w.id();
+      w.pickups.set(id, { id, kind: 'pickup', type: PK.frenzy, x: spot.x, y: spot.y, value: i, weapon: -1, life: 1e9 });
+      c.pickup = id;
+    });
+  }
+
+  objective(pl: Player): number[] | null {
+    if (!pl.mission) return null;
+    const p = objectivePoint(this.w, pl.mission);
+    return p ? [Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10] : null;
+  }
+
+  /** Cancels a job (player left the room). */
+  drop(pl: Player): void {
+    if (pl.mission) release(this.w, pl.mission);
+    pl.mission = null;
+  }
+}

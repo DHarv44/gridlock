@@ -151,6 +151,29 @@ export interface Player {
   /** Last entity state sent to this player (id -> serialized), for delta snapshots. */
   sent: Map<number, string>;
   snapCount: number;
+  respect: Record<string, number>;
+  mission: MissionState | null;
+  boothCd: Map<number, number>;   // booth id -> world time it may ring again
+  frags: number;                  // player kills this round
+  earned: number;                 // cash earned this round
+}
+
+export interface MissionState {
+  spec: number;                   // MISSIONS index
+  giver: string;
+  rival: string;
+  stage: number;
+  ends: number;                   // world time (s), 0 = no limit
+  targets: number[];              // spawned entity ids (cleaned up afterwards)
+  focus: number;                  // entity the objective follows, 0 = fixed point
+  point: { x: number; y: number } | null;
+  dest: { x: number; y: number } | null;
+  kills: number;
+  reward: number;
+  place: string;
+  name: string;
+  weapon: number;                 // weapon index handed out for the job, -1 none
+  sentKey: string;                // last objective/progress sent to the client
 }
 
 export interface Squad {

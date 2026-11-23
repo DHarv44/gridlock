@@ -14,6 +14,10 @@ const projGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.8, 6).rotateZ(Math.PI /
 const grenadeGeo = new THREE.SphereGeometry(0.16, 8, 6);
 const pickupGeo = new THREE.BoxGeometry(0.7, 0.35, 0.45);
 const darkMat = new THREE.MeshLambertMaterial({ color: '#2a2c2e' });
+const crateGeo = new THREE.BoxGeometry(1.1, 1.1, 1.1).translate(0, 0.55, 0);
+const crateBand = new THREE.BoxGeometry(1.14, 0.25, 1.14).translate(0, 0.55, 0);
+const crateDark = new THREE.MeshLambertMaterial({ color: '#1a1a1c' });
+const crateRed = new THREE.MeshBasicMaterial({ color: '#e0201c' });
 const cashMat = new THREE.MeshLambertMaterial({ color: '#3fae4a', emissive: '#0f3a12' });
 const gunMat = new THREE.MeshLambertMaterial({ color: '#4a4e54', emissive: '#202428' });
 
@@ -174,6 +178,7 @@ export class WorldView {
   private pickup(e: ViewEntity): void {
     let o = this.objs.get(e.id);
     const type = e.data[2];
+    if (type === PK.frenzy) { this.crate(e, o); return; }
     if (!o) {
       o = new THREE.Mesh(pickupGeo, type === PK.cash ? cashMat : gunMat);
       this.objs.set(e.id, o);
@@ -183,6 +188,27 @@ export class WorldView {
     o.rotation.y = this.time * 2 + e.id;
     const col = type === PK.cash ? [0.3, 1, 0.4] : [1, 0.85, 0.4];
     this.fx.glow.put(e.x, e.y, 0.07, 2.4, 1, 0, col[0], col[1], col[2], 0.35);
+  }
+
+  /** Kill-frenzy crate: red and black, slowly turning, with a pulsing red glow. */
+  private crate(e: ViewEntity, existing: THREE.Object3D | undefined): void {
+    let o = existing;
+    if (!o) {
+      const g = new THREE.Group();
+      const body = new THREE.Mesh(crateGeo, crateDark);
+      body.castShadow = true;
+      const band1 = new THREE.Mesh(crateBand, crateRed);
+      const band2 = new THREE.Mesh(crateBand, crateRed);
+      band2.rotation.y = Math.PI / 2;
+      g.add(body, band1, band2);
+      o = g;
+      this.objs.set(e.id, o);
+      this.scene.add(o);
+    }
+    o.position.set(e.x, 0.15 + Math.sin(this.time * 2.5) * 0.15, e.y);
+    o.rotation.y = this.time * 0.8;
+    const pulse = 0.35 + 0.25 * Math.sin(this.time * 5);
+    this.fx.glow.put(e.x, e.y, 0.08, 5, 1, 0, 1, 0.1, 0.05, pulse);
   }
 
   private fireEnt(e: ViewEntity, night: number): void {

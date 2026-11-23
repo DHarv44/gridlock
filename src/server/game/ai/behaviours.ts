@@ -1,7 +1,7 @@
 // Personalities: how each NPC behaviour picks tasks and reacts. Keyed by the archetype's
 // `behaviour` field from the ped pack.
 import { dist } from '../../../shared/math';
-import { type Behaviour, CRIMES, WEAPONS, hostile, zoneIndex } from '../../../shared/packs';
+import { type Behaviour, CRIMES, RESPECT, WEAPONS, hostile, zoneIndex } from '../../../shared/packs';
 import { Mode } from '../../../shared/protocol';
 import type { Ped } from '../entities';
 import { unseatPed } from '../factory';
@@ -103,6 +103,17 @@ const gang: BehaviourDef = {
     });
     if (rival && w.rng.chance(0.2) && !w.statics.raycast(p.body.x, p.body.y, (rival as Ped).body.x, (rival as Ped).body.y, 1.2)) {
       setTask(p, 'attack', (rival as Ped).id);
+      return;
+    }
+    // Players this gang has no respect for get jumped on sight.
+    for (const pl of w.players.values()) {
+      if ((pl.respect[p.faction] ?? 0) > RESPECT.hostileBelow) continue;
+      const t = w.peds.get(pl.pid);
+      if (!t || t.dead) continue;
+      const pos = w.pedPos(t);
+      if (dist(p.body.x, p.body.y, pos.x, pos.y) > 16 || w.statics.raycast(p.body.x, p.body.y, pos.x, pos.y, 1.2)) continue;
+      if (w.rng.chance(0.5)) setTask(p, 'attack', t.id);
+      return;
     }
   },
   attacked: (w, p, a) => {

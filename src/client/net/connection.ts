@@ -7,11 +7,11 @@ export class Connection {
   onClose: (reason: string) => void = () => {};
   rtt = 0;
 
-  constructor(name: string, room: string, create: boolean) {
+  constructor(name: string, room: string, create: boolean, mode?: string) {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     this.ws = new WebSocket(`${proto}//${location.host}/ws`);
     this.ws.onopen = () => {
-      this.send({ t: 'hello', v: PROTOCOL_VERSION, name, room, create });
+      this.send({ t: 'hello', v: PROTOCOL_VERSION, name, room, create, mode });
       setInterval(() => this.send({ t: 'ping', ts: performance.now() }), 2000);
     };
     this.ws.onmessage = (ev) => {

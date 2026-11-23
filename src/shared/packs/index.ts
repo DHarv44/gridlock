@@ -8,6 +8,7 @@ import { WEAPONS } from './weapons';
 import { DISTRICTS, ZONES } from './zones';
 
 export { CRIMES, RULES, SERVICE_CALLS, WANTED } from './rules';
+export { MARK_NAMES, MISSIONS, MODES, RESPECT } from './missions';
 export { PALETTE, paletteFor } from './palette';
 export { DISTRICTS, FACTIONS, PEDS, PROPERTIES, SERVICES, VEHICLES, WEAPONS, ZONES };
 export type * from './types';
@@ -40,6 +41,9 @@ export const zone = (id: string): ZoneSpec => ZONES[zoneIndex(id)];
 export const faction = (id: string): FactionSpec => FACTIONS[factionIndex(id)];
 export const service = (id: string): ServiceSpec => SERVICES[serviceIndex(id)];
 export const property = (id: string): PropertySpec => PROPERTIES[propertyIndex(id)];
+
+/** Factions with respect, phones and missions. */
+export const GANGS = FACTIONS.filter((f) => f.gang).map((f) => f.id);
 
 /** Archetype used for player avatars (the one whose behaviour is 'player'). */
 export const PLAYER_ARCHETYPE = PEDS.findIndex((p) => p.behaviour === 'player');

@@ -99,6 +99,40 @@ export interface FactionSpec {
   color: string;
   hostile: string[];      // factions attacked on sight
   lawful?: boolean;       // reports/punishes crime
+  gang?: boolean;         // has respect, payphones and missions
+}
+
+export type MissionKind = 'hit' | 'torch' | 'steal' | 'courier' | 'frenzy';
+
+export interface MissionSpec {
+  id: string;
+  kind: MissionKind;
+  /** Who offers it: a gang faction id, 'gang' (any gang's phone) or 'crate' (kill-frenzy crates). */
+  giver: string;
+  title: string;
+  /** Brief with tokens: {target} {rival} {place} {vehicle} {count} {reward} {time}. */
+  brief: string;
+  reward: [number, number];
+  respect: number;              // gained with the giver on success
+  rivalRespect: number;         // lost with the target gang on success
+  time: number;                 // seconds, 0 = no limit
+  distance: [number, number];   // metres from the phone to the job
+  target?: {
+    vehicle?: string;           // steal: vehicle id; torch: vehicle id (else the rival's gang car)
+    hpMul?: number;             // hit: toughness multiplier for the mark
+    escorts?: number;           // hit/torch: rival members guarding the target
+    count?: number;             // frenzy: kills needed
+    weapon?: string;            // frenzy: weapon handed out for the duration
+  };
+}
+
+export interface GameMode {
+  id: string;
+  name: string;
+  /** 'none' free roam; 'frags' player kills; 'earned' cash earned this round. */
+  score: 'none' | 'frags' | 'earned';
+  target: number;
+  blurb: string;
 }
 
 export interface WeightedId { id: string; weight: number }

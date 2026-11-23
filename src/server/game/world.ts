@@ -28,6 +28,11 @@ export class World {
 
   /** FX events since the last snapshot: [type, ...data]. */
   fx: number[][] = [];
+  /** Event hooks wired by the room (missions, respect, frags). */
+  onKill: (killer: Ped | null, victim: Ped) => void = () => {};
+  onCrate: (pl: Player, pickup: Pickup) => void = () => {};
+  /** Adds money to a player (counts toward money-race rounds). */
+  earn: (pl: Player, amount: number) => void = (pl, amount) => { pl.cash += amount; };
   private nextId = 1;
 
   constructor(readonly seed: number) {

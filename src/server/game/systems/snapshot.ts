@@ -1,6 +1,7 @@
 // Per-player snapshots with interest management.
 import { r2 } from '../../../shared/math';
-import { RULES } from '../../../shared/packs';
+import { GANGS, RULES } from '../../../shared/packs';
+import { objectivePoint } from '../missions/kinds';
 import { EK, FULL_SNAP_EVERY, FX, Mode, PF, type PlayerInfo, type S2C, VF, type YouState } from '../../../shared/protocol';
 import type { Ped, Player, Vehicle } from '../entities';
 import type { World } from '../world';
@@ -102,13 +103,21 @@ function youState(w: World, pl: Player, p: Ped | undefined): YouState {
     w: p ? p.weapons.map((h) => [h.w, h.ammo, h.clip]) : [], wi: p?.wi ?? 0, rl: p ? a2(p.reloadT) : 0,
     vt: v ? v.type : -1, vhp: v ? Math.max(0, Math.round((v.hp / v.spec.hp) * 100) / 100) : 0,
     respawn: Math.max(0, a2(pl.respawnT)),
+    rs: GANGS.map((g) => Math.round(pl.respect[g] ?? 0)),
+    mt: objectiveOf(w, pl),
   };
+}
+
+function objectiveOf(w: World, pl: Player): number[] | null {
+  if (!pl.mission) return null;
+  const p = objectivePoint(w, pl.mission);
+  return p ? [r2(p.x), r2(p.y)] : null;
 }
 
 export function playerList(w: World): PlayerInfo[] {
   return [...w.players.values()].map((pl) => {
     const p = w.peds.get(pl.pid);
     const pos = p ? w.pedPos(p) : { x: 0, y: 0 };
-    return { id: pl.id, name: pl.name, color: pl.color, pid: pl.pid, x: r2(pos.x), y: r2(pos.y), cash: pl.cash, kills: pl.kills, deaths: pl.deaths, wl: pl.wanted, ping: pl.ping };
+    return { id: pl.id, name: pl.name, color: pl.color, pid: pl.pid, x: r2(pos.x), y: r2(pos.y), cash: pl.cash, kills: pl.kills, deaths: pl.deaths, wl: pl.wanted, ping: pl.ping, frags: pl.frags, earned: pl.earned };
   });
 }

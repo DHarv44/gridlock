@@ -67,6 +67,7 @@ export function killPed(w: World, v: Ped, killer: Ped | null): void {
     w.notify('kill', `${kp.name} took out a ${v.spec.name.toLowerCase()}`, kp);
   }
   onNoise(w, pos.x, pos.y, 25, killer?.id ?? 0, true);
+  w.onKill(killer, v);
 }
 
 const rand = (w: World) => w.rng.range(-0.8, 0.8);

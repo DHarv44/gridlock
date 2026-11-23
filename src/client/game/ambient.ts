@@ -1,0 +1,29 @@
+// Per-frame ambience: traffic-signal glows synced to the server clock, and the nearest siren's sound.
+import { VF } from '../../shared/protocol';
+import type { Sound } from '../audio/sound';
+import type { EntityStore } from '../net/entities';
+import type { ParticleLayer } from '../render/particles';
+import type { StreetProps } from '../render/streetProps';
+
+type View = { x0: number; y0: number; x1: number; y1: number };
+
+export function signalGlows(props: StreetProps, store: EntityStore, glow: ParticleLayer, night: number, vr: View): void {
+  const t = store.serverNow() / 1000;
+  for (const s of props.updateSignals(t)) {
+    if (s.x < vr.x0 || s.x > vr.x1 || s.y < vr.y0 || s.y > vr.y1) continue;
+    const st = props.stateOf(s, t);
+    const [r, g, b] = st === 2 ? [0.2, 1, 0.4] : st === 1 ? [1, 0.7, 0.1] : [1, 0.15, 0.1];
+    glow.put(s.x, s.y, 5.9, 1.5 + night * 1.5, 1, 0, r, g, b, 0.45 + night * 0.4);
+  }
+}
+
+export function nearestSiren(store: EntityStore, me: { x: number; y: number } | null, sound: Sound): void {
+  if (!me) return;
+  let best: { x: number; y: number } | null = null, bd = 90;
+  for (const e of store.all.values()) {
+    if (e.kind !== 1 || !(e.data[7] & VF.siren)) continue;
+    const d = Math.hypot(e.x - me.x, e.y - me.y);
+    if (d < bd) { bd = d; best = e; }
+  }
+  if (best) sound.siren(best.x, best.y);
+}

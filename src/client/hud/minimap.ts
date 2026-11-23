@@ -1,6 +1,7 @@
 // Radar and full-screen map rendered from a pre-baked city image.
 import { DISTRICTS, SERVICES, ZONES } from '../../shared/packs';
 import type { PlayerInfo } from '../../shared/protocol';
+import type { Blip } from '../game/jobs';
 import type { CityMap } from '../../shared/world/city';
 import { LAND0, LAND1, MAP_SIZE } from '../../shared/world/cityTypes';
 
@@ -42,7 +43,7 @@ export class Minimap {
   }
 
   /** Draws the radar centred on (x, y) with `range` metres to the edge. */
-  drawRadar(ctx: CanvasRenderingContext2D, size: number, x: number, y: number, angle: number, range: number, players: PlayerInfo[], meId: number, owned: Set<number>, hostiles: { x: number; y: number }[]): void {
+  drawRadar(ctx: CanvasRenderingContext2D, size: number, x: number, y: number, angle: number, range: number, players: PlayerInfo[], meId: number, owned: Set<number>, hostiles: { x: number; y: number }[], blips: Blip[] = []): void {
     const k = size / 2 / range;
     ctx.save();
     ctx.clearRect(0, 0, size, size);
@@ -75,6 +76,16 @@ export class Minimap {
       if (px < -6 || py < -6 || px > size + 6 || py > size + 6) continue;
       ctx.fillStyle = owned.has(p.id) ? '#6fe08a' : 'rgba(111,224,138,0.35)';
       ctx.beginPath(); ctx.moveTo(px, py - 5); ctx.lineTo(px + 5, py + 4); ctx.lineTo(px - 5, py + 4); ctx.fill();
+    }
+    for (const b of blips) {
+      // Job objective sticks to the radar edge so you always know which way to go.
+      const [px, py] = b.shape === 'star' ? clampEdge(...to(b.x, b.y)) : to(b.x, b.y);
+      if (px < -6 || py < -6 || px > size + 6 || py > size + 6) continue;
+      ctx.fillStyle = b.color; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      if (b.shape === 'star') { ctx.moveTo(px, py - 7); ctx.lineTo(px + 6, py + 5); ctx.lineTo(px - 6, py + 5); ctx.closePath(); }
+      else ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
     }
     for (const h of hostiles) {
       const [px, py] = to(h.x, h.y);

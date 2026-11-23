@@ -164,8 +164,8 @@ export class Hud {
     this.score.hidden = !on;
     if (!on) return;
     const rows = [...players].sort((a, b) => b.cash - a.cash).map((p) =>
-      `<tr><td><span class="sw" style="background:${p.color}"></span>${esc(p.name)}</td><td>$${p.cash.toLocaleString('en-US')}</td><td>${p.kills}</td><td>${p.deaths}</td><td>${'★'.repeat(p.wl)}</td><td>${p.ping}ms</td></tr>`).join('');
-    this.score.innerHTML = `<table><tr><th>Player</th><th>Cash</th><th>Kills</th><th>Deaths</th><th>Wanted</th><th>Ping</th></tr>${rows}</table><div class="code">Room code <b>${code}</b> · ${location.origin}/#${code}</div>`;
+      `<tr><td><span class="sw" style="background:${p.color}"></span>${esc(p.name)}</td><td>$${p.cash.toLocaleString('en-US')}</td><td>${p.frags}</td><td>$${p.earned.toLocaleString('en-US')}</td><td>${p.kills}</td><td>${p.deaths}</td><td>${'★'.repeat(p.wl)}</td><td>${p.ping}ms</td></tr>`).join('');
+    this.score.innerHTML = `<table><tr><th>Player</th><th>Cash</th><th>Frags</th><th>Earned</th><th>Kills</th><th>Deaths</th><th>Wanted</th><th>Ping</th></tr>${rows}</table><div class="code">Room code <b>${code}</b> · ${location.origin}/#${code}</div>`;
   }
 }
 

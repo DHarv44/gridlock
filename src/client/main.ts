@@ -1,4 +1,5 @@
 // Entry: lobby screen (name, create/join, open rooms), then hands the connection to the game.
+import { MODES } from '../shared/packs';
 import type { RoomListing } from '../shared/protocol';
 import { Game } from './game/game';
 import { Connection } from './net/connection';
@@ -16,6 +17,19 @@ const store = {
 };
 
 nameInput.value = store.get('gridlock.name') ?? '';
+
+// Game mode picker (used when creating a room).
+const modeSelect = $<HTMLSelectElement>('mode');
+const modeBlurb = $('mode-blurb');
+for (const m of MODES) {
+  const o = document.createElement('option');
+  o.value = m.id;
+  o.textContent = m.name;
+  modeSelect.appendChild(o);
+}
+const showBlurb = () => { modeBlurb.textContent = MODES.find((m) => m.id === modeSelect.value)?.blurb ?? ''; };
+modeSelect.addEventListener('change', showBlurb);
+showBlurb();
 const hashCode = location.hash.replace('#', '').toUpperCase();
 if (/^[A-Z]{4}$/.test(hashCode)) codeInput.value = hashCode;
 (nameInput.value ? codeInput : nameInput).focus();
@@ -30,7 +44,7 @@ function start(create: boolean, room: string): void {
   busy = true;
   errorEl.textContent = '';
   store.set('gridlock.name', name);
-  const conn = new Connection(name, room, create);
+  const conn = new Connection(name, room, create, modeSelect.value);
   let started = false;
   conn.onClose = (reason) => {
     busy = false;

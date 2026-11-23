@@ -34,11 +34,11 @@ export class Lobby {
     }
   }
 
-  private getRoom(code: string, create: boolean): Room | null {
+  private getRoom(code: string, create: boolean, mode?: string): Room | null {
     const existing = this.rooms.get(code);
     if (existing) return existing;
     if (!create && !loadRoom(code)) return null;
-    const room = new Room(code, (Math.random() * 2 ** 31) | 0);
+    const room = new Room(code, (Math.random() * 2 ** 31) | 0, mode);
     this.rooms.set(code, room);
     return room;
   }
@@ -66,7 +66,7 @@ export class Lobby {
         if (!name) { send({ t: 'reject', reason: 'Pick a name.' }); return; }
         const wanted = String(msg.room ?? '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
         const code = msg.create ? (wanted.length === 4 && !this.rooms.has(wanted) ? wanted : this.newCode()) : wanted;
-        room = this.getRoom(code, !!msg.create);
+        room = this.getRoom(code, !!msg.create, typeof msg.mode === 'string' ? msg.mode : undefined);
         if (!room) { send({ t: 'reject', reason: `No room called ${code}.` }); return; }
         const res = room.join(name, conn);
         if (typeof res === 'string') { send({ t: 'reject', reason: res }); room = null; return; }

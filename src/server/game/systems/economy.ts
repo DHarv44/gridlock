@@ -37,8 +37,11 @@ export class Economy {
       for (const pk of w.pickups.values()) {
         if (Math.abs(pk.x - pos.x) > reach || Math.abs(pk.y - pos.y) > reach) continue;
         if (pk.type === PK.cash) {
-          pl.cash += pk.value;
+          w.earn(pl, pk.value);
           w.notify('money', `+$${pk.value}`, pl);
+        } else if (pk.type === PK.frenzy) {
+          if (p.vehicle || pl.mission) continue;
+          w.onCrate(pl, pk);
         } else if (pk.type === PK.weapon) {
           if (p.vehicle) continue;
           const spec = WEAPONS[pk.weapon];
@@ -63,7 +66,7 @@ export class Economy {
       totals.set(pl, (totals.get(pl) ?? 0) + spec.income);
     }
     for (const [pl, amount] of totals) {
-      pl.cash += amount;
+      w.earn(pl, amount);
       w.notify('money', `+$${amount} business income`, pl);
     }
   }
@@ -159,7 +162,7 @@ export class Economy {
         const value = Math.round(v.spec.price * RULES.chopValue * Math.max(0.2, v.hp / v.spec.hp));
         unseatPed(w, p, true);
         removeVehicle(w, v);
-        pl.cash += value;
+        w.earn(pl, value);
         w.notify('money', `+$${value} for the ${v.spec.name}`, pl);
         return null;
       }

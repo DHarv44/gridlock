@@ -3,7 +3,7 @@
 export const TICK_HZ = 30;
 export const SNAP_EVERY = 2;             // snapshots at 15 Hz
 export const INTERP_DELAY_MS = 120;
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 /** Every Nth snapshot carries every entity in full (others list unchanged ones in `k`). */
 export const FULL_SNAP_EVERY = 30;
 
@@ -21,8 +21,9 @@ export type InputMsg = [number, number, number, number, number, number, number, 
 export type BuyKind = 'weapon' | 'ammo' | 'armor' | 'heal' | 'vehicle' | 'property' | 'garage' | 'respray' | 'chop' | 'sell';
 
 export type C2S =
-  | { t: 'hello'; v: number; name: string; room: string; create: boolean }
+  | { t: 'hello'; v: number; name: string; room: string; create: boolean; mode?: string }
   | { t: 'in'; i: InputMsg[] }
+  | { t: 'job'; booth: number }
   | { t: 'buy'; kind: BuyKind; id: string; place: number }
   | { t: 'chat'; text: string }
   | { t: 'ping'; ts: number };
@@ -31,7 +32,7 @@ export const EK = { Ped: 0, Veh: 1, Proj: 2, Pickup: 3, Fire: 4 } as const;
 
 export const PF = { dead: 1, fast: 2, aim: 4, burning: 8, down: 16, player: 32, busy: 64 } as const;
 export const VF = { siren: 1, wreck: 2, burning: 4, brake: 8, lights: 16, driven: 32, smoke: 64, reverse: 128 } as const;
-export const PK = { cash: 0, weapon: 1, health: 2, armor: 3 } as const;
+export const PK = { cash: 0, weapon: 1, health: 2, armor: 3, frenzy: 4 } as const;
 
 export const FX = { Shot: 0, Boom: 1, Blood: 2, Swing: 3, Horn: 4, Splash: 5, Spark: 6, Throw: 7 } as const;
 export const HIT = { none: 0, flesh: 1, metal: 2, wall: 3 } as const;
@@ -55,6 +56,17 @@ export interface YouState {
   vt: number;              // vehicle type index (-1 on foot)
   vhp: number;             // vehicle health fraction
   respawn: number;         // seconds until respawn while dead/busted
+  rs: number[];            // respect per gang (GANGS order)
+  mt: number[] | null;     // current mission objective position [x, y]
+}
+
+export interface MissionInfo {
+  title: string;
+  giver: string;           // faction id, or '' for crates
+  brief: string;
+  objective: string;       // what to do right now
+  ends: number;            // server time (ms) the job runs out, 0 = no limit
+  progress?: string;       // e.g. "5 / 12"
 }
 
 export interface PlayerInfo {
@@ -68,6 +80,8 @@ export interface PlayerInfo {
   deaths: number;
   wl: number;
   ping: number;
+  frags: number;           // player kills this round
+  earned: number;          // cash earned this round
 }
 
 export interface Profile {
@@ -84,6 +98,9 @@ export type S2C =
   | { t: 'owners'; list: [number, string | null][] }
   | { t: 'profile'; p: Profile }
   | { t: 'msg'; kind: 'info' | 'chat' | 'kill' | 'money' | 'warn'; text: string }
+  | { t: 'mission'; m: MissionInfo | null; result?: 'passed' | 'failed' }
+  | { t: 'mode'; mode: string; round: number }
+  | { t: 'round'; mode: string; winner: string; standings: [string, number][] }
   | { t: 'pong'; ts: number; st: number };
 
 export interface RoomListing { code: string; players: number; max: number; names: string[] }

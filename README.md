@@ -19,6 +19,17 @@ Open http://localhost:5228, pick a name, **Create game**, then send friends the 
   Room saves live in `data/` (or `GRIDLOCK_DATA`); on Railway mount a volume there to keep them
   across deploys.
 
+## Things to do
+
+- **Gang payphones**: booths in each gang's turf blink in the gang's colour when there's work.
+  Walk up and press E. Jobs: hits, torching rival cars, stealing specific rides, courier runs,
+  turf-war rampages. Pay plus respect with the gang (and less with its rivals).
+- **Respect**: three meters under your wanted stars. Kill a gang's members and it drops; sink low
+  enough and that gang jumps you on sight and stops offering work.
+- **Kill-frenzy crates**: red-and-black crates in parks and lots. Grab one for a weapon and a timer.
+- **Room modes** (picked when creating a game): Free roam, Frag race (first to 10 player kills),
+  Money race (first to earn $50,000). The winner is announced and a new round starts.
+
 ## Controls
 
 Classic GTA2-style by default: turn and run where you face, shots auto-aim at whoever is
