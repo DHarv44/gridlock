@@ -1,6 +1,7 @@
 // Characters live in the players' browsers (local storage) and come along when they join. The
 // server only checks what it's handed is sane before playing it, and sends progress back.
-import { type CharacterProgress, type CharacterSave, CRIMES, cleanLook, cleanName, GANGS, VEHICLES } from '../shared/packs';
+import { type CharacterLast, type CharacterProgress, type CharacterSave, CRIMES, cleanLook, cleanName, GANGS, PALETTE, VEHICLES } from '../shared/packs';
+import { MAP_SIZE } from '../shared/world/cityTypes';
 import type { Player } from './game/entities';
 
 const MAX_CASH = 1_000_000_000;
@@ -36,7 +37,22 @@ export function sanitizeCharacter(raw: unknown): CharacterSave | null {
     felonies: tally(c.felonies, Object.keys(CRIMES), 0, 1_000_000),
     deaths: int(c.deaths, 0, 1_000_000),
     respect: tally(c.respect, GANGS, -100, 100),
+    ...(cleanLast(c.last) ? { last: cleanLast(c.last)! } : {}),
   };
+}
+
+/** A saved last spot: a real room code, a point in the city, a real vehicle type and paint. */
+function cleanLast(raw: unknown): CharacterLast | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const l = raw as Record<string, unknown>;
+  const room = String(l.room ?? '');
+  const x = Number(l.x), y = Number(l.y), angle = Number(l.angle);
+  if (!/^[A-Z]{4}$/.test(room) || ![x, y, angle].every(Number.isFinite) || x < 0 || y < 0 || x > MAP_SIZE || y > MAP_SIZE) return null;
+  const v = l.vehicle as { type?: unknown; color?: unknown } | undefined;
+  const type = Number(v?.type), color = Number(v?.color);
+  const vehicle = v && Number.isInteger(type) && type >= 0 && type < VEHICLES.length
+    ? { type, color: Number.isInteger(color) && color >= 0 && color < PALETTE.length ? color : 0 } : undefined;
+  return { room, x, y, angle, ...(vehicle ? { vehicle } : {}) };
 }
 
 /** What the player's browser should save now. */

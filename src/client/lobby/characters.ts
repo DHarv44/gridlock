@@ -21,7 +21,8 @@ export class CharacterPicker {
 
   constructor(private root: HTMLElement) {
     root.className = 'chars';
-    this.load();
+    // After the caller has hooked up onMode.
+    queueMicrotask(() => this.load());
   }
 
   /** The chosen character as saved right now (re-read, so it carries the latest progress). */

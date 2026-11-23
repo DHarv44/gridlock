@@ -44,9 +44,28 @@ const save = [...msgs].reverse().find((m) => m.t === 'save');
 check(!!save && save.id === 'abc123', 'the server sends saves for the character');
 check(!!save && save.p!.cash === 7777 && save.p!.garage.includes(5), 'saves carry the latest cash and cars');
 check(!!save && save.p!.felonies.vehicleTheft === 1 && save.p!.felonies.trespass === 1 && !save.p!.felonies.gunfire, 'felonies by type (cooldowns hold, gunfire is not one)');
+// Get in a car and drive a little: the save says where, and in what.
+const { spawnVehicle, seatPed } = await import('../src/server/game/factory');
+const car = spawnVehicle(room.world, 2, me.body.x + 3, me.body.y, 0.5, 7);
+seatPed(room.world, me, car, 0);
+for (let i = 0; i < 30 * 5; i++) room.tick();
+const parked = [...msgs].reverse().find((m) => m.t === 'save') as unknown as { p: { last?: { room: string; x: number; y: number; vehicle?: { type: number; color: number } } } };
+const last = parked.p.last;
+check(!!last && last.room === 'CHRA' && last.vehicle?.type === 2 && last.vehicle?.color === 7, 'saves remember the room, spot and the car you were in');
 const before = msgs.filter((m) => m.t === 'save').length;
 room.leave(pl);
 check(msgs.filter((m) => m.t === 'save').length > before, 'a final save goes out on leaving');
+
+// Join a different room with that save: back at that spot, in that car.
+const room2 = new Room('CHRB', 101);
+room2.stop();
+const back = room2.join('ignored', { send: () => {}, close: () => {} }, sanitizeCharacter({ ...sent, last })!);
+if (typeof back === 'string') throw new Error(back);
+room2.stop();
+const ped2 = room2.world.peds.get(back.pid)!;
+const car2 = ped2.vehicle ? room2.world.vehicles.get(ped2.vehicle) : undefined;
+check(!!car2 && car2.type === 2 && car2.color === 7 && Math.hypot(car2.body.x - last!.x, car2.body.y - last!.y) < 4, 'joining puts you back there, in that car');
+check(sanitizeCharacter({ ...sent, last: { room: 'nope', x: 1, y: 1, angle: 0 } })!.last === undefined, 'a bad saved spot is ignored');
 
 console.log(failures ? `${failures} check(s) failed` : 'all character checks passed');
 process.exit(failures ? 1 : 0);

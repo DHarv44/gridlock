@@ -34,7 +34,12 @@ Deployed servers only have what is in `radio/` (or a mounted volume).
 cars, felony record, respect. You bring your character when you join; the server checks the
 values and sends progress back every few seconds (and right after purchases) to be saved.
 Server redeploys can't lose them; clearing the site's data in the browser does. Properties
-belong to each room's city and stay on the server.
+belong to each room and stay on the server.
+
+**Continue:** every room is the same city (Bayhaven), and a character remembers its last room,
+spot and the vehicle it was driving. "Continue in CODE" in the lobby goes back into that room
+(reopened if nobody is in it). Whoever joins a room, by code or by its link, comes back at their
+own character's last spot, in that vehicle.
 
 ## Things to do
 

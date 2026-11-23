@@ -47,6 +47,8 @@ export const SERVICE_CALLS: { medic: ServiceCall; fire: ServiceCall } = {
 
 export const RULES = {
   maxPlayers: 6,
+  /** Every room is the same city, so a character's last spot means the same place in any room. */
+  citySeed: 1337,
   startCash: 2500,
   startWeapons: [{ weapon: 'pistol', ammo: 60 }],
   deathCashLoss: 0.15,       // fraction of carried cash dropped on death

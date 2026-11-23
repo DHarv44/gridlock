@@ -48,6 +48,13 @@ export function cleanName(raw: unknown): string {
   return n.length >= 2 ? n : '';
 }
 
+/** Where a character was when they last played: they pick up there, in that vehicle. */
+export interface CharacterLast {
+  room: string;              // room code, for "Continue"
+  x: number; y: number; angle: number;
+  vehicle?: { type: number; color: number };
+}
+
 /** What playing changes on a character; the server sends it back for the browser to save. */
 export interface CharacterProgress {
   cash: number;
@@ -56,6 +63,7 @@ export interface CharacterProgress {
   felonies: Record<string, number>;
   deaths: number;
   respect: Record<string, number>;
+  last?: CharacterLast;
 }
 
 /** A character as the player's browser keeps it (local storage); brought along to every game. */

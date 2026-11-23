@@ -20,6 +20,7 @@ import { updateWanted } from './game/systems/wanted';
 import { World } from './game/world';
 import type { CharacterSave } from '../shared/packs';
 import { progressOf } from './characters';
+import { lastOf, resumeSpot, resumeVehicle } from './resume';
 import { loadRoom, type RoomSave, type SavedProfile, saveRoom } from './persist';
 
 export interface Conn {
@@ -42,8 +43,10 @@ export class Room {
   emptySince = Date.now();
 
   constructor(readonly code: string, seed: number, mode?: string) {
-    const save = loadRoom(code);
-    const w = (this.world = new World(save?.seed ?? seed));
+    // A save from another city's layout would point property ids at the wrong buildings: skip it.
+    const loaded = loadRoom(code);
+    const save = loaded && loaded.seed === seed ? loaded : null;
+    const w = (this.world = new World(seed));
     if (save) w.gameMinutes = save.gameMinutes;
     this.profiles = save?.profiles ?? {};
     this.pop = new Population(w);
@@ -96,9 +99,12 @@ export class Room {
       respect: { ...(prof.respect ?? {}) }, mission: null, boothCd: new Map(), frags: 0, earned: 0,
       ...(character ? { character: { id: character.id }, look: character.look } : {}),
     };
-    const spawn = this.spawnPoint(pl);
+    // Characters pick up where they left off (any room: it's the same city); others at the hospital.
+    const resume = resumeSpot(w, character?.last);
+    const spawn = resume ?? this.spawnPoint(pl);
     const ped = makeAvatar(w, pl, spawn.x, spawn.y);
     equipStart(ped);
+    if (resume) { ped.body.angle = resume.angle; resumeVehicle(w, pl, ped, resume); }
     w.players.set(pl.id, pl);
     pl.send({ t: 'welcome', id: pl.id, room: this.code, seed: w.seed, maxPlayers: RULES.maxPlayers } satisfies S2C);
     this.sendProfile(pl);
@@ -179,7 +185,7 @@ export class Room {
 
   /** Characters live in the player's browser: send their progress there to be saved. */
   private sendSave(pl: Player): void {
-    if (pl.character) pl.send({ t: 'save', id: pl.character.id, p: progressOf(pl) } satisfies S2C);
+    if (pl.character) pl.send({ t: 'save', id: pl.character.id, p: { ...progressOf(pl), last: lastOf(this.world, pl, this.code) } } satisfies S2C);
   }
 
   persist(): void {

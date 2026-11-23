@@ -23,7 +23,7 @@ export type BuyKind = 'weapon' | 'ammo' | 'armor' | 'heal' | 'vehicle' | 'proper
 
 export type C2S =
   /** `char`: the player's character from their browser; without it `name` plays an unsaved guest. */
-  | { t: 'hello'; v: number; name: string; room: string; create: boolean; mode?: string; char?: CharacterSave }
+  | { t: 'hello'; v: number; name: string; room: string; create: boolean; mode?: string; char?: CharacterSave; resume?: boolean }
   | { t: 'in'; i: InputMsg[] }
   | { t: 'job'; booth: number }
   | { t: 'buy'; kind: BuyKind; id: string; place: number }

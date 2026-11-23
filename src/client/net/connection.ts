@@ -9,12 +9,12 @@ export class Connection {
   rtt = 0;
 
   /** `who` is the player's character (from this browser's storage) or a guest name. */
-  constructor(who: CharacterSave | string, room: string, create: boolean, mode?: string) {
+  constructor(who: CharacterSave | string, room: string, create: boolean, mode?: string, resume = false) {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     this.ws = new WebSocket(`${proto}//${location.host}/ws`);
     this.ws.onopen = () => {
       const id = typeof who === 'string' ? { name: who } : { name: who.name, char: who };
-      this.send({ t: 'hello', v: PROTOCOL_VERSION, room, create, mode, ...id });
+      this.send({ t: 'hello', v: PROTOCOL_VERSION, room, create, mode, resume, ...id });
       setInterval(() => this.send({ t: 'ping', ts: performance.now() }), 2000);
     };
     this.ws.onmessage = (ev) => {

@@ -42,7 +42,7 @@ export class Lobby {
     const existing = this.rooms.get(code);
     if (existing) return existing;
     if (!create && !loadRoom(code)) return null;
-    const room = new Room(code, (Math.random() * 2 ** 31) | 0, mode);
+    const room = new Room(code, RULES.citySeed, mode);
     this.rooms.set(code, room);
     return room;
   }
@@ -77,8 +77,10 @@ export class Lobby {
         }
         if (!name) { send({ t: 'reject', reason: 'Pick a name.' }); return; }
         const wanted = String(msg.room ?? '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
-        const code = msg.create ? (wanted.length === 4 && !this.rooms.has(wanted) ? wanted : this.newCode()) : wanted;
-        room = this.getRoom(code, !!msg.create, typeof msg.mode === 'string' ? msg.mode : undefined);
+        // Continue: back into that room if it's running, or open it again under the same code.
+        const resume = !!msg.resume && wanted.length === 4;
+        const code = resume ? wanted : msg.create ? (wanted.length === 4 && !this.rooms.has(wanted) ? wanted : this.newCode()) : wanted;
+        room = this.getRoom(code, !!msg.create || resume, typeof msg.mode === 'string' ? msg.mode : undefined);
         if (!room) { send({ t: 'reject', reason: `No room called ${code}.` }); return; }
         const res = room.join(name, conn, character);
         if (typeof res === 'string') { send({ t: 'reject', reason: res }); room = null; return; }

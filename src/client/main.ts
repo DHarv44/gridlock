@@ -16,7 +16,16 @@ picker.onMode = (creating) => {
   $('play').hidden = creating;
   document.querySelector('.lobby-card')?.classList.toggle('wide', creating);
   errorEl.textContent = '';
+  showContinue();
 };
+
+/** "Continue in CODE": back into the selected character's last game (reopened if it's empty). */
+function showContinue(): void {
+  const room = picker.selected?.last?.room;
+  const btn = $<HTMLButtonElement>('continue');
+  btn.hidden = !room;
+  if (room) btn.textContent = `Continue in ${room}`;
+}
 /** ?play=Name joins as an unsaved guest (dev and testing). */
 const guest = new URLSearchParams(location.search).get('play');
 
@@ -37,7 +46,7 @@ if (/^[A-Z]{4}$/.test(hashCode)) codeInput.value = hashCode;
 
 let busy = false;
 
-function start(create: boolean, room: string): void {
+function start(create: boolean, room: string, resume = false): void {
   const ch = picker.selected;
   const name = guest ?? ch?.name ?? '';
   if (!name) { errorEl.textContent = 'Create a character first.'; return; }
@@ -45,7 +54,7 @@ function start(create: boolean, room: string): void {
   if (busy) return;
   busy = true;
   errorEl.textContent = '';
-  const conn = new Connection(guest ?? ch!, room, create, modeSelect.value);
+  const conn = new Connection(guest ?? ch!, room, create, modeSelect.value, resume);
   let started = false;
   conn.onClose = (reason) => {
     busy = false;
@@ -71,6 +80,8 @@ function start(create: boolean, room: string): void {
 }
 
 $('create').addEventListener('click', () => start(true, ''));
+$('continue').addEventListener('click', () => { const room = picker.selected?.last?.room; if (room) start(false, room, true); });
+showContinue();
 $('join').addEventListener('click', () => start(false, codeInput.value.trim().toUpperCase()));
 codeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') start(false, codeInput.value.trim().toUpperCase()); });
 
