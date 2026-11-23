@@ -64,6 +64,10 @@ export function updateVehicles(w: World, dt: number): void {
       if (driver && v.spec.movement === 'tracks') v.turret = turnTurret(v.turret, driver.aim, dt);
     }
     if (v.spec.movement !== 'tracks') v.turret = v.body.angle;
+    // How long this vehicle has been sitting still for no good reason (lights/junctions don't count).
+    const why = driver?.ai?.drive?.why;
+    const waiting = why === 'light' || why === 'junction';
+    v.idleT = Math.hypot(v.body.vx, v.body.vy) < 0.5 && !driver?.player && !waiting ? v.idleT + dt : 0;
     for (const sid of v.seats) {
       const o = sid ? w.peds.get(sid) : undefined;
       if (o) { o.body.x = v.body.x; o.body.y = v.body.y; o.body.alt = v.body.alt; }

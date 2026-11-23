@@ -5,6 +5,8 @@ import type { StaticWorld } from '../world/collision';
 
 export const DT = 1 / 30;
 export const PED_RADIUS = 0.35;
+/** Sprint speed multiplier (Shift). */
+export const SPRINT = 1.45;
 export const HELI_MAX_ALT = 48;
 export const HELI_CLIMB = 9;
 

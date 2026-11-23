@@ -45,11 +45,12 @@ export function resolveContacts(w: World): void {
       const c = Math.cos(A.angle), s = Math.sin(A.angle);
       const h = obbVsCircle(A.x, A.y, c, s, a.spec.length / 2, a.spec.width / 2, { x: p.body.x, y: p.body.y, r: PED_RADIUS });
       if (!h) return;
-      // h pushes the vehicle; the ped goes the other way.
-      const rel = (A.vx - p.body.vx) * -h.nx + (A.vy - p.body.vy) * -h.ny;
+      // h pushes the vehicle; the ped goes the other way. Only the car's own speed toward the
+      // ped counts: running into a parked car must not floor you.
+      const rel = A.vx * -h.nx + A.vy * -h.ny;
       p.body.x -= h.nx * h.depth; p.body.y -= h.ny * h.depth;
       if (p.dead) return;
-      if (rel > 3.5) {
+      if (rel > (p.player ? 7 : 5)) {
         const driver = a.seats[0];
         p.body.vx = A.vx * 0.8 - h.nx * rel * 0.3; p.body.vy = A.vy * 0.8 - h.ny * rel * 0.3;
         p.down = Math.max(p.down, 1.2);

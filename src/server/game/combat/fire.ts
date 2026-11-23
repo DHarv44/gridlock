@@ -137,7 +137,9 @@ function melee(w: World, p: Ped, spec: WeaponSpec, aim: number): void {
   if (best) {
     const o = best as Ped;
     o.body.vx += Math.cos(aim) * 3; o.body.vy += Math.sin(aim) * 3;
-    if (spec.damage > 20 || w.rng.chance(0.2)) o.down = Math.max(o.down, 0.8);
+    // Heavy swings can floor people; players only go down to the big ones, and rarely.
+    const floors = o.player ? spec.damage >= 40 && w.rng.chance(0.35) : spec.damage > 20 || w.rng.chance(0.15);
+    if (floors) o.down = Math.max(o.down, 0.8);
     damagePed(w, o, spec.damage, p.id, { melee: true });
     return;
   }

@@ -89,6 +89,7 @@ export class Input {
     if (this.held('handbrake')) b |= BTN.handbrake;
     if (this.held('climb')) b |= BTN.up;
     if (this.held('jump')) b |= BTN.jump;
+    if (this.held('sprint')) b |= BTN.sprint;
     if (this.held('descend')) b |= BTN.down;
     this.pressed.clear();
     return this.enabled ? b : b & ~BTN.fire;

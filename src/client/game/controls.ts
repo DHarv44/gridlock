@@ -3,7 +3,7 @@
 // position never matters; mouse buttons can be bound like keys.
 
 export type Action =
-  | 'forward' | 'back' | 'left' | 'right' | 'fire' | 'action' | 'handbrake' | 'jump' | 'climb' | 'descend'
+  | 'forward' | 'back' | 'left' | 'right' | 'fire' | 'action' | 'handbrake' | 'jump' | 'sprint' | 'climb' | 'descend'
   | 'prevWeapon' | 'nextWeapon' | 'horn' | 'turretLeft' | 'turretRight'
   | 'chat' | 'map' | 'scores';
 
@@ -17,6 +17,7 @@ export const ACTIONS: ActionDef[] = [
   { id: 'left', label: 'Turn / steer left', kind: 'held', group: 'Movement', keys: ['KeyA', 'ArrowLeft'] },
   { id: 'right', label: 'Turn / steer right', kind: 'held', group: 'Movement', keys: ['KeyD', 'ArrowRight'] },
   { id: 'jump', label: 'Jump', kind: 'held', group: 'Movement', keys: ['Space'] },
+  { id: 'sprint', label: 'Sprint', kind: 'held', group: 'Movement', keys: ['ShiftLeft'] },
   { id: 'fire', label: 'Fire', kind: 'held', group: 'Weapons', keys: ['ControlLeft', 'ControlRight'] },
   { id: 'prevWeapon', label: 'Previous weapon', kind: 'edge', group: 'Weapons', keys: ['KeyZ'] },
   { id: 'nextWeapon', label: 'Next weapon', kind: 'edge', group: 'Weapons', keys: ['KeyX'] },
@@ -33,7 +34,7 @@ export const ACTIONS: ActionDef[] = [
 ];
 
 // New key: drops settings saved while the old mouse-aim style existed.
-const STORE = 'gridlock.controls.v6';
+const STORE = 'gridlock.controls.v7';
 const MAX_KEYS = 2;
 
 /** Readable name for a key code or mouse button. */
@@ -111,5 +112,5 @@ export class Bindings {
 }
 
 /** Pairs that never apply at the same time, so one key may serve both. */
-const SHARED: [Action, Action][] = [['handbrake', 'climb'], ['jump', 'handbrake'], ['jump', 'climb']];
+const SHARED: [Action, Action][] = [['handbrake', 'climb'], ['jump', 'handbrake'], ['jump', 'climb'], ['sprint', 'descend']];
 const sharable = (a: Action, b: Action) => SHARED.some(([x, y]) => (x === a && y === b) || (x === b && y === a));

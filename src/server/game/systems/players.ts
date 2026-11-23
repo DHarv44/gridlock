@@ -2,7 +2,7 @@
 import { dist } from '../../../shared/math';
 import { CRIMES, PLAYER_ARCHETYPE, RULES, UNARMED, WEAPONS, weaponIndex } from '../../../shared/packs';
 import { BTN, EDGE_BUTTONS, type InputMsg, Mode } from '../../../shared/protocol';
-import { stepVehicle } from '../../../shared/sim/physics';
+import { SPRINT, stepVehicle } from '../../../shared/sim/physics';
 import { onAttacked } from '../ai/reactions';
 import { tickWeapon, tryFire } from '../combat/fire';
 import type { Ped, Player, Vehicle } from '../entities';
@@ -69,7 +69,7 @@ function applyInput(w: World, pl: Player, p: Ped, inp: InputMsg, dt: number): vo
     // GTA2 jump: a short hop at running speed; cars pass under you while airborne.
     p.jumpT = Math.max(0, p.jumpT - dt);
     if (btn & BTN.jump && p.jumpT === 0 && p.down <= 0) p.jumpT = JUMP_TIME;
-    stepPedBody(w, p, dt, p.spec.runSpeed);
+    stepPedBody(w, p, dt, p.spec.runSpeed * (btn & BTN.sprint ? SPRINT : 1));
     p.body.angle = aim;
   }
   tickWeapon(p, dt);

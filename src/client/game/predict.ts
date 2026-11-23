@@ -1,7 +1,7 @@
 // Client-side prediction of the local avatar (on foot or driving) with server reconciliation.
 import { PEDS, PLAYER_ARCHETYPE, VEHICLES } from '../../shared/packs';
 import { BTN, type InputMsg, Mode, type YouState } from '../../shared/protocol';
-import { type Body, type Controls, copyBody, DT, emptyControls, newBody, stepFoot, stepVehicle } from '../../shared/sim/physics';
+import { type Body, type Controls, copyBody, DT, emptyControls, newBody, SPRINT, stepFoot, stepVehicle } from '../../shared/sim/physics';
 import type { CityMap } from '../../shared/world/city';
 import type { StaticWorld } from '../../shared/world/collision';
 
@@ -38,7 +38,7 @@ export class Predictor {
       stepVehicle(b, VEHICLES[this.vtype], c, DT, this.world, true, this.onRoad);
     } else {
       const ox = b.x, oy = b.y;
-      stepFoot(b, c, PEDS[PLAYER_ARCHETYPE].runSpeed * (c.sprint ? 1.3 : 1), DT, this.world);
+      stepFoot(b, c, PEDS[PLAYER_ARCHETYPE].runSpeed * (c.sprint ? SPRINT : 1), DT, this.world);
       if (this.map.isWater(b.x, b.y) && !this.map.isWater(ox, oy)) { b.x = ox; b.y = oy; b.vx = 0; b.vy = 0; }
     }
   }

@@ -18,6 +18,7 @@ export interface DriveState {
   honkT: number;
   blockT: number;           // time spent blocked by something ahead
   bypassT: number;          // > 0 while steering around a blockage
+  why: string;              // what limited speed this tick (diagnostics)
 }
 
 export interface Ai {

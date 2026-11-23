@@ -259,8 +259,12 @@ export class Population {
       if (v.owner || v.persistent) continue;
       if (v.seats.some((s) => s && w.peds.get(s)?.player)) continue;
       const near = w.nearestPlayerDist2(v.body.x, v.body.y);
-      const wreckOld = v.wrecked && v.wreckT > 90 && near > 80 * 80;
-      if (wreckOld || (near > far2 && v.spot < 0 && v.spot !== -2)) removeVehicle(w, v);
+      const unseen = near > 90 * 90;
+      // Wrecks clear once out of view after 25 s (and after 2 min regardless, unless right by you).
+      const wreckGone = v.wrecked && ((v.wreckT > 25 && unseen) || (v.wreckT > 120 && near > 35 * 35));
+      // Abandoned or hopelessly stuck cars on the street clear once nobody's looking.
+      const stalled = v.spot < 0 && v.spot !== -2 && v.idleT > 25 && unseen;
+      if (wreckGone || stalled || (near > far2 && v.spot < 0 && v.spot !== -2)) removeVehicle(w, v);
     }
     for (const p of w.peds.values()) {
       if (p.player || p.persistent || p.vehicle) continue;

@@ -24,7 +24,7 @@ function fightOrFlight(w: World, p: Ped, attacker: Ped): void {
   const brave = w.rng.next() < p.spec.courage * (armed(p) ? 1 : 0.5);
   if (p.vehicle) {
     if (brave && p.seat === 0) { unseatPed(w, p, true); setTask(p, 'attack', attacker.id); }
-    else if (p.seat === 0) { p.ai!.panicT = 12; setTask(p, 'drive'); }
+    else if (p.seat === 0) { p.ai!.panicT = 8; setTask(p, 'drive'); }
     return;
   }
   if (brave) setTask(p, 'attack', attacker.id);
@@ -47,7 +47,11 @@ function returnOrWander(w: World, p: Ped): void {
 function fleeNoise(w: World, p: Ped, x: number, y: number, lethal: boolean): void {
   const ai = p.ai!;
   if (ai.task === 'flee' || ai.task === 'attack' || ai.task === 'cower') return;
-  if (p.vehicle) { if (p.seat === 0 && lethal) ai.panicT = 10; return; }
+  // Drivers only spook at danger close by: a few seconds of fleeing, then back to normal.
+  if (p.vehicle) {
+    if (p.seat === 0 && lethal && Math.hypot(p.body.x - x, p.body.y - y) < 25) ai.panicT = Math.max(ai.panicT, 6);
+    return;
+  }
   if (w.rng.chance(lethal ? 0.85 : 0.6)) setTask(p, w.rng.chance(0.2) ? 'cower' : 'flee', 0, x, y);
 }
 

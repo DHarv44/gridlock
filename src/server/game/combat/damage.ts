@@ -120,7 +120,8 @@ export function explode(w: World, x: number, y: number, radius: number, dmg: num
     const k = Math.pow(1 - d / radius, 0.7);
     const dx = (p.body.x - x) / (d || 1), dy = (p.body.y - y) / (d || 1);
     p.body.vx += dx * 14 * k; p.body.vy += dy * 14 * k;
-    p.down = Math.max(p.down, 1.5 * k);
+    // Only a close blast floors you (players are a bit sturdier).
+    if (k > (p.player ? 0.5 : 0.3)) p.down = Math.max(p.down, 1.5 * k);
     damagePed(w, p, dmg * k, attackerId, { blast: true });
   });
   w.vehiclesNear(x, y, radius + 4, (v) => {
