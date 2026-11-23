@@ -12,7 +12,11 @@ const lobby = $('lobby');
 const loading = $('loading');
 
 const picker = new CharacterPicker($('chars'));
-picker.onMode = (creating) => { $('play').hidden = creating; errorEl.textContent = ''; };
+picker.onMode = (creating) => {
+  $('play').hidden = creating;
+  document.querySelector('.lobby-card')?.classList.toggle('wide', creating);
+  errorEl.textContent = '';
+};
 /** ?play=Name joins as an unsaved guest (dev and testing). */
 const guest = new URLSearchParams(location.search).get('play');
 
