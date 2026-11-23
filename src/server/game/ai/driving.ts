@@ -14,7 +14,43 @@ export function newDrive(w: World, v: Vehicle): DriveState {
   const dir: 1 | -1 = (seg.axis === 'h' ? c : s) >= 0 ? 1 : -1;
   const lane = seg.lanes > 1 && w.rng.chance(0.5) ? 1 : 0;
   const L = laneOf(w, seg, dir, lane);
-  return { pts: [{ x: L.ex, y: L.ey, stop: L.to.id, axis: seg.axis }], seg: seg.id, dir, lane, route: [], routeT: 0, stuckT: 0, reverseT: 0, honkT: 0, blockT: 0, bypassT: 0, why: '' };
+  return { pts: [{ x: L.ex, y: L.ey, stop: L.to.id, axis: seg.axis }], seg: seg.id, dir, lane, route: [], routeT: 0, stuckT: 0, reverseT: 0, honkT: 0, blockT: 0, bypassT: 0, yieldT: 0, pullT: 0, why: '' };
+}
+
+/** Pulling over for a siren: how far right of the lane line to aim (m), and how long to crawl
+ *  across (s) before stopping. */
+const PULL_OVER = 2.4;
+const PULL_TIME = 3.0;
+
+/** Vehicles with their siren on this tick (worked out once per tick per world). */
+const sirenCache = new WeakMap<World, { t: number; list: Vehicle[] }>();
+function sirens(w: World): Vehicle[] {
+  let c = sirenCache.get(w);
+  if (!c || c.t !== w.time) {
+    c = { t: w.time, list: [] };
+    for (const o of w.vehicles.values()) if (o.siren && !o.wrecked && !(o.spec.movement === 'rotor' && o.body.alt > 2)) c.list.push(o);
+    sirenCache.set(w, c);
+  }
+  return c.list;
+}
+
+/** Is an emergency vehicle with its siren on coming our way: up behind us, or toward us in our road
+ *  (whoever drives it, player or not)? One right beside us counts too. Cross streets don't. */
+export function sirenApproaching(w: World, v: Vehicle): boolean {
+  const b = v.body, c = Math.cos(b.angle), s = Math.sin(b.angle);
+  for (const o of sirens(w)) {
+    if (o === v) continue;
+    const rx = o.body.x - b.x, ry = o.body.y - b.y;
+    const d = Math.hypot(rx, ry);
+    if (d > 45) continue;
+    if (d < 10) return true;
+    const f = rx * c + ry * s, l = -rx * s + ry * c;
+    if (Math.abs(l) > 9) continue; // on another street
+    const same = Math.cos(o.body.angle) * c + Math.sin(o.body.angle) * s;
+    if (f < 0 && same > 0.5) return true; // coming up behind
+    if (f > 0 && same < -0.5 && forwardSpeed(o.body) > 1) return true; // oncoming
+  }
+  return false;
 }
 
 /** Appends the next lane (and the turn into it) to the traffic polyline. */
@@ -199,10 +235,17 @@ export function cruise(w: World, v: Vehicle, p: Ped, dt: number, panic = false):
   }
   // Spooked drivers ignore people in the road but still keep a gap to the car ahead.
   const clear = clearance(w, v, panic || d.bypassT > 0, panic && d.bypassT <= 0);
-  const held = red || yielding;
+  // A siren coming: ease over to the kerb at a crawl, stop there, and stay put until it's been gone
+  // a few seconds. Fleeing drivers and other emergency vehicles don't.
+  if (!panic && !v.spec.siren && sirenApproaching(w, v)) d.yieldT = 3;
+  else d.yieldT = Math.max(0, d.yieldT - dt);
+  const pulling = d.yieldT > 0;
+  if (pulling) { d.pullT += dt; d.bypassT = 0; } else d.pullT = 0;
+  const held = red || yielding || pulling;
   // Overtakes crawl past (bumps under ~4 m/s do no damage).
   if (d.bypassT > 0) { d.bypassT -= dt; target = Math.min(target, 4); }
   else target = Math.min(target, clear.cap);
+  if (pulling) target = Math.min(target, d.pullT < PULL_TIME ? 4 : 0);
   // Horn only when it's called for: a person standing in the road, or a driver stopped in it for
   // no reason, after a moment's wait; then a long pause before the next. Never at a queue, a light
   // or an empty/wrecked car. honkT counts up while there's cause, and below zero is the pause.
@@ -223,10 +266,10 @@ export function cruise(w: World, v: Vehicle, p: Ped, dt: number, panic = false):
   } else d.blockT = Math.max(0, d.blockT - dt);
   // Spooked drivers don't wait: when actually blocked they swerve around (if there's room) and go.
   if (panic && clear.cap < 1.5 && vf < 3 && d.bypassT <= 0 && laneClear(w, v)) d.bypassT = 2;
-  d.why = d.reverseT > 0 ? 'reverse' : d.bypassT > 0 ? 'bypass' : red ? 'light' : yielding ? 'junction' : clear.ped && clear.cap < 2 ? 'ped' : clear.cap < 2 ? 'car' : 'free';
+  d.why = pulling ? 'siren' : d.reverseT > 0 ? 'reverse' : d.bypassT > 0 ? 'bypass' : red ? 'light' : yielding ? 'junction' : clear.ped && clear.cap < 2 ? 'ped' : clear.cap < 2 ? 'car' : 'free';
   if (unstick(v, d, Math.max(target, d.bypassT > 0 ? 3 : 0), dt)) return;
-  // Pure pursuit on the polyline.
-  const look = 6 + Math.abs(vf) * 0.45;
+  // Pure pursuit on the polyline (aiming closer in while pulling over, so the car swings across).
+  const look = pulling ? 4 : 6 + Math.abs(vf) * 0.45;
   const pt = d.pts[0];
   let tx = pt.x, ty = pt.y;
   const d0 = Math.hypot(pt.x - b.x, pt.y - b.y);
@@ -239,6 +282,15 @@ export function cruise(w: World, v: Vehicle, p: Ped, dt: number, panic = false):
   if (d.bypassT > 0) {
     // Offset into the oncoming lane (to the left of travel).
     tx += Math.sin(b.angle) * 3.8; ty -= Math.cos(b.angle) * 3.8;
+  } else if (pulling) {
+    // Over toward the kerb: aim a fixed distance right of the lane line (on a straight, the lane's
+    // own direction; mid-turn, our heading), so the car settles there clear of the lane.
+    const ax = pt.axis === 'h' ? Math.sign(Math.cos(b.angle)) || 1 : pt.axis === 'v' ? 0 : Math.cos(b.angle);
+    const ay = pt.axis === 'v' ? Math.sign(Math.sin(b.angle)) || 1 : pt.axis === 'h' ? 0 : Math.sin(b.angle);
+    // A few metres ahead of where we are along the lane line (not its far end), then to the right.
+    const along = (b.x - pt.x) * ax + (b.y - pt.y) * ay;
+    tx = pt.x + ax * (along + 6) - ay * PULL_OVER;
+    ty = pt.y + ay * (along + 6) + ax * PULL_OVER;
   }
   steerTo(v, tx, ty, target);
 }
@@ -289,6 +341,11 @@ export function driveTo(w: World, v: Vehicle, p: Ped, tx: number, ty: number, dt
   const turnAhead = Math.abs(angleDiff(b.angle, Math.atan2(gy - b.y, gx - b.x))) > 0.5;
   let target = turnAhead && Math.hypot(gx - b.x, gy - b.y) < 30 ? 10 : fast;
   target = Math.min(target, clear.cap + 4);
+  // Lights and siren on: traffic pulls over to the right, so go by on the left when it's clear.
+  if (v.siren && clear.cap < 10 && !turnAhead && laneClear(w, v)) {
+    gx += Math.sin(b.angle) * 3.6; gy -= Math.cos(b.angle) * 3.6;
+    target = Math.max(target, Math.min(fast, 13));
+  }
   if (unstick(v, d, Math.max(target, 3), dt)) return dist;
   steerTo(v, gx, gy, target);
   return dist;

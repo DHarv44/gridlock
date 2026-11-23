@@ -55,6 +55,10 @@
   reviewed as contact sheets (art/review.py), exported Draco-compressed to src/client/models/*.glb
   (~1.1 MB). render/models.ts loads them at startup; vehicleMesh/weaponMesh build from them (the
   packs' box models stay as a fallback). See art/README.md for the commands.
+- Sirens (2026-11-23): civilian traffic pulls over for any siren coming up behind or head-on in
+  its road (player or AI driving it): eases to the kerb, stops, and moves off a few seconds after
+  it's gone (ai/driving.ts sirenApproaching, cruise). AI emergency drivers pass yielding traffic on
+  the left when it's clear. `npx tsx scripts/sirens.ts`.
 - Riders on bikes are drawn (spec `saddles`, protocol 11); gun trucks (Humvee, MRAP) traverse a roof
   gun like the tank (spec `turret`). `npx tsx scripts/riders.ts`, `npx tsx scripts/turret.ts`.
 

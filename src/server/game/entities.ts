@@ -18,6 +18,8 @@ export interface DriveState {
   honkT: number;
   blockT: number;           // time spent blocked by something ahead
   bypassT: number;          // > 0 while steering around a blockage
+  yieldT: number;           // > 0 while pulled over for a siren (counts down once it's gone)
+  pullT: number;            // how long we've been pulling over (ease to the kerb, then stop)
   why: string;              // what limited speed this tick (diagnostics)
 }
 
