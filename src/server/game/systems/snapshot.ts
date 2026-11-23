@@ -32,7 +32,8 @@ function vehFlags(w: World, v: Vehicle): number {
   const fwd = v.body.vx * Math.cos(v.body.angle) + v.body.vy * Math.sin(v.body.angle);
   if (fwd < -0.5) f |= VF.reverse;
   const hour = (w.gameMinutes / 60) % 24;
-  if (v.seats[0] && (hour > 19 || hour < 6.5)) f |= VF.lights;
+  // Lights on from dusk (5 pm, as the sky starts to go) until 7 am, whenever someone's driving.
+  if (v.seats[0] && (hour >= 17 || hour < 7)) f |= VF.lights;
   return f;
 }
 

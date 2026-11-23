@@ -137,7 +137,11 @@ function buildParts(spec: VehicleSpec, model: Part[], body: string, wrecked: boo
 // Paint reflects the scene environment (set up in Stage); glass and chrome are mirror-like.
 const bodyMat = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0.35, roughness: 0.38 });
 const shinyMat = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0.9, roughness: 0.08 });
-const lightMat = new THREE.MeshBasicMaterial({ vertexColors: true });
+/** Lamp lenses: plain glass by day and on parked cars, glowing when the lights are on. */
+export const lampMats = {
+  off: new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0.2, roughness: 0.25, color: '#9a9a9a' }),
+  on: new THREE.MeshBasicMaterial({ vertexColors: true }),
+};
 export const sirenMats = {
   red: new THREE.MeshBasicMaterial({ color: '#ff2a2a' }), redDim: new THREE.MeshLambertMaterial({ color: '#661010' }),
   blue: new THREE.MeshBasicMaterial({ color: '#3a6bff' }), blueDim: new THREE.MeshLambertMaterial({ color: '#10205a' }),
@@ -150,6 +154,8 @@ export interface VehicleView {
   rotors: THREE.Mesh[];
   tailRotors: THREE.Mesh[];
   sirens: THREE.Mesh[];
+  /** Head and tail lamp lenses (cab and trailer); their material shows whether the lights are on. */
+  lamps: THREE.Mesh[];
   /** Pivot at the hitch; rotate it by (trailer angle - vehicle angle). */
   trailer: THREE.Group | null;
   key: string;
@@ -164,8 +170,8 @@ export function makeVehicle(type: number, colorIdx: number, wrecked: boolean): V
   body.receiveShadow = true;
   root.add(body);
   if (b.shiny) root.add(new THREE.Mesh(b.shiny, shinyMat));
-  if (b.lights) root.add(new THREE.Mesh(b.lights, lightMat));
-  const view: VehicleView = { root, turret: null, rotors: [], tailRotors: [], sirens: [], trailer: null, key: `${type}:${colorIdx}:${wrecked}` };
+  const view: VehicleView = { root, turret: null, rotors: [], tailRotors: [], sirens: [], lamps: [], trailer: null, key: `${type}:${colorIdx}:${wrecked}` };
+  if (b.lights) { const m = new THREE.Mesh(b.lights, lampMats.off); view.lamps.push(m); root.add(m); }
   if (b.trailer && spec.trailer) {
     const pivot = new THREE.Group();
     pivot.position.x = -hitchOffset(spec);
@@ -175,7 +181,7 @@ export function makeVehicle(type: number, colorIdx: number, wrecked: boolean): V
     tm.castShadow = true; tm.receiveShadow = true;
     tb.add(tm);
     if (b.trailer.shiny) tb.add(new THREE.Mesh(b.trailer.shiny, shinyMat));
-    if (b.trailer.lights) tb.add(new THREE.Mesh(b.trailer.lights, lightMat));
+    if (b.trailer.lights) { const m = new THREE.Mesh(b.trailer.lights, lampMats.off); view.lamps.push(m); tb.add(m); }
     pivot.add(tb);
     root.add(pivot);
     view.trailer = pivot;

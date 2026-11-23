@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { WEAPONS } from '../../shared/packs';
 import { HIT } from '../../shared/protocol';
+import { beamTexture } from './carLights';
 import { ParticleLayer } from './particles';
 
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
@@ -11,11 +12,13 @@ export class Effects {
   readonly alpha: ParticleLayer;   // smoke, dust
   readonly decals: ParticleLayer;  // blood, scorch, skids (long-lived, on the ground)
   readonly glow: ParticleLayer;    // night lights pooled on the ground, rebuilt each frame
+  readonly beams: ParticleLayer;   // headlight beams on the road, rebuilt each frame
   private flashes: { light: THREE.PointLight; t: number; max: number; i: number }[] = [];
 
   constructor(scene: THREE.Scene, private lights: THREE.PointLight[]) {
     this.decals = new ParticleLayer(scene, 600, false, 1);
     this.glow = new ParticleLayer(scene, 900, true, 2);
+    this.beams = new ParticleLayer(scene, 500, true, 2, beamTexture());
     this.alpha = new ParticleLayer(scene, 900, false, 3);
     this.add = new ParticleLayer(scene, 1400, true, 4);
   }

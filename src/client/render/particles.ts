@@ -37,12 +37,13 @@ export class ParticleLayer {
   private s = new THREE.Vector3();
   private p = new THREE.Vector3();
 
-  constructor(scene: THREE.Scene, private cap: number, additive: boolean, order: number) {
+  /** `map`'s alpha shapes each quad (a soft round blob unless given). */
+  constructor(scene: THREE.Scene, private cap: number, additive: boolean, order: number, map: THREE.Texture = softTexture()) {
     const geo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
     this.color = new THREE.InstancedBufferAttribute(new Float32Array(cap * 4), 4);
     geo.setAttribute('aColor', this.color);
     const mat = new THREE.ShaderMaterial({
-      uniforms: { map: { value: softTexture() } },
+      uniforms: { map: { value: map } },
       vertexShader: `attribute vec4 aColor; varying vec4 vC; varying vec2 vUv;
         void main() { vC = aColor; vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0); }`,
       fragmentShader: `uniform sampler2D map; varying vec4 vC; varying vec2 vUv;

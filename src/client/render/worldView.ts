@@ -3,9 +3,10 @@ import * as THREE from 'three';
 import { type CharLook, VEHICLES, WEAPONS } from '../../shared/packs';
 import { EK, PF, PK, VF } from '../../shared/protocol';
 import type { EntityStore, ViewEntity } from '../net/entities';
+import { putCarLights } from './carLights';
 import type { Effects } from './effects';
 import { animatePed, makePed, type PedView, setPedWeapon } from './pedMesh';
-import { makeVehicle, sirenMats, type VehicleView } from './vehicleMesh';
+import { lampMats, makeVehicle, sirenMats, type VehicleView } from './vehicleMesh';
 
 export interface OwnState { pid: number; vid: number; x: number; y: number; angle: number; alt: number; driving: boolean; vx: number; vy: number; trailer?: number }
 export interface PlayerTag { name: string; color: string; look?: CharLook }
@@ -50,6 +51,7 @@ export class WorldView {
     this.prune(seen);
     if (night > 0.05) this.lampGlows(night, view);
     this.fx.glow.update(dt);
+    this.fx.beams.update(dt);
   }
 
   private prune(seen: Set<number>): void {
@@ -138,7 +140,8 @@ export class WorldView {
     if (v.turret) v.turret.rotation.y = -(e.turret - e.angle);
     // Trailer swing relative to the cab: your own rig's is predicted with the cab; others' come
     // from the server, interpolated.
-    if (v.trailer) v.trailer.rotation.y = mine && own!.trailer !== undefined ? -(own!.trailer - a) : -(e.trailer - e.angle);
+    const trailerAngle = mine && own!.trailer !== undefined ? own!.trailer : a + (e.trailer - e.angle);
+    if (v.trailer) v.trailer.rotation.y = -(trailerAngle - a);
     const spinning = (flags & VF.driven) || alt > 0.3;
     for (const r of v.rotors) r.rotation.y += dt * (spinning ? 32 : 0);
     for (const r of v.tailRotors) r.rotation.z += dt * (spinning ? 40 : 0);
@@ -153,11 +156,9 @@ export class WorldView {
       const col = phase ? [0.2, 0.35, 1] : [1, 0.15, 0.1];
       this.fx.glow.put(x, y, 0.1, 9 + night * 6, 1, 0, col[0], col[1], col[2], 0.18 + night * 0.25);
     }
-    if (flags & VF.lights) {
-      const L = spec.length / 2;
-      this.fx.glow.put(x + c * (L + 7), y + s * (L + 7), 0.08, 6.5, 2, a, 1, 0.92, 0.7, 0.3 * night);
-      this.fx.glow.put(x - c * (L + 0.6), y - s * (L + 0.6), 0.08, 1.6, 1.6, a + Math.PI / 2, 1, 0.1, 0.05, (flags & VF.brake ? 0.7 : 0.3) * night);
-    }
+    const lit = !!(flags & VF.lights) && !wreck;
+    for (const m of v.lamps) m.material = lit ? lampMats.on : lampMats.off;
+    putCarLights(this.fx.beams, this.fx.glow, spec, type, x, y, a, alt, trailerAngle, flags, night);
     if ((flags & VF.smoke || dmg >= 2) && !wreck && Math.random() < dt * 8) this.fx.smoke(x + c * spec.length * 0.35, y + s * spec.length * 0.35, alt + spec.height, dmg >= 2 ? 0.6 : 0.2);
     if (flags & VF.burning) { this.fx.fire(x, y, spec.width); if (night > 0.1) this.fx.glow.put(x, y, 0.1, 10, 1, 0, 1, 0.5, 0.15, 0.35 * night); }
     if (wreck && Math.random() < dt * 3) this.fx.smoke(x, y, 1.5, 1);
