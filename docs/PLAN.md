@@ -62,14 +62,14 @@ only slows them down. 10-minute rounds (while two or more play); least time "it"
 ## F. Going into buildings, in place (large)
 Walk through a door and the roof fades away: the floor plan shows from the same camera in the same
 world, so friends see you inside and the city keeps running around you.
-- F0. Design note (before code): interior data (floors, rooms, walls, doors, stairs), how the server
-  collides on the right floor, how the client cuts the building away, what's generated and what's
-  hand-made.
+- F0. Design note (before code): docs/INTERIORS.md (written 2026-11-23; waiting on the user's two
+  decisions: who sees inside, which buildings open).
 - F1. Single-floor businesses and shops: plans generated from the footprint by room layouts per type;
   a clerk inside.
 - F2. Banks with a vault (hand-made layout); the bank job.
 - F3. Multi-storey: stairs and elevators; the camera shows your floor, hides everything above and dims
   the floor below.
 
-## G. Mobile (to discuss)
-The user wants it mobile-friendly; discuss after milestone A.
+## G. Mobile (parked, 2026-11-23)
+The user wants the website usable on a phone: not a mobile port (no touch-control scheme, app install
+or radio re-encodes unless asked). Parked for now; when it comes back, keep it to that.
