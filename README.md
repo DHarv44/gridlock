@@ -22,7 +22,7 @@ Open http://localhost:5228, pick a name, **Create game**, then send friends the 
 ## Things to do
 
 - **Gang payphones**: booths in each gang's turf blink in the gang's colour when there's work.
-  Walk up and press E. Jobs: hits, torching rival cars, stealing specific rides, courier runs,
+  Walk into a ringing phone to answer it. Jobs: hits, torching rival cars, stealing specific rides, courier runs,
   turf-war rampages. Pay plus respect with the gang (and less with its rivals).
 - **Respect**: three meters under your wanted stars. Kill a gang's members and it drops; sink low
   enough and that gang jumps you on sight and stops offering work.
@@ -41,10 +41,10 @@ you (±16°). The mouse pointer plays no part. Esc → Change controls rebinds a
 | A/D or Left/Right | Turn · steer |
 | Ctrl | Fire ahead (auto-aims at the nearest person in front) |
 | , / . | Tank turret left / right |
-| Shift | Sprint · descend in helicopters |
-| Space | Handbrake · climb in helicopters |
+| Space | Jump on foot · handbrake in cars · climb in helicopters |
+| Shift | Descend in helicopters |
 | F or Enter | Get in/out, carjack, ride as passenger with a friend |
-| E | Use a shop, hospital, dealer, respray, chop shop, property |
-| R / Z / X / wheel / 1–9 | Reload / previous / next / pick weapon |
+| E | Use a gun shop, hospital, car dealer, property (respray and chop shop: just drive in) |
+| Z / X / wheel / 1–9 | Previous / next / pick weapon (no reloading: you fire until the ammo runs out) |
 | H | Horn (siren in emergency vehicles) |
 | T / M / Tab / Esc | Chat / city map / scores / menu |

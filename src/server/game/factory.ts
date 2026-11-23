@@ -25,7 +25,7 @@ export function spawnPed(w: World, arch: number, x: number, y: number, angle = 0
     weapons, wi: weapons.length - 1, fireCd: 0, reloadT: 0, trigger: false, triggerPrev: false, aim: angle,
     cash: Math.round(w.rng.range(spec.cash[0], spec.cash[1])),
     vehicle: 0, seat: -1, player: null, ai: withAi ? newAi() : null,
-    lastHitBy: 0, lastHitT: -99, persistent: false, revived: false, bodyCalled: false, swimT: 0,
+    lastHitBy: 0, lastHitT: -99, persistent: false, revived: false, bodyCalled: false, swimT: 0, jumpT: 0,
   };
   w.peds.set(p.id, p);
   return p;

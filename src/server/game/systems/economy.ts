@@ -16,7 +16,34 @@ export class Economy {
 
   constructor(private w: World) {}
 
+  /** Player id -> service place the player's car is currently sitting on (-1 none). */
+  private onPad = new Map<number, number>();
+
+  /** GTA2 garages: driving onto a respray or chop-shop pad does the job, no menu. */
+  private garages(): void {
+    const w = this.w;
+    for (const pl of w.players.values()) {
+      const p = w.peds.get(pl.pid);
+      const v = p?.vehicle && p.seat === 0 ? w.vehicles.get(p.vehicle) : undefined;
+      if (!v) { this.onPad.delete(pl.id); continue; }
+      let on = -1;
+      for (const s of w.city.services) {
+        const verb = SERVICES[s.spec].verb;
+        if ((verb === 'respray' || verb === 'chopshop') && s.pad && dist(v.body.x, v.body.y, s.pad.x, s.pad.y) < 6) on = s.id;
+      }
+      const was = this.onPad.get(pl.id) ?? -1;
+      // Too fast: don't count as arrived yet, so it triggers once the car slows down on the pad.
+      this.onPad.set(pl.id, on >= 0 && Math.hypot(v.body.vx, v.body.vy) > 8 ? -1 : on);
+      if (on < 0 || on === was || this.onPad.get(pl.id) !== on) continue;
+      const verb = SERVICES[w.city.services[on].spec].verb;
+      const err = this.buy(pl, verb === 'respray' ? 'respray' : 'chop', '', on);
+      if (err) w.notify('warn', err, pl);
+      else if (verb === 'respray') w.notify('money', `Resprayed · -$${SERVICES[w.city.services[on].spec].price ?? 500}`, pl);
+    }
+  }
+
   update(): void {
+    this.garages();
     this.pickups();
     const hour = Math.floor(this.w.gameMinutes / 60);
     if (this.lastHour >= 0 && hour !== this.lastHour) this.payIncome();

@@ -42,6 +42,7 @@ export interface PedView {
   weapon: number;
   phase: number;
   deadT: number;
+  hop: number;              // seconds left in a jump arc
 }
 
 export function makePed(id: number, arch: number, playerColor: string | null): PedView {
@@ -91,7 +92,7 @@ export function makePed(id: number, arch: number, playerColor: string | null): P
   body.add(gun);
   const build = look.build ?? 1;
   body.scale.set(build, 1, build);
-  return { root, body, legL, legR, armL, armR, gun, weapon: -1, phase: (h % 100) / 16, deadT: 0 };
+  return { root, body, legL, legR, armL, armR, gun, weapon: -1, phase: (h % 100) / 16, deadT: 0, hop: 0 };
 }
 
 export function setPedWeapon(v: PedView, wi: number): void {

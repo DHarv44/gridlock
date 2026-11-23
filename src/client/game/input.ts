@@ -5,7 +5,7 @@ import { type Action, ACTIONS, Bindings } from './controls';
 
 export type UiAction = 'interact' | 'chat' | 'map' | 'menu' | 'scoreOn' | 'scoreOff';
 
-const EDGE_BTN: Partial<Record<Action, number>> = { enter: BTN.enter, reload: BTN.reload, prevWeapon: BTN.prev, nextWeapon: BTN.next, horn: BTN.horn };
+const EDGE_BTN: Partial<Record<Action, number>> = { enter: BTN.enter, prevWeapon: BTN.prev, nextWeapon: BTN.next, horn: BTN.horn };
 const KIND = new Map(ACTIONS.map((a) => [a.id, a.kind]));
 
 export class Input {
@@ -87,7 +87,7 @@ export class Input {
     if (this.held('fire')) b |= BTN.fire;
     if (this.held('handbrake')) b |= BTN.handbrake;
     if (this.held('climb')) b |= BTN.up;
-    if (this.held('sprint')) b |= BTN.sprint;
+    if (this.held('jump')) b |= BTN.jump;
     if (this.held('descend')) b |= BTN.down;
     this.pressed.clear();
     return this.enabled ? b : b & ~BTN.fire;

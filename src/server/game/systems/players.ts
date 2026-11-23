@@ -4,12 +4,14 @@ import { CRIMES, PLAYER_ARCHETYPE, RULES, UNARMED, WEAPONS, weaponIndex } from '
 import { BTN, EDGE_BUTTONS, type InputMsg, Mode } from '../../../shared/protocol';
 import { stepVehicle } from '../../../shared/sim/physics';
 import { onAttacked } from '../ai/reactions';
-import { startReload, tickWeapon, tryFire } from '../combat/fire';
+import { tickWeapon, tryFire } from '../combat/fire';
 import type { Ped, Player, Vehicle } from '../entities';
 import { freeSeat, giveWeapon, seatPed, spawnPed, unseatPed } from '../factory';
 import type { World } from '../world';
 import { stepPedBody, turnTurret } from './movement';
 import { clearHeat, crime } from './wanted';
+
+export const JUMP_TIME = 0.5;
 
 export function processPlayers(w: World, dt: number): void {
   for (const pl of w.players.values()) {
@@ -52,7 +54,6 @@ function applyInput(w: World, pl: Player, p: Ped, inp: InputMsg, dt: number): vo
     else cycleWeapon(p, btn & BTN.next ? 1 : -1);
   }
   if (wish >= 0 && wish < p.weapons.length && wish !== p.wi) { p.wi = wish; p.reloadT = 0; }
-  if (btn & BTN.reload) startReload(p);
   if (v) {
     if (p.seat === 0) {
       v.ctl.throttle = throttle; v.ctl.steer = steer;
@@ -65,8 +66,10 @@ function applyInput(w: World, pl: Player, p: Ped, inp: InputMsg, dt: number): vo
     }
   } else {
     p.ctl.mx = mx; p.ctl.my = my;
-    const sprint = (btn & BTN.sprint) !== 0;
-    stepPedBody(w, p, dt, p.spec.runSpeed * (sprint ? 1.3 : 1));
+    // GTA2 jump: a short hop at running speed; cars pass under you while airborne.
+    p.jumpT = Math.max(0, p.jumpT - dt);
+    if (btn & BTN.jump && p.jumpT === 0 && p.down <= 0) p.jumpT = JUMP_TIME;
+    stepPedBody(w, p, dt, p.spec.runSpeed);
     p.body.angle = aim;
   }
   tickWeapon(p, dt);

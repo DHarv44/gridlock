@@ -35,6 +35,17 @@ export class Jobs {
     }
   }
 
+  private lastAnswer = 0;
+
+  /** GTA2: walk into a ringing phone and you've answered it. Returns the booth to answer, if any. */
+  touch(you: YouState | null, me: { x: number; y: number } | null): Booth | null {
+    if (!you || !me || performance.now() - this.lastAnswer < 3000) return null;
+    const rings = this.ringsFor(you);
+    const b = this.booths.find((x) => rings(x) && Math.hypot(x.x - me.x, x.y - me.y) < 1.6);
+    if (b) this.lastAnswer = performance.now();
+    return b ?? null;
+  }
+
   private ringsFor(you: YouState | null): (b: Booth) => boolean {
     return (b) => !!you && !this.onJob && you.mode === Mode.Foot && (you.rs[GANGS.indexOf(b.gang)] ?? 0) >= RESPECT.noWorkBelow;
   }

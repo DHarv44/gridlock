@@ -14,9 +14,9 @@ const LEVELS: { q: Quality; label: string; sub: string }[] = [
 ];
 
 const SUMMARY: [Action[], string][] = [
-  [['forward', 'back'], 'Run / drive'], [['left', 'right'], 'Turn / steer'], [['fire'], 'Fire (auto-aims ahead)'], [['sprint'], 'Sprint'],
+  [['forward', 'back'], 'Run / drive'], [['left', 'right'], 'Turn / steer'], [['fire'], 'Fire (auto-aims ahead)'], [['jump'], 'Jump'],
   [['enter'], 'Get in / out, carjack'], [['handbrake'], 'Handbrake'], [['interact'], 'Shop / property'],
-  [['prevWeapon', 'nextWeapon'], 'Switch weapon'], [['reload'], 'Reload'],
+  [['prevWeapon', 'nextWeapon'], 'Switch weapon'],
 ];
 
 export interface MenuDeps { pane: Pane; sound: Sound; quality: QualityGovernor; input: Input; code: string; leave: () => void }

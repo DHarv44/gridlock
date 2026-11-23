@@ -75,7 +75,7 @@ export class Game {
     this.predict = new Predictor(statics, this.map);
     this.radar = new Minimap(this.map);
     this.jobs = new Jobs(this.stage.scene, this.hud.root, city);
-    this.interact = new Interact(city, this.pane, this.jobs.booths);
+    this.interact = new Interact(city, this.pane);
     this.hud.onChat = (text) => conn.send({ t: 'chat', text });
     this.input.onUi = (a) => this.ui(a);
     conn.on((m) => this.onMessage(m));
@@ -101,8 +101,7 @@ export class Game {
   private ui(a: string): void {
     switch (a) {
       case 'interact':
-        if (this.interact.booth && !this.pane.isOpen) this.conn.send({ t: 'job', booth: this.interact.booth.id });
-        else if (this.you) this.interact.toggle(() => this.you!, () => this.profile, this.owners, this.myName, (kind, id, place) => this.conn.send({ t: 'buy', kind, id, place }));
+        if (this.you) this.interact.toggle(() => this.you!, () => this.profile, this.owners, this.myName, (kind, id, place) => this.conn.send({ t: 'buy', kind, id, place }));
         break;
       case 'chat':
         if (this.chatting) return;
@@ -244,8 +243,9 @@ export class Game {
     if ((this.hudFrame = (this.hudFrame + 1) % 2) !== 0) return;
     const spot = this.interact.find(own.x, own.y, you);
     this.interact.current = spot;
-    const booth = (this.interact.booth = this.interact.findBooth(own.x, own.y, you));
-    this.hud.setPrompt(this.pane.isOpen ? null : booth ? this.interact.boothPrompt(booth) : this.interact.promptText(spot, this.owners, this.myName));
+    const ring = this.jobs.touch(you, own);
+    if (ring) this.conn.send({ t: 'job', booth: ring.id });
+    this.hud.setPrompt(this.pane.isOpen ? null : this.interact.promptText(spot, this.owners, this.myName));
     this.interact.tick(own.x, own.y);
     this.pane.refresh();
     const ctx = this.hud.radar.getContext('2d')!;

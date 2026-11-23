@@ -41,7 +41,7 @@ export function resolveContacts(w: World): void {
     });
     if (flying(a)) continue;
     w.pedHash.query(A.x, A.y, reach, (p) => {
-      if (p.vehicle) return;
+      if (p.vehicle || p.jumpT > 0) return; // hopping peds clear the car
       const c = Math.cos(A.angle), s = Math.sin(A.angle);
       const h = obbVsCircle(A.x, A.y, c, s, a.spec.length / 2, a.spec.width / 2, { x: p.body.x, y: p.body.y, r: PED_RADIUS });
       if (!h) return;

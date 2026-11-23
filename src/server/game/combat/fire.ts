@@ -34,12 +34,12 @@ export function tickWeapon(p: Ped, dt: number): void {
   }
 }
 
-export function startReload(p: Ped): void {
-  const h = p.weapons[p.wi];
-  if (!h || p.reloadT > 0) return;
-  const s = WEAPONS[h.w];
-  if (s.clip === 0 || h.clip >= s.clip || h.ammo <= 0) return;
-  p.reloadT = s.reload;
+/** Drops an empty gun for the best weapon that still has ammo (fists as a last resort). */
+function switchFromEmpty(p: Ped): void {
+  for (let i = p.weapons.length - 1; i >= 0; i--) {
+    const h = p.weapons[i];
+    if (WEAPONS[h.w].clip === 0 || h.clip + h.ammo > 0) { p.wi = i; return; }
+  }
 }
 
 /** The weapon a ped would fire right now (vehicle-mounted when driving an armed vehicle). */
@@ -70,11 +70,16 @@ export function tryFire(w: World, p: Ped): void {
   const { spec, index, mounted } = aw;
   if (!spec.auto && prev) return;
   if (!mounted && spec.clip > 0) {
+    // GTA2 has no reloading: fire straight through your ammo, then move to another weapon.
     const h = p.weapons[p.wi];
-    if (p.reloadT > 0) return;
-    if (h.clip <= 0) { startReload(p); return; }
+    if (h.clip <= 0 && h.ammo > 0) {
+      const take = Math.min(spec.clip, h.ammo);
+      h.clip += take;
+      h.ammo -= take;
+    }
+    if (h.clip <= 0) { switchFromEmpty(p); return; }
     h.clip--;
-    if (h.clip === 0 && h.ammo > 0) p.reloadT = spec.reload;
+    if (h.clip + h.ammo === 0) switchFromEmpty(p);
   }
   p.fireCd = 1 / spec.rate;
 

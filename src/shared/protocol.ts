@@ -10,7 +10,7 @@ export const FULL_SNAP_EVERY = 30;
 // Input buttons (bitmask).
 export const BTN = {
   fire: 1, handbrake: 2, sprint: 4, up: 8, down: 16,
-  enter: 32, interact: 64, reload: 128, next: 256, prev: 512, horn: 1024,
+  enter: 32, interact: 64, reload: 128, next: 256, prev: 512, horn: 1024, jump: 2048,
 } as const;
 /** Edge-triggered buttons must not repeat when the server re-uses a stale input. */
 export const EDGE_BUTTONS = BTN.enter | BTN.interact | BTN.reload | BTN.next | BTN.prev;
@@ -30,7 +30,7 @@ export type C2S =
 
 export const EK = { Ped: 0, Veh: 1, Proj: 2, Pickup: 3, Fire: 4 } as const;
 
-export const PF = { dead: 1, fast: 2, aim: 4, burning: 8, down: 16, player: 32, busy: 64 } as const;
+export const PF = { dead: 1, fast: 2, aim: 4, burning: 8, down: 16, player: 32, busy: 64, jump: 128 } as const;
 export const VF = { siren: 1, wreck: 2, burning: 4, brake: 8, lights: 16, driven: 32, smoke: 64, reverse: 128 } as const;
 export const PK = { cash: 0, weapon: 1, health: 2, armor: 3, frenzy: 4 } as const;
 

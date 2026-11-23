@@ -65,6 +65,7 @@ export interface Ped {
   revived: boolean;
   bodyCalled: boolean;
   swimT: number;
+  jumpT: number;            // seconds left in a hop (GTA2 jump)
 }
 
 export interface Vehicle {

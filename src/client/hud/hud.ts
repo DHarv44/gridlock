@@ -97,7 +97,7 @@ export class Hud {
     else if (held) {
       const spec = WEAPONS[held[0]];
       name = spec.name;
-      ammo = spec.clip === 0 ? '' : you.rl > 0 ? '<small>reloading…</small>' : `${held[2]} <small>/ ${held[1]}</small>`;
+      ammo = spec.clip === 0 ? '' : String(held[1] + held[2]);
     }
     this.put('weapon', name, (v) => { this.weapon.textContent = v; });
     this.put('ammo', ammo, (v) => { this.ammo.innerHTML = v; });

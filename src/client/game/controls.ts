@@ -3,8 +3,8 @@
 // position never matters; mouse buttons can be bound like keys.
 
 export type Action =
-  | 'forward' | 'back' | 'left' | 'right' | 'fire' | 'enter' | 'handbrake' | 'sprint' | 'climb' | 'descend'
-  | 'prevWeapon' | 'nextWeapon' | 'reload' | 'interact' | 'horn' | 'turretLeft' | 'turretRight'
+  | 'forward' | 'back' | 'left' | 'right' | 'fire' | 'enter' | 'handbrake' | 'jump' | 'climb' | 'descend'
+  | 'prevWeapon' | 'nextWeapon' | 'interact' | 'horn' | 'turretLeft' | 'turretRight'
   | 'chat' | 'map' | 'scores';
 
 export type ActionKind = 'held' | 'edge' | 'ui';
@@ -16,9 +16,8 @@ export const ACTIONS: ActionDef[] = [
   { id: 'back', label: 'Back / brake, reverse', kind: 'held', group: 'Movement', keys: ['KeyS', 'ArrowDown'] },
   { id: 'left', label: 'Turn / steer left', kind: 'held', group: 'Movement', keys: ['KeyA', 'ArrowLeft'] },
   { id: 'right', label: 'Turn / steer right', kind: 'held', group: 'Movement', keys: ['KeyD', 'ArrowRight'] },
-  { id: 'sprint', label: 'Sprint', kind: 'held', group: 'Movement', keys: ['ShiftLeft'] },
+  { id: 'jump', label: 'Jump', kind: 'held', group: 'Movement', keys: ['Space'] },
   { id: 'fire', label: 'Fire', kind: 'held', group: 'Weapons', keys: ['ControlLeft', 'ControlRight'] },
-  { id: 'reload', label: 'Reload', kind: 'edge', group: 'Weapons', keys: ['KeyR'] },
   { id: 'prevWeapon', label: 'Previous weapon', kind: 'edge', group: 'Weapons', keys: ['KeyZ'] },
   { id: 'nextWeapon', label: 'Next weapon', kind: 'edge', group: 'Weapons', keys: ['KeyX'] },
   { id: 'enter', label: 'Get in / out', kind: 'edge', group: 'Vehicles', keys: ['Enter', 'KeyF'] },
@@ -28,14 +27,14 @@ export const ACTIONS: ActionDef[] = [
   { id: 'descend', label: 'Helicopter descend', kind: 'held', group: 'Vehicles', keys: ['ShiftLeft'] },
   { id: 'turretLeft', label: 'Tank turret left', kind: 'held', group: 'Vehicles', keys: ['Comma'] },
   { id: 'turretRight', label: 'Tank turret right', kind: 'held', group: 'Vehicles', keys: ['Period'] },
-  { id: 'interact', label: 'Shop / property / phone', kind: 'ui', group: 'Other', keys: ['KeyE'] },
+  { id: 'interact', label: 'Shop / property', kind: 'ui', group: 'Other', keys: ['KeyE'] },
   { id: 'chat', label: 'Chat', kind: 'ui', group: 'Other', keys: ['KeyT'] },
   { id: 'map', label: 'City map', kind: 'ui', group: 'Other', keys: ['KeyM'] },
   { id: 'scores', label: 'Scores (hold)', kind: 'ui', group: 'Other', keys: ['Tab'] },
 ];
 
 // New key: drops settings saved while the old mouse-aim style existed.
-const STORE = 'gridlock.controls.v4';
+const STORE = 'gridlock.controls.v5';
 const MAX_KEYS = 2;
 
 /** Readable name for a key code or mouse button. */
@@ -113,5 +112,5 @@ export class Bindings {
 }
 
 /** Pairs that never apply at the same time, so one key may serve both. */
-const SHARED: [Action, Action][] = [['handbrake', 'climb'], ['sprint', 'descend']];
+const SHARED: [Action, Action][] = [['handbrake', 'climb'], ['jump', 'handbrake'], ['jump', 'climb']];
 const sharable = (a: Action, b: Action) => SHARED.some(([x, y]) => (x === a && y === b) || (x === b && y === a));

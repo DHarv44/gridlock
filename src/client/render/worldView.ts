@@ -73,7 +73,11 @@ export class WorldView {
     }
     const isMe = own && own.pid === e.id && !own.vid;
     const x = isMe ? own!.x : e.x, y = isMe ? own!.y : e.y, a = isMe ? own!.angle : e.angle;
-    v.root.position.set(x, 0, y);
+    // Jump: a 0.5 s arc, started when the server says this ped is hopping.
+    if (flags & PF.jump && v.hop <= 0) v.hop = 0.5;
+    v.hop = Math.max(0, v.hop - dt);
+    const lift = v.hop > 0 ? Math.sin(Math.PI * (1 - v.hop / 0.5)) * 0.9 : 0;
+    v.root.position.set(x, lift, y);
     v.root.rotation.y = -a;
     setPedWeapon(v, d[7]);
     const speed = isMe ? Math.hypot(own!.vx, own!.vy) : Math.hypot(e.vx, e.vy);
