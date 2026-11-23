@@ -47,9 +47,22 @@ function listed(dir: string, prefix: string): RadioTrack[] {
   });
 }
 
-/** Every station's songs and commercials with lengths: what the broadcast schedule is built from. */
+/** Song names: radio/<station>/tracks.json in the project (file → { title, artist }), so they
+ *  apply whether the audio comes from there or from a local library folder. */
+function names(station: string): Record<string, { title?: string; artist?: string }> {
+  try { return JSON.parse(readFileSync(join(ROOT, station, 'tracks.json'), 'utf8')) as Record<string, { title?: string; artist?: string }>; } catch { return {}; }
+}
+
+/** Every station's songs (named) and commercials with lengths: what the broadcast is built from. */
 function playlists(): Record<string, StationList> {
-  return Object.fromEntries(Object.entries(folders()).map(([id, dir]) => [id, { songs: listed(dir, ''), ads: listed(join(dir, ADS), `${ADS}/`) }]));
+  return Object.fromEntries(Object.entries(folders()).map(([id, dir]) => {
+    const meta = names(id);
+    const songs = listed(dir, '').map((t) => {
+      const m = meta[t.file];
+      return { ...t, title: typeof m?.title === 'string' ? m.title : t.file.replace(/\.[^.]+$/, ''), ...(typeof m?.artist === 'string' ? { artist: m.artist } : {}) };
+    });
+    return [id, { songs, ads: listed(join(dir, ADS), `${ADS}/`) }];
+  }));
 }
 
 /** Handles /api/radio and /radio/<station>/<file>; false if not ours. */

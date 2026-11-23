@@ -5,7 +5,8 @@
 // joins what's on air; there's nothing to pause or resume.
 import { Rng } from './rng';
 
-export interface RadioTrack { file: string; dur: number }
+/** `title` / `artist` come from the station's tracks.json; without them the file name stands in. */
+export interface RadioTrack { file: string; dur: number; title?: string; artist?: string }
 export interface StationList { songs: RadioTrack[]; ads: RadioTrack[] }
 export interface RadioListing { now: number; stations: Record<string, StationList> }
 export interface OnAir { file: string; dur: number; offset: number; endsAt: number; ad: boolean }

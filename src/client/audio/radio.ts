@@ -31,6 +31,9 @@ export class Radio {
   private refreshT = REFRESH_S;
   private banner: HTMLElement;
   private bannerT = 0;
+  /** "Now playing" card, bottom left: title, artist, station. */
+  private card: HTMLElement;
+  private cardT = 0;
   /** Scaled by the music volume setting passed to update(). */
   volume = 1;
 
@@ -42,6 +45,10 @@ export class Radio {
     this.banner.className = 'radio-banner';
     this.banner.hidden = true;
     document.body.appendChild(this.banner);
+    this.card = document.createElement('div');
+    this.card.className = 'now-playing';
+    this.card.innerHTML = '<div class="np-title"></div><div class="np-artist"></div>';
+    document.body.appendChild(this.card);
     if (!Number.isInteger(this.station) || this.station >= RADIO.length) this.station = 0;
     void this.load();
   }
@@ -78,6 +85,19 @@ export class Radio {
     const v = this.audio.volume + Math.sign(want - this.audio.volume) * Math.min(Math.abs(want - this.audio.volume), dt / FADE_S);
     this.audio.volume = Math.max(0, Math.min(1, v));
     if (this.bannerT > 0 && (this.bannerT -= dt) <= 0) this.banner.hidden = true;
+    if (this.cardT > 0 && ((this.cardT -= dt) <= 0 || !this.inVehicle)) { this.cardT = 0; this.card.classList.remove('on'); }
+  }
+
+  /** Shows what's playing (songs only; commercials leave the card alone). */
+  private nowPlaying(stationId: string, file: string): void {
+    const s = RADIO.find((r) => r.id === stationId);
+    const t = this.stations[stationId]?.songs.find((x) => x.file === file);
+    if (!s || !t || !this.inVehicle) return;
+    this.card.querySelector('.np-title')!.textContent = t.title ?? file;
+    this.card.querySelector('.np-artist')!.textContent = t.artist ? `${t.artist} · ${s.name}` : s.name;
+    (this.card as HTMLElement).style.setProperty('--np', s.color);
+    this.card.classList.add('on');
+    this.cardT = 7;
   }
 
   /** The radio key: next station (or off). Only works in a vehicle. */
@@ -99,6 +119,9 @@ export class Radio {
     this.target = 1;
     this.show(s.name, s.color);
     this.follow();
+    // Tuning in mid-song: say what it is.
+    const air = onAir(s.id, this.stations[s.id] ?? NONE, this.now());
+    if (air && !air.ad) this.nowPlaying(s.id, air.file);
   }
 
   /** Puts the player on what the station is broadcasting right now: the right track, the right
@@ -117,6 +140,7 @@ export class Radio {
     this.playing = src;
     this.loading = true;
     this.audio.src = src;
+    if (!air.ad) this.nowPlaying(s.id, air.file);
     this.audio.addEventListener('loadedmetadata', () => {
       // Loading took a moment: seek to where the broadcast is now, not where it was.
       const live = onAir(s.id, this.stations[s.id] ?? NONE, this.now());

@@ -52,6 +52,13 @@ button:disabled { opacity: 0.4; cursor: default; }
 .garage-actions .primary { flex: none; font-size: 16px; padding: 12px; }
 .garage-price.short { color: #b0302a; }
 @media (max-width: 700px) { .garage-box { flex-direction: column; height: calc(100vh - 32px); } .garage-side { width: auto; border-left: none; border-top: 1px solid var(--line); } }
+/* Now playing: bottom left, above the radar. */
+.now-playing { position: fixed; left: 22px; bottom: 258px; z-index: 6; pointer-events: none; max-width: 320px;
+  padding: 7px 12px 8px 14px; border-left: 3px solid var(--np, var(--accent)); background: rgba(10, 12, 15, 0.72); border-radius: 0 4px 4px 0;
+  opacity: 0; transform: translateX(-12px); transition: opacity 0.35s ease, transform 0.35s ease; }
+.now-playing.on { opacity: 1; transform: none; }
+.now-playing .np-title { font: 700 16px Bahnschrift, "Segoe UI", sans-serif; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.now-playing .np-artist { font-size: 12px; color: var(--dim); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .radio-banner { position: fixed; top: 9vh; left: 50%; transform: translateX(-50%); z-index: 6; pointer-events: none;
   font: 700 30px Bahnschrift, "Segoe UI", sans-serif; letter-spacing: 0.06em; text-transform: uppercase; text-shadow: 0 2px 0 #000, 0 0 12px rgba(0,0,0,0.8); }
 .chars { display: flex; flex-direction: column; gap: 6px; }
