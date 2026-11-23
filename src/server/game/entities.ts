@@ -163,8 +163,8 @@ export interface Player {
   boothCd: Map<number, number>;   // booth id -> world time it may ring again
   frags: number;                  // player kills this round
   earned: number;                 // cash earned this round
-  /** Saved character being played (absent for guests); progress is written back to it. */
-  character?: { key: string; id: string };
+  /** Character being played (absent for guests); its progress is sent back to the browser. */
+  character?: { id: string };
   look?: CharLook;
 }
 

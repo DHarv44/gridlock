@@ -3,7 +3,8 @@ import type { WebSocket } from 'ws';
 import { type C2S, PROTOCOL_VERSION, type RoomListing, type S2C } from '../shared/protocol';
 import { RULES } from '../shared/packs';
 import type { Player } from './game/entities';
-import { getCharacter, nameTaken, type SavedCharacter, validKey } from './characters';
+import type { CharacterSave } from '../shared/packs';
+import { sanitizeCharacter } from './characters';
 import { loadRoom } from './persist';
 import { Room } from './room';
 
@@ -66,14 +67,14 @@ export class Lobby {
         if (msg.t !== 'hello') return;
         if (msg.v !== PROTOCOL_VERSION) { send({ t: 'reject', reason: 'Version mismatch: refresh the page.' }); return; }
         let name = String(msg.name ?? '').replace(/[^\w \-.]/g, '').trim().slice(0, 16);
-        let character: { key: string; save: SavedCharacter } | undefined;
+        let character: CharacterSave | undefined;
         if (msg.char !== undefined) {
-          const save = validKey(msg.key) ? getCharacter(msg.key, String(msg.char)) : null;
-          if (!save) { send({ t: 'reject', reason: 'That character no longer exists.' }); return; }
+          const save = sanitizeCharacter(msg.char);
+          if (!save) { send({ t: 'reject', reason: 'That character could not be read.' }); return; }
           if (this.active.has(save.id)) { send({ t: 'reject', reason: `${save.name} is already in a game.` }); return; }
-          character = { key: msg.key!, save };
+          character = save;
           name = save.name;
-        } else if (name && nameTaken(name)) { send({ t: 'reject', reason: 'That name belongs to a saved character.' }); return; }
+        }
         if (!name) { send({ t: 'reject', reason: 'Pick a name.' }); return; }
         const wanted = String(msg.room ?? '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
         const code = msg.create ? (wanted.length === 4 && !this.rooms.has(wanted) ? wanted : this.newCode()) : wanted;
@@ -82,7 +83,7 @@ export class Lobby {
         const res = room.join(name, conn, character);
         if (typeof res === 'string') { send({ t: 'reject', reason: res }); room = null; return; }
         player = res;
-        if (character) this.active.add(character.save.id);
+        if (character) this.active.add(character.id);
         return;
       }
       room!.onMessage(player, msg);

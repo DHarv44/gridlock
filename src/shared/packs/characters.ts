@@ -48,15 +48,21 @@ export function cleanName(raw: unknown): string {
   return n.length >= 2 ? n : '';
 }
 
-/** What the lobby shows for each saved character. */
-export interface CharacterSummary {
-  id: string;
-  name: string;
-  look: CharLook;
+/** What playing changes on a character; the server sends it back for the browser to save. */
+export interface CharacterProgress {
   cash: number;
+  garage: number[];          // vehicle type indexes
   /** Crime kind → times committed. */
   felonies: Record<string, number>;
   deaths: number;
-  cars: number;
+  respect: Record<string, number>;
+}
+
+/** A character as the player's browser keeps it (local storage); brought along to every game. */
+export interface CharacterSave extends CharacterProgress {
+  id: string;
+  name: string;
+  look: CharLook;
+  created: number;
   lastPlayed: number;
 }

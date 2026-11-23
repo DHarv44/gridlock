@@ -45,7 +45,7 @@ function start(create: boolean, room: string): void {
   if (busy) return;
   busy = true;
   errorEl.textContent = '';
-  const conn = new Connection(guest ?? { key: picker.key, char: ch!.id }, room, create, modeSelect.value);
+  const conn = new Connection(guest ?? ch!, room, create, modeSelect.value);
   let started = false;
   conn.onClose = (reason) => {
     busy = false;

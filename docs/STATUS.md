@@ -41,10 +41,10 @@
   (Pane.nav). Controls editor has Keyboard / Mouse (2 slots per action) and Controller tabs.
 - Semi trailer: articulated (shared/sim/physics stepTrailer, server/systems/trailers.ts), angle at
   vehicle entity index 11 (0 for vehicles without a trailer).
-- Characters (2026-11-23): server/characters.ts + characterApi.ts (/api/characters, key in the
-  x-gridlock-key header, stored hashed under data/players), unique names server-wide, one game at
-  a time per character, look palettes in packs/characters.ts, lobby picker in client/lobby/.
-  `?play=Name` still joins as an unsaved guest. `npx tsx scripts/characters.ts` checks it.
+- Characters (2026-11-23): stored in the browser (client/lobby/characterStore.ts, local storage
+  `gridlock.characters.v1`), sent in `hello`, cleaned by server/characters.ts sanitizeCharacter,
+  progress returned in `save` messages (every 4 s, on purchases, on leave). One game at a time per
+  character id. `?play=Name` still joins as an unsaved guest. `npx tsx scripts/characters.ts`.
 - Traffic signals (2026-11-23): AI obeys red and stops on amber when it comfortably can (driving.ts
   mustStop); stop lines aren't dropped while the light says stop, and distances are measured along
   the heading. `npx tsx scripts/signals.ts` measures stop-line crossings by light state (0.3% on red,

@@ -16,8 +16,8 @@ Open http://localhost:5228, pick a name, **Create game**, then send friends the 
 - **Over the internet:** forward TCP port 5228 on your router to this PC and share
   `http://<your-public-ip>:5228/#CODE`, or deploy to any Node host (it honours `PORT`;
   build command `npm run build`, start command `npm start`). `railway.json` configures Railway.
-  Room saves and characters live in `data/` (or `GRIDLOCK_DATA`); on Railway mount a volume
-  there to keep them across deploys.
+  Room saves (who owns which property) live in `data/` (or `GRIDLOCK_DATA`); on Railway mount
+  a volume there to keep them across deploys. Characters live in the players' browsers.
 
 **Radio:** in any vehicle press R (controller: D-pad up) to cycle Off and the stations
 (src/shared/packs/radio.ts; the first is 98.2 The Spa). Stations are broadcasts on the server's
@@ -28,10 +28,11 @@ library folder named in `radio.local.json` (not committed), e.g.
 `{ "weather": "D:/Music/weather" }`. Folders are read live, so new songs just show up.
 Deployed servers only have what is in `radio/` (or a mounted volume).
 
-**Characters:** each browser keeps up to 5 saved characters (name and look). Cash, cars,
-respect and stats follow a character into any room; properties belong to the room's city. The
-browser holds a random key in local storage (the server stores only its hash), so clearing site
-data loses access to that browser's characters.
+**Characters:** up to 5 per browser, kept in that browser's local storage: name, look, cash,
+cars, felony record, respect. You bring your character when you join; the server checks the
+values and sends progress back every few seconds (and right after purchases) to be saved.
+Server redeploys can't lose them; clearing the site's data in the browser does. Properties
+belong to each room's city and stay on the server.
 
 ## Things to do
 

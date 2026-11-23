@@ -9,6 +9,7 @@ import { openMenu } from '../hud/menu';
 import { paintContent } from '../hud/paintShop';
 import type { Place } from '../../shared/world/cityTypes';
 import { BigMap } from '../hud/bigMap';
+import { saveProgress } from '../lobby/characterStore';
 import { Minimap } from '../hud/minimap';
 import { Waypoint } from './waypoint';
 import { Pane } from '../hud/pane';
@@ -169,6 +170,7 @@ export class Game {
         this.storefronts.setOwners(this.owners);
         break;
       case 'profile': this.profile = m.p; break;
+      case 'save': saveProgress(m.id, m.p); break;
       case 'msg':
         if (m.kind === 'chat') this.hud.chatLine(m.text);
         else if (m.kind === 'money') { this.hud.notify(m.text, 'money'); this.sound.play('cash'); }

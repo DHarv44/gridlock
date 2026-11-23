@@ -1,10 +1,10 @@
 // Wire protocol (JSON over WebSocket). Hot-path messages use compact arrays.
-import type { CharLook } from './packs/characters';
+import type { CharacterProgress, CharacterSave, CharLook } from './packs/characters';
 
 export const TICK_HZ = 30;
 export const SNAP_EVERY = 2;             // snapshots at 15 Hz
 export const INTERP_DELAY_MS = 120;
-export const PROTOCOL_VERSION = 4;
+export const PROTOCOL_VERSION = 5;
 /** Every Nth snapshot carries every entity in full (others list unchanged ones in `k`). */
 export const FULL_SNAP_EVERY = 30;
 
@@ -22,8 +22,8 @@ export type InputMsg = [number, number, number, number, number, number, number, 
 export type BuyKind = 'weapon' | 'ammo' | 'armor' | 'heal' | 'vehicle' | 'property' | 'garage' | 'respray' | 'chop' | 'sell';
 
 export type C2S =
-  /** `key` + `char` play a saved character; without them `name` plays an unsaved guest (dev/bots). */
-  | { t: 'hello'; v: number; name: string; room: string; create: boolean; mode?: string; key?: string; char?: string }
+  /** `char`: the player's character from their browser; without it `name` plays an unsaved guest. */
+  | { t: 'hello'; v: number; name: string; room: string; create: boolean; mode?: string; char?: CharacterSave }
   | { t: 'in'; i: InputMsg[] }
   | { t: 'job'; booth: number }
   | { t: 'buy'; kind: BuyKind; id: string; place: number }
@@ -105,7 +105,9 @@ export type S2C =
   | { t: 'mission'; m: MissionInfo | null; result?: 'passed' | 'failed' }
   | { t: 'mode'; mode: string; round: number }
   | { t: 'round'; mode: string; winner: string; standings: [string, number][] }
-  | { t: 'pong'; ts: number; st: number };
+  | { t: 'pong'; ts: number; st: number }
+  /** The character's progress, for the browser to save (sent every few seconds and after buys). */
+  | { t: 'save'; id: string; p: CharacterProgress };
 
 export interface RoomListing { code: string; players: number; max: number; names: string[] }
 

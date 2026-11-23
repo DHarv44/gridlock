@@ -1,11 +1,10 @@
-// Lobby character picker: up to MAX_CHARACTERS saved characters per browser, the creator (see
-// creator.ts), and delete with an inline confirm. Characters live on the server, owned by a random
-// key this browser keeps.
-import { type CharacterSummary, FELONIES, MAX_CHARACTERS } from '../../shared/packs';
+// Lobby character picker: up to MAX_CHARACTERS characters kept in this browser (see
+// characterStore.ts), the creator (creator.ts), and delete with an inline confirm.
+import { type CharacterSave, FELONIES, MAX_CHARACTERS } from '../../shared/packs';
+import { createCharacter, deleteCharacter, loadCharacters } from './characterStore';
 import { Creator, type Draft, el } from './creator';
 import { figureCanvas } from './figure';
 
-const KEY_STORE = 'gridlock.key';
 const SEL_STORE = 'gridlock.char';
 
 const store = {
@@ -13,18 +12,8 @@ const store = {
   set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* ignore */ } },
 };
 
-function playerKey(): string {
-  let k = store.get(KEY_STORE);
-  if (!k || !/^[a-f0-9]{32}$/.test(k)) {
-    k = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join('');
-    store.set(KEY_STORE, k);
-  }
-  return k;
-}
-
 export class CharacterPicker {
-  readonly key = playerKey();
-  private list: CharacterSummary[] = [];
+  private list: CharacterSave[] = [];
   private sel = store.get(SEL_STORE) ?? '';
   private creator: Creator | null = null;
   private confirm = '';
@@ -32,32 +21,23 @@ export class CharacterPicker {
 
   constructor(private root: HTMLElement) {
     root.className = 'chars';
-    void this.load();
+    this.load();
   }
 
-  get selected(): CharacterSummary | null {
-    return this.list.find((c) => c.id === this.sel) ?? null;
+  /** The chosen character as saved right now (re-read, so it carries the latest progress). */
+  get selected(): CharacterSave | null {
+    return loadCharacters().find((c) => c.id === this.sel) ?? null;
   }
 
-  private async api(path: string, init: RequestInit = {}): Promise<{ ok: boolean; body: unknown }> {
-    try {
-      const r = await fetch(path, { ...init, headers: { 'content-type': 'application/json', 'x-gridlock-key': this.key } });
-      return { ok: r.ok, body: await r.json().catch(() => ({})) };
-    } catch {
-      return { ok: false, body: { error: 'Server not reachable.' } };
-    }
-  }
-
-  private async load(): Promise<void> {
-    const r = await this.api('/api/characters');
-    this.list = r.ok && Array.isArray(r.body) ? (r.body as CharacterSummary[]) : [];
-    if (!this.selected) this.sel = this.list[0]?.id ?? '';
+  private load(): void {
+    this.list = loadCharacters().sort((a, b) => b.lastPlayed - a.lastPlayed);
+    if (!this.list.some((c) => c.id === this.sel)) this.sel = this.list[0]?.id ?? '';
     if (!this.list.length) this.openCreator(); else this.renderList();
   }
 
   private openCreator(): void {
     this.onMode(true);
-    this.creator = new Creator(this.root, this.list.length > 0, (d) => void this.create(d), () => this.closeCreator());
+    this.creator = new Creator(this.root, this.list.length > 0, (d) => this.create(d), () => this.closeCreator());
   }
 
   private closeCreator(): void {
@@ -72,22 +52,20 @@ export class CharacterPicker {
     this.renderList();
   }
 
-  private async create(d: Draft): Promise<void> {
-    const r = await this.api('/api/characters', { method: 'POST', body: JSON.stringify(d) });
-    if (!r.ok && this.creator) {
-      this.creator.error = (r.body as { error?: string }).error ?? 'Could not create the character.';
-      this.creator.render();
+  private create(d: Draft): void {
+    const c = createCharacter(d.name, d.look);
+    if (typeof c === 'string') {
+      if (this.creator) { this.creator.error = c; this.creator.render(); }
       return;
     }
-    const c = r.body as CharacterSummary;
     this.list.unshift(c);
     this.sel = c.id;
     store.set(SEL_STORE, c.id);
     this.closeCreator();
   }
 
-  private async remove(id: string): Promise<void> {
-    await this.api(`/api/characters/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  private remove(id: string): void {
+    deleteCharacter(id);
     this.list = this.list.filter((c) => c.id !== id);
     this.confirm = '';
     if (this.sel === id) this.sel = this.list[0]?.id ?? '';
@@ -107,18 +85,18 @@ export class CharacterPicker {
     }
   }
 
-  private card(c: CharacterSummary): HTMLElement {
+  private card(c: CharacterSave): HTMLElement {
     const card = el('div', `char${c.id === this.sel ? ' on' : ''}`);
     card.appendChild(figureCanvas(c.look, 26, 52));
     const info = el('div', 'char-info');
     info.appendChild(el('b', '', c.name));
     const total = Object.values(c.felonies).reduce((a, n) => a + n, 0);
-    info.appendChild(el('span', '', `$${c.cash.toLocaleString('en-US')} · ${total} ${total === 1 ? 'felony' : 'felonies'} · ${c.cars} car${c.cars === 1 ? '' : 's'}`));
+    info.appendChild(el('span', '', `$${c.cash.toLocaleString('en-US')} · ${total} ${total === 1 ? 'felony' : 'felonies'} · ${c.garage.length} car${c.garage.length === 1 ? '' : 's'}`));
     card.title = FELONIES.filter((f) => c.felonies[f.kind]).map((f) => `${f.label}: ${c.felonies[f.kind]}`).join('\n') || 'Clean record';
     card.appendChild(info);
     if (this.confirm === c.id) {
       const yes = el('button', 'danger', 'Delete');
-      yes.addEventListener('click', (e) => { e.stopPropagation(); void this.remove(c.id); });
+      yes.addEventListener('click', (e) => { e.stopPropagation(); this.remove(c.id); });
       const no = el('button', '', 'Keep');
       no.addEventListener('click', (e) => { e.stopPropagation(); this.confirm = ''; this.renderList(); });
       card.append(yes, no);

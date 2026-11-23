@@ -1,4 +1,5 @@
 // WebSocket connection to the game server.
+import type { CharacterSave } from '../../shared/packs';
 import { type C2S, PROTOCOL_VERSION, type S2C } from '../../shared/protocol';
 
 export class Connection {
@@ -7,12 +8,12 @@ export class Connection {
   onClose: (reason: string) => void = () => {};
   rtt = 0;
 
-  /** `who` is a saved character ({key, char}) or a guest name. */
-  constructor(who: { key: string; char: string } | string, room: string, create: boolean, mode?: string) {
+  /** `who` is the player's character (from this browser's storage) or a guest name. */
+  constructor(who: CharacterSave | string, room: string, create: boolean, mode?: string) {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     this.ws = new WebSocket(`${proto}//${location.host}/ws`);
     this.ws.onopen = () => {
-      const id = typeof who === 'string' ? { name: who } : { name: '', key: who.key, char: who.char };
+      const id = typeof who === 'string' ? { name: who } : { name: who.name, char: who };
       this.send({ t: 'hello', v: PROTOCOL_VERSION, room, create, mode, ...id });
       setInterval(() => this.send({ t: 'ping', ts: performance.now() }), 2000);
     };

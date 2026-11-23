@@ -18,7 +18,8 @@ import { buildSnapshot, playerList } from './game/systems/snapshot';
 import { Population } from './game/systems/population';
 import { updateWanted } from './game/systems/wanted';
 import { World } from './game/world';
-import { getCharacter, type SavedCharacter, saveCharacter } from './characters';
+import type { CharacterSave } from '../shared/packs';
+import { progressOf } from './characters';
 import { loadRoom, type RoomSave, type SavedProfile, saveRoom } from './persist';
 
 export interface Conn {
@@ -73,14 +74,14 @@ export class Room {
   }
 
   /** Joins a guest (name only) or a saved character, whose progress follows them between rooms. */
-  join(name: string, conn: Conn, character?: { key: string; save: SavedCharacter }): Player | string {
+  join(name: string, conn: Conn, character?: CharacterSave): Player | string {
     const w = this.world;
-    if (character) name = character.save.name;
+    if (character) name = character.name;
     if (w.players.size >= RULES.maxPlayers) return 'Room is full.';
     if ([...w.players.values()].some((p) => p.name.toLowerCase() === name.toLowerCase())) return 'That name is already playing in this room.';
     const key = name.toLowerCase();
     const roomProf = this.profiles[key];
-    const c = character?.save;
+    const c = character;
     const prof: SavedProfile = c
       ? { cash: c.cash, garage: c.garage, owned: roomProf?.owned ?? [], felonies: c.felonies, deaths: c.deaths, respect: c.respect }
       : roomProf ?? { cash: RULES.startCash, garage: [], owned: [], felonies: {}, deaths: 0 };
@@ -93,7 +94,7 @@ export class Room {
       garageCar: 0, ping: 0, send: (m) => conn.send(JSON.stringify(m)), sendRaw: (s) => conn.send(s),
       spawnCdT: 0, bustT: 0, lastPlace: -1, gunCrimeT: -9, seenCheckT: 0, sent: new Map(), snapCount: 0,
       respect: { ...(prof.respect ?? {}) }, mission: null, boothCd: new Map(), frags: 0, earned: 0,
-      ...(character ? { character: { key: character.key, id: character.save.id }, look: character.save.look } : {}),
+      ...(character ? { character: { id: character.id }, look: character.look } : {}),
     };
     const spawn = this.spawnPoint(pl);
     const ped = makeAvatar(w, pl, spawn.x, spawn.y);
@@ -173,9 +174,12 @@ export class Room {
 
   private storeProfile(pl: Player): void {
     this.profiles[pl.name.toLowerCase()] = { cash: pl.cash, garage: pl.garage, owned: pl.owned, felonies: pl.felonies, deaths: pl.deaths, respect: pl.respect };
-    if (!pl.character) return;
-    const c = getCharacter(pl.character.key, pl.character.id);
-    if (c) saveCharacter(pl.character.key, { ...c, cash: pl.cash, garage: [...pl.garage], felonies: { ...pl.felonies }, deaths: pl.deaths, respect: { ...pl.respect }, lastPlayed: Date.now() });
+    this.sendSave(pl);
+  }
+
+  /** Characters live in the player's browser: send their progress there to be saved. */
+  private sendSave(pl: Player): void {
+    if (pl.character) pl.send({ t: 'save', id: pl.character.id, p: progressOf(pl) } satisfies S2C);
   }
 
   persist(): void {
@@ -240,6 +244,8 @@ export class Room {
     if (this.tickCount % TICK_HZ === 0) w.broadcast({ t: 'players', list: playerList(w) } satisfies S2C);
     this.saveT += DT;
     if (this.saveT > 30) { this.saveT = 0; this.persist(); }
+    // Characters' browsers get their progress every few seconds (a closed tab loses at most that).
+    if (this.tickCount % (TICK_HZ * 4) === 0) for (const pl of w.players.values()) this.sendSave(pl);
   }
 }
 
