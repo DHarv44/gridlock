@@ -24,6 +24,14 @@
   bins, mailboxes, bus shelters, benches, fountains. Animated water, bridge decks with railings and piers.
   Peds with hair, hands, shoes, belts. ~125 fps / ~100 draw calls at max zoom on the dev machine.
 
+- Performance pass (2026-11-22): instanced city split into 160 m tiles so camera + shadow pass cull
+  (street zoom ~1.05M → ~32k triangles, 83 → 48 draw calls); shadow frustum fitted to the view;
+  ground chunks built within a 3 ms/frame budget; HUD writes only on change, radar at half rate;
+  Esc → Graphics High/Medium/Low (saved) with automatic step-down when the median frame > 24 ms;
+  delta snapshots (protocol v2: unchanged entities sent as ids, full refresh every 2 s): ~6 KB → ~2.4 KB
+  raw, ~1.1 KB deflated (≈17 KB/s per player). Server steady state ~1.6 ms/tick with 6 players.
+- Live: https://gridlock-production-8d9b4188.up.railway.app/ (Railway, deploys from GitHub `main`).
+
 ## Known gaps / next
 - No missions/jobs yet; sandbox only.
 - Trucks, bus, tank and aircraft still use box models (cars got the profile treatment).
