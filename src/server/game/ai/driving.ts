@@ -11,7 +11,7 @@ export function newDrive(w: World, v: Vehicle): DriveState {
   const dir: 1 | -1 = (seg.axis === 'h' ? c : s) >= 0 ? 1 : -1;
   const lane = seg.lanes > 1 && w.rng.chance(0.5) ? 1 : 0;
   const L = laneOf(w, seg, dir, lane);
-  return { pts: [{ x: L.ex, y: L.ey, stop: L.to.id, axis: seg.axis }], seg: seg.id, dir, lane, route: [], routeT: 0, stuckT: 0, reverseT: 0, honkT: 0 };
+  return { pts: [{ x: L.ex, y: L.ey, stop: L.to.id, axis: seg.axis }], seg: seg.id, dir, lane, route: [], routeT: 0, stuckT: 0, reverseT: 0, honkT: 0, blockT: 0, bypassT: 0 };
 }
 
 /** Appends the next lane (and the turn into it) to the traffic polyline. */
@@ -136,13 +136,18 @@ export function cruise(w: World, v: Vehicle, p: Ped, dt: number, panic = false):
       break;
     }
   }
-  const clear = clearance(w, v, panic);
-  target = Math.min(target, clear.cap);
-  if (clear.ped && vf < 1) {
+  const clear = clearance(w, v, panic || d.bypassT > 0);
+  const lightHold = target < 1 && clear.cap > 3;
+  if (d.bypassT > 0) { d.bypassT -= dt; target = Math.min(target, 7); }
+  else target = Math.min(target, clear.cap);
+  if ((clear.ped || clear.cap < 1) && vf < 1 && !lightHold) {
     d.honkT += dt;
+    d.blockT += dt;
     if (d.honkT > 2.5) { d.honkT = -3; v.horn = true; }
-  }
-  if (unstick(v, d, target, dt)) return;
+    // Something has been in the way for a while: pull out and go around it.
+    if (d.blockT > 5 && !clear.ped) { d.blockT = 0; d.bypassT = 3.5; }
+  } else d.blockT = Math.max(0, d.blockT - dt);
+  if (unstick(v, d, Math.max(target, d.bypassT > 0 ? 3 : 0), dt)) return;
   // Pure pursuit on the polyline.
   const look = 6 + Math.abs(vf) * 0.45;
   const pt = d.pts[0];
@@ -153,6 +158,10 @@ export function cruise(w: World, v: Vehicle, p: Ped, dt: number, panic = false):
     const segLen = Math.hypot(n.x - pt.x, n.y - pt.y) || 1;
     const t = Math.min(1, (look - d0) / segLen);
     tx = pt.x + (n.x - pt.x) * t; ty = pt.y + (n.y - pt.y) * t;
+  }
+  if (d.bypassT > 0) {
+    // Offset into the oncoming lane (to the left of travel).
+    tx += Math.sin(b.angle) * 3.8; ty -= Math.cos(b.angle) * 3.8;
   }
   steerTo(v, tx, ty, target);
 }

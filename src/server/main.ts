@@ -6,7 +6,7 @@ import { extname, join, normalize, resolve } from 'node:path';
 import { WebSocketServer } from 'ws';
 import { Lobby } from './lobby';
 
-const PORT = Number(process.env.PORT ?? process.env.GRIDLOCK_PORT ?? 5228);
+const PORT = Number(process.env.GRIDLOCK_PORT ?? process.env.PORT ?? 5228);
 const DIST = resolve(process.cwd(), 'dist');
 
 const MIME: Record<string, string> = {

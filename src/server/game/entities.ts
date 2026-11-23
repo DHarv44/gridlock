@@ -16,6 +16,8 @@ export interface DriveState {
   stuckT: number;
   reverseT: number;
   honkT: number;
+  blockT: number;           // time spent blocked by something ahead
+  bypassT: number;          // > 0 while steering around a blockage
 }
 
 export interface Ai {

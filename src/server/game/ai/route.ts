@@ -16,7 +16,7 @@ export function laneOf(w: World, seg: Segment, dir: 1 | -1, lane: number): LaneP
   const rx = -hy, ry = hx;
   const off = (Math.min(lane, seg.lanes - 1) + 0.5) * LANE_W;
   const halfFrom = (seg.axis === 'h' ? from.wv : from.wh) / 2 + 1;
-  const halfTo = (seg.axis === 'h' ? to.wv : to.wh) / 2 + 1.5;
+  const halfTo = (seg.axis === 'h' ? to.wv : to.wh) / 2 + (to.lights ? 3.6 : 1.5);
   return {
     sx: from.x + hx * halfFrom + rx * off, sy: from.y + hy * halfFrom + ry * off,
     ex: to.x - hx * halfTo + rx * off, ey: to.y - hy * halfTo + ry * off,
