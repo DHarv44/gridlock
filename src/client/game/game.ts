@@ -62,6 +62,7 @@ export class Game {
     this.map = new CityMap(city);
     const statics = new StaticWorld(city);
     const canvas = document.getElementById('view') as HTMLCanvasElement;
+    this.canvas = canvas;
     this.stage = new Stage(canvas);
     this.cam = new ChaseCamera(this.stage.camera);
     this.ground = new Ground(this.stage.scene, this.map, this.stage.renderer.capabilities.getMaxAnisotropy());
@@ -90,6 +91,7 @@ export class Game {
   private props: StreetProps;
   private water: Water;
   private storefronts: Storefronts;
+  private canvas: HTMLCanvasElement;
   private quality: QualityGovernor;
 
   /** Signal lamps follow the server clock; they also cast a small coloured glow. */
@@ -256,6 +258,9 @@ export class Game {
     if (!you || !own) return;
     const seen = you.wl > 0;
     this.hud.update(you, this.gameMinutes, seen);
+    // Classic (GTA2) is keyboard-driven: no pointer over the game. Mouse-aim keeps a crosshair.
+    const cursor = this.input.bindings.scheme === 'mouse' ? 'crosshair' : 'none';
+    if (this.canvas.style.cursor !== cursor) this.canvas.style.cursor = cursor;
     // Radar, place lookup and pane refresh don't need full frame rate.
     if ((this.hudFrame = (this.hudFrame + 1) % 2) !== 0) return;
     const spot = this.interact.find(own.x, own.y, you);
