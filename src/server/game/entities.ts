@@ -137,7 +137,11 @@ export interface Player {
   last: InputMsg;
   ack: number;
   cash: number;
-  kills: number; deaths: number;
+  deaths: number;
+  /** Felony record: crime kind → times committed (saved with the character). */
+  felonies: Record<string, number>;
+  /** Crime kind → world time before it can be recorded again. */
+  felonyCd: Record<string, number>;
   heat: number; wanted: number; seenT: number; lethal: boolean;
   respawnT: number;
   garage: number[];

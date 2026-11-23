@@ -14,7 +14,7 @@ export interface SavedCharacter {
   lastPlayed: number;
   cash: number;
   garage: number[];
-  kills: number;
+  felonies: Record<string, number>;
   deaths: number;
   respect: Record<string, number>;
 }
@@ -58,7 +58,7 @@ const names = (): Record<string, string> => readJson<Record<string, string>>(NAM
 export const nameTaken = (name: string): boolean => !!names()[name.toLowerCase()];
 
 export const summary = (c: SavedCharacter): CharacterSummary =>
-  ({ id: c.id, name: c.name, look: c.look, cash: c.cash, kills: c.kills, deaths: c.deaths, cars: c.garage.length, lastPlayed: c.lastPlayed });
+  ({ id: c.id, name: c.name, look: c.look, cash: c.cash, felonies: c.felonies ?? {}, deaths: c.deaths, cars: c.garage.length, lastPlayed: c.lastPlayed });
 
 export function listCharacters(key: string): CharacterSummary[] {
   return load(key).sort((a, b) => b.lastPlayed - a.lastPlayed).map(summary);
@@ -74,7 +74,7 @@ export function createCharacter(key: string, rawName: unknown, rawLook: unknown)
   const now = Date.now();
   const c: SavedCharacter = {
     id: randomBytes(6).toString('hex'), name, look: cleanLook(rawLook), created: now, lastPlayed: now,
-    cash: RULES.startCash, garage: [], kills: 0, deaths: 0, respect: {},
+    cash: RULES.startCash, garage: [], felonies: {}, deaths: 0, respect: {},
   };
   list.push(c);
   store(key, list);

@@ -7,7 +7,7 @@ import { VEHICLES } from './vehicles';
 import { WEAPONS } from './weapons';
 import { DISTRICTS, ZONES } from './zones';
 
-export { CRIMES, RULES, SERVICE_CALLS, WANTED } from './rules';
+export { CRIMES, type CrimeKind, FELONIES, RULES, SERVICE_CALLS, WANTED } from './rules';
 export { MARK_NAMES, MISSIONS, MODES, RESPECT } from './missions';
 export { PALETTE, paletteFor } from './palette';
 export { CHARACTER_LOOKS, type CharacterSummary, type CharLook, cleanLook, cleanName, DEFAULT_LOOK, LOOK_PARTS, type LookPart, MAX_CHARACTERS } from './characters';

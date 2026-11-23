@@ -119,7 +119,7 @@ export class Game {
       case 'menu':
         if (this.mapOpen) { this.mapOpen = false; this.hud.bigmap.hidden = true; return; }
         if (this.pane.isOpen) this.pane.close();
-        else openMenu({ pane: this.pane, sound: this.sound, quality: this.quality, input: this.input, code: this.code, leave: () => this.leave() });
+        else openMenu({ pane: this.pane, sound: this.sound, quality: this.quality, input: this.input, code: this.code, record: () => this.profile.felonies ?? {}, leave: () => this.leave() });
         break;
       case 'scoreOn': this.hud.showScore(true, this.players, this.code); break;
       case 'scoreOff': this.hud.showScore(false, this.players, this.code); break;

@@ -78,7 +78,7 @@ export interface PlayerInfo {
   pid: number;
   x: number; y: number;
   cash: number;
-  kills: number;
+  felonies: number;        // total felonies on record
   deaths: number;
   wl: number;
   ping: number;
@@ -90,6 +90,7 @@ export interface PlayerInfo {
 export interface Profile {
   garage: number[];        // vehicle type indexes
   owned: number[];         // property ids
+  felonies?: Record<string, number>; // crime kind → times committed
 }
 
 export type S2C =

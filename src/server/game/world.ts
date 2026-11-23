@@ -31,6 +31,8 @@ export class World {
   /** Event hooks wired by the room (missions, respect, frags). */
   onKill: (killer: Ped | null, victim: Ped) => void = () => {};
   onCrate: (pl: Player, pickup: Pickup) => void = () => {};
+  /** A felony went on a player's record. */
+  onFelony: (pl: Player) => void = () => {};
   /** Adds money to a player (counts toward money-race rounds). */
   earn: (pl: Player, amount: number) => void = (pl, amount) => { pl.cash += amount; };
   private nextId = 1;

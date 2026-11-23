@@ -57,6 +57,7 @@ export class Room {
       if (killer?.player && victim.player && killer !== victim) killer.player.frags++;
     };
     w.onCrate = (pl, pk) => this.missions.onCrate(pl, pk);
+    w.onFelony = (pl) => this.sendProfile(pl);
     w.earn = (pl, amount) => { pl.cash += amount; pl.earned += amount; };
   }
 
@@ -81,13 +82,13 @@ export class Room {
     const roomProf = this.profiles[key];
     const c = character?.save;
     const prof: SavedProfile = c
-      ? { cash: c.cash, garage: c.garage, owned: roomProf?.owned ?? [], kills: c.kills, deaths: c.deaths, respect: c.respect }
-      : roomProf ?? { cash: RULES.startCash, garage: [], owned: [], kills: 0, deaths: 0 };
+      ? { cash: c.cash, garage: c.garage, owned: roomProf?.owned ?? [], felonies: c.felonies, deaths: c.deaths, respect: c.respect }
+      : roomProf ?? { cash: RULES.startCash, garage: [], owned: [], felonies: {}, deaths: 0 };
     const used = new Set([...w.players.values()].map((p) => p.color));
     const color = PLAYER_COLORS.find((c) => !used.has(c)) ?? PLAYER_COLORS[0];
     const pl: Player = {
       id: w.id(), name, color, pid: 0, mode: Mode.Foot, queue: [], last: [0, 0, 0, 0, 0, 0, 0, -1], ack: 0,
-      cash: prof.cash, kills: prof.kills, deaths: prof.deaths, heat: 0, wanted: 0, seenT: 0, lethal: false,
+      cash: prof.cash, felonies: { ...(prof.felonies ?? {}) }, felonyCd: {}, deaths: prof.deaths, heat: 0, wanted: 0, seenT: 0, lethal: false,
       respawnT: 0, garage: [...prof.garage].filter((v) => v < VEHICLES.length), owned: [...prof.owned].filter((id) => this.econ.owners.get(id) === key),
       garageCar: 0, ping: 0, send: (m) => conn.send(JSON.stringify(m)), sendRaw: (s) => conn.send(s),
       spawnCdT: 0, bustT: 0, lastPlace: -1, gunCrimeT: -9, seenCheckT: 0, sent: new Map(), snapCount: 0,
@@ -163,7 +164,7 @@ export class Room {
   }
 
   private sendProfile(pl: Player): void {
-    pl.send({ t: 'profile', p: { garage: pl.garage, owned: pl.owned } } satisfies S2C);
+    pl.send({ t: 'profile', p: { garage: pl.garage, owned: pl.owned, felonies: pl.felonies } } satisfies S2C);
   }
 
   private sendOwners(): void {
@@ -171,10 +172,10 @@ export class Room {
   }
 
   private storeProfile(pl: Player): void {
-    this.profiles[pl.name.toLowerCase()] = { cash: pl.cash, garage: pl.garage, owned: pl.owned, kills: pl.kills, deaths: pl.deaths, respect: pl.respect };
+    this.profiles[pl.name.toLowerCase()] = { cash: pl.cash, garage: pl.garage, owned: pl.owned, felonies: pl.felonies, deaths: pl.deaths, respect: pl.respect };
     if (!pl.character) return;
     const c = getCharacter(pl.character.key, pl.character.id);
-    if (c) saveCharacter(pl.character.key, { ...c, cash: pl.cash, garage: [...pl.garage], kills: pl.kills, deaths: pl.deaths, respect: { ...pl.respect }, lastPlayed: Date.now() });
+    if (c) saveCharacter(pl.character.key, { ...c, cash: pl.cash, garage: [...pl.garage], felonies: { ...pl.felonies }, deaths: pl.deaths, respect: { ...pl.respect }, lastPlayed: Date.now() });
   }
 
   persist(): void {

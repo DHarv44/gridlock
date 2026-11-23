@@ -17,6 +17,14 @@ export type Paint = 'body' | 'glass' | 'dark' | 'chrome' | 'trim' | 'headlight' 
 
 export type Movement = 'wheels' | 'bike' | 'tracks' | 'rotor';
 
+export interface CrimeSpec {
+  heat: number;
+  /** Label on the offender's felony record; crimes without one (gunfire) only add heat. */
+  felony?: string;
+  /** Seconds before the same felony is recorded again for one player. */
+  cooldown?: number;
+}
+
 /** Fractions of the body width lost toward the ends and the top. */
 export interface BodyShape {
   nose: number;     // width lost at the very front (rounded corners)

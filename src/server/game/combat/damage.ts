@@ -1,6 +1,6 @@
 // Applying damage, deaths, drops and explosions.
 import { dist } from '../../../shared/math';
-import { CRIMES, RULES, UNARMED, WEAPONS } from '../../../shared/packs';
+import { RULES, UNARMED, WEAPONS } from '../../../shared/packs';
 import { FX, Mode, PK } from '../../../shared/protocol';
 import { onAttacked, onNoise } from '../ai/reactions';
 import type { Ped, Vehicle } from '../entities';
@@ -25,15 +25,16 @@ export function damagePed(w: World, v: Ped, amount: number, attackerId: number, 
   if (attacker && attacker.id !== v.id) {
     if (fresh && attacker.player) {
       const law = v.faction === 'police' || v.faction === 'military';
-      crime(w, attacker, law ? CRIMES.assaultLaw : CRIMES.assault, v.body.x, v.body.y);
+      crime(w, attacker, law ? 'assaultLaw' : 'assault', v.body.x, v.body.y);
     }
     onAttacked(w, v, attacker);
   }
   if (!opts.fire && !v.vehicle) w.emit(FX.Blood, Math.round(v.body.x * 10) / 10, Math.round(v.body.y * 10) / 10);
-  if (v.hp <= 0) killPed(w, v, attacker ?? null);
+  if (v.hp <= 0) killPed(w, v, attacker ?? null, !!opts.vehicle);
 }
 
-export function killPed(w: World, v: Ped, killer: Ped | null): void {
+/** `byVehicle`: run down by the killer's vehicle (vehicular homicide rather than murder). */
+export function killPed(w: World, v: Ped, killer: Ped | null, byVehicle = false): void {
   v.dead = true;
   v.deadT = 0;
   v.hp = 0;
@@ -51,9 +52,8 @@ export function killPed(w: World, v: Ped, killer: Ped | null): void {
 
   const kp = killer?.player;
   if (kp && killer!.id !== v.id) {
-    kp.kills++;
     const law = v.faction === 'police' || v.faction === 'military';
-    crime(w, killer!, law ? CRIMES.murderLaw : CRIMES.murder, pos.x, pos.y);
+    crime(w, killer!, law ? 'murderLaw' : byVehicle ? 'vehicularHomicide' : 'murder', pos.x, pos.y);
   }
   if (v.player) {
     const pl = v.player;
@@ -113,7 +113,7 @@ export function wreckVehicle(w: World, v: Vehicle): void {
 export function explode(w: World, x: number, y: number, radius: number, dmg: number, attackerId: number, skipVeh = 0): void {
   w.emit(FX.Boom, Math.round(x * 10) / 10, Math.round(y * 10) / 10, radius);
   const attacker = w.peds.get(attackerId);
-  if (attacker?.player) crime(w, attacker, CRIMES.explosion, x, y);
+  if (attacker?.player) crime(w, attacker, 'explosion', x, y);
   w.pedsNear(x, y, radius, (p) => {
     if (p.dead) return;
     const d = dist(x, y, p.body.x, p.body.y);

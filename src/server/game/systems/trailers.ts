@@ -1,30 +1,47 @@
 // Articulated trailers: swing behind the tractor, scrape off buildings, shove cars, flatten people.
-import { angleDiff, clamp } from '../../../shared/math';
 import { PED_RADIUS, stepTrailer, trailerCentre } from '../../../shared/sim/physics';
 import { obbVsAabb, obbVsCircle } from '../../../shared/world/collision';
 import { damagePed } from '../combat/damage';
 import type { Vehicle } from '../entities';
 import type { World } from '../world';
 
+/** Swings tried (radians, smallest first) to free a trailer caught on a wall. */
+const NUDGES = [0.02, -0.02, 0.05, -0.05, 0.09, -0.09, 0.14, -0.14, 0.2, -0.2, 0.28, -0.28, 0.4, -0.4];
+
 export function updateTrailers(w: World, dt: number): void {
   for (const v of w.vehicles.values()) {
     const t = v.spec.trailer;
     if (!t) continue;
+    const before = v.trailer;
     v.trailer = stepTrailer(v.body, v.spec, v.trailer, dt);
-    const ctr = trailerCentre(v.body, v.spec, v.trailer);
-    const c = Math.cos(v.trailer), s = Math.sin(v.trailer);
-    const hl = t.length / 2, hw = t.width / 2;
-    // Buildings: the trailer can't pass through them, so it straightens out and drags the rig.
-    let scraped = false;
-    w.statics.near(ctr.x - hl - 1, ctr.y - hl - 1, ctr.x + hl + 1, ctr.y + hl + 1, (box) => {
-      if (!scraped && box.h > 0.5 && obbVsAabb(ctr.x, ctr.y, c, s, hl, hw, box)) scraped = true;
-    });
-    if (scraped) {
-      v.trailer += clamp(angleDiff(v.trailer, v.body.angle), -2 * dt, 2 * dt);
-      v.body.vx *= 0.92; v.body.vy *= 0.92;
+    // Walls: the trailer swings off them about the hitch by the smallest amount that frees it and
+    // scrapes along (a little drag). Only when no small swing frees it is the rig blocked.
+    if (blocked(w, v, v.trailer)) {
+      const free = NUDGES.map((d) => v.trailer + d).find((a) => !blocked(w, v, a));
+      if (free !== undefined) {
+        v.trailer = free;
+        v.body.vx *= 0.995; v.body.vy *= 0.995;
+      } else {
+        v.trailer = before;
+        v.body.vx *= 0.8; v.body.vy *= 0.8;
+      }
     }
-    shove(w, v, ctr.x, ctr.y, c, s, hl, hw);
+    const ctr = trailerCentre(v.body, v.spec, v.trailer);
+    shove(w, v, ctr.x, ctr.y, Math.cos(v.trailer), Math.sin(v.trailer), t.length / 2, t.width / 2);
   }
+}
+
+/** Does the trailer at this heading overlap a building or solid obstacle? */
+function blocked(w: World, v: Vehicle, angle: number): boolean {
+  const t = v.spec.trailer!;
+  const ctr = trailerCentre(v.body, v.spec, angle);
+  const c = Math.cos(angle), s = Math.sin(angle);
+  const hl = t.length / 2, hw = t.width / 2;
+  let hit = false;
+  w.statics.near(ctr.x - hl - 1, ctr.y - hl - 1, ctr.x + hl + 1, ctr.y + hl + 1, (box) => {
+    if (!hit && box.h > 0.5 && obbVsAabb(ctr.x, ctr.y, c, s, hl, hw, box)) hit = true;
+  });
+  return hit;
 }
 
 /** Pushes cars and people out of the trailer's box; a fast-swinging trailer knocks people down. */

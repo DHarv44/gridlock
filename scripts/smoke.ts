@@ -64,4 +64,4 @@ for (let k = 0; k < ticks; k++) {
 }
 const ms = performance.now() - t0;
 console.log(`${ticks} ticks in ${ms.toFixed(0)} ms: avg ${(ms / ticks).toFixed(2)} ms/tick, worst ${worst.toFixed(1)} ms at tick ${worstAt} (budget 33 ms); slow ticks: ${slow.slice(0, 20).join(' ')}`);
-console.log('kills', players.map((p) => `${p.name}:${p.kills}/${p.deaths}`).join(' '));
+console.log('felonies/deaths', players.map((p) => `${p.name}:${Object.values(p.felonies).reduce((a, n) => a + n, 0)}/${p.deaths}`).join(' '));

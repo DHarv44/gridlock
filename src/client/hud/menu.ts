@@ -1,4 +1,5 @@
 // Esc pane: volume, invite link, graphics, controls (rebindable), leave.
+import { FELONIES } from '../../shared/packs';
 import type { Sound } from '../audio/sound';
 import { type Action, keyName } from '../game/controls';
 import { PAD_ACTIONS, PAD_AXES, padButtonName, type PadAction } from '../game/gamepad';
@@ -20,7 +21,13 @@ const SUMMARY: [Action[], string][] = [
   [['prevWeapon', 'nextWeapon'], 'Switch weapon'],
 ];
 
-export interface MenuDeps { pane: Pane; sound: Sound; quality: QualityGovernor; input: Input; code: string; leave: () => void }
+export interface MenuDeps { pane: Pane; sound: Sound; quality: QualityGovernor; input: Input; code: string; record: () => Record<string, number>; leave: () => void }
+
+/** The felony record, in CRIMES pack order; crimes never committed are left out. */
+function recordHtml(record: Record<string, number>): string {
+  const rows = FELONIES.filter((f) => record[f.kind]).map((f) => `<kbd>${record[f.kind]}</kbd><span>${f.label}</span>`);
+  return rows.length ? `<div class="keys">${rows.join('')}</div>` : '<div class="field">Clean record</div>';
+}
 
 function keySummary(input: Input): string {
   const keysOf = (acts: Action[]) => acts.map((a) => keyName(input.bindings.keys(a)[0] ?? '—')).join(' / ');
@@ -40,6 +47,8 @@ export function openMenu(d: MenuDeps): void {
     subtitle: `Room ${code} · the game keeps running`,
     html: `
       <div class="field">Volume <input type="range" id="vol" min="0" max="1" step="0.05" value="${sound.level}"></div>
+      <div class="group">Felony record</div>
+      ${recordHtml(d.record())}
       <div class="group">Invite friends</div>
       <div class="field"><span>${location.origin}/#${code}</span></div>
       <div class="group">Controls</div>

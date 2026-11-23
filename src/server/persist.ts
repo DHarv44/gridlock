@@ -2,7 +2,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-export interface SavedProfile { cash: number; garage: number[]; owned: number[]; kills: number; deaths: number; respect?: Record<string, number> }
+export interface SavedProfile { cash: number; garage: number[]; owned: number[]; felonies?: Record<string, number>; deaths: number; respect?: Record<string, number> }
 
 export interface RoomSave {
   version: 1;

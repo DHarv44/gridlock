@@ -1,4 +1,4 @@
-import type { ServiceCall, Squad, WantedLevel } from './types';
+import type { CrimeSpec, ServiceCall, Squad, WantedLevel } from './types';
 
 const patrol: Squad = { vehicle: 'police', crew: ['cop', 'cop'] };
 const interceptor: Squad = { vehicle: 'police_suv', crew: ['cop', 'cop'] };
@@ -18,18 +18,27 @@ export const WANTED: WantedLevel[] = [
   { heat: 350, lethal: true, squads: [{ squad: feds, max: 2 }, { squad: army, max: 2 }, { squad: armor, max: 2 }, { squad: gunship, max: 1 }] },
 ];
 
-/** Heat added per crime when witnessed by a lawful unit (civilian witnesses report half). */
+/** Crimes: heat added when witnessed by a lawful unit (civilian witnesses report half), and the
+ *  felony it puts on the offender's record (witnessed or not). `cooldown` stops one ongoing act
+ *  (standing in a base, one blast) from being recorded many times. */
 export const CRIMES = {
-  gunfire: 2,
-  assault: 6,
-  murder: 18,
-  assaultLaw: 25,
-  murderLaw: 60,
-  carjack: 8,
-  vehicleTheft: 4,
-  explosion: 15,
-  trespass: 30,
-};
+  gunfire: { heat: 2 },
+  assault: { heat: 6, felony: 'Assault' },
+  assaultLaw: { heat: 25, felony: 'Assaulting an officer' },
+  murder: { heat: 18, felony: 'Murder' },
+  murderLaw: { heat: 60, felony: 'Murdering an officer' },
+  vehicularHomicide: { heat: 18, felony: 'Vehicular homicide' },
+  carjack: { heat: 8, felony: 'Carjacking' },
+  vehicleTheft: { heat: 4, felony: 'Grand theft auto' },
+  explosion: { heat: 15, felony: 'Arson', cooldown: 3 },
+  trespass: { heat: 30, felony: 'Trespassing on a military base', cooldown: 60 },
+} satisfies Record<string, CrimeSpec>;
+
+export type CrimeKind = keyof typeof CRIMES;
+
+/** Felonies in record order (the order of CRIMES). */
+export const FELONIES: { kind: CrimeKind; label: string }[] = (Object.entries(CRIMES) as [CrimeKind, CrimeSpec][])
+  .filter(([, c]) => c.felony).map(([kind, c]) => ({ kind, label: c.felony! }));
 
 export const SERVICE_CALLS: { medic: ServiceCall; fire: ServiceCall } = {
   medic: { squad: { vehicle: 'ambulance', crew: ['paramedic', 'paramedic'] }, maxActive: 3 },

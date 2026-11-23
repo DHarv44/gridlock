@@ -47,6 +47,10 @@ button:disabled { opacity: 0.4; cursor: default; }
 button.danger { background: #8a2420; border-color: #8a2420; }
 .char-add { border-style: dashed; color: var(--dim); }
 .creator { display: flex; gap: 14px; align-items: flex-start; }
+.creator-side { flex: none; display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+.creator-tools { display: flex; gap: 4px; }
+.creator-tools button { flex: 1; padding: 5px 6px; font-size: 13px; }
+.creator-tools button:first-child { flex: 2; }
 .creator .figure { flex: none; background: #14171c; border: 1px solid var(--line); border-radius: 4px; padding: 8px; }
 .creator-form { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .swatches { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }

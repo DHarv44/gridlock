@@ -32,10 +32,19 @@ const p1 = r1.join('ignored', conn, { key: keyA, save: getCharacter(keyA, made.i
 if (typeof p1 === 'string') throw new Error(p1);
 r1.stop();
 check(p1.name === 'Rook' && p1.look?.top === 2, 'joins with its name and look');
-p1.cash = 7777; p1.garage.push(3); p1.kills = 4;
+p1.cash = 7777; p1.garage.push(3);
+// Felonies: a murder and a stolen car go on the record; one trespass spell counts once.
+const { crime } = await import('../src/server/game/systems/wanted');
+const me = r1.world.peds.get(p1.pid)!;
+crime(r1.world, me, 'murder', 0, 0);
+crime(r1.world, me, 'vehicleTheft', 0, 0);
+crime(r1.world, me, 'trespass', 0, 0);
+crime(r1.world, me, 'trespass', 0, 0);
+crime(r1.world, me, 'gunfire', 0, 0);
+check(p1.felonies.murder === 1 && p1.felonies.vehicleTheft === 1 && p1.felonies.trespass === 1 && !p1.felonies.gunfire, 'felonies recorded by type (with cooldowns, gunfire is not one)');
 r1.leave(p1);
 const saved = getCharacter(keyA, made.id)!;
-check(saved.cash === 7777 && saved.garage.includes(3) && saved.kills === 4, 'progress saved on leave');
+check(saved.cash === 7777 && saved.garage.includes(3) && saved.felonies.murder === 1, 'progress and record saved on leave');
 
 // Room 2 (a different city) picks the progress up.
 const r2 = new Room('CHRB', 202);

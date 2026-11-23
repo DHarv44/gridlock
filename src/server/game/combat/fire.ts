@@ -1,6 +1,6 @@
 // Firing weapons: cooldowns, ammo and reloads; melee, hitscan, flame and projectiles.
 import { angleDiff, r2 } from '../../../shared/math';
-import { CRIMES, VEHICLES, WEAPONS, type WeaponSpec, weaponIndex } from '../../../shared/packs';
+import { VEHICLES, WEAPONS, type WeaponSpec, weaponIndex } from '../../../shared/packs';
 import { FX, HIT } from '../../../shared/protocol';
 import { rayAabb, rayCircle } from '../../../shared/world/collision';
 import { onNoise } from '../ai/reactions';
@@ -84,7 +84,7 @@ export function tryFire(w: World, p: Ped): void {
   p.fireCd = 1 / spec.rate;
 
   const origin = muzzle(w, p, mounted, spec);
-  if (spec.kind !== 'melee' && p.player) crime(w, p, CRIMES.gunfire, origin.x, origin.y);
+  if (spec.kind !== 'melee' && p.player) crime(w, p, 'gunfire', origin.x, origin.y);
   if (spec.kind !== 'melee') onNoise(w, origin.x, origin.y, spec.kind === 'flame' ? 20 : 45, p.id, false);
 
   const aim = origin.angle;

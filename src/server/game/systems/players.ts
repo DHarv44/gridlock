@@ -1,6 +1,6 @@
 // Applies player inputs (movement, weapons, vehicles) and handles death/busted/respawn.
 import { dist } from '../../../shared/math';
-import { CRIMES, PLAYER_ARCHETYPE, RULES, UNARMED, WEAPONS, weaponIndex } from '../../../shared/packs';
+import { PLAYER_ARCHETYPE, RULES, UNARMED, WEAPONS, weaponIndex } from '../../../shared/packs';
 import { BTN, EDGE_BUTTONS, type InputMsg, Mode } from '../../../shared/protocol';
 import { SPRINT, stepVehicle } from '../../../shared/sim/physics';
 import { onAttacked } from '../ai/reactions';
@@ -116,7 +116,7 @@ function toggleVehicle(w: World, pl: Player, p: Ped): void {
   if (driver) {
     unseatPed(w, driver, true);
     driver.down = 1;
-    crime(w, p, CRIMES.carjack, v.body.x, v.body.y);
+    crime(w, p, 'carjack', v.body.x, v.body.y);
     onAttacked(w, driver, p);
     // Passengers bail out of a jacked car.
     for (const sid of v.seats) {
@@ -124,7 +124,7 @@ function toggleVehicle(w: World, pl: Player, p: Ped): void {
       if (o && !o.player) { unseatPed(w, o, true); onAttacked(w, o, p); }
     }
   } else if (v.owner !== pl.id && v.stolenBy !== pl.id) {
-    crime(w, p, CRIMES.vehicleTheft, v.body.x, v.body.y);
+    crime(w, p, 'vehicleTheft', v.body.x, v.body.y);
   }
   if (v.owner !== pl.id) v.stolenBy = pl.id;
   v.spot = -1;

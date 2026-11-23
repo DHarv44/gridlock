@@ -46,7 +46,8 @@ export interface CharacterSummary {
   name: string;
   look: CharLook;
   cash: number;
-  kills: number;
+  /** Crime kind → times committed. */
+  felonies: Record<string, number>;
   deaths: number;
   cars: number;
   lastPlayed: number;

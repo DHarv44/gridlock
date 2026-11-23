@@ -131,7 +131,12 @@ export function stepTrailer(b: Body, spec: VehicleSpec, trailerAngle: number, dt
   // Hitch velocity = body velocity + spin × (hitch offset behind the centre).
   const hvx = b.vx + b.av * (s * off), hvy = b.vy - b.av * (c * off);
   const axle = t.length * 0.8;
-  const rate = (hvx * -Math.sin(trailerAngle) + hvy * Math.cos(trailerAngle)) / axle;
+  let rate = (hvx * -Math.sin(trailerAngle) + hvy * Math.cos(trailerAngle)) / axle;
+  // Reversing, true trailer kinematics fold up within seconds (articulation grows at about
+  // |v|·rel/axle). A straightening term twice that strong keeps it drivable: the trailer still
+  // answers the steering but settles back in line instead of jackknifing.
+  const along = hvx * Math.cos(trailerAngle) + hvy * Math.sin(trailerAngle);
+  if (along < 0) rate -= 2 * wrapAngle(trailerAngle - b.angle) * (-along / axle);
   let a = trailerAngle + rate * dt;
   // Jackknife limit.
   const rel = wrapAngle(a - b.angle);

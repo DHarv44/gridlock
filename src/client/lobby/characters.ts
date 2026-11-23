@@ -1,8 +1,8 @@
 // Lobby character picker: up to MAX_CHARACTERS saved characters per browser, a creator with look
 // swatches and a live preview, and delete with an inline confirm. Characters live on the server,
 // owned by a random key this browser keeps.
-import { CHARACTER_LOOKS, type CharacterSummary, type CharLook, DEFAULT_LOOK, LOOK_PARTS, type LookPart, MAX_CHARACTERS } from '../../shared/packs';
-import { drawFigure, figureCanvas } from './figure';
+import { CHARACTER_LOOKS, type CharacterSummary, type CharLook, DEFAULT_LOOK, FELONIES, LOOK_PARTS, type LookPart, MAX_CHARACTERS } from '../../shared/packs';
+import { figureCanvas } from './figure';
 
 const KEY_STORE = 'gridlock.key';
 const SEL_STORE = 'gridlock.char';
@@ -59,11 +59,28 @@ export class CharacterPicker {
   }
 
   private openCreator(): void {
-    const L = CHARACTER_LOOKS;
-    const rnd = (n: number) => Math.floor(Math.random() * n);
-    this.draft = { name: '', look: { skin: rnd(L.skin.length), hair: rnd(L.hair.length), hairStyle: rnd(2), top: rnd(L.top.length), bottom: rnd(L.bottom.length), hat: 0 } };
+    this.draft = { name: '', look: randomLook(false) };
+    this.undo = []; this.redo = [];
     this.creating = true;
     this.error = '';
+    this.render();
+  }
+
+  /** Look edits (swatches, Random) go through here so Undo / Redo can step through them. */
+  private undo: CharLook[] = [];
+  private redo: CharLook[] = [];
+  private setLook(look: CharLook): void {
+    this.undo.push({ ...this.draft.look });
+    this.redo = [];
+    this.draft.look = look;
+    this.render();
+  }
+
+  private step(from: CharLook[], to: CharLook[]): void {
+    const prev = from.pop();
+    if (!prev) return;
+    to.push({ ...this.draft.look });
+    this.draft.look = prev;
     this.render();
   }
 
@@ -105,7 +122,9 @@ export class CharacterPicker {
       card.appendChild(figureCanvas(c.look, 26, 52));
       const info = el('div', 'char-info');
       info.appendChild(el('b', '', c.name));
-      info.appendChild(el('span', '', `$${c.cash.toLocaleString('en-US')} · ${c.kills} kills · ${c.cars} car${c.cars === 1 ? '' : 's'}`));
+      const total = Object.values(c.felonies).reduce((a, n) => a + n, 0);
+      info.appendChild(el('span', '', `$${c.cash.toLocaleString('en-US')} · ${total} ${total === 1 ? 'felony' : 'felonies'} · ${c.cars} car${c.cars === 1 ? '' : 's'}`));
+      card.title = FELONIES.filter((f) => c.felonies[f.kind]).map((f) => `${f.label}: ${c.felonies[f.kind]}`).join('\n') || 'Clean record';
       card.appendChild(info);
       if (this.confirm === c.id) {
         const yes = el('button', 'danger', 'Delete');
@@ -133,8 +152,21 @@ export class CharacterPicker {
     const L = CHARACTER_LOOKS;
     this.root.appendChild(el('div', 'chars-head', 'New character'));
     const wrap = el('div', 'creator');
-    const preview = figureCanvas(this.draft.look, 70, 140);
-    wrap.appendChild(preview);
+    const side = el('div', 'creator-side');
+    side.appendChild(figureCanvas(this.draft.look, 70, 140));
+    const tools = el('div', 'creator-tools');
+    const tool = (label: string, title: string, enabled: boolean, act: () => void) => {
+      const b = el('button', '', label);
+      b.title = title;
+      b.disabled = !enabled;
+      b.addEventListener('click', act);
+      tools.appendChild(b);
+    };
+    tool('Random', 'Random look', true, () => this.setLook(randomLook(true)));
+    tool('↶', 'Undo', this.undo.length > 0, () => this.step(this.undo, this.redo));
+    tool('↷', 'Redo', this.redo.length > 0, () => this.step(this.redo, this.undo));
+    side.appendChild(tools);
+    wrap.appendChild(side);
     const form = el('div', 'creator-form');
     const name = document.createElement('input');
     name.maxLength = 16;
@@ -152,12 +184,7 @@ export class CharacterPicker {
         const text = part === 'hairStyle' ? v : part === 'hat' && i === 0 ? 'None' : '';
         const b = el('button', `sw${this.draft.look[part] === i ? ' on' : ''}${text ? ' text' : ''}`, text);
         if (!text) b.style.background = v;
-        b.addEventListener('click', () => {
-          this.draft.look[part] = i;
-          for (const s of row.querySelectorAll('.sw')) s.classList.remove('on');
-          b.classList.add('on');
-          drawFigure(preview, this.draft.look);
-        });
+        b.addEventListener('click', () => { if (this.draft.look[part] !== i) this.setLook({ ...this.draft.look, [part]: i }); });
         row.appendChild(b);
       });
       form.appendChild(row);
@@ -175,8 +202,18 @@ export class CharacterPicker {
       actions.appendChild(cancel);
     }
     this.root.appendChild(actions);
-    setTimeout(() => name.focus(), 0);
+    if (!this.draft.name) setTimeout(() => name.focus(), 0);
   }
+}
+
+/** A random look; hats only sometimes (and never on a brand-new draft). */
+function randomLook(hats: boolean): CharLook {
+  const L = CHARACTER_LOOKS;
+  const rnd = (n: number) => Math.floor(Math.random() * n);
+  return {
+    skin: rnd(L.skin.length), hair: rnd(L.hair.length), hairStyle: rnd(L.hairStyle.length), top: rnd(L.top.length),
+    bottom: rnd(L.bottom.length), hat: hats && Math.random() < 0.35 ? 1 + rnd(L.hat.length - 1) : 0,
+  };
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, text?: string): HTMLElementTagNameMap[K] {

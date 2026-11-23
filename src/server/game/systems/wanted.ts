@@ -1,6 +1,6 @@
 // Crime, heat and wanted levels.
 import { dist2 } from '../../../shared/math';
-import { CRIMES, FACTIONS, RULES, WANTED } from '../../../shared/packs';
+import { CRIMES, type CrimeKind, type CrimeSpec, FACTIONS, RULES, WANTED } from '../../../shared/packs';
 import { Mode } from '../../../shared/protocol';
 import type { Ped, Player } from '../entities';
 import type { World } from '../world';
@@ -40,11 +40,22 @@ function civilianWitness(w: World, x: number, y: number, offender: Ped): boolean
   return seen;
 }
 
-/** Reports a crime by a player-controlled ped; heat only sticks if someone saw it. */
-export function crime(w: World, offender: Ped, heat: number, x: number, y: number): void {
+/** Reports a crime by a player-controlled ped: it goes on their felony record, and adds heat
+ *  only if someone saw it. */
+export function crime(w: World, offender: Ped, kind: CrimeKind, x: number, y: number): void {
   const pl = offender.player;
-  if (!pl || pl.mode === Mode.Dead || pl.mode === Mode.Busted) return;
-  if (heat === CRIMES.gunfire) {
+  if (!pl) return;
+  const spec: CrimeSpec = CRIMES[kind];
+  // On the record even when it lands after you died (a rocket in flight is still yours).
+  if (spec.felony && w.time >= (pl.felonyCd[kind] ?? 0)) {
+    pl.felonies[kind] = (pl.felonies[kind] ?? 0) + 1;
+    pl.felonyCd[kind] = w.time + (spec.cooldown ?? 0);
+    w.onFelony(pl);
+  }
+  // Heat doesn't build while dead or in custody.
+  if (pl.mode === Mode.Dead || pl.mode === Mode.Busted) return;
+  const heat = spec.heat;
+  if (kind === 'gunfire') {
     if (w.time - pl.gunCrimeT < 0.6) return;
     pl.gunCrimeT = w.time;
   }

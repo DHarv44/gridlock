@@ -1,7 +1,7 @@
 // Personalities: how each NPC behaviour picks tasks and reacts. Keyed by the archetype's
 // `behaviour` field from the ped pack.
 import { dist } from '../../../shared/math';
-import { type Behaviour, CRIMES, RESPECT, WEAPONS, hostile, zoneIndex } from '../../../shared/packs';
+import { type Behaviour, RESPECT, WEAPONS, hostile, zoneIndex } from '../../../shared/packs';
 import { Mode } from '../../../shared/protocol';
 import type { Ped } from '../entities';
 import { unseatPed } from '../factory';
@@ -66,7 +66,7 @@ function lawPerceive(w: World, p: Ped, military: boolean): void {
     const tp = w.pedPos(t);
     const d = dist(pos.x, pos.y, tp.x, tp.y);
     if (military && pl.wanted === 0 && d < 30 && w.map.zoneAt(tp.x, tp.y) === BASE_ZONE && !w.statics.raycast(pos.x, pos.y, tp.x, tp.y, 1.2)) {
-      crime(w, t, CRIMES.trespass, tp.x, tp.y);
+      crime(w, t, 'trespass', tp.x, tp.y);
     }
     if (pl.wanted === 0 || d > 60) continue;
     if (w.statics.raycast(pos.x, pos.y, tp.x, tp.y, 1.4) && d > 12) continue;
