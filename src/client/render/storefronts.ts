@@ -98,13 +98,21 @@ export class Storefronts {
     const fx = (b.x0 + b.x1) / 2, fy = (b.y0 + b.y1) / 2;
     const fcx = dx !== 0 ? (dx > 0 ? b.x1 : b.x0) + dx * 0.15 : fx, fcy = dy !== 0 ? (dy > 0 ? b.y1 : b.y0) + dy * 0.15 : fy;
     add(boxGeo, frame, fcx, doorH + 0.5, fcy, along ? facadeLen * 0.92 : 0.3, 1.1, along ? 0.3 : facadeLen * 0.92);
-    // Sign board over the sidewalk, flat so it reads from above.
+    // Sign board over the sidewalk, flat so it reads from above, its long side along the facade and
+    // kept within it. On east/west fronts it turns a quarter so the text's top points at the wall.
     const w = Math.min(facadeLen * 0.95, Math.max(5, text.length * 1.4)), h = 2.2;
+    const lo = (along ? b.x0 : b.y0) + w / 2, hi = (along ? b.x1 : b.y1) - w / 2;
+    const mid = Math.min(Math.max(along ? wx : wy, lo), Math.max(lo, hi));
+    const sx = along ? mid : wx + dx * 1.6, sy = along ? wy + dy * 1.6 : mid;
     const sign = new THREE.MeshBasicMaterial({ map: signTexture(text, color, readableInk(color)) });
-    add(flatGeo, sign, wx + dx * 1.6, doorH + 1.4, wy + dy * 1.6, w, 1, h);
-    add(boxGeo, new THREE.MeshLambertMaterial({ color: '#2a2c30' }), wx + dx * 1.6, doorH + 1.25, wy + dy * 1.6, w + 0.2, 0.14, h + 0.2);
+    const board = add(flatGeo, sign, sx, doorH + 1.4, sy, w, 1, h);
+    if (!along) {
+      board.rotation.y = dx > 0 ? Math.PI / 2 : -Math.PI / 2;
+      board.updateMatrix();
+    }
+    add(boxGeo, new THREE.MeshLambertMaterial({ color: '#2a2c30' }), sx, doorH + 1.25, sy, along ? w + 0.2 : h + 0.2, 0.14, along ? h + 0.2 : w + 0.2);
     const c = new THREE.Color(color);
-    this.glows.push({ x: wx + dx * 1.6, y: wy + dy * 1.6, r: c.r, g: c.g, b: c.b, size: w * 1.6 });
+    this.glows.push({ x: sx, y: sy, r: c.r, g: c.g, b: c.b, size: w * 1.6 });
     if (!garage) this.glows.push({ x: wx + dx * 2.4, y: wy + dy * 2.4, r: 1, g: 0.8, b: 0.5, size: 5 });
   }
 
