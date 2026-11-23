@@ -4,6 +4,8 @@ import type { PlayerInfo } from '../../shared/protocol';
 import type { Blip } from '../game/jobs';
 import type { CityMap } from '../../shared/world/city';
 import { LAND0, LAND1, MAP_SIZE } from '../../shared/world/cityTypes';
+import { gangColor } from '../../shared/world/gangSpots';
+import { turfGang } from '../../shared/world/gangTurf';
 
 const SCALE = 0.5; // px per metre in the baked image
 
@@ -40,6 +42,17 @@ export class Minimap {
     }
     ctx.fillStyle = 'rgba(0,0,0,0.25)';
     for (const bd of map.city.buildings) ctx.fillRect(bd.rect.x0, bd.rect.y0, bd.rect.x1 - bd.rect.x0, bd.rect.y1 - bd.rect.y0);
+    // Gang turf: blocks tinted and edged in the holding gang's colour.
+    ctx.lineWidth = 2;
+    for (const b of map.city.blocks) {
+      const gang = turfGang(b.district);
+      if (!gang) continue;
+      const color = gangColor(gang);
+      ctx.fillStyle = `${color}40`;
+      ctx.strokeStyle = `${color}b0`;
+      ctx.fillRect(b.rect.x0, b.rect.y0, b.rect.x1 - b.rect.x0, b.rect.y1 - b.rect.y0);
+      ctx.strokeRect(b.rect.x0 + 1, b.rect.y0 + 1, b.rect.x1 - b.rect.x0 - 2, b.rect.y1 - b.rect.y0 - 2);
+    }
   }
 
   /** Draws the radar centred on (x, y) with `range` metres to the edge. */

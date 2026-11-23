@@ -6,7 +6,11 @@ import type { Ped } from '../entities';
 import { removePed, removeVehicle, seatPed, spawnPed, spawnVehicle } from '../factory';
 import { setTask } from '../ai/tasks';
 import type { World } from '../world';
+import { gangCarColor, gangMember, pedPool, turfGang } from '../../../shared/world/gangTurf';
 import { laneSpawn, pedSpawn } from './spawnPoints';
+
+/** Gang rides added to the traffic on turf. */
+const GANG_CARS = VEHICLES.filter((v) => v.roles.includes('gang')).map((v) => ({ id: v.id, weight: 2.5 }));
 
 interface FixedSpawn { x: number; y: number; angle: number; type: number; veh: number; readyAt: number }
 interface FixedGuard { x: number; y: number; angle: number; arch: number; ped: number; readyAt: number }
@@ -121,8 +125,7 @@ export class Population {
     for (let k = 0; k < Math.min(3, want - have) && this.totals().peds < cap; k++) {
       const s = pedSpawn(w, x, y, RULES.spawnRadius[0], RULES.spawnRadius[1]);
       if (!s) continue;
-      const sz = ZONES[s.block.zone];
-      const arch = pedIndex(w.rng.weighted(sz.peds).id);
+      const arch = pedIndex(w.rng.weighted(pedPool(s.block.zone, s.block.district)).id);
       const spec = PEDS[arch];
       const group = spec.behaviour === 'gang' ? w.rng.int(2, 4) : 1;
       for (let g = 0; g < group; g++) {
@@ -144,15 +147,12 @@ export class Population {
     }
   }
 
-  private driverFor(vehicleType: number, zone: number): number {
+  private driverFor(vehicleType: number, zone: number, gang: string | null): number {
     const spec = VEHICLES[vehicleType];
     if (spec.roles.includes('police')) return pedIndex('cop');
     if (spec.roles.includes('military')) return pedIndex('soldier');
     const z = ZONES[zone];
-    if (spec.roles.includes('gang')) {
-      const gangs = z.peds.filter((e) => PEDS[pedIndex(e.id)].behaviour === 'gang');
-      if (gangs.length) return pedIndex(this.w.rng.weighted(gangs).id);
-    }
+    if (gang && spec.roles.includes('gang')) return gangMember(gang);
     const civs = z.peds.filter((e) => PEDS[pedIndex(e.id)].behaviour === 'civilian');
     return pedIndex(civs.length ? this.w.rng.weighted(civs).id : 'civilian');
   }
@@ -169,12 +169,16 @@ export class Population {
       const s = laneSpawn(w, x, y, RULES.spawnRadius[0] + 10, RULES.spawnRadius[1]);
       if (!s) continue;
       const sz = w.map.zoneAt(s.x, s.y);
-      const pool = ZONES[sz < 0 ? zi : sz].traffic;
+      const zone = sz < 0 ? zi : sz;
+      // On gang turf the gang's own rides cruise too, in the gang's colours.
+      const gang = turfGang(w.map.districtAt(s.x, s.y));
+      const pool = gang ? [...ZONES[zone].traffic, ...GANG_CARS] : ZONES[zone].traffic;
       const type = vehicleIndex(w.rng.weighted(pool).id);
-      const v = spawnVehicle(w, type, s.x, s.y, s.angle);
       const sp = VEHICLES[type];
+      const gangRide = gang && sp.roles.includes('gang');
+      const v = spawnVehicle(w, type, s.x, s.y, s.angle, gangRide ? gangCarColor(gang) ?? -1 : -1);
       v.body.vx = Math.cos(s.angle) * 8; v.body.vy = Math.sin(s.angle) * 8;
-      const d = spawnPed(w, this.driverFor(type, sz < 0 ? zi : sz), s.x, s.y, s.angle);
+      const d = spawnPed(w, this.driverFor(type, zone, gang), s.x, s.y, s.angle);
       seatPed(w, d, v, 0);
       setTask(d, 'drive');
       if (sp.roles.includes('police') && v.seats.length > 1 && w.rng.chance(0.5)) {
@@ -207,7 +211,10 @@ export class Population {
       const z = ZONES[s.zone < 0 ? 0 : s.zone];
       const chance = s.lot !== undefined ? 0.3 : z.parkedDensity * 0.16;
       if (!w.rng.chance(chance) || w.vehicles.size > RULES.vehicleCap) { this.spotState.set(si, 0); continue; }
-      const v = spawnVehicle(w, vehicleIndex(w.rng.weighted(z.parked).id), s.x, s.y, s.angle);
+      const type = vehicleIndex(w.rng.weighted(z.parked).id);
+      const gang = turfGang(w.map.districtAt(s.x, s.y));
+      const tint = gang && VEHICLES[type].roles.includes('gang') ? gangCarColor(gang) ?? -1 : -1;
+      const v = spawnVehicle(w, type, s.x, s.y, s.angle, tint);
       v.spot = si;
       this.spotState.set(si, v.id);
     }

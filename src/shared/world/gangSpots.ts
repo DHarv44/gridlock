@@ -1,8 +1,9 @@
 // Payphone booths in each gang's turf and kill-frenzy crate spots. Deterministic from the city
 // seed (own RNG stream, so city generation itself is untouched); server and clients both call it.
 import { dist2 } from '../math';
-import { FACTIONS, GANGS, PEDS, RESPECT, ZONES } from '../packs';
+import { FACTIONS, GANGS, RESPECT } from '../packs';
 import { Rng } from '../rng';
+import { turfGang } from './gangTurf';
 import type { Block, City } from './cityTypes';
 
 export interface Booth { id: number; x: number; y: number; angle: number; gang: string }
@@ -38,9 +39,8 @@ export function gangSpots(city: City): { booths: Booth[]; crates: CrateSpot[] } 
   const rng = new Rng(city.seed ^ 0x9a7e);
   const booths: Booth[] = [];
   for (const gang of GANGS) {
-    // Turf: zones whose street population includes this gang.
-    const turf = new Set(ZONES.map((z, i) => (z.peds.some((p) => PEDS.find((a) => a.id === p.id)?.faction === gang) ? i : -1)).filter((i) => i >= 0));
-    const blocks = city.blocks.filter((b) => turf.has(b.zone));
+    // Phones stand on the gang's own turf.
+    const blocks = city.blocks.filter((b) => turfGang(b.district) === gang);
     const spots = blocks.map((b) => ({ ...curbPoint(rng, b), b }));
     for (const s of spread(rng, spots, RESPECT.phonesPerGang)) booths.push({ id: booths.length, x: s.x, y: s.y, angle: s.angle, gang });
   }

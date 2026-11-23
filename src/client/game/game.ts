@@ -13,6 +13,7 @@ import { EntityStore } from '../net/entities';
 import { ChaseCamera } from '../render/camera';
 import { CityMeshes } from '../render/cityMeshes';
 import { Effects } from '../render/effects';
+import { Graffiti } from '../render/graffiti';
 import { Ground } from '../render/ground';
 import { Stage } from '../render/scene';
 import type { StreetProps } from '../render/streetProps';
@@ -79,9 +80,11 @@ export class Game {
     this.hud.onChat = (text) => conn.send({ t: 'chat', text });
     this.input.onUi = (a) => this.ui(a);
     this.input.onNav = (c) => this.pane.nav(c);
-    // Browsers only reveal a controller after one of its buttons is pressed: say when it's seen.
-    window.addEventListener('gamepadconnected', (e) => this.hud.notify(`Controller connected: ${e.gamepad.id.replace(/\s*\(.*$/, '') || 'gamepad'}`, 'info'));
-    window.addEventListener('gamepaddisconnected', () => this.hud.notify('Controller disconnected', 'warn'));
+    // Browsers only reveal a controller after one of its buttons is pressed: say when one is seen.
+    // Only standard gamepads count (sticks, throttles and headsets also report as gamepads).
+    const padName = (g: Gamepad) => g.id.replace(/\s*\(.*$/, '') || 'gamepad';
+    window.addEventListener('gamepadconnected', (e) => { if (e.gamepad.mapping === 'standard') this.hud.notify(`Controller connected: ${padName(e.gamepad)}`, 'info'); });
+    window.addEventListener('gamepaddisconnected', (e) => { if (e.gamepad.mapping === 'standard') this.hud.notify('Controller disconnected', 'warn'); });
     conn.on((m) => this.onMessage(m));
     // Ctrl is the default fire key: guard against Ctrl+W / Ctrl+R closing the game by accident.
     if (import.meta.env.PROD) window.onbeforeunload = (e) => { if (this.running) e.preventDefault(); };
@@ -89,6 +92,7 @@ export class Game {
     this.props = meshes.props;
     this.water = new Water(this.stage.scene, this.map);
     this.storefronts = new Storefronts(this.stage.scene, city);
+    new Graffiti(this.stage.scene, city);
     this.quality = new QualityGovernor(this.stage);
     this.quality.onAuto = (q) => this.hud.notify(`Graphics set to ${q} for a smoother frame rate (Esc to change)`, 'info');
     requestAnimationFrame(() => this.frame());

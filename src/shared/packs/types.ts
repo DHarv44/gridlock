@@ -121,6 +121,8 @@ export interface FactionSpec {
   hostile: string[];      // factions attacked on sight
   lawful?: boolean;       // reports/punishes crime
   gang?: boolean;         // has respect, payphones and missions
+  carColor?: number;      // palette index gang cars are painted on their turf
+  tags?: string[];        // graffiti they spray on their turf
 }
 
 export type MissionKind = 'hit' | 'torch' | 'steal' | 'courier' | 'frenzy';
@@ -182,7 +184,11 @@ export interface ZoneSpec {
   windows: number;              // 0 no windows .. 1 glass towers
 }
 
-export interface DistrictSpec { name: string; zone: string; x: number; y: number; weight?: number }
+export interface DistrictSpec {
+  name: string; zone: string; x: number; y: number; weight?: number;
+  /** Gang that holds this district: its members hang out here and tag the walls. */
+  gang?: string;
+}
 
 export type ServiceVerb = 'gunshop' | 'dealer' | 'respray' | 'chopshop' | 'hospital' | 'police'
   | 'fire' | 'military' | 'helipad';

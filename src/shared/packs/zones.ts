@@ -65,7 +65,7 @@ export const ZONES: ZoneSpec[] = [
     lot: { min: 18, max: 30, setback: [3, 6], height: [9, 16], coverage: 0.55 }, layout: 'buildings',
     wall: ['#8a6a5a', '#7a6f66', '#9a8670', '#6a5a52'], roof: ['#3f3a37', '#4a4440'],
     trees: 0.3, parkingChance: 0.12, plazaChance: 0.1, pedDensity: 4.5,
-    peds: [{ id: 'civilian', weight: 5 }, { id: 'viper', weight: 3 }, { id: 'irondog', weight: 3 }, { id: 'dealer', weight: 1.2 }, { id: 'streetwalker', weight: 1 }],
+    peds: [{ id: 'civilian', weight: 5 }, { id: 'dealer', weight: 1.2 }, { id: 'streetwalker', weight: 1 }],
     trafficDensity: 0.6, traffic: [...civTraffic, { id: 'lowrider', weight: 3 }, { id: 'muscle', weight: 2 }],
     parked: [...civParked, { id: 'lowrider', weight: 3 }], parkedDensity: 1.0, roadDrop: 0.08, windows: 0.3,
   },
@@ -74,7 +74,7 @@ export const ZONES: ZoneSpec[] = [
     lot: { min: 14, max: 22, setback: [1, 4], height: [5, 11], coverage: 0.6 }, layout: 'buildings',
     wall: ['#d9a066', '#c9785a', '#e8c890', '#8fb8a8', '#d6a8b8', '#e0e0c0'], roof: ['#7a4a30', '#6b5040', '#5a5040'],
     trees: 0.4, parkingChance: 0.08, plazaChance: 0.05, pedDensity: 4,
-    peds: [{ id: 'civilian', weight: 5 }, { id: 'sol', weight: 4 }, { id: 'dealer', weight: 0.8 }, { id: 'elder', weight: 1 }],
+    peds: [{ id: 'civilian', weight: 5 }, { id: 'dealer', weight: 0.8 }, { id: 'elder', weight: 1 }],
     trafficDensity: 0.6, traffic: [...civTraffic, { id: 'lowrider', weight: 4 }],
     parked: [...civParked, { id: 'lowrider', weight: 4 }], parkedDensity: 1.0, roadDrop: 0.1, windows: 0.3,
   },
@@ -93,7 +93,7 @@ export const ZONES: ZoneSpec[] = [
     lot: { min: 30, max: 55, setback: [3, 6], height: [8, 13], coverage: 0.5 }, layout: 'docks',
     wall: ['#6a7a8a', '#8a7a6a', '#7a8070'], roof: ['#55606a', '#5a5a5a'],
     trees: 0, parkingChance: 0.1, plazaChance: 0, pedDensity: 0.8,
-    peds: [{ id: 'worker', weight: 8 }, { id: 'dealer', weight: 0.5 }, { id: 'sol', weight: 0.8 }],
+    peds: [{ id: 'worker', weight: 8 }, { id: 'dealer', weight: 0.5 }],
     trafficDensity: 0.5, traffic: [{ id: 'semi', weight: 6 }, { id: 'boxtruck', weight: 3 }, { id: 'pickup', weight: 3 }, { id: 'van', weight: 2 }],
     parked: [{ id: 'semi', weight: 3 }, { id: 'pickup', weight: 3 }, { id: 'boxtruck', weight: 2 }], parkedDensity: 0.5, roadDrop: 0.2, windows: 0,
   },
@@ -117,6 +117,9 @@ export const ZONES: ZoneSpec[] = [
 ];
 
 // The city's districts. Each block takes the zone of its nearest district (x, y are 0..1).
+// A district with a `gang` is that gang's turf: its members hang out there and tag the walls.
+// Turf is the rough side of town: the Vipers run both housing projects, the Iron Dogs the
+// industrial east, the Cartel the barrio and the docks it smuggles through.
 export const DISTRICTS: DistrictSpec[] = [
   { name: 'Crown Center', zone: 'downtown', x: 0.5, y: 0.42 },
   { name: 'Exchange Row', zone: 'downtown', x: 0.58, y: 0.36 },
@@ -125,7 +128,7 @@ export const DISTRICTS: DistrictSpec[] = [
   { name: 'Halcyon Park', zone: 'park', x: 0.4, y: 0.5, weight: 0.65 },
   { name: 'Market Street', zone: 'commercial', x: 0.3, y: 0.42 },
   { name: 'Old Quarter', zone: 'commercial', x: 0.55, y: 0.22 },
-  { name: 'Tannery Flats', zone: 'commercial', x: 0.7, y: 0.62 },
+  { name: 'Tannery Flats', zone: 'commercial', x: 0.7, y: 0.62, gang: 'irondogs' },
   { name: 'Northgate', zone: 'residential', x: 0.36, y: 0.14 },
   { name: 'Brickfield', zone: 'residential', x: 0.22, y: 0.26 },
   { name: 'Larchmont', zone: 'suburbs', x: 0.12, y: 0.12 },
@@ -133,12 +136,12 @@ export const DISTRICTS: DistrictSpec[] = [
   { name: 'Cedar Glen', zone: 'park', x: 0.2, y: 0.1, weight: 0.5 },
   { name: 'Fort Calder', zone: 'base', x: 0.86, y: 0.1, weight: 0.85 },
   { name: 'Ironworks', zone: 'industrial', x: 0.74, y: 0.24 },
-  { name: 'Foundry Lane', zone: 'industrial', x: 0.82, y: 0.42 },
+  { name: 'Foundry Lane', zone: 'industrial', x: 0.82, y: 0.42, gang: 'irondogs' },
   { name: 'Pier Nine', zone: 'docks', x: 0.9, y: 0.6 },
-  { name: 'Saltmarsh Docks', zone: 'docks', x: 0.88, y: 0.82 },
-  { name: 'The Pits', zone: 'projects', x: 0.24, y: 0.76 },
-  { name: 'Ashgrove', zone: 'projects', x: 0.38, y: 0.86 },
-  { name: 'San Isidro', zone: 'barrio', x: 0.58, y: 0.8 },
+  { name: 'Saltmarsh Docks', zone: 'docks', x: 0.88, y: 0.82, gang: 'sol' },
+  { name: 'The Pits', zone: 'projects', x: 0.24, y: 0.76, gang: 'vipers' },
+  { name: 'Ashgrove', zone: 'projects', x: 0.38, y: 0.86, gang: 'vipers' },
+  { name: 'San Isidro', zone: 'barrio', x: 0.58, y: 0.8, gang: 'sol' },
   { name: 'Cobalt Bay', zone: 'suburbs', x: 0.1, y: 0.88 },
   { name: 'Riverside', zone: 'residential', x: 0.5, y: 0.68 },
   { name: 'Delancey', zone: 'residential', x: 0.72, y: 0.84 },

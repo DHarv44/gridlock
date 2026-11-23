@@ -1,15 +1,22 @@
 // Gamepad (browser standard mapping): analog sticks and triggers, rebindable buttons, edge detection.
 // No package: the Gamepad API is polled once per frame.
 
-export const PAD_BUTTONS = ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'View', 'Menu', 'Left stick click', 'Right stick click', 'D-pad up', 'D-pad down', 'D-pad left', 'D-pad right'];
-export const padButtonName = (i: number): string => (i < 0 ? 'unbound' : PAD_BUTTONS[i] ?? `Button ${i}`);
+const DPAD = ['D-pad up', 'D-pad down', 'D-pad left', 'D-pad right'];
+const XBOX = ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'View', 'Menu', 'Left stick click', 'Right stick click', ...DPAD, 'Guide'];
+const PLAYSTATION = ['Cross', 'Circle', 'Square', 'Triangle', 'L1', 'R1', 'L2', 'R2', 'Share', 'Options', 'L3', 'R3', ...DPAD, 'PS', 'Touchpad'];
+/** Button names follow the pad in use (PlayStation or Xbox-style). */
+let names = XBOX;
+export const padButtonName = (i: number): string => (i < 0 ? 'unbound' : names[i] ?? `Button ${i}`);
+
+/** Sony's USB vendor id, or the names its pads report. */
+const isPlayStation = (id: string) => /054c|dualshock|dualsense|wireless controller/i.test(id);
 
 /** Raw button indices used to drive menus (fixed, so menus always work). */
 export const PAD = { a: 0, b: 1, up: 12, down: 13, left: 14, right: 15 } as const;
 
 export type PadAction = 'fire' | 'action' | 'jump' | 'sprint' | 'prevWeapon' | 'nextWeapon' | 'horn' | 'map' | 'scores' | 'menu';
 
-/** Button actions with their default buttons. Sticks and triggers are fixed (see PAD_AXES). */
+/** Button actions with their default buttons. Sticks and triggers are fixed (see padAxes). */
 export const PAD_ACTIONS: { id: PadAction; label: string; button: number }[] = [
   { id: 'fire', label: 'Fire', button: 5 },
   { id: 'action', label: 'Action: get in/out, shops, properties', button: 3 },
@@ -23,11 +30,12 @@ export const PAD_ACTIONS: { id: PadAction; label: string; button: number }[] = [
   { id: 'menu', label: 'Pause menu', button: 9 },
 ];
 
-export const PAD_AXES: [string, string][] = [
+/** The fixed stick and trigger layout, named for the pad in use. */
+export const padAxes = (): [string, string][] => [
   ['Left stick', 'Move on foot (any direction, push further to run) · steer'],
   ['Right stick', 'Aim on foot · tank turret'],
-  ['RT', 'Accelerate · fire on foot'],
-  ['LT', 'Brake / reverse'],
+  [padButtonName(7), 'Accelerate · fire on foot'],
+  [padButtonName(6), 'Brake / reverse'],
 ];
 
 const STORE = 'gridlock.pad.v1';
@@ -86,10 +94,18 @@ export class Pad {
     try { localStorage.setItem(STORE, JSON.stringify(Object.fromEntries(this.map))); } catch { /* ignore */ }
   }
 
-  /** Reads the first connected pad; call once per frame. */
+  /** Name of the pad being read, or '' when none. */
+  name = '';
+
+  /** Reads the gamepad in use; call once per frame. Only standard-mapped pads count: flight
+   *  sticks, throttles, wheels and headsets also show up as "gamepads" with their own layouts.
+   *  With several pads, the most recently used one wins. */
   poll(): void {
-    const gp = [...(navigator.getGamepads?.() ?? [])].find((p) => p && p.connected) ?? null;
+    const all = [...(navigator.getGamepads?.() ?? [])].filter((p): p is Gamepad => !!p && p.connected && p.mapping === 'standard');
+    const gp = all.sort((a, b) => b.timestamp - a.timestamp)[0] ?? null;
     this.connected = !!gp;
+    if (gp && gp.id !== this.name) { this.name = gp.id; names = isPlayStation(gp.id) ? PLAYSTATION : XBOX; }
+    if (!gp) this.name = '';
     this.prev = this.buttons;
     if (!gp) { this.buttons = []; this.lx = this.ly = this.rx = this.ry = this.lt = this.rt = 0; return; }
     this.buttons = gp.buttons.map((b) => b.pressed);

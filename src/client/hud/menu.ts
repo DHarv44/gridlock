@@ -2,7 +2,7 @@
 import { FELONIES } from '../../shared/packs';
 import type { Sound } from '../audio/sound';
 import { type Action, keyName } from '../game/controls';
-import { PAD_ACTIONS, PAD_AXES, padButtonName, type PadAction } from '../game/gamepad';
+import { PAD_ACTIONS, padAxes, padButtonName, type PadAction } from '../game/gamepad';
 import type { Input } from '../game/input';
 import type { QualityGovernor } from '../game/quality';
 import type { Quality } from '../render/scene';
@@ -36,7 +36,7 @@ function keySummary(input: Input): string {
 
 function padSummary(input: Input): string {
   const btn = PAD_ACTIONS.filter((p) => SUMMARY_PAD.includes(p.id)).map((p) => [padButtonName(input.pad.buttonFor(p.id)), p.label]);
-  return [...PAD_AXES, ...btn].map(([k, label]) => `<kbd>${k}</kbd><span>${label}</span>`).join('');
+  return [...padAxes(), ...btn].map(([k, label]) => `<kbd>${k}</kbd><span>${label}</span>`).join('');
 }
 const SUMMARY_PAD: PadAction[] = ['action', 'jump', 'sprint', 'fire', 'prevWeapon', 'nextWeapon'];
 

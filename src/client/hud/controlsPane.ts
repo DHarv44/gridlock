@@ -1,7 +1,7 @@
 // Esc → Controls: tabs for Keyboard / Mouse (two key slots per action) and Controller (one button
 // per action, plus the fixed stick and trigger layout). Click a slot, then press the new key or button.
 import { type Action, ACTIONS, keyName, MAX_KEYS } from '../game/controls';
-import { PAD_ACTIONS, PAD_AXES, padButtonName, type PadAction } from '../game/gamepad';
+import { PAD_ACTIONS, padAxes, padButtonName, type PadAction } from '../game/gamepad';
 import type { Input } from '../game/input';
 import type { Pane, PaneRow } from './pane';
 
@@ -56,7 +56,7 @@ export function openControls(pane: Pane, input: Input, back: () => void, tab: Ta
       const on = waitPad === def.id;
       return { name: def.label, group: 'Buttons', slots: [{ text: on ? 'press a button…' : padButtonName(b), active: on, empty: b < 0 && !on, onClick: () => listenPad(def.id) }] };
     }),
-    ...PAD_AXES.map(([stick, use]): PaneRow => ({ name: use, group: 'Sticks and triggers', price: stick, affordable: true })),
+    ...padAxes().map(([stick, use]): PaneRow => ({ name: use, group: 'Sticks and triggers', price: stick, affordable: true })),
   ];
 
   pane.onClose = stop;

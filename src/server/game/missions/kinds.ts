@@ -1,7 +1,8 @@
 // The five job types. Each sets up its targets, reports the current objective and decides
 // pass/fail every tick. What each job is called, pays and targets comes from the mission pack.
 import { dist } from '../../../shared/math';
-import { type MissionKind, MISSIONS, PEDS, ZONES, pedIndex, vehicleIndex } from '../../../shared/packs';
+import { type MissionKind, MISSIONS, vehicleIndex } from '../../../shared/packs';
+import { turfGang } from '../../../shared/world/gangTurf';
 import type { MissionState, Ped, Player } from '../entities';
 import { removeVehicle, unseatPed } from '../factory';
 import type { World } from '../world';
@@ -104,7 +105,7 @@ const frenzy: KindDef = {
     // Point the player at the nearest block of the rival gang's turf.
     let best: { x: number; y: number } | null = null, bd = Infinity;
     for (const b of w.city.blocks) {
-      if (!ZONES[b.zone].peds.some((e) => PEDS[pedIndex(e.id)].faction === st.rival)) continue;
+      if (turfGang(b.district) !== st.rival) continue;
       const c = { x: (b.rect.x0 + b.rect.x1) / 2, y: (b.rect.y0 + b.rect.y1) / 2 };
       const d = dist(from.x, from.y, c.x, c.y);
       if (d < bd) { bd = d; best = c; }
