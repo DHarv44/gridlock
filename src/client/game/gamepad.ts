@@ -12,7 +12,7 @@ export const padButtonName = (i: number): string => (i < 0 ? 'unbound' : names[i
 const isPlayStation = (id: string) => /054c|dualshock|dualsense|wireless controller/i.test(id);
 
 /** Raw button indices used to drive menus (fixed, so menus always work). */
-export const PAD = { a: 0, b: 1, up: 12, down: 13, left: 14, right: 15 } as const;
+export const PAD = { a: 0, b: 1, lb: 4, rb: 5, up: 12, down: 13, left: 14, right: 15 } as const;
 
 export type PadAction = 'fire' | 'action' | 'jump' | 'sprint' | 'prevWeapon' | 'nextWeapon' | 'horn' | 'map' | 'scores' | 'menu';
 

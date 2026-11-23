@@ -8,7 +8,9 @@ import { Hud } from '../hud/hud';
 import { openMenu } from '../hud/menu';
 import { paintContent } from '../hud/paintShop';
 import type { Place } from '../../shared/world/cityTypes';
+import { BigMap } from '../hud/bigMap';
 import { Minimap } from '../hud/minimap';
+import { Waypoint } from './waypoint';
 import { Pane } from '../hud/pane';
 import type { Connection } from '../net/connection';
 import { EntityStore } from '../net/entities';
@@ -60,7 +62,8 @@ export class Game {
   private acc = 0;
   private last = performance.now();
   private running = true;
-  private mapOpen = false;
+  private bigMap: BigMap;
+  private waypoint: Waypoint;
   private chatting = false;
 
   constructor(private conn: Connection, private myId: number, private myName: string, private code: string, seed: number, private onLeave: () => void) {
@@ -81,7 +84,16 @@ export class Game {
     this.interact = new Interact(city, this.pane);
     this.hud.onChat = (text) => conn.send({ t: 'chat', text });
     this.input.onUi = (a) => this.ui(a);
-    this.input.onNav = (c) => this.pane.nav(c);
+    // The pad drives whichever overlay is up: the map (B closes it) or the side pane.
+    this.input.onNav = (c) => {
+      if (!this.bigMap.isOpen) this.pane.nav(c);
+      else if (c === 'back') this.bigMap.close();
+      else this.bigMap.nav(c);
+    };
+    this.bigMap = new BigMap(this.hud.bigmap, this.hud.bigmapCanvas, this.map);
+    this.waypoint = new Waypoint(city);
+    this.bigMap.onWaypoint = (p) => { const o = this.ownState(1); this.waypoint.set(p, o); };
+    this.waypoint.onArrive = () => this.hud.notify('Waypoint reached', 'info');
     // Browsers only reveal a controller after one of its buttons is pressed: say when one is seen.
     // Only standard gamepads count (sticks, throttles and headsets also report as gamepads).
     const padName = (g: Gamepad) => g.id.replace(/\s*\(.*$/, '') || 'gamepad';
@@ -124,9 +136,13 @@ export class Game {
         this.input.release();
         this.hud.openChat(() => { this.chatting = false; this.input.enabled = true; });
         break;
-      case 'map': this.mapOpen = !this.mapOpen; this.hud.bigmap.hidden = !this.mapOpen; break;
+      case 'map': {
+        const o = this.ownState(1);
+        if (this.bigMap.isOpen) this.bigMap.close(); else this.bigMap.open(o?.x ?? 1024, o?.y ?? 1024);
+        break;
+      }
       case 'menu':
-        if (this.mapOpen) { this.mapOpen = false; this.hud.bigmap.hidden = true; return; }
+        if (this.bigMap.isOpen) { this.bigMap.close(); return; }
         if (this.pane.isOpen) this.pane.close();
         else openMenu({ pane: this.pane, sound: this.sound, quality: this.quality, input: this.input, code: this.code, record: () => this.profile.felonies ?? {}, leave: () => this.leave() });
         break;
@@ -203,7 +219,7 @@ export class Game {
     const now = performance.now();
     const dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
-    this.input.pollPad(dt, this.pane.isOpen);
+    this.input.pollPad(dt, this.pane.isOpen || this.bigMap.isOpen);
     this.acc += dt;
     let n = 0;
     while (this.acc >= STEP && n < 4) {
@@ -273,12 +289,12 @@ export class Game {
       }
     }
     const owned = new Set(this.profile.owned);
-    this.radar.drawRadar(ctx, 220, own.x, own.y, own.angle, range, this.players, this.myId, owned, hostiles, this.jobs.blips(you));
-    if (this.mapOpen) {
-      const c = this.hud.bigmapCanvas;
-      const size = Math.min(window.innerWidth * 0.9, window.innerHeight * 0.9);
-      if (c.width !== Math.round(size)) { c.width = c.height = Math.round(size); }
-      this.radar.drawFull(c.getContext('2d')!, c.width, this.players, this.myId, owned, this.owners);
+    const wp = this.waypoint;
+    wp.update(own);
+    this.radar.drawRadar(ctx, 220, own.x, own.y, own.angle, range, this.players, this.myId, owned, hostiles, this.jobs.blips(you), wp.point, wp.route);
+    if (this.bigMap.isOpen) {
+      this.bigMap.draw({ me: { x: own.x, y: own.y, angle: own.angle }, players: this.players, meId: this.myId, owned, owners: this.owners,
+        blips: this.jobs.blips(you), waypoint: wp.point, route: wp.route });
     }
   }
 

@@ -1,0 +1,272 @@
+// The city map (M): pan by dragging, zoom with the wheel, click to set a waypoint (click it again
+// or right-click to clear), hover a pin for its name, click legend rows to hide or show them.
+// A controller pans with the D-pad, zooms with the bumpers and drops the waypoint at the centre.
+import { DISTRICTS, FACTIONS, PROPERTIES, SERVICES } from '../../shared/packs';
+import type { PlayerInfo } from '../../shared/protocol';
+import type { CityMap } from '../../shared/world/city';
+import { MAP_SIZE } from '../../shared/world/cityTypes';
+import type { Blip } from '../game/jobs';
+import type { Pt } from '../game/route';
+import { bakeCityMap } from './mapArt';
+import { PLACE_ICON } from './minimap';
+
+export const WAYPOINT_COLOR = '#ff4fd8';
+const FONT = 'Bahnschrift, "Segoe UI", sans-serif';
+const ZOOM_MIN = 0.3, ZOOM_MAX = 3;
+
+export interface MapFrame {
+  me: { x: number; y: number; angle: number };
+  players: PlayerInfo[]; meId: number;
+  owned: Set<number>; owners: Map<number, string>;
+  blips: Blip[];
+  waypoint: Pt | null; route: Pt[];
+}
+
+interface Pin { x: number; y: number; label: string }
+
+export class BigMap {
+  private baked: HTMLCanvasElement;
+  private cx = MAP_SIZE / 2;
+  private cy = MAP_SIZE / 2;
+  private zoom = 0.9;
+  private hidden = new Set<string>();
+  private legend: { key: string; y0: number; y1: number }[] = [];
+  private pins: Pin[] = [];
+  private mouse: { x: number; y: number } | null = null;
+  private drag: { x: number; y: number; moved: boolean } | null = null;
+  private padMode = false;
+  private last: MapFrame | null = null;
+  onWaypoint: (p: Pt | null) => void = () => {};
+
+  constructor(private root: HTMLElement, private canvas: HTMLCanvasElement, private map: CityMap) {
+    this.baked = bakeCityMap(map, 1);
+    canvas.addEventListener('mousedown', (e) => { if (e.button === 0) this.drag = { x: e.offsetX, y: e.offsetY, moved: false }; });
+    canvas.addEventListener('mousemove', (e) => {
+      this.padMode = false;
+      this.mouse = { x: e.offsetX, y: e.offsetY };
+      if (!this.drag) return;
+      const dx = e.offsetX - this.drag.x, dy = e.offsetY - this.drag.y;
+      if (Math.abs(dx) + Math.abs(dy) > 3) this.drag.moved = true;
+      if (this.drag.moved) { this.cx -= dx / this.zoom; this.cy -= dy / this.zoom; this.drag.x = e.offsetX; this.drag.y = e.offsetY; }
+    });
+    canvas.addEventListener('mouseleave', () => { this.mouse = null; this.drag = null; });
+    window.addEventListener('mouseup', (e) => {
+      const d = this.drag;
+      this.drag = null;
+      if (d && !d.moved && e.target === canvas) this.click(e.offsetX, e.offsetY);
+    });
+    canvas.addEventListener('contextmenu', (e) => { e.preventDefault(); this.onWaypoint(null); });
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      this.zoomAt(e.deltaY < 0 ? 1.2 : 1 / 1.2, e.offsetX, e.offsetY);
+    }, { passive: false });
+  }
+
+  get isOpen(): boolean { return !this.root.hidden; }
+
+  open(x: number, y: number): void {
+    this.cx = x; this.cy = y;
+    this.root.hidden = false;
+  }
+
+  close(): void { this.root.hidden = true; }
+
+  /** Controller: D-pad pans, bumpers zoom, A drops/clears the waypoint at the centre. */
+  nav(c: string): void {
+    this.padMode = true;
+    const step = 140 / this.zoom;
+    if (c === 'up') this.cy -= step;
+    else if (c === 'down') this.cy += step;
+    else if (c === 'left') this.cx -= step;
+    else if (c === 'right') this.cx += step;
+    else if (c === 'zoomIn') this.zoomAt(1.25);
+    else if (c === 'zoomOut') this.zoomAt(1 / 1.25);
+    else if (c === 'ok') this.toggleWaypoint({ x: this.cx, y: this.cy });
+  }
+
+  private zoomAt(f: number, sx = this.canvas.clientWidth / 2, sy = this.canvas.clientHeight / 2): void {
+    const before = this.toWorld(sx, sy);
+    this.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, this.zoom * f));
+    const after = this.toWorld(sx, sy);
+    this.cx += before.x - after.x; this.cy += before.y - after.y;
+  }
+
+  private toWorld(sx: number, sy: number): Pt {
+    return { x: this.cx + (sx - this.canvas.clientWidth / 2) / this.zoom, y: this.cy + (sy - this.canvas.clientHeight / 2) / this.zoom };
+  }
+
+  private toScreen(x: number, y: number): [number, number] {
+    return [(x - this.cx) * this.zoom + this.canvas.clientWidth / 2, (y - this.cy) * this.zoom + this.canvas.clientHeight / 2];
+  }
+
+  private click(sx: number, sy: number): void {
+    const row = this.legend.find((l) => sx < 190 && sy >= l.y0 && sy < l.y1);
+    if (row) { if (this.hidden.has(row.key)) this.hidden.delete(row.key); else this.hidden.add(row.key); return; }
+    this.toggleWaypoint(this.toWorld(sx, sy));
+  }
+
+  private toggleWaypoint(p: Pt): void {
+    const w = this.last?.waypoint;
+    if (w && Math.hypot(w.x - p.x, w.y - p.y) * this.zoom < 16) this.onWaypoint(null);
+    else this.onWaypoint(p);
+  }
+
+  draw(f: MapFrame): void {
+    this.last = f;
+    const cv = this.canvas, dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = cv.clientWidth, h = cv.clientHeight;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    const ctx = cv.getContext('2d')!;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#0b0d10';
+    ctx.fillRect(0, 0, w, h);
+    ctx.imageSmoothingEnabled = this.zoom < 1.5;
+    const [ox, oy] = this.toScreen(0, 0);
+    ctx.drawImage(this.baked, ox, oy, MAP_SIZE * this.zoom, MAP_SIZE * this.zoom);
+    this.labels(ctx);
+    this.route(ctx, f);
+    this.pins = [];
+    if (!this.hidden.has('property')) this.properties(ctx, f);
+    for (const s of this.map.city.services) {
+      const verb = SERVICES[s.spec].verb;
+      if (this.hidden.has(verb)) continue;
+      const icon = PLACE_ICON[verb];
+      const [px, py] = this.toScreen(s.x, s.y);
+      pin(ctx, px, py, icon.color, icon.glyph);
+      this.pins.push({ x: px, y: py, label: s.name });
+    }
+    for (const b of f.blips) {
+      const [px, py] = this.toScreen(b.x, b.y);
+      ctx.fillStyle = b.color; ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
+    if (!this.hidden.has('players')) this.people(ctx, f);
+    this.legendBox(ctx);
+    if (this.padMode) crosshair(ctx, w / 2, h / 2);
+    this.tooltip(ctx);
+  }
+
+  private labels(ctx: CanvasRenderingContext2D): void {
+    if (this.zoom < 0.4) return;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (const d of DISTRICTS) {
+      const [px, py] = this.toScreen(d.x * MAP_SIZE, d.y * MAP_SIZE);
+      ctx.font = `600 ${Math.round(11 + this.zoom * 3)}px ${FONT}`;
+      halo(ctx, d.name.toUpperCase().split('').join(' '), px, py, 'rgba(235,238,242,0.75)');
+      const gang = d.gang ? FACTIONS.find((g) => g.id === d.gang) : undefined;
+      if (gang) { ctx.font = `700 ${Math.round(10 + this.zoom * 2)}px ${FONT}`; halo(ctx, gang.name.toUpperCase(), px, py + 15, gang.color); }
+    }
+  }
+
+  private route(ctx: CanvasRenderingContext2D, f: MapFrame): void {
+    if (f.route.length > 1) {
+      ctx.beginPath();
+      f.route.forEach((p, i) => { const [x, y] = this.toScreen(p.x, p.y); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
+      ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      ctx.setLineDash([]); ctx.lineWidth = 7; ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.stroke();
+      ctx.setLineDash([12, 8]); ctx.lineWidth = 3.5; ctx.strokeStyle = WAYPOINT_COLOR; ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    if (f.waypoint) { const [x, y] = this.toScreen(f.waypoint.x, f.waypoint.y); waypointPin(ctx, x, y, 1.3); }
+  }
+
+  private properties(ctx: CanvasRenderingContext2D, f: MapFrame): void {
+    for (const p of this.map.city.properties) {
+      const mine = f.owned.has(p.id), owner = f.owners.get(p.id);
+      const [px, py] = this.toScreen(p.x, p.y);
+      ctx.fillStyle = mine ? '#6fe08a' : owner ? '#7d8288' : 'rgba(111,224,138,0.6)';
+      ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(px, py - 7); ctx.lineTo(px + 6, py - 1); ctx.lineTo(px + 6, py + 6); ctx.lineTo(px - 6, py + 6); ctx.lineTo(px - 6, py - 1); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      const spec = PROPERTIES[p.spec];
+      this.pins.push({ x: px, y: py, label: mine ? `${p.name} · yours` : owner ? `${p.name} · ${owner}` : `${p.name} · $${spec.price.toLocaleString('en-US')}` });
+    }
+  }
+
+  private people(ctx: CanvasRenderingContext2D, f: MapFrame): void {
+    ctx.font = `600 12px ${FONT}`;
+    ctx.textAlign = 'center';
+    for (const p of f.players) {
+      if (p.id === f.meId) continue;
+      const [px, py] = this.toScreen(p.x, p.y);
+      ctx.fillStyle = p.color; ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      halo(ctx, p.name, px, py - 14, '#fff');
+    }
+    const [mx, my] = this.toScreen(f.me.x, f.me.y);
+    ctx.save(); ctx.translate(mx, my); ctx.rotate(f.me.angle);
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(11, 0); ctx.lineTo(-8, 7.5); ctx.lineTo(-4, 0); ctx.lineTo(-8, -7.5); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
+  private legendBox(ctx: CanvasRenderingContext2D): void {
+    const rows: { key: string; color: string; glyph: string; label: string }[] = [
+      ...Object.entries(PLACE_ICON).map(([key, v]) => ({ key, ...v })),
+      { key: 'property', color: '#6fe08a', glyph: '', label: 'Property' },
+      { key: 'players', color: '#ffffff', glyph: '', label: 'Players' },
+    ];
+    const x = 14, top = 14, rh = 24;
+    ctx.fillStyle = 'rgba(11,13,16,0.82)';
+    ctx.beginPath(); ctx.roundRect(x - 6, top - 6, 182, rows.length * rh + 12, 6); ctx.fill();
+    ctx.font = `600 13px ${FONT}`;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    this.legend = [];
+    rows.forEach((r, i) => {
+      const y = top + i * rh + rh / 2, off = this.hidden.has(r.key);
+      ctx.globalAlpha = off ? 0.35 : 1;
+      pin(ctx, x + 10, y, r.color, r.glyph, 8);
+      ctx.fillStyle = '#dfe3e8'; ctx.fillText(r.label, x + 26, y);
+      ctx.globalAlpha = 1;
+      this.legend.push({ key: r.key, y0: y - rh / 2, y1: y + rh / 2 });
+    });
+  }
+
+  private tooltip(ctx: CanvasRenderingContext2D): void {
+    const m = this.mouse;
+    if (!m || this.drag?.moved) return;
+    let best: Pin | null = null, bd = 12;
+    for (const p of this.pins) { const d = Math.hypot(p.x - m.x, p.y - m.y); if (d < bd) { bd = d; best = p; } }
+    if (!best) return;
+    ctx.font = `600 13px ${FONT}`;
+    const tw = ctx.measureText(best.label).width + 16;
+    ctx.fillStyle = 'rgba(11,13,16,0.92)';
+    ctx.beginPath(); ctx.roundRect(best.x + 12, best.y - 26, tw, 24, 4); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(best.label, best.x + 20, best.y - 14);
+  }
+}
+
+/** Round map pin with a glyph. */
+export function pin(ctx: CanvasRenderingContext2D, x: number, y: number, color: string, glyph: string, r = 9): void {
+  ctx.fillStyle = color; ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  if (!glyph) return;
+  ctx.fillStyle = '#111';
+  ctx.font = `800 ${Math.round(r * 1.15)}px ${FONT}`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(glyph, x, y + 0.5);
+}
+
+/** Teardrop marker standing on (x, y). */
+export function waypointPin(ctx: CanvasRenderingContext2D, x: number, y: number, k = 1): void {
+  ctx.save(); ctx.translate(x, y); ctx.scale(k, k);
+  ctx.beginPath();
+  ctx.moveTo(0, 0); ctx.bezierCurveTo(-3, -6, -9, -10, -9, -17); ctx.arc(0, -17, 9, Math.PI, 0); ctx.bezierCurveTo(9, -10, 3, -6, 0, 0);
+  ctx.fillStyle = WAYPOINT_COLOR; ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, -17, 3.5, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function halo(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, color: string): void {
+  ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.lineJoin = 'round';
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = color; ctx.fillText(text, x, y);
+}
+
+function crosshair(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+  ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x - 12, y); ctx.lineTo(x - 4, y); ctx.moveTo(x + 4, y); ctx.lineTo(x + 12, y);
+  ctx.moveTo(x, y - 12); ctx.lineTo(x, y - 4); ctx.moveTo(x, y + 4); ctx.lineTo(x, y + 12); ctx.stroke();
+}

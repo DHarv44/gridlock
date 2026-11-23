@@ -84,6 +84,7 @@ export class Pane {
   /** Controller navigation. */
   nav(c: NavCmd): void {
     if (c === 'back') { const b = this.content?.back; if (b) b(); else this.close(); return; }
+    if (c === 'zoomIn' || c === 'zoomOut') return;
     if (!this.grid.length) return;
     if (!this.padFocus) { this.padFocus = true; this.showFocus(); return; }
     if (c === 'ok') { this.grid[this.fr]?.[this.fc]?.click(); return; }

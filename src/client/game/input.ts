@@ -6,7 +6,7 @@ import { type Action, ACTIONS, Bindings } from './controls';
 import { PAD, Pad, PAD_ACTIONS, type PadAction } from './gamepad';
 
 export type UiAction = 'action' | 'chat' | 'map' | 'menu' | 'scoreOn' | 'scoreOff';
-export type NavCmd = 'up' | 'down' | 'left' | 'right' | 'ok' | 'back';
+export type NavCmd = 'up' | 'down' | 'left' | 'right' | 'ok' | 'back' | 'zoomIn' | 'zoomOut';
 
 const EDGE_BTN: Partial<Record<Action, number>> = { prevWeapon: BTN.prev, nextWeapon: BTN.next, horn: BTN.horn };
 const KIND = new Map(ACTIONS.map((a) => [a.id, a.kind]));
@@ -14,7 +14,7 @@ const KIND = new Map(ACTIONS.map((a) => [a.id, a.kind]));
 const PAD_ALIAS: Partial<Record<Action, PadAction>> = { handbrake: 'jump', climb: 'jump', descend: 'sprint' };
 /** How far (px of mouse travel) the virtual aim stick reaches; smaller turns quicker. */
 const AIM_RADIUS = 90;
-const NAV: [number, NavCmd][] = [[PAD.up, 'up'], [PAD.down, 'down'], [PAD.left, 'left'], [PAD.right, 'right'], [PAD.a, 'ok'], [PAD.b, 'back']];
+const NAV: [number, NavCmd][] = [[PAD.up, 'up'], [PAD.down, 'down'], [PAD.left, 'left'], [PAD.right, 'right'], [PAD.a, 'ok'], [PAD.b, 'back'], [PAD.rb, 'zoomIn'], [PAD.lb, 'zoomOut']];
 
 export class Input {
   readonly bindings = new Bindings();
