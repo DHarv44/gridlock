@@ -66,7 +66,8 @@ export class StreetProps {
       }
     }
     if (!this.signals.length) return;
-    const geo = new THREE.BoxGeometry(0.45, 0.08, 0.45);
+    // Lamp face, big enough to read from the overhead camera.
+    const geo = new THREE.BoxGeometry(0.7, 0.1, 0.7);
     this.signalMesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial(), this.signals.length);
     const m = new THREE.Matrix4();
     this.signals.forEach((s, i) => {

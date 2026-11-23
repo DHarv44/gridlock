@@ -1,10 +1,12 @@
 // NPC driving: lane-following traffic with lights, and routed/direct pursuit driving.
 import { angleDiff, clamp } from '../../../shared/math';
 import { forwardSpeed } from '../../../shared/sim/physics';
+import type { RoadNode } from '../../../shared/world/cityTypes';
+import { lightState } from '../../../shared/world/traffic';
 import type { DriveState, Ped, Vehicle } from '../entities';
 import type { World } from '../world';
 import { mayEnter, nextJunction } from './junctions';
-import { findRoute, isGreen, laneOf, segBetween } from './route';
+import { findRoute, laneOf, segBetween } from './route';
 
 export function newDrive(w: World, v: Vehicle): DriveState {
   const { seg } = w.map.nearestSegment(v.body.x, v.body.y);
@@ -129,6 +131,15 @@ function unstick(v: Vehicle, d: DriveState, wanted: number, dt: number): boolean
   return false;
 }
 
+/** Red: stop. Amber: stop if you comfortably can (≤ 4 m/s² to the line), otherwise go on through.
+ *  Green (or an unsignalled junction): go. */
+function mustStop(node: RoadNode, axis: 'h' | 'v', t: number, dist: number, vf: number): boolean {
+  const st = lightState(node, axis, t);
+  if (st === 2) return false;
+  if (st === 0) return true;
+  return dist - 1 > (vf * vf) / (2 * 4);
+}
+
 /** Ordinary traffic: follow lanes, obey lights, keep distance. */
 export function cruise(w: World, v: Vehicle, p: Ped, dt: number, panic = false): void {
   const ai = p.ai!;
@@ -137,13 +148,18 @@ export function cruise(w: World, v: Vehicle, p: Ped, dt: number, panic = false):
   const b = v.body;
   while (d.pts.length < 5) extend(w, d);
   const vf = forwardSpeed(b);
-  // Drop points we've reached or passed.
+  // Drop points we've reached or passed, except a stop line whose light still says stop: a car
+  // waiting a few metres short of it must not lose it and roll through the red.
   for (let k = 0; k < 3 && d.pts.length; k++) {
     const pt = d.pts[0];
     const dx = pt.x - b.x, dy = pt.y - b.y;
     const dd = Math.hypot(dx, dy);
     const ahead = dx * Math.cos(b.angle) + dy * Math.sin(b.angle);
-    if (dd < 3 + Math.abs(vf) * 0.15 || (ahead < 0 && dd < 10)) d.pts.shift(); else break;
+    // A stop line only counts as passed once you're clearly into the junction: a car stopped
+    // at the line in a neighbouring lane has the point beside it, not behind it.
+    const passed = pt.stop !== undefined ? ahead < -2 && dd < 10 : ahead < 0 && dd < 10;
+    if (!passed && pt.stop !== undefined && !panic && mustStop(w.city.nodes[pt.stop], pt.axis!, w.time, Math.max(0, ahead), vf)) break;
+    if (dd < 3 + Math.abs(vf) * 0.15 || passed) d.pts.shift(); else break;
   }
   if (d.pts.length < 5) extend(w, d);
   const seg = w.city.segs[d.seg];
@@ -157,9 +173,12 @@ export function cruise(w: World, v: Vehicle, p: Ped, dt: number, panic = false):
     for (const pt of d.pts.slice(0, 3)) {
       if (pt.stop === undefined) continue;
       const node = w.city.nodes[pt.stop];
-      if (!isGreen(node, pt.axis!, w.time)) {
-        const dist = Math.hypot(pt.x - b.x, pt.y - b.y);
-        if (dist > 1.5 || vf > 1) { target = Math.min(target, Math.sqrt(2 * 5 * Math.max(0, dist - 2))); red = target < 2; }
+      // Distance to the line along your heading (lanes are offset sideways from the point).
+      const dist = Math.max(0, (pt.x - b.x) * Math.cos(b.angle) + (pt.y - b.y) * Math.sin(b.angle));
+      if (mustStop(node, pt.axis!, w.time, dist, vf)) {
+        // Brake to stop on the line (5 m/s² comfortable), then hold.
+        target = Math.min(target, Math.sqrt(2 * 5 * Math.max(0, dist - 1)));
+        red = target < 2;
       }
       break;
     }
