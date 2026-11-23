@@ -20,7 +20,7 @@ Open http://localhost:5228, pick a name, **Create game**, then send friends the 
   a volume there to keep them across deploys. Characters live in the players' browsers.
 
 **Radio:** in any vehicle press R (controller: D-pad up) to cycle Off and the stations
-(src/shared/packs/radio.ts: 98.2 The Spa, 99.9 Jazzy J). Stations are broadcasts on the server's
+(src/shared/packs/radio.ts: 98.2 The Spa, 99.9 Jazzy J, 102.2 Junk in the Trunk). Stations are broadcasts on the server's
 clock: every player on a station hears the same song at the same moment, and switching cars
 never restarts anything (you join whatever is on air). A station plays every audio file
 (.m4a, .mp3, .wav; lengths are read from the files) in its folder, with commercial breaks

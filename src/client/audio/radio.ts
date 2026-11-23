@@ -121,8 +121,11 @@ export class Radio {
     }
     this.target = 1;
     this.show(s.name, s.color);
-    // Still loading another station's track: drop it and tune straight to this one.
-    this.loading = false;
+    // Another station's track (playing or still loading) goes: tune straight to this one, and a
+    // station with nothing on air is silent rather than carrying on with the last one.
+    if (this.playing && !this.playing.startsWith(`/radio/${encodeURIComponent(s.id)}/`)) this.stop();
+    this.cardT = 0;
+    this.card.classList.remove('on');
     this.follow();
     // Tuning in mid-song: say what it is.
     const air = onAir(s.id, this.stations[s.id] ?? NONE, this.now());
