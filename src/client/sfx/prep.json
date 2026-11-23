@@ -1,0 +1,102 @@
+{
+ "pistol": {
+  "seconds": 0.6,
+  "loop": false,
+  "src": "pistol"
+ },
+ "revolver": {
+  "seconds": 0.43,
+  "loop": false,
+  "src": "revolver"
+ },
+ "smg": {
+  "seconds": 0.14,
+  "loop": false,
+  "src": "mg_burst"
+ },
+ "minigun": {
+  "seconds": 0.09,
+  "loop": false,
+  "src": "mg_burst"
+ },
+ "shotgun": {
+  "seconds": 0.93,
+  "loop": false,
+  "src": "shotgun"
+ },
+ "rifle": {
+  "seconds": 0.7,
+  "loop": false,
+  "src": "rifle"
+ },
+ "sniper": {
+  "seconds": 1.5,
+  "loop": false,
+  "src": "sniper"
+ },
+ "flame": {
+  "seconds": 0.45,
+  "loop": false,
+  "src": "flame"
+ },
+ "launcher": {
+  "seconds": 0.36,
+  "loop": false,
+  "src": "launcher"
+ },
+ "rocket": {
+  "seconds": 0.71,
+  "loop": false,
+  "src": "rocket"
+ },
+ "cannon": {
+  "seconds": 2.15,
+  "loop": false,
+  "src": "cannon"
+ },
+ "punch": {
+  "seconds": 0.27,
+  "loop": false,
+  "src": "punch"
+ },
+ "swing": {
+  "seconds": 0.4,
+  "loop": false,
+  "src": "swing"
+ },
+ "slash": {
+  "seconds": 0.48,
+  "loop": false,
+  "src": "slash"
+ },
+ "boom": {
+  "seconds": 3.5,
+  "loop": false,
+  "src": "boom"
+ },
+ "crash": {
+  "seconds": 0.5,
+  "loop": false,
+  "src": "crash"
+ },
+ "splash": {
+  "seconds": 1.5,
+  "loop": false,
+  "src": "splash"
+ },
+ "horn": {
+  "seconds": 0.55,
+  "loop": false,
+  "src": "horn"
+ },
+ "siren": {
+  "seconds": 3.217,
+  "loop": true,
+  "src": "siren"
+ },
+ "cash": {
+  "seconds": 1.2,
+  "loop": false,
+  "src": "cash"
+ }
+}

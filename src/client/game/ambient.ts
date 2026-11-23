@@ -31,12 +31,13 @@ export function lawUnits(store: EntityStore): { x: number; y: number }[] {
 }
 
 export function nearestSiren(store: EntityStore, me: { x: number; y: number } | null, sound: Sound): void {
-  if (!me) return;
   let best: { x: number; y: number } | null = null, bd = 90;
-  for (const e of store.all.values()) {
-    if (e.kind !== 1 || !(e.data[7] & VF.siren)) continue;
-    const d = Math.hypot(e.x - me.x, e.y - me.y);
-    if (d < bd) { bd = d; best = e; }
+  if (me) {
+    for (const e of store.all.values()) {
+      if (e.kind !== 1 || !(e.data[7] & VF.siren)) continue;
+      const d = Math.hypot(e.x - me.x, e.y - me.y);
+      if (d < bd) { bd = d; best = e; }
+    }
   }
-  if (best) sound.siren(best.x, best.y);
+  sound.siren(best);
 }

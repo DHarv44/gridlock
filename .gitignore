@@ -7,3 +7,5 @@ data-smoke/
 radio.local.json
 # Rendered voice takes and auditions (only finished pieces go into radio/).
 voice/out/
+
+thirdparty/_incoming/
