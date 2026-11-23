@@ -3,8 +3,8 @@
 // position never matters; mouse buttons can be bound like keys.
 
 export type Action =
-  | 'forward' | 'back' | 'left' | 'right' | 'fire' | 'enter' | 'handbrake' | 'jump' | 'climb' | 'descend'
-  | 'prevWeapon' | 'nextWeapon' | 'interact' | 'horn' | 'turretLeft' | 'turretRight'
+  | 'forward' | 'back' | 'left' | 'right' | 'fire' | 'action' | 'handbrake' | 'jump' | 'climb' | 'descend'
+  | 'prevWeapon' | 'nextWeapon' | 'horn' | 'turretLeft' | 'turretRight'
   | 'chat' | 'map' | 'scores';
 
 export type ActionKind = 'held' | 'edge' | 'ui';
@@ -20,21 +20,20 @@ export const ACTIONS: ActionDef[] = [
   { id: 'fire', label: 'Fire', kind: 'held', group: 'Weapons', keys: ['ControlLeft', 'ControlRight'] },
   { id: 'prevWeapon', label: 'Previous weapon', kind: 'edge', group: 'Weapons', keys: ['KeyZ'] },
   { id: 'nextWeapon', label: 'Next weapon', kind: 'edge', group: 'Weapons', keys: ['KeyX'] },
-  { id: 'enter', label: 'Get in / out', kind: 'edge', group: 'Vehicles', keys: ['Enter', 'KeyF'] },
+  { id: 'action', label: 'Action: get in/out, shops, properties', kind: 'ui', group: 'Movement', keys: ['KeyE', 'KeyF'] },
   { id: 'handbrake', label: 'Handbrake', kind: 'held', group: 'Vehicles', keys: ['Space'] },
   { id: 'horn', label: 'Horn / siren', kind: 'edge', group: 'Vehicles', keys: ['KeyH'] },
   { id: 'climb', label: 'Helicopter climb', kind: 'held', group: 'Vehicles', keys: ['Space'] },
   { id: 'descend', label: 'Helicopter descend', kind: 'held', group: 'Vehicles', keys: ['ShiftLeft'] },
   { id: 'turretLeft', label: 'Tank turret left', kind: 'held', group: 'Vehicles', keys: ['Comma'] },
   { id: 'turretRight', label: 'Tank turret right', kind: 'held', group: 'Vehicles', keys: ['Period'] },
-  { id: 'interact', label: 'Shop / property', kind: 'ui', group: 'Other', keys: ['KeyE'] },
   { id: 'chat', label: 'Chat', kind: 'ui', group: 'Other', keys: ['KeyT'] },
   { id: 'map', label: 'City map', kind: 'ui', group: 'Other', keys: ['KeyM'] },
   { id: 'scores', label: 'Scores (hold)', kind: 'ui', group: 'Other', keys: ['Tab'] },
 ];
 
 // New key: drops settings saved while the old mouse-aim style existed.
-const STORE = 'gridlock.controls.v5';
+const STORE = 'gridlock.controls.v6';
 const MAX_KEYS = 2;
 
 /** Readable name for a key code or mouse button. */

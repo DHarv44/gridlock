@@ -43,8 +43,7 @@ you (±16°). The mouse pointer plays no part. Esc → Change controls rebinds a
 | , / . | Tank turret left / right |
 | Space | Jump on foot · handbrake in cars · climb in helicopters |
 | Shift | Descend in helicopters |
-| F or Enter | Get in/out, carjack, ride as passenger with a friend |
-| E | Use a gun shop, hospital, car dealer, property (respray and chop shop: just drive in) |
+| E or F | Action: get in/out of vehicles (carjack, ride with a friend), or use the shop/property door you're at (respray and chop shop: just drive in) |
 | Z / X / wheel / 1–9 | Previous / next / pick weapon (no reloading: you fire until the ammo runs out) |
 | H | Horn (siren in emergency vehicles) |
 | T / M / Tab / Esc | Chat / city map / scores / menu |

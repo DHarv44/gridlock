@@ -15,7 +15,7 @@ const LEVELS: { q: Quality; label: string; sub: string }[] = [
 
 const SUMMARY: [Action[], string][] = [
   [['forward', 'back'], 'Run / drive'], [['left', 'right'], 'Turn / steer'], [['fire'], 'Fire (auto-aims ahead)'], [['jump'], 'Jump'],
-  [['enter'], 'Get in / out, carjack'], [['handbrake'], 'Handbrake'], [['interact'], 'Shop / property'],
+  [['action'], 'Action: get in/out, carjack, shops, property'], [['handbrake'], 'Handbrake'],
   [['prevWeapon', 'nextWeapon'], 'Switch weapon'],
 ];
 

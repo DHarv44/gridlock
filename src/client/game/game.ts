@@ -100,7 +100,11 @@ export class Game {
 
   private ui(a: string): void {
     switch (a) {
-      case 'interact':
+      case 'action':
+        // One key for everything: a shop/property door (or the dealer lot) opens its menu,
+        // otherwise get into the nearest car or out of this one.
+        if (this.pane.isOpen) { this.pane.close(); break; }
+        if (!this.interact.current) { this.input.pressEnter(); break; }
         if (this.you) this.interact.toggle(() => this.you!, () => this.profile, this.owners, this.myName, (kind, id, place) => this.conn.send({ t: 'buy', kind, id, place }));
         break;
       case 'chat':

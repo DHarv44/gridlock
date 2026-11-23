@@ -3,9 +3,9 @@
 import { BTN } from '../../shared/protocol';
 import { type Action, ACTIONS, Bindings } from './controls';
 
-export type UiAction = 'interact' | 'chat' | 'map' | 'menu' | 'scoreOn' | 'scoreOff';
+export type UiAction = 'action' | 'chat' | 'map' | 'menu' | 'scoreOn' | 'scoreOff';
 
-const EDGE_BTN: Partial<Record<Action, number>> = { enter: BTN.enter, prevWeapon: BTN.prev, nextWeapon: BTN.next, horn: BTN.horn };
+const EDGE_BTN: Partial<Record<Action, number>> = { prevWeapon: BTN.prev, nextWeapon: BTN.next, horn: BTN.horn };
 const KIND = new Map(ACTIONS.map((a) => [a.id, a.kind]));
 
 export class Input {
@@ -22,7 +22,8 @@ export class Input {
   constructor(canvas: HTMLCanvasElement) {
     window.addEventListener('keydown', (e) => this.key(e, e.code, true));
     window.addEventListener('keyup', (e) => this.key(e, e.code, false));
-    window.addEventListener('blur', () => this.release());    window.addEventListener('mousedown', (e) => {
+    window.addEventListener('blur', () => this.release());
+    window.addEventListener('mousedown', (e) => {
       if (this.capture) { e.preventDefault(); this.takeCapture(`Mouse${e.button}`); return; }
       if (e.target === canvas) this.press(`Mouse${e.button}`, true);
     });
@@ -91,6 +92,11 @@ export class Input {
     if (this.held('descend')) b |= BTN.down;
     this.pressed.clear();
     return this.enabled ? b : b & ~BTN.fire;
+  }
+
+  /** Queues a get-in/get-out for the next sim tick (the action key decides when). */
+  pressEnter(): void {
+    if (this.enabled) this.edges |= BTN.enter;
   }
 
   takeWeaponWish(): number {
