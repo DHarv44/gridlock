@@ -26,21 +26,35 @@ export class Sound {
   listenerY = 0;
   private lastSiren = 0;
 
+  /** Music (radio) volume, 1–100, separate from the game's sounds. */
+  private music: number;
+
   constructor() {
-    const stored = Number(safeGet('gridlock.volume') ?? '0.5');
-    this.volume = Number.isFinite(stored) ? stored : 0.5;
+    this.volume = percent(safeGet('gridlock.volume.game'), 50) / 100;
+    this.music = percent(safeGet('gridlock.volume.music'), 70);
     this.muted = new URLSearchParams(location.search).has('mute');
     const unlock = () => { this.ensure(); window.removeEventListener('pointerdown', unlock); window.removeEventListener('keydown', unlock); };
     window.addEventListener('pointerdown', unlock);
     window.addEventListener('keydown', unlock);
   }
 
+  /** Game sounds, 0–1. */
   get level(): number { return this.volume; }
+  /** Game and music volume as the sliders show them (1–100). */
+  get gamePercent(): number { return Math.round(this.volume * 100); }
+  get musicPercent(): number { return this.music; }
+  /** Music volume, 0–1. */
+  get musicLevel(): number { return this.music / 100; }
 
-  setVolume(v: number): void {
-    this.volume = v;
-    safeSet('gridlock.volume', String(v));
-    if (this.master) this.master.gain.value = this.muted ? 0 : v * 0.6;
+  setGame(p: number): void {
+    this.volume = percent(p, 50) / 100;
+    safeSet('gridlock.volume.game', String(this.gamePercent));
+    if (this.master) this.master.gain.value = this.muted ? 0 : this.volume * 0.6;
+  }
+
+  setMusic(p: number): void {
+    this.music = percent(p, 70);
+    safeSet('gridlock.volume.music', String(this.music));
   }
 
   private ensure(): AudioContext | null {
@@ -157,4 +171,9 @@ function safeGet(k: string): string | null {
 }
 function safeSet(k: string, v: string): void {
   try { localStorage.setItem(k, v); } catch { /* storage unavailable */ }
+}
+/** A volume setting as a whole number 1–100 (anything unreadable gets the default). */
+function percent(v: unknown, dflt: number): number {
+  const n = Math.round(Number(v ?? dflt));
+  return Number.isFinite(n) ? Math.max(1, Math.min(100, n)) : dflt;
 }

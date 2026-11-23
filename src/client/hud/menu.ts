@@ -42,13 +42,22 @@ function padSummary(input: Input): string {
 }
 const SUMMARY_PAD: PadAction[] = ['action', 'jump', 'sprint', 'handbrake', 'fire', 'prevWeapon', 'nextWeapon'];
 
+/** A 1–100 volume slider with its number. */
+const slider = (id: string, label: string, value: number) =>
+  `<div class="field volume"><span>${label}</span><input type="range" id="${id}" min="1" max="100" step="1" value="${value}"><b id="${id}-n">${value}</b></div>`;
+
 export function openMenu(d: MenuDeps): void {
   const { pane, sound, quality, input, code } = d;
+  // Values as of opening: putting the live value in the markup would re-render the pane (and
+  // drop the slider out from under the pointer) on every move. The numbers update in place.
+  const game = sound.gamePercent, music = sound.musicPercent;
   pane.open(() => ({
     title: 'Paused',
     subtitle: `Room ${code} · the game keeps running`,
     html: `
-      <div class="field">Volume <input type="range" id="vol" min="0" max="1" step="0.05" value="${sound.level}"></div>
+      <div class="group">Volume</div>
+      ${slider('vol-game', 'Game', game)}
+      ${slider('vol-music', 'Music', music)}
       <div class="group">Felony record</div>
       ${recordHtml(d.record())}
       <div class="group">Invite friends</div>
@@ -69,6 +78,10 @@ export function openMenu(d: MenuDeps): void {
   // Delegated so it survives the pane re-rendering.
   pane.el.oninput = (e) => {
     const t = e.target as HTMLInputElement;
-    if (t.id === 'vol') sound.setVolume(Number(t.value));
+    if (t.id === 'vol-game') sound.setGame(Number(t.value));
+    else if (t.id === 'vol-music') sound.setMusic(Number(t.value));
+    else return;
+    const n = pane.el.querySelector(`#${t.id}-n`);
+    if (n) n.textContent = t.value;
   };
 }

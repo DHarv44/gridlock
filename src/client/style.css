@@ -204,6 +204,10 @@ button.danger { background: #8a2420; border-color: #8a2420; }
 .pane .keys kbd { font-family: inherit; color: var(--accent); }
 .pane .field { padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--dim); }
 .pane .field input[type=range] { width: 100%; }
+.pane .field.volume { flex-direction: row; align-items: center; gap: 12px; color: var(--ink); }
+.pane .field.volume span { width: 48px; color: var(--dim); }
+.pane .field.volume input { flex: 1; }
+.pane .field.volume b { width: 30px; text-align: right; font-variant-numeric: tabular-nums; }
 .pane.wide { width: min(560px, 96vw); }
 .pane .tabs { display: flex; gap: 4px; margin-top: 14px; border-bottom: 1px solid var(--line); }
 .pane .tab { background: none; border: 0; border-bottom: 2px solid transparent; color: var(--dim); font: inherit; font-size: 15px; padding: 8px 14px; cursor: pointer; }

@@ -31,7 +31,8 @@ export class Radio {
   private refreshT = REFRESH_S;
   private banner: HTMLElement;
   private bannerT = 0;
-  volume = 0.7;
+  /** Scaled by the music volume setting passed to update(). */
+  volume = 1;
 
   constructor(private muted: boolean) {
     this.audio.preload = 'auto';

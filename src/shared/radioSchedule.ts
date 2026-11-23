@@ -1,8 +1,7 @@
 // The broadcast: what each station is playing at any moment, worked out from the clock alone.
 // Since a fixed start date the station has played its songs in loops, each loop in a fresh order
-// shuffled from (station, loop number), with commercial breaks between songs: a break comes after
-// a song now and then and at the latest every third song, one spot per break, never the same spot
-// twice running. Anyone who knows the playlist and the time works out the same thing, so tuning in
+// shuffled from (station, loop number), with commercial breaks between songs: one spot per break,
+// after no fewer than 2 and no more than 4 songs, never the same spot twice running. Anyone who knows the playlist and the time works out the same thing, so tuning in
 // joins what's on air; there's nothing to pause or resume.
 import { Rng } from './rng';
 
@@ -13,9 +12,11 @@ export interface OnAir { file: string; dur: number; offset: number; endsAt: numb
 
 /** The broadcast has been running since 1 Jan 2026 (Unix seconds). */
 const EPOCH = Date.UTC(2026, 0, 1) / 1000;
-/** Chance of a break after a song, and the most songs in a row without one. */
-const BREAK_CHANCE = 0.45;
-const MAX_RUN = 3;
+/** Songs between commercials: at least MIN_RUN, at most MAX_RUN; in between, a break after a
+ *  song comes with this chance. Every break is a single spot. */
+const MIN_RUN = 2;
+const MAX_RUN = 4;
+const BREAK_CHANCE = 0.4;
 
 function hash(s: string): number {
   let h = 2166136261;
@@ -37,7 +38,7 @@ function buildLoop(station: string, list: StationList, loop: number, carry: Carr
   for (const i of order) {
     slots.push({ track: list.songs[i], ad: false });
     run++;
-    if (list.ads.length && (run >= MAX_RUN || rng.chance(BREAK_CHANCE))) {
+    if (list.ads.length && run >= MIN_RUN && (run >= MAX_RUN || rng.chance(BREAK_CHANCE))) {
       let a = rng.int(0, list.ads.length - 1);
       if (list.ads.length > 1 && a === lastAd) a = (a + 1 + rng.int(0, list.ads.length - 2)) % list.ads.length;
       slots.push({ track: list.ads[a], ad: true });

@@ -19,19 +19,26 @@ check(list.ads.length > 0 && list.ads.every((t) => t.dur > 1 && t.dur < 60), 'co
 
 // Walk two hours of air.
 const t0 = Date.UTC(2026, 10, 23) / 1000;
-let t = t0, gaps = 0, plays = 0, ads = 0, adRuns = 0, longestRun = 0, run = 0, repeats = 0;
-let prev = '', prevAd = false;
+let t = t0, gaps = 0, plays = 0, ads = 0, adRuns = 0, run = 0, repeats = 0;
+let prev = '', prevAd = false, seenAd = false;
+const runs: number[] = [];
 while (t < t0 + 7200) {
   const a = onAir('weather', list, t)!;
   if (plays > 0 && Math.abs(a.offset) > 1e-3) gaps++; // the first sample lands mid-song
   if (a.file === prev) repeats++;
-  if (a.ad) { ads++; if (prevAd) adRuns++; run = 0; } else { run++; longestRun = Math.max(longestRun, run); }
+  if (a.ad) {
+    ads++;
+    if (prevAd) adRuns++;
+    if (seenAd) runs.push(run); // the stretch before the first spot started before we tuned in
+    seenAd = true;
+    run = 0;
+  } else run++;
   prev = a.file; prevAd = a.ad; plays++;
   t = a.endsAt + 1e-4;
 }
 check(gaps === 0, `two hours: ${plays} plays (${ads} commercials), each starts where the last ended`);
-check(ads > 0 && adRuns === 0, 'commercials play, never two in a row');
-check(longestRun <= 3, `at most 3 songs between breaks (longest run ${longestRun})`);
+check(ads > 0 && adRuns === 0, 'one commercial per break, never two in a row');
+check(runs.length > 0 && runs.every((n) => n >= 2 && n <= 4), `2 to 4 songs between commercials (seen: ${[...new Set(runs)].sort().join(', ')})`);
 check(repeats === 0, 'nothing plays twice in a row');
 // Same moment, asked cold (forces a replay from the start date) and warm: same answer.
 const warm = onAir('weather', list, t0 + 1234.5)!;
