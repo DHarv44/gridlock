@@ -1,7 +1,7 @@
 // The broadcast: what each station is playing at any moment, worked out from the clock alone.
 // Since a fixed start date the station has played its songs in loops, each loop in a fresh order
 // shuffled from (station, loop number), with commercial breaks between songs: one spot per break,
-// after no fewer than 2 and no more than 4 songs, never the same spot twice running. A song never
+// after no fewer than 1 and no more than 3 songs, never the same spot twice running. A song never
 // comes back until at least half the station's other songs have played, across loops too.
 // Anyone who knows the playlist and the time works out the same thing, so tuning in
 // joins what's on air; there's nothing to pause or resume.
@@ -17,9 +17,9 @@ export interface OnAir { file: string; dur: number; offset: number; endsAt: numb
 const EPOCH = Date.UTC(2026, 0, 1) / 1000;
 /** Songs between commercials: at least MIN_RUN, at most MAX_RUN; in between, a break after a
  *  song comes with this chance. Every break is a single spot. */
-const MIN_RUN = 2;
-const MAX_RUN = 4;
-const BREAK_CHANCE = 0.4;
+export const MIN_RUN = 1;
+export const MAX_RUN = 3;
+const BREAK_CHANCE = 0.5;
 
 function hash(s: string): number {
   let h = 2166136261;

@@ -3,7 +3,7 @@
 // `npx tsx scripts/radio.ts`
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { extname, join } from 'node:path';
-import { onAir, type RadioTrack, type StationList } from '../src/shared/radioSchedule';
+import { MAX_RUN, MIN_RUN, onAir, type RadioTrack, type StationList } from '../src/shared/radioSchedule';
 import { audioDuration } from '../src/server/audioDuration';
 
 let failures = 0;
@@ -38,7 +38,7 @@ while (t < t0 + 7200) {
 }
 check(gaps === 0, `two hours: ${plays} plays (${ads} commercials), each starts where the last ended`);
 check(ads > 0 && adRuns === 0, 'one commercial per break, never two in a row');
-check(runs.length > 0 && runs.every((n) => n >= 2 && n <= 4), `2 to 4 songs between commercials (seen: ${[...new Set(runs)].sort().join(', ')})`);
+check(runs.length > 0 && runs.every((n) => n >= MIN_RUN && n <= MAX_RUN), `${MIN_RUN} to ${MAX_RUN} songs between commercials (seen: ${[...new Set(runs)].sort().join(', ')})`);
 check(repeats === 0, 'nothing plays twice in a row');
 // Every station, a day of air: a song only comes back after half the station's others have played.
 for (const id of readdirSync('radio').filter((d) => statSync(join('radio', d)).isDirectory())) {

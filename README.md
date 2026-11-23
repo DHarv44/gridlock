@@ -26,7 +26,7 @@ clock: every player on a station hears the same song at the same moment, and swi
 never restarts anything (you join whatever is on air). A station plays every audio file
 (.m4a, .mp3, .wav; lengths are read from the files) in its folder, with commercial breaks
 between songs (one random spot from the folder's `commercials/` subfolder after a song now and
-after 2 to 4 songs, never the same spot twice running; a station with no commercials plays songs
+after 1 to 3 songs, never the same spot twice running; a station with no commercials plays songs
 back to back). Song titles and artists come from `radio/<station id>/tracks.json` (file name →
 `{ title, artist }`); a song without an entry shows its file name. The station folder is: `radio/<station id>/` in the project, or a local
 library folder named in `radio.local.json` (not committed), e.g.
