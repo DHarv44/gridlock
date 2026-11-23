@@ -57,7 +57,9 @@ own character's last spot, in that vehicle.
 Keyboard and mouse, or a controller. On foot W/A/S/D (or arrows) run north/west/south/east on
 screen and you face the way you run (or aim with right mouse); shots go that way and auto-aim at
 whoever is ahead of you (±16°). There is no cursor in play. Esc → Change controls has a Keyboard / Mouse tab (two keys per action;
-Delete clears a slot) and a Controller tab (rebind buttons).
+Delete clears a slot) and a Controller tab (rebind buttons). Every action is its own setting,
+grouped On foot / Car / Helicopter / Tank / Weapons / General; one key can do different jobs in
+different groups (Space jumps, handbrakes and climbs), and only clashes within a group are cleared.
 
 **Controller** (any standard-mapped pad, no setup; browsers reveal a pad only after you press one
 of its buttons on the game page, and only over https or localhost, so a plain-http LAN address
