@@ -1,4 +1,4 @@
-// Headless checks of GTA2-style mechanics: jump, no reloading, drive-in respray and chop shop.
+// Headless checks of GTA2-style mechanics: jump, no reloading, paint shop and drive-in chop shop.
 // `npx tsx scripts/gta2check.ts`
 import { SERVICES, vehicleIndex, weaponIndex } from '../src/shared/packs';
 import { BTN, type InputMsg } from '../src/shared/protocol';
@@ -34,7 +34,7 @@ input(BTN.fire, 120);
 out.push(`fire: SMG rounds used in 4 s = ${before - (h().clip + h().ammo)} (13/s with no reload pauses ≈ 52, capped by ${before})`);
 out.push(`fire: switched off empty gun = ${ped().weapons[ped().wi].w !== smg || h().clip + h().ammo > 0}`);
 
-// Drive-in respray.
+// Paint shop: the pad opens a menu on the client; nothing is bought by driving in.
 const respray = w.city.services.find((s) => SERVICES[s.spec].verb === 'respray')!;
 const car = spawnVehicle(w, vehicleIndex('sedan'), respray.pad!.x + 30, respray.pad!.y, 0);
 seatPed(w, ped(), car, 0);
@@ -44,7 +44,10 @@ input(0, 2);
 car.body.x = respray.pad!.x; car.body.y = respray.pad!.y; car.body.vx = 0; car.body.vy = 0;
 const color0 = car.color;
 input(0, 3);
-out.push(`respray: wanted ${pl.wanted} (expect 0 unless cops watching), cash 5000 -> ${pl.cash}, colour changed = ${car.color !== color0}`);
+const untouched = car.color === color0 && pl.cash === 5000;
+// The paint shop menu buys a chosen colour (palette index 17, pink).
+const err = room.econ.buy(pl, 'respray', '17', respray.id);
+out.push(`respray: pad alone sells nothing = ${untouched}; chosen colour ${err ?? `pink = ${car.color === 17}`}, wanted ${pl.wanted} (0 unless cops watching), cash 5000 -> ${pl.cash}`);
 
 // Drive-in chop shop.
 const chop = w.city.services.find((s) => SERVICES[s.spec].verb === 'chopshop')!;

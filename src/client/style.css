@@ -195,3 +195,7 @@ button.danger { background: #8a2420; border-color: #8a2420; }
 .pane .slot.empty { color: var(--dim); }
 .pane .slot.on { border-color: var(--accent); color: var(--accent); }
 .pane .focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+.pane .swatch-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; padding: 6px 10px 12px; }
+.pane .chip { aspect-ratio: 1; padding: 0; border: 2px solid rgba(0,0,0,0.5); border-radius: 6px; cursor: pointer; }
+.pane .chip:hover, .pane .chip.focus { transform: scale(1.08); outline: 2px solid var(--accent); outline-offset: 1px; }
+.pane .chip.on { box-shadow: inset 0 0 0 3px rgba(255,255,255,0.85); }

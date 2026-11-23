@@ -24,10 +24,14 @@ export interface PaneRow {
 
 export interface PaneTab { label: string; active: boolean; onClick: () => void }
 
+/** A colour chip in a swatch grid (paint shop). `onHover` previews it. */
+export interface PaneSwatch { color: string; label: string; on?: boolean; onClick: () => void; onHover?: (over: boolean) => void }
+
 export interface PaneContent {
   title: string;
   subtitle?: string;
   tabs?: PaneTab[];
+  swatches?: PaneSwatch[];
   rows: PaneRow[];
   footer?: string;
   html?: string;
@@ -103,6 +107,7 @@ export class Pane {
     const el = row[this.fc];
     el.classList.add('focus');
     el.scrollIntoView({ block: 'nearest' });
+    this.chips.get(el)?.onHover?.(true);
   }
 
   /** Re-renders only when the content actually changed (keeps clicks/hover stable). */
@@ -114,6 +119,7 @@ export class Pane {
     if (sig === this.sig) return;
     this.sig = sig;
     this.grid = [];
+    this.chips.clear();
     this.el.innerHTML = '';
     this.el.classList.toggle('wide', !!c.wide);
     const header = document.createElement('header');
@@ -125,6 +131,7 @@ export class Pane {
     const list = document.createElement('div');
     list.className = 'list';
     if (c.html) list.innerHTML = c.html;
+    if (c.swatches) list.appendChild(this.swatchGrid(c.swatches));
     let group = '';
     for (const r of c.rows) {
       if (r.group && r.group !== group) {
@@ -161,6 +168,32 @@ export class Pane {
     if (this.fresh) this.fc = Math.max(0, tabs.findIndex((t) => t.active));
     return bar;
   }
+
+  /** Colour chips, 6 per controller-navigation row; focus or hover previews. */
+  private swatchGrid(list: PaneSwatch[]): HTMLElement {
+    const grid = document.createElement('div');
+    grid.className = 'swatch-grid';
+    let navRow: HTMLElement[] = [];
+    list.forEach((s, i) => {
+      const b = document.createElement('button');
+      b.className = `chip${s.on ? ' on' : ''}`;
+      b.style.background = s.color;
+      b.title = s.label;
+      b.addEventListener('click', s.onClick);
+      if (s.onHover) {
+        b.addEventListener('mouseenter', () => s.onHover!(true));
+        b.addEventListener('mouseleave', () => s.onHover!(false));
+        this.chips.set(b, s);
+      }
+      grid.appendChild(b);
+      navRow.push(b);
+      if (navRow.length === 6 || i === list.length - 1) { this.grid.push(navRow); navRow = []; }
+    });
+    return grid;
+  }
+
+  /** Swatch chips that preview when the controller focuses them. */
+  private chips = new Map<HTMLElement, PaneSwatch>();
 
   private row(r: PaneRow): HTMLElement {
     const row = document.createElement('div');

@@ -6,6 +6,8 @@ import { StaticWorld } from '../../shared/world/collision';
 import { Sound } from '../audio/sound';
 import { Hud } from '../hud/hud';
 import { openMenu } from '../hud/menu';
+import { paintContent } from '../hud/paintShop';
+import type { Place } from '../../shared/world/cityTypes';
 import { Minimap } from '../hud/minimap';
 import { Pane } from '../hud/pane';
 import type { Connection } from '../net/connection';
@@ -260,6 +262,7 @@ export class Game {
     if (ring) this.conn.send({ t: 'job', booth: ring.id });
     this.hud.setPrompt(this.pane.isOpen ? null : this.interact.promptText(spot, this.owners, this.myName));
     this.interact.tick(own.x, own.y);
+    this.interact.paintShop(own.x, own.y, Math.hypot(own.vx, own.vy), you, (place) => this.openPaint(place));
     this.pane.refresh();
     const ctx = this.hud.radar.getContext('2d')!;
     const range = own.vid ? 260 : 170;
@@ -277,6 +280,17 @@ export class Game {
       if (c.width !== Math.round(size)) { c.width = c.height = Math.round(size); }
       this.radar.drawFull(c.getContext('2d')!, c.width, this.players, this.myId, owned, this.owners);
     }
+  }
+
+  /** Paint shop: colour menu with a live preview on your car. */
+  private openPaint(place: Place): void {
+    const vid = this.you?.vid ?? 0;
+    let bought = false;
+    const preview = (c: number | null) => { if (!bought) this.view.paintPreview = c === null ? null : { vid, color: c }; };
+    // After paying, keep showing the new colour until the server's snapshot brings it.
+    this.pane.onClose = () => { setTimeout(() => { this.view.paintPreview = null; }, bought ? 700 : 0); };
+    this.pane.open(() => paintContent(place, this.you?.cash ?? 0, (this.you?.wl ?? 0) > 0, this.store.all.get(vid)?.data[6] ?? -1,
+      (kind, id, p) => { bought = true; this.conn.send({ t: 'buy', kind, id, place: p }); }, preview, () => this.pane.close()));
   }
 
   private leave(): void {

@@ -29,6 +29,9 @@ export class WorldView {
   private tagged = new Set<number>();
   private time = 0;
 
+  /** A colour to show on one vehicle instead of its real paint (paint-shop preview). */
+  paintPreview: { vid: number; color: number } | null = null;
+
   constructor(private scene: THREE.Scene, private fx: Effects, private lamps: { x: number; y: number }[]) {}
 
   sync(store: EntityStore, dt: number, own: OwnState | null, tags: Map<number, PlayerTag>, night: number, view: { x0: number; y0: number; x1: number; y1: number }): void {
@@ -116,7 +119,9 @@ export class WorldView {
 
   private vehicle(e: ViewEntity, dt: number, own: OwnState | null, night: number): void {
     const d = e.data;
-    const type = d[2], color = d[6], flags = d[7], dmg = d[10];
+    const type = d[2], flags = d[7], dmg = d[10];
+    // Paint shop: show the colour being browsed on your own car before you pay.
+    const color = this.paintPreview && this.paintPreview.vid === e.id ? this.paintPreview.color : d[6];
     const spec = VEHICLES[type];
     const wreck = !!(flags & VF.wreck);
     const key = `${type}:${color}:${wreck}`;

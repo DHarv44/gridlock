@@ -27,6 +27,13 @@ export const PALETTE: string[] = [
   '#9e1b32', // 23 crimson
 ];
 
+/** Names shown in the paint shop, by palette index. */
+export const PALETTE_NAMES = [
+  'White', 'Black', 'Silver', 'Graphite', 'Dark red', 'Red', 'Navy', 'Blue', 'Forest green', 'Olive', 'Mustard',
+  'Taxi yellow', 'Orange', 'Brown', 'Beige', 'Purple', 'Teal', 'Pink', 'Lime', 'Army drab', 'Army olive', 'Off-white',
+  'Midnight', 'Crimson',
+];
+
 export const CIVIL = [0, 1, 2, 3, 4, 6, 7, 8, 13, 14, 21, 22, 2, 0, 1];
 export const BRIGHT = [5, 7, 10, 12, 15, 16, 17, 18, 23, 0, 1, 11];
 export const DULL = [2, 3, 13, 14, 21, 9, 0, 6];

@@ -1,6 +1,6 @@
 // Money: pickups, shops, dealers, garages, properties, respray, chop shop, business income.
 import { dist } from '../../../shared/math';
-import { PROPERTIES, RULES, SERVICES, VEHICLES, WEAPONS, paletteFor, vehicleIndex, weaponIndex } from '../../../shared/packs';
+import { PALETTE, PROPERTIES, RULES, SERVICES, VEHICLES, WEAPONS, paletteFor, vehicleIndex, weaponIndex } from '../../../shared/packs';
 import { type BuyKind, Mode, PK } from '../../../shared/protocol';
 import type { Place } from '../../../shared/world/cityTypes';
 import type { Player } from '../entities';
@@ -19,7 +19,8 @@ export class Economy {
   /** Player id -> service place the player's car is currently sitting on (-1 none). */
   private onPad = new Map<number, number>();
 
-  /** GTA2 garages: driving onto a respray or chop-shop pad does the job, no menu. */
+  /** GTA2 garages: driving onto a chop-shop pad does the job, no menu. (Paint shops open a
+   *  colour menu on the client and buy through `buy('respray', colour)`.) */
   private garages(): void {
     const w = this.w;
     for (const pl of w.players.values()) {
@@ -29,16 +30,14 @@ export class Economy {
       let on = -1;
       for (const s of w.city.services) {
         const verb = SERVICES[s.spec].verb;
-        if ((verb === 'respray' || verb === 'chopshop') && s.pad && dist(v.body.x, v.body.y, s.pad.x, s.pad.y) < 6) on = s.id;
+        if (verb === 'chopshop' && s.pad && dist(v.body.x, v.body.y, s.pad.x, s.pad.y) < 6) on = s.id;
       }
       const was = this.onPad.get(pl.id) ?? -1;
       // Too fast: don't count as arrived yet, so it triggers once the car slows down on the pad.
       this.onPad.set(pl.id, on >= 0 && Math.hypot(v.body.vx, v.body.vy) > 8 ? -1 : on);
       if (on < 0 || on === was || this.onPad.get(pl.id) !== on) continue;
-      const verb = SERVICES[w.city.services[on].spec].verb;
-      const err = this.buy(pl, verb === 'respray' ? 'respray' : 'chop', '', on);
+      const err = this.buy(pl, 'chop', '', on);
       if (err) w.notify('warn', err, pl);
-      else if (verb === 'respray') w.notify('money', `Resprayed · -$${SERVICES[w.city.services[on].spec].price ?? 500}`, pl);
     }
   }
 
@@ -174,11 +173,17 @@ export class Economy {
         const v = p.vehicle ? w.vehicles.get(p.vehicle) : undefined;
         if (spec.verb !== 'respray' || !v || p.seat !== 0) return 'Drive in first.';
         if (lawCanSee(w, pos.x, pos.y, 50)) return 'Lose the cops first.';
-        if (!pay(spec.price ?? 500)) return 'Not enough cash.';
+        // `id`: a palette index chosen in the paint shop, or '' for a surprise colour.
+        const chosen = id === '' ? -1 : Number(id);
+        if (id !== '' && !(Number.isInteger(chosen) && chosen >= 0 && chosen < PALETTE.length)) return 'No such colour.';
+        const price = spec.price ?? 500;
+        if (!pay(price)) return 'Not enough cash.';
         const pal = paletteFor(v.spec.colors);
-        v.color = pal[(pal.indexOf(v.color) + 1 + Math.floor(w.rng.next() * (pal.length - 1))) % pal.length];
+        v.color = chosen >= 0 ? chosen : pal[(pal.indexOf(v.color) + 1 + Math.floor(w.rng.next() * (pal.length - 1))) % pal.length];
         v.hp = v.spec.hp;
+        const wanted = pl.wanted > 0;
         clearHeat(pl);
+        w.notify('money', `${wanted ? 'Resprayed. Heat is off' : 'Resprayed'} · -$${price}`, pl);
         return null;
       }
       case 'chop': {

@@ -57,6 +57,21 @@ export class Interact {
       : serviceContent(s.place, you(), buy));
   }
 
+  /** Paint shop pad the menu last opened for; it opens once per visit, not again until you leave. */
+  private visited = -1;
+
+  /** GTA-style paint shop: stopping your car on the pad opens the colour menu. */
+  paintShop(x: number, y: number, speed: number, you: YouState, open: (place: Place) => void): void {
+    const place = you.mode === Mode.Driver
+      ? this.city.services.find((s) => SERVICES[s.spec].verb === 'respray' && s.pad && Math.hypot(s.pad.x - x, s.pad.y - y) < 6)
+      : undefined;
+    if (!place) { this.visited = -1; return; }
+    if (this.pane.isOpen || speed > 3 || this.visited === place.id) return;
+    this.visited = place.id;
+    this.openSpot = { place, property: false };
+    open(place);
+  }
+
   /** Closes the pane when the player walks away. */
   tick(x: number, y: number): void {
     if (!this.openSpot || !this.pane.isOpen) return;

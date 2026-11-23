@@ -9,7 +9,7 @@ import { DISTRICTS, ZONES } from './zones';
 
 export { CRIMES, type CrimeKind, FELONIES, RULES, SERVICE_CALLS, WANTED } from './rules';
 export { MARK_NAMES, MISSIONS, MODES, RESPECT } from './missions';
-export { PALETTE, paletteFor } from './palette';
+export { PALETTE, PALETTE_NAMES, paletteFor } from './palette';
 export { CHARACTER_LOOKS, type CharacterSummary, type CharLook, cleanLook, cleanName, DEFAULT_LOOK, LOOK_PARTS, type LookPart, MAX_CHARACTERS, NAME_PARTS } from './characters';
 export { DISTRICTS, FACTIONS, PEDS, PROPERTIES, SERVICES, VEHICLES, WEAPONS, ZONES };
 export type * from './types';
