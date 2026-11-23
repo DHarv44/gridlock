@@ -3,6 +3,7 @@ import type { WebSocket } from 'ws';
 import { type C2S, PROTOCOL_VERSION, type RoomListing, type S2C } from '../shared/protocol';
 import { RULES } from '../shared/packs';
 import type { Player } from './game/entities';
+import { getCharacter, nameTaken, type SavedCharacter, validKey } from './characters';
 import { loadRoom } from './persist';
 import { Room } from './room';
 
@@ -11,6 +12,8 @@ const ROOM_IDLE_MS = 10 * 60 * 1000;
 
 export class Lobby {
   private rooms = new Map<string, Room>();
+  /** Character ids currently in a game (one game at a time each). */
+  private active = new Set<string>();
 
   constructor() {
     setInterval(() => this.reap(), 60 * 1000).unref();
@@ -62,20 +65,30 @@ export class Lobby {
       if (!player) {
         if (msg.t !== 'hello') return;
         if (msg.v !== PROTOCOL_VERSION) { send({ t: 'reject', reason: 'Version mismatch: refresh the page.' }); return; }
-        const name = String(msg.name ?? '').replace(/[^\w \-.]/g, '').trim().slice(0, 16);
+        let name = String(msg.name ?? '').replace(/[^\w \-.]/g, '').trim().slice(0, 16);
+        let character: { key: string; save: SavedCharacter } | undefined;
+        if (msg.char !== undefined) {
+          const save = validKey(msg.key) ? getCharacter(msg.key, String(msg.char)) : null;
+          if (!save) { send({ t: 'reject', reason: 'That character no longer exists.' }); return; }
+          if (this.active.has(save.id)) { send({ t: 'reject', reason: `${save.name} is already in a game.` }); return; }
+          character = { key: msg.key!, save };
+          name = save.name;
+        } else if (name && nameTaken(name)) { send({ t: 'reject', reason: 'That name belongs to a saved character.' }); return; }
         if (!name) { send({ t: 'reject', reason: 'Pick a name.' }); return; }
         const wanted = String(msg.room ?? '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
         const code = msg.create ? (wanted.length === 4 && !this.rooms.has(wanted) ? wanted : this.newCode()) : wanted;
         room = this.getRoom(code, !!msg.create, typeof msg.mode === 'string' ? msg.mode : undefined);
         if (!room) { send({ t: 'reject', reason: `No room called ${code}.` }); return; }
-        const res = room.join(name, conn);
+        const res = room.join(name, conn, character);
         if (typeof res === 'string') { send({ t: 'reject', reason: res }); room = null; return; }
         player = res;
+        if (character) this.active.add(character.save.id);
         return;
       }
       room!.onMessage(player, msg);
     });
     ws.on('close', () => {
+      if (player?.character) this.active.delete(player.character.id);
       if (room && player) room.leave(player);
       room = null;
       player = null;

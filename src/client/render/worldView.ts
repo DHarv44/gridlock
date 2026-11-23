@@ -1,6 +1,6 @@
 // Syncs interpolated entities to meshes each frame, plus per-entity effects and night glows.
 import * as THREE from 'three';
-import { VEHICLES, WEAPONS } from '../../shared/packs';
+import { type CharLook, VEHICLES, WEAPONS } from '../../shared/packs';
 import { EK, PF, PK, VF } from '../../shared/protocol';
 import type { EntityStore, ViewEntity } from '../net/entities';
 import type { Effects } from './effects';
@@ -8,7 +8,7 @@ import { animatePed, makePed, type PedView, setPedWeapon } from './pedMesh';
 import { makeVehicle, sirenMats, type VehicleView } from './vehicleMesh';
 
 export interface OwnState { pid: number; vid: number; x: number; y: number; angle: number; alt: number; driving: boolean; vx: number; vy: number }
-export interface PlayerTag { name: string; color: string }
+export interface PlayerTag { name: string; color: string; look?: CharLook }
 
 const projGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.8, 6).rotateZ(Math.PI / 2);
 const grenadeGeo = new THREE.SphereGeometry(0.16, 8, 6);
@@ -66,8 +66,12 @@ export class WorldView {
     const flags = d[6];
     const tag = tags.get(e.id);
     let v = this.peds.get(e.id);
+    // A player's tag (colour, saved look) can arrive after their ped first shows: rebuild then.
+    const want = tag ? `${tag.color}:${tag.look ? JSON.stringify(tag.look) : ''}` : '';
+    if (v && v.lookKey !== want) { this.scene.remove(v.root); this.peds.delete(e.id); this.dropTag(e.id); v = undefined; }
     if (!v) {
-      v = makePed(e.id, d[2], tag?.color ?? null);
+      v = makePed(e.id, d[2], tag?.color ?? null, tag?.look);
+      v.lookKey = want;
       this.peds.set(e.id, v);
       this.scene.add(v.root);
     }

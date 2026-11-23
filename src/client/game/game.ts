@@ -233,9 +233,9 @@ export class Game {
 
   private tags(): Map<number, PlayerTag> {
     const m = new Map<number, PlayerTag>();
-    for (const p of this.players) m.set(p.pid, { name: p.name, color: p.color });
+    for (const p of this.players) m.set(p.pid, { name: p.name, color: p.color, look: p.look });
     const me = this.players.find((p) => p.id === this.myId);
-    if (this.you && me) m.set(this.you.pid, { name: me.name, color: me.color });
+    if (this.you && me) m.set(this.you.pid, { name: me.name, color: me.color, look: me.look });
     return m;
   }
 

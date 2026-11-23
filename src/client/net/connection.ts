@@ -7,11 +7,13 @@ export class Connection {
   onClose: (reason: string) => void = () => {};
   rtt = 0;
 
-  constructor(name: string, room: string, create: boolean, mode?: string) {
+  /** `who` is a saved character ({key, char}) or a guest name. */
+  constructor(who: { key: string; char: string } | string, room: string, create: boolean, mode?: string) {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     this.ws = new WebSocket(`${proto}//${location.host}/ws`);
     this.ws.onopen = () => {
-      this.send({ t: 'hello', v: PROTOCOL_VERSION, name, room, create, mode });
+      const id = typeof who === 'string' ? { name: who } : { name: '', key: who.key, char: who.char };
+      this.send({ t: 'hello', v: PROTOCOL_VERSION, room, create, mode, ...id });
       setInterval(() => this.send({ t: 'ping', ts: performance.now() }), 2000);
     };
     this.ws.onmessage = (ev) => {

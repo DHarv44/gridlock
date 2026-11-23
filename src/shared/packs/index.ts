@@ -10,6 +10,7 @@ import { DISTRICTS, ZONES } from './zones';
 export { CRIMES, RULES, SERVICE_CALLS, WANTED } from './rules';
 export { MARK_NAMES, MISSIONS, MODES, RESPECT } from './missions';
 export { PALETTE, paletteFor } from './palette';
+export { CHARACTER_LOOKS, type CharacterSummary, type CharLook, cleanLook, cleanName, DEFAULT_LOOK, LOOK_PARTS, type LookPart, MAX_CHARACTERS } from './characters';
 export { DISTRICTS, FACTIONS, PEDS, PROPERTIES, SERVICES, VEHICLES, WEAPONS, ZONES };
 export type * from './types';
 

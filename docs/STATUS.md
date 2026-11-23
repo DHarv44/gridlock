@@ -41,6 +41,10 @@
   (Pane.nav). Controls editor has Keyboard / Mouse (2 slots per action) and Controller tabs.
 - Semi trailer: articulated (shared/sim/physics stepTrailer, server/systems/trailers.ts), angle at
   vehicle entity index 11 (0 for vehicles without a trailer).
+- Characters (2026-11-23): server/characters.ts + characterApi.ts (/api/characters, key in the
+  x-gridlock-key header, stored hashed under data/players), unique names server-wide, one game at
+  a time per character, look palettes in packs/characters.ts, lobby picker in client/lobby/.
+  `?play=Name` still joins as an unsaved guest. `npx tsx scripts/characters.ts` checks it.
 
 ## Known gaps / next
 - Trucks, bus, tank and aircraft still use box models. Cars have per-style models (packs/carModels.ts)

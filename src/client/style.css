@@ -32,6 +32,28 @@ button:hover { background: #2c343f; }
 button.primary { background: var(--accent); color: #111; border: none; font-weight: 700; flex: 1; }
 button.primary:hover { background: #ffd95c; }
 button:disabled { opacity: 0.4; cursor: default; }
+#play { display: flex; flex-direction: column; gap: 14px; }
+.chars { display: flex; flex-direction: column; gap: 6px; }
+.chars-head { color: var(--dim); font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; }
+.char { display: flex; align-items: center; gap: 12px; padding: 6px 10px; background: #14171c; border: 1px solid var(--line); border-radius: 4px; cursor: pointer; }
+.char:hover { border-color: var(--dim); }
+.char.on { border-color: var(--accent); }
+.char .char-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.char .char-info b { font-size: 17px; }
+.char .char-info span { color: var(--dim); font-size: 13px; }
+.char button { padding: 6px 10px; font-size: 13px; }
+.char .char-del { background: none; border: none; color: var(--dim); font-size: 20px; padding: 2px 8px; }
+.char .char-del:hover { color: var(--ink); }
+button.danger { background: #8a2420; border-color: #8a2420; }
+.char-add { border-style: dashed; color: var(--dim); }
+.creator { display: flex; gap: 14px; align-items: flex-start; }
+.creator .figure { flex: none; background: #14171c; border: 1px solid var(--line); border-radius: 4px; padding: 8px; }
+.creator-form { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.swatches { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.swatches small { width: 100%; color: var(--dim); font-size: 12px; }
+.swatches .sw { width: 20px; height: 20px; padding: 0; border: 1px solid #000; border-radius: 3px; }
+.swatches .sw.text { width: auto; height: 22px; padding: 0 8px; font-size: 12px; background: #222831; }
+.swatches .sw.on { outline: 2px solid var(--accent); outline-offset: 1px; }
 #rooms { display: flex; flex-direction: column; gap: 6px; }
 #rooms .room { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: #14171c; border: 1px solid var(--line); border-radius: 4px; font-size: 14px; }
 #rooms .room b { letter-spacing: 0.2em; color: var(--accent); }

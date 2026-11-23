@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { hash32 } from '../../shared/math';
-import { HAIR, PEDS, SHOES, WEAPONS } from '../../shared/packs';
+import { CHARACTER_LOOKS, type CharLook, HAIR, PEDS, SHOES, WEAPONS } from '../../shared/packs';
 
 const S = 1.55; // drawn larger than life so people read from the air
 
@@ -43,17 +43,34 @@ export interface PedView {
   phase: number;
   deadT: number;
   hop: number;              // seconds left in a jump arc
+  lookKey?: string;         // what the look was built from (players rebuild when it changes)
 }
 
-export function makePed(id: number, arch: number, playerColor: string | null): PedView {
+interface Colours { skin: string; top: string; bottom: string; hat: string | null; hair: string; shoes: string; style: number }
+
+/** Archetype peds pick from their look by id; saved characters use their chosen look. */
+function colours(id: number, arch: number, playerColor: string | null, chosen?: CharLook): Colours {
   const look = PEDS[arch].look;
   const h = hash32(id);
   const pick = (arr: string[], salt: number) => arr[(hash32(h + salt) >>> 0) % arr.length];
-  const skin = pick(look.skin, 1), top = playerColor ?? pick(look.top, 2), bottom = pick(look.bottom, 3);
-  const hat = look.hat && (hash32(h + 4) % 100) / 100 < (look.hatChance ?? 0) ? pick(look.hat, 5) : null;
-  const hair = pick(HAIR, 6), shoes = pick(SHOES, 7);
-  const longHair = hash32(h + 8) % 3 === 0;
-  const bodyGeo = cached(`b:${skin}:${top}:${bottom}:${hat}:${hair}:${longHair}`, () => {
+  const shoes = pick(SHOES, 7);
+  if (chosen) {
+    const L = CHARACTER_LOOKS;
+    return { skin: L.skin[chosen.skin], top: L.top[chosen.top], bottom: L.bottom[chosen.bottom], hat: L.hat[chosen.hat] || null, hair: L.hair[chosen.hair], shoes, style: chosen.hairStyle };
+  }
+  return {
+    skin: pick(look.skin, 1), top: playerColor ?? pick(look.top, 2), bottom: pick(look.bottom, 3),
+    hat: look.hat && (hash32(h + 4) % 100) / 100 < (look.hatChance ?? 0) ? pick(look.hat, 5) : null,
+    hair: pick(HAIR, 6), shoes, style: hash32(h + 8) % 3 === 0 ? 1 : 0,
+  };
+}
+
+export function makePed(id: number, arch: number, playerColor: string | null, chosen?: CharLook): PedView {
+  const look = PEDS[arch].look;
+  const h = hash32(id);
+  const { skin, top, bottom, hat, hair, shoes, style } = colours(id, arch, playerColor, chosen);
+  const longHair = style === 1;
+  const bodyGeo = cached(`b:${skin}:${top}:${bottom}:${hat}:${hair}:${style}`, () => {
     const parts = [
       cbox(0.3, 0.26, 0.54, 0, 1.38, 0, top),          // chest / shoulders
       cbox(0.27, 0.38, 0.44, 0, 1.06, 0, top),         // waist
@@ -64,7 +81,7 @@ export function makePed(id: number, arch: number, playerColor: string | null): P
       cbox(0.05, 0.05, 0.2, 0.13, 1.74, 0, '#1a1a1a'), // brows / eyes line facing forward
     ];
     if (hat) parts.push(cbox(0.3, 0.09, 0.27, 0, 1.88, 0, hat), cbox(0.12, 0.03, 0.25, 0.17, 1.84, 0, hat));
-    else {
+    else if (style !== 2) {
       parts.push(cbox(0.27, 0.07, 0.25, -0.01, 1.87, 0, hair));
       parts.push(cbox(0.08, longHair ? 0.34 : 0.18, 0.25, -0.12, longHair ? 1.66 : 1.74, 0, hair));
     }

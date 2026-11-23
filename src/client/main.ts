@@ -1,22 +1,20 @@
-// Entry: lobby screen (name, create/join, open rooms), then hands the connection to the game.
+// Entry: lobby screen (character, create/join, open rooms), then hands the connection to the game.
 import { MODES } from '../shared/packs';
 import type { RoomListing } from '../shared/protocol';
 import { Game } from './game/game';
+import { CharacterPicker } from './lobby/characters';
 import { Connection } from './net/connection';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-const nameInput = $<HTMLInputElement>('name');
 const codeInput = $<HTMLInputElement>('code');
 const errorEl = $('lobby-error');
 const lobby = $('lobby');
 const loading = $('loading');
 
-const store = {
-  get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } },
-  set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* ignore */ } },
-};
-
-nameInput.value = store.get('gridlock.name') ?? '';
+const picker = new CharacterPicker($('chars'));
+picker.onMode = (creating) => { $('play').hidden = creating; errorEl.textContent = ''; };
+/** ?play=Name joins as an unsaved guest (dev and testing). */
+const guest = new URLSearchParams(location.search).get('play');
 
 // Game mode picker (used when creating a room).
 const modeSelect = $<HTMLSelectElement>('mode');
@@ -32,19 +30,18 @@ modeSelect.addEventListener('change', showBlurb);
 showBlurb();
 const hashCode = location.hash.replace('#', '').toUpperCase();
 if (/^[A-Z]{4}$/.test(hashCode)) codeInput.value = hashCode;
-(nameInput.value ? codeInput : nameInput).focus();
 
 let busy = false;
 
 function start(create: boolean, room: string): void {
-  const name = nameInput.value.trim();
-  if (!name) { errorEl.textContent = 'Pick a name first.'; nameInput.focus(); return; }
+  const ch = picker.selected;
+  const name = guest ?? ch?.name ?? '';
+  if (!name) { errorEl.textContent = 'Create a character first.'; return; }
   if (!create && !/^[A-Z]{4}$/.test(room)) { errorEl.textContent = 'Room codes are 4 letters.'; codeInput.focus(); return; }
   if (busy) return;
   busy = true;
   errorEl.textContent = '';
-  store.set('gridlock.name', name);
-  const conn = new Connection(name, room, create, modeSelect.value);
+  const conn = new Connection(guest ?? { key: picker.key, char: ch!.id }, room, create, modeSelect.value);
   let started = false;
   conn.onClose = (reason) => {
     busy = false;
@@ -72,10 +69,6 @@ function start(create: boolean, room: string): void {
 $('create').addEventListener('click', () => start(true, ''));
 $('join').addEventListener('click', () => start(false, codeInput.value.trim().toUpperCase()));
 codeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') start(false, codeInput.value.trim().toUpperCase()); });
-nameInput.addEventListener('keydown', (e) => {
-  if (e.key !== 'Enter') return;
-  if (/^[A-Z]{4}$/i.test(codeInput.value)) start(false, codeInput.value.toUpperCase()); else start(true, '');
-});
 
 async function refreshRooms(): Promise<void> {
   if (lobby.hidden) return;
@@ -98,10 +91,8 @@ async function refreshRooms(): Promise<void> {
     }
   } catch { /* server not reachable yet */ }
 }
-// ?play=Name joins the room in the hash straight away (or creates one).
-const auto = new URLSearchParams(location.search).get('play');
-if (auto) {
-  nameInput.value = auto;
+// ?play=Name joins the room in the hash straight away (or creates one) as a guest.
+if (guest) {
   if (/^[A-Z]{4}$/.test(codeInput.value)) start(false, codeInput.value); else start(true, '');
 }
 void refreshRooms();

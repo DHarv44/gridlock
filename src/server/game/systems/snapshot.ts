@@ -119,6 +119,6 @@ export function playerList(w: World): PlayerInfo[] {
   return [...w.players.values()].map((pl) => {
     const p = w.peds.get(pl.pid);
     const pos = p ? w.pedPos(p) : { x: 0, y: 0 };
-    return { id: pl.id, name: pl.name, color: pl.color, pid: pl.pid, x: r2(pos.x), y: r2(pos.y), cash: pl.cash, kills: pl.kills, deaths: pl.deaths, wl: pl.wanted, ping: pl.ping, frags: pl.frags, earned: pl.earned };
+    return { id: pl.id, name: pl.name, color: pl.color, pid: pl.pid, x: r2(pos.x), y: r2(pos.y), cash: pl.cash, kills: pl.kills, deaths: pl.deaths, wl: pl.wanted, ping: pl.ping, frags: pl.frags, earned: pl.earned, ...(pl.look ? { look: pl.look } : {}) };
   });
 }

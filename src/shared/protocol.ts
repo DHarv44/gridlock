@@ -1,9 +1,10 @@
 // Wire protocol (JSON over WebSocket). Hot-path messages use compact arrays.
+import type { CharLook } from './packs/characters';
 
 export const TICK_HZ = 30;
 export const SNAP_EVERY = 2;             // snapshots at 15 Hz
 export const INTERP_DELAY_MS = 120;
-export const PROTOCOL_VERSION = 3;
+export const PROTOCOL_VERSION = 4;
 /** Every Nth snapshot carries every entity in full (others list unchanged ones in `k`). */
 export const FULL_SNAP_EVERY = 30;
 
@@ -21,7 +22,8 @@ export type InputMsg = [number, number, number, number, number, number, number, 
 export type BuyKind = 'weapon' | 'ammo' | 'armor' | 'heal' | 'vehicle' | 'property' | 'garage' | 'respray' | 'chop' | 'sell';
 
 export type C2S =
-  | { t: 'hello'; v: number; name: string; room: string; create: boolean; mode?: string }
+  /** `key` + `char` play a saved character; without them `name` plays an unsaved guest (dev/bots). */
+  | { t: 'hello'; v: number; name: string; room: string; create: boolean; mode?: string; key?: string; char?: string }
   | { t: 'in'; i: InputMsg[] }
   | { t: 'job'; booth: number }
   | { t: 'buy'; kind: BuyKind; id: string; place: number }
@@ -82,6 +84,7 @@ export interface PlayerInfo {
   ping: number;
   frags: number;           // player kills this round
   earned: number;          // cash earned this round
+  look?: CharLook;         // saved characters' chosen look (guests use the archetype look)
 }
 
 export interface Profile {

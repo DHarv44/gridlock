@@ -13,17 +13,19 @@
     <div class="lobby-card">
       <h1>GRIDLOCK</h1>
       <p class="sub">Bayhaven · up to 6 players</p>
-      <label>Name <input id="name" maxlength="16" autocomplete="off" spellcheck="false" /></label>
-      <label>Mode <select id="mode"></select></label>
-      <p class="mode-blurb" id="mode-blurb"></p>
-      <div class="row">
-        <button id="create" class="primary">Create game</button>
+      <div id="chars"></div>
+      <div id="play">
+        <label>Mode <select id="mode"></select></label>
+        <p class="mode-blurb" id="mode-blurb"></p>
+        <div class="row">
+          <button id="create" class="primary">Create game</button>
+        </div>
+        <div class="row">
+          <input id="code" maxlength="4" placeholder="CODE" autocomplete="off" spellcheck="false" />
+          <button id="join">Join</button>
+        </div>
+        <div id="rooms"></div>
       </div>
-      <div class="row">
-        <input id="code" maxlength="4" placeholder="CODE" autocomplete="off" spellcheck="false" />
-        <button id="join">Join</button>
-      </div>
-      <div id="rooms"></div>
       <p id="lobby-error" class="error"></p>
     </div>
   </div>

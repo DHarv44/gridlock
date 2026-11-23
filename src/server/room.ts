@@ -18,6 +18,7 @@ import { buildSnapshot, playerList } from './game/systems/snapshot';
 import { Population } from './game/systems/population';
 import { updateWanted } from './game/systems/wanted';
 import { World } from './game/world';
+import { getCharacter, type SavedCharacter, saveCharacter } from './characters';
 import { loadRoom, type RoomSave, type SavedProfile, saveRoom } from './persist';
 
 export interface Conn {
@@ -70,12 +71,18 @@ export class Room {
     return [...this.world.players.values()].map((p) => p.name);
   }
 
-  join(name: string, conn: Conn): Player | string {
+  /** Joins a guest (name only) or a saved character, whose progress follows them between rooms. */
+  join(name: string, conn: Conn, character?: { key: string; save: SavedCharacter }): Player | string {
     const w = this.world;
+    if (character) name = character.save.name;
     if (w.players.size >= RULES.maxPlayers) return 'Room is full.';
     if ([...w.players.values()].some((p) => p.name.toLowerCase() === name.toLowerCase())) return 'That name is already playing in this room.';
     const key = name.toLowerCase();
-    const prof: SavedProfile = this.profiles[key] ?? { cash: RULES.startCash, garage: [], owned: [], kills: 0, deaths: 0 };
+    const roomProf = this.profiles[key];
+    const c = character?.save;
+    const prof: SavedProfile = c
+      ? { cash: c.cash, garage: c.garage, owned: roomProf?.owned ?? [], kills: c.kills, deaths: c.deaths, respect: c.respect }
+      : roomProf ?? { cash: RULES.startCash, garage: [], owned: [], kills: 0, deaths: 0 };
     const used = new Set([...w.players.values()].map((p) => p.color));
     const color = PLAYER_COLORS.find((c) => !used.has(c)) ?? PLAYER_COLORS[0];
     const pl: Player = {
@@ -85,6 +92,7 @@ export class Room {
       garageCar: 0, ping: 0, send: (m) => conn.send(JSON.stringify(m)), sendRaw: (s) => conn.send(s),
       spawnCdT: 0, bustT: 0, lastPlace: -1, gunCrimeT: -9, seenCheckT: 0, sent: new Map(), snapCount: 0,
       respect: { ...(prof.respect ?? {}) }, mission: null, boothCd: new Map(), frags: 0, earned: 0,
+      ...(character ? { character: { key: character.key, id: character.save.id }, look: character.save.look } : {}),
     };
     const spawn = this.spawnPoint(pl);
     const ped = makeAvatar(w, pl, spawn.x, spawn.y);
@@ -164,6 +172,9 @@ export class Room {
 
   private storeProfile(pl: Player): void {
     this.profiles[pl.name.toLowerCase()] = { cash: pl.cash, garage: pl.garage, owned: pl.owned, kills: pl.kills, deaths: pl.deaths, respect: pl.respect };
+    if (!pl.character) return;
+    const c = getCharacter(pl.character.key, pl.character.id);
+    if (c) saveCharacter(pl.character.key, { ...c, cash: pl.cash, garage: [...pl.garage], kills: pl.kills, deaths: pl.deaths, respect: { ...pl.respect }, lastPlayed: Date.now() });
   }
 
   persist(): void {

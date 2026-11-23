@@ -1,5 +1,5 @@
 // Runtime entity records for the server simulation.
-import type { PedArchetype, VehicleSpec } from '../../shared/packs';
+import type { CharLook, PedArchetype, VehicleSpec } from '../../shared/packs';
 import type { InputMsg, Mode } from '../../shared/protocol';
 import type { Body, Controls } from '../../shared/sim/physics';
 
@@ -159,6 +159,9 @@ export interface Player {
   boothCd: Map<number, number>;   // booth id -> world time it may ring again
   frags: number;                  // player kills this round
   earned: number;                 // cash earned this round
+  /** Saved character being played (absent for guests); progress is written back to it. */
+  character?: { key: string; id: string };
+  look?: CharLook;
 }
 
 export interface MissionState {

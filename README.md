@@ -16,8 +16,13 @@ Open http://localhost:5228, pick a name, **Create game**, then send friends the 
 - **Over the internet:** forward TCP port 5228 on your router to this PC and share
   `http://<your-public-ip>:5228/#CODE`, or deploy to any Node host (it honours `PORT`;
   build command `npm run build`, start command `npm start`). `railway.json` configures Railway.
-  Room saves live in `data/` (or `GRIDLOCK_DATA`); on Railway mount a volume there to keep them
-  across deploys.
+  Room saves and characters live in `data/` (or `GRIDLOCK_DATA`); on Railway mount a volume
+  there to keep them across deploys.
+
+**Characters:** each browser keeps up to 5 saved characters (name and look). Cash, cars,
+respect and stats follow a character into any room; properties belong to the room's city. The
+browser holds a random key in local storage (the server stores only its hash), so clearing site
+data loses access to that browser's characters.
 
 ## Things to do
 
