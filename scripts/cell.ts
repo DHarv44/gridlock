@@ -1,0 +1,90 @@
+// Headless check of the cell phone: a gang texts its number once it trusts you, calls ring and can
+// be answered (a job starts, paying more), declined or missed (a text), you can ring a contact for
+// work (with a wait before the same one has more), strangers' numbers don't work, and business
+// income arrives as a text. `npx tsx scripts/cell.ts`
+export {};
+process.env.GRIDLOCK_DATA = 'data-smoke/cell';
+const { Room } = await import('../src/server/room');
+const { GANGS, PROPERTIES, RESPECT } = await import('../src/shared/packs');
+
+let failures = 0;
+const check = (ok: boolean, what: string) => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${what}`); if (!ok) failures++; };
+
+const [g1, g2, g3] = GANGS;
+const msgs: { t: string; [k: string]: unknown }[] = [];
+const room = new Room('CELL', 303);
+room.stop();
+const pl = room.join('Caller', { send: (d) => msgs.push(JSON.parse(d)), close: () => {} }, {
+  id: 'cell01', name: 'Caller', look: {} as never, created: 1, lastPlayed: 1, cash: 100, bank: 0, garage: [], felonies: {}, deaths: 0,
+  respect: { [g1]: RESPECT.cellAt + 5, [g2]: 10 },
+});
+if (typeof pl === 'string') throw new Error(pl);
+room.stop();
+const w = room.world;
+const ticks = (n: number) => { for (let i = 0; i < n; i++) room.tick(); };
+const since = (k: number) => msgs.slice(k);
+const texts = (k: number) => since(k).filter((m) => m.t === 'text') as unknown as { from: string; body: string }[];
+const calls = (k: number) => since(k).filter((m) => m.t === 'call') as unknown as { gang: string; state: string; text?: string }[];
+
+ticks(5);
+check(texts(0).length === 0, 'a number you already had on joining is not texted again');
+check(room.cell.contacts(pl).join() === g1, 'contacts: gangs that trust you enough');
+
+let k = msgs.length;
+pl.respect[g2] = RESPECT.cellAt;
+ticks(2);
+check(texts(k).some((t) => t.body.includes('Keep this number')), 'earning a gang\'s trust gets its number by text');
+
+// A call rings; answer it and a job starts.
+k = msgs.length;
+pl.cell.next = 0;
+ticks(2);
+const ring = calls(k).find((c) => c.state === 'ring');
+check(!!ring && room.cell.contacts(pl).includes(ring.gang), 'a contact calls when you are free');
+room.cell.answer(pl, true);
+check(!!pl.mission && pl.mission.giver === ring?.gang, 'answering starts that gang\'s job');
+check(calls(k).some((c) => c.state === 'end' && !!c.text), 'they say something on the line');
+// No calls while working.
+k = msgs.length;
+pl.cell.next = 0;
+ticks(3);
+check(!calls(k).some((c) => c.state === 'ring'), 'nobody calls while you are on a job');
+room.missions.drop(pl);
+
+// Missed call.
+k = msgs.length;
+pl.cell.next = 0;
+ticks(2);
+check(calls(k).some((c) => c.state === 'ring'), 'another call');
+ticks(30 * (RESPECT.cellRing + 1));
+check(calls(k).some((c) => c.state === 'missed') && texts(k).some((t) => t.body === 'Missed call.'), 'unanswered: missed, with a text');
+check(!pl.cell.ringing, 'the phone stops ringing');
+
+// Declined.
+pl.cell.next = 0;
+ticks(2);
+room.cell.answer(pl, false);
+check(!pl.mission && !pl.cell.ringing, 'declining starts nothing');
+
+// Dialling.
+const before = (pl.mission as unknown) === null;
+check(before && room.cell.dial(pl, g1) === null && pl.mission?.giver === g1, 'ringing a contact gets you work');
+room.missions.drop(pl);
+k = msgs.length;
+room.cell.dial(pl, g1);
+check(!pl.mission && calls(k).some((c) => c.text?.startsWith('Nothing right now')), 'the same contact needs a while before more work');
+check(room.cell.dial(pl, g3) !== null, "a gang that doesn't trust you can't be rung");
+// Phone jobs pay more: the same job spec's reward range, scaled.
+room.missions.offer(pl, g2, 10);
+check((pl.mission?.reward ?? 0) >= 10_000, 'phone work pays the cell multiplier');
+room.missions.drop(pl);
+
+// Business income comes as a text from the bank.
+const biz = w.city.properties.find((p) => PROPERTIES[p.spec].kind === 'business')!;
+(room as unknown as { econ: { owners: Map<number, string>; payIncome: () => void } }).econ.owners.set(biz.id, pl.name.toLowerCase());
+k = msgs.length;
+(room as unknown as { econ: { payIncome: () => void } }).econ.payIncome();
+check(texts(k).some((t) => t.from === 'Harbor Trust' && t.body.includes('paid')), 'business income: a text from the bank');
+
+console.log(failures ? `${failures} check(s) failed` : 'all cell phone checks passed');
+process.exit(failures ? 1 : 0);

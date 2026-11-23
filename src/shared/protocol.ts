@@ -29,6 +29,8 @@ export type C2S =
   | { t: 'job'; booth: number }
   | { t: 'buy'; kind: BuyKind; id: string; place: number }
   | { t: 'chat'; text: string }
+  | { t: 'call'; accept: boolean }        // answer / decline the call that's ringing
+  | { t: 'dial'; gang: string }           // ring a contact to ask for work
   | { t: 'ping'; ts: number };
 
 export const EK = { Ped: 0, Veh: 1, Proj: 2, Pickup: 3, Fire: 4 } as const;
@@ -108,6 +110,10 @@ export type S2C =
   | { t: 'mode'; mode: string; round: number }
   | { t: 'round'; mode: string; winner: string; standings: [string, number][] }
   | { t: 'pong'; ts: number; st: number }
+  /** Cell phone: a contact (gang id) calling, a call missed, or a call over (with what they said). */
+  | { t: 'call'; gang: string; state: 'ring' | 'missed' | 'end'; text?: string }
+  /** A text message to the phone. */
+  | { t: 'text'; from: string; body: string }
   /** The character's progress, for the browser to save (sent every few seconds and after buys). */
   | { t: 'save'; id: string; p: CharacterProgress };
 

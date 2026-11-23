@@ -51,6 +51,9 @@ own character's last spot, in that vehicle.
   turf-war rampages. Pay plus respect with the gang (and less with its rivals).
 - **Respect**: three meters under your wanted stars. Kill a gang's members and it drops; sink low
   enough and that gang jumps you on sight and stops offering work.
+- **Cell phone** (P, controller LB): Contacts, Messages and Bank. Do payphone work for a gang until
+  it trusts you and it texts you its number; then its people call with work (paying a bit more), and
+  you can ring them to ask. Your bank texts you business income.
 - **Banks and ATMs**: dying drops some of the cash you carry and getting busted costs a fine, but
   money in the bank is safe. Bank it at an ATM (on the walls of banks, corner stores, diners, clubs
   and car washes) or a bank's counter. Shops take your cash first, then the bank for the rest.
@@ -92,3 +95,4 @@ The semi tows an articulated trailer: it swings wide on turns, can jackknife, an
 | H | Horn (siren in emergency vehicles) |
 | R | Radio: next station / off (in vehicles) |
 | T / M / Tab / Esc | Chat / city map / scores / menu |
+| P | Phone (arrows + Enter work it, Backspace goes back) |

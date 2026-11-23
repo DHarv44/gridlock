@@ -28,11 +28,17 @@ Carried cash is at risk (15% dropped on death, 20% fine when busted); banked mon
 Done when: money survives death in the bank and purchases draw on it. `npx tsx scripts/bank.ts`.
 
 ## C. Cell phone (medium)
-- C1. A phone that slides up in your character's hand, styled like the game (not a web pop-up):
-  contacts, texts, bank balance.
-- C2. A gang's first jobs always come from its payphones; once it respects you enough it gives you its
-  number and calls your cell with follow-up work.
-- C3. Texts from your businesses (income, trouble).
+- C1. (done) A handset that slides up at the bottom right (P / LB; hud/phone.ts): Contacts, Messages,
+  Bank, incoming calls with Answer / Decline; arrows + Enter work it while WASD still walks.
+- C2. (done) A gang's first jobs come from its payphones; at RESPECT.cellAt it texts its number, then
+  calls every 2-4 min while you're free (answer, decline, or miss it), and you can ring it for work
+  (90 s before the same contact has more). Phone work pays x1.25 (server/game/missions/cell.ts).
+- C3. (done for income) The bank texts business income. "Trouble" texts come with milestone D.
+`npx tsx scripts/cell.ts` checks it.
+
+## Gas stations (asked 2026-11-23; right after C)
+Forecourts in the city: a canopy over pump islands, a kiosk shop, a tall price sign. Pumps go up when
+shot or rammed hard (the GTA way). No fuel gauge unless the user asks for one.
 
 ## D. Businesses that matter (medium)
 - D1. Income collects in the business's safe; collect it in person or have it paid into the bank.

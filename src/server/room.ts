@@ -6,6 +6,7 @@ import { updateAi } from './game/ai/brain';
 import type { Player } from './game/entities';
 import { removeVehicle, unseatPed } from './game/factory';
 import { Missions } from './game/missions/engine';
+import { Cell, newCell } from './game/missions/cell';
 import { Rounds } from './rounds';
 import { resolveContacts } from './game/systems/contacts';
 import { Dispatch } from './game/systems/dispatch';
@@ -53,6 +54,7 @@ export class Room {
     this.dispatch = new Dispatch(w);
     this.econ = new Economy(w);
     this.missions = new Missions(w);
+    this.cell = new Cell(w, this.missions);
     this.rounds = new Rounds(save?.mode ?? mode);
     for (const [id, name] of save?.owners ?? []) this.econ.owners.set(id, name);
     this.econ.onChange = () => { this.sendOwners(); this.persist(); for (const pl of w.players.values()) this.sendProfile(pl); };
@@ -67,6 +69,7 @@ export class Room {
   }
 
   readonly missions: Missions;
+  readonly cell: Cell;
   readonly rounds: Rounds;
 
   get size(): number {
@@ -97,7 +100,7 @@ export class Room {
       respawnT: 0, garage: [...prof.garage].filter((v) => v < VEHICLES.length), owned: [...prof.owned].filter((id) => this.econ.owners.get(id) === key),
       garageCar: 0, ping: 0, send: (m) => conn.send(JSON.stringify(m)), sendRaw: (s) => conn.send(s),
       spawnCdT: 0, bustT: 0, lastPlace: -1, gunCrimeT: -9, seenCheckT: 0, sent: new Map(), snapCount: 0,
-      respect: { ...(prof.respect ?? {}) }, mission: null, boothCd: new Map(), frags: 0, earned: 0,
+      respect: { ...(prof.respect ?? {}) }, mission: null, boothCd: new Map(), cell: newCell(w, prof.respect ?? {}), frags: 0, earned: 0,
       ...(character ? { character: { id: character.id }, look: character.look } : {}),
     };
     // Characters pick up where they left off (any room: it's the same city); others at the hospital.
@@ -162,6 +165,14 @@ export class Room {
       }
       case 'job': {
         const err = this.missions.answer(pl, Number(msg.booth));
+        if (err) pl.send({ t: 'msg', kind: 'warn', text: err } satisfies S2C);
+        break;
+      }
+      case 'call':
+        this.cell.answer(pl, !!msg.accept);
+        break;
+      case 'dial': {
+        const err = this.cell.dial(pl, String(msg.gang));
         if (err) pl.send({ t: 'msg', kind: 'warn', text: err } satisfies S2C);
         break;
       }
@@ -242,6 +253,7 @@ export class Room {
     this.pop.update(DT);
     this.econ.update();
     this.missions.update();
+    this.cell.update();
     this.tickCount++;
     if (this.tickCount % TICK_HZ === 0) this.rounds.check(w);
     if (this.tickCount % SNAP_EVERY === 0) {

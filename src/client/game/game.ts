@@ -8,6 +8,7 @@ import { Hud } from '../hud/hud';
 import { openMenu } from '../hud/menu';
 import { GunShop } from '../hud/gunShop';
 import { OffscreenPlayers } from '../hud/offscreenPlayers';
+import { Phone } from '../hud/phone';
 import { PaintGarage } from '../hud/paintGarage';
 import { SERVICES } from '../../shared/packs';
 import type { Place } from '../../shared/world/cityTypes';
@@ -58,6 +59,7 @@ export class Game {
   private garage = new PaintGarage();
   private gunShop = new GunShop();
   private offscreen: OffscreenPlayers;
+  private phone: Phone;
   private interact: Interact;
   private jobs: Jobs;
   private sound = new Sound();
@@ -91,6 +93,10 @@ export class Game {
     this.radar = new Minimap(this.map);
     this.jobs = new Jobs(this.stage.scene, this.hud.root, city);
     this.offscreen = new OffscreenPlayers(this.hud.root);
+    this.phone = new Phone(this.hud.root);
+    this.phone.send = (msg) => conn.send(msg);
+    this.phone.ring = () => this.sound.play('cell_ring');
+    this.phone.onText = (from) => this.hud.notify(`New message from ${from}`, 'info');
     this.interact = new Interact(city, this.pane);
     this.hud.onChat = (text) => conn.send({ t: 'chat', text });
     this.input.onUi = (a) => this.ui(a);
@@ -98,6 +104,7 @@ export class Game {
     this.input.onNav = (c) => {
       if (this.garage.isOpen) this.garage.nav(c);
       else if (this.gunShop.isOpen) this.gunShop.nav(c);
+      else if (this.phone.isOpen) this.phone.nav(c);
       else if (!this.bigMap.isOpen) this.pane.nav(c);
       else if (c === 'back') this.bigMap.close();
       else this.bigMap.nav(c);
@@ -155,9 +162,11 @@ export class Game {
         if (this.bigMap.isOpen) this.bigMap.close(); else this.bigMap.open(o?.x ?? 1024, o?.y ?? 1024);
         break;
       }
+      case 'phone': if (!this.garage.isOpen && !this.gunShop.isOpen) this.phone.toggle(); break;
       case 'menu':
         if (this.garage.isOpen) { this.garage.leave(); return; }
         if (this.gunShop.isOpen) { this.gunShop.leave(); return; }
+        if (this.phone.isOpen) { this.phone.close(); return; }
         if (this.bigMap.isOpen) { this.bigMap.close(); return; }
         if (this.pane.isOpen) this.pane.close();
         else openMenu({ pane: this.pane, sound: this.sound, quality: this.quality, input: this.input, code: this.code, record: () => this.profile.felonies ?? {}, leave: () => this.leave() });
@@ -169,7 +178,7 @@ export class Game {
   }
 
   private onMessage(m: S2C): void {
-    if (this.jobs.onMessage(m)) return;
+    if (this.jobs.onMessage(m) || this.phone.onMessage(m)) return;
     switch (m.t) {
       case 's':
         if (!this.you) document.getElementById('loading')!.hidden = true;
@@ -238,7 +247,7 @@ export class Game {
     const now = performance.now();
     const dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
-    this.input.pollPad(dt, this.pane.isOpen || this.bigMap.isOpen || this.garage.isOpen || this.gunShop.isOpen);
+    this.input.pollPad(dt, this.pane.isOpen || this.bigMap.isOpen || this.garage.isOpen || this.gunShop.isOpen || this.phone.isOpen);
     this.acc += dt;
     let n = 0;
     while (this.acc >= STEP && n < 4) {
@@ -249,6 +258,8 @@ export class Game {
     if (this.acc > STEP * 4) this.acc = 0;
     this.predict.decay(dt);
     this.radio.update(dt, this.you && this.you.mode !== Mode.Dead ? this.you.vid : 0, this.sound.musicLevel);
+    const gm = Math.floor(this.gameMinutes);
+    this.phone.update(dt, this.you, `${String(Math.floor(gm / 60) % 24).padStart(2, '0')}:${String(gm % 60).padStart(2, '0')}`);
     if (this.you && !document.hidden) this.quality.sample(dt);
     this.store.update();
     const own = this.ownState(this.acc / STEP);

@@ -45,10 +45,21 @@ export class Missions {
     return null;
   }
 
-  private begin(pl: Player, specIndex: number, giver: string, rival: string, from: { x: number; y: number }): void {
+  /** A gang gives the player a job over the phone (missions/cell.ts), from where they stand. */
+  offer(pl: Player, gang: string, payMul: number): void {
+    const w = this.w;
+    const p = w.peds.get(pl.pid);
+    if (!p || pl.mission) return;
+    const pool = MISSIONS.map((m, i) => ({ m, i })).filter(({ m }) => m.giver === gang || m.giver === 'gang');
+    const { i } = pool[Math.floor(w.rng.next() * pool.length)];
+    const rivals = faction(gang).hostile.filter((f) => GANGS.includes(f));
+    this.begin(pl, i, gang, rivals[Math.floor(w.rng.next() * rivals.length)] ?? '', w.pedPos(p), payMul);
+  }
+
+  private begin(pl: Player, specIndex: number, giver: string, rival: string, from: { x: number; y: number }, payMul = 1): void {
     const w = this.w;
     const spec = MISSIONS[specIndex];
-    const r = spec.reward[0] + w.rng.next() * (spec.reward[1] - spec.reward[0]);
+    const r = (spec.reward[0] + w.rng.next() * (spec.reward[1] - spec.reward[0])) * payMul;
     const st: MissionState = {
       spec: specIndex, giver, rival, stage: 0, ends: spec.time ? w.time + spec.time : 0, targets: [], focus: 0,
       point: null, dest: null, kills: 0, reward: Math.round(r / 50) * 50, place: '', name: markName(w), weapon: -1, sentKey: '',

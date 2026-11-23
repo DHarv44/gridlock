@@ -5,7 +5,7 @@ import { ENGINES, EngineVoice, TRAFFIC } from './engines';
 
 /** Every voice the game plays: its recording, gain, pitch wobble (random ± fraction) and the least
  *  time between two plays (rapid-fire weapons would otherwise stack dozens of copies). */
-const VOICES: Record<string, { file: string; gain: number; vary?: number; gap?: number }> = {
+const VOICES: Record<string, { file: string; gain: number; vary?: number; gap?: number; rate?: number }> = {
   pistol: { file: 'pistol', gain: 0.55, vary: 0.05 },
   revolver: { file: 'revolver', gain: 0.6, vary: 0.04 },
   smg: { file: 'smg', gain: 0.45, vary: 0.06 },
@@ -33,6 +33,8 @@ const VOICES: Record<string, { file: string; gain: number; vary?: number; gap?: 
   cash: { file: 'cash', gain: 0.22 },
   /** Payphones ringing for you (silent until the CC0 recording is fetched and prepared). */
   phone_ring: { file: 'phone_ring', gain: 0.4 },
+  /** Your cell phone ringing: the same bell, quieter and pitched up like a handset. */
+  cell_ring: { file: 'phone_ring', gain: 0.22, rate: 1.4 },
 };
 const SIREN_GAIN = 0.3;
 /** Most sounds playing at once; past this, new ones are dropped. */
@@ -129,7 +131,7 @@ export class Sound {
     this.lastPlay.set(voice, t);
     const src = ctx.createBufferSource();
     src.buffer = buf;
-    if (v.vary) src.playbackRate.value = 1 + (Math.random() * 2 - 1) * v.vary;
+    src.playbackRate.value = (v.rate ?? 1) * (1 + (Math.random() * 2 - 1) * (v.vary ?? 0));
     const gain = ctx.createGain();
     gain.gain.value = v.gain * g;
     src.connect(gain).connect(this.master);

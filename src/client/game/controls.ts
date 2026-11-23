@@ -9,7 +9,7 @@ export type Action =
   | 'heliForward' | 'heliBack' | 'heliLeft' | 'heliRight' | 'climb' | 'descend'
   | 'turretLeft' | 'turretRight'
   | 'fire' | 'aim' | 'prevWeapon' | 'nextWeapon'
-  | 'action' | 'radio' | 'chat' | 'map' | 'scores';
+  | 'action' | 'radio' | 'chat' | 'map' | 'scores' | 'phone';
 
 export type ActionKind = 'held' | 'edge' | 'ui';
 
@@ -50,6 +50,7 @@ export const ACTIONS: ActionDef[] = [
   A('chat', 'Chat', 'ui', 'any', 'General', ['KeyT']),
   A('map', 'City map', 'ui', 'any', 'General', ['KeyM']),
   A('scores', 'Scores (hold)', 'ui', 'any', 'General', ['Tab']),
+  A('phone', 'Phone', 'ui', 'any', 'General', ['KeyP']),
 ];
 
 /** The order groups are shown in (keyboard and controller tabs). */

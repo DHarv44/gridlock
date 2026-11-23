@@ -16,7 +16,7 @@ const isPlayStation = (id: string) => /054c|dualshock|dualsense|wireless control
 export const PAD = { a: 0, b: 1, lb: 4, rb: 5, up: 12, down: 13, left: 14, right: 15 } as const;
 
 export type PadAction = 'jump' | 'sprint' | 'handbrake' | 'horn' | 'climb' | 'descend'
-  | 'fire' | 'prevWeapon' | 'nextWeapon' | 'action' | 'radio' | 'map' | 'scores' | 'menu';
+  | 'fire' | 'prevWeapon' | 'nextWeapon' | 'action' | 'radio' | 'map' | 'scores' | 'menu' | 'phone';
 
 /** Button actions, each its own setting, grouped by where they apply; the same button can do
  *  different jobs in different groups (A: jump / handbrake / climb). Sticks and triggers are
@@ -36,6 +36,7 @@ export const PAD_ACTIONS: { id: PadAction; label: string; context: Context; grou
   { id: 'map', label: 'City map', context: 'any', group: 'General', button: 8 },
   { id: 'scores', label: 'Scores (hold)', context: 'any', group: 'General', button: 13 },
   { id: 'menu', label: 'Pause menu', context: 'any', group: 'General', button: 9 },
+  { id: 'phone', label: 'Phone', context: 'any', group: 'General', button: 4 },
 ];
 
 /** The fixed stick and trigger layout per group, named for the pad in use. */

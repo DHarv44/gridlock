@@ -62,4 +62,10 @@ export const RESPECT = {
   frenzyRespawn: 240,        // seconds before a used crate comes back
   phonesPerGang: 5,
   frenzyCrates: 8,
+  // Cell phone: a gang that respects you this much texts you its number and calls with work.
+  cellAt: 25,
+  cellCallEvery: [120, 240] as [number, number], // seconds between calls while you're free
+  cellRing: 20,              // seconds a call rings before it's missed
+  cellPay: 1.25,             // jobs by phone pay this much more than payphone work
+  cellDialCooldown: 90,      // seconds before the same contact has work for you again
 };

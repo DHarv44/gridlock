@@ -163,6 +163,9 @@ export interface Player {
   respect: Record<string, number>;
   mission: MissionState | null;
   boothCd: Map<number, number>;   // booth id -> world time it may ring again
+  /** Cell phone (missions/cell.ts): when the next call comes, who's ringing and until when, each
+   *  contact's wait before it has work again, and the gangs whose number you've been texted. */
+  cell: { next: number; ringing: string; ringEnds: number; dialCd: Record<string, number>; known: Set<string> };
   frags: number;                  // player kills this round
   earned: number;                 // cash earned this round
   /** Character being played (absent for guests); its progress is sent back to the browser. */

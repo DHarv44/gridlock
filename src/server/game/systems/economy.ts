@@ -5,6 +5,7 @@ import { type BuyKind, Mode, PK } from '../../../shared/protocol';
 import { type Atm, atmsOf } from '../../../shared/world/atms';
 import type { Place } from '../../../shared/world/cityTypes';
 import { bankMove } from './banking';
+import { textTo } from '../missions/cell';
 import type { Player } from '../entities';
 import { giveWeapon, removeVehicle, spawnVehicle, unseatPed } from '../factory';
 import type { World } from '../world';
@@ -98,10 +99,10 @@ export class Economy {
       if (!pl || spec.income <= 0) continue;
       totals.set(pl, (totals.get(pl) ?? 0) + spec.income);
     }
-    // Business income is paid into the bank, where it's safe.
+    // Business income is paid into the bank, where it's safe, and the bank texts you about it.
     for (const [pl, amount] of totals) {
       w.earnToBank(pl, amount);
-      w.notify('money', `+$${amount} business income, paid into your bank`, pl);
+      textTo(pl, 'Harbor Trust', `Your businesses paid $${amount.toLocaleString('en-US')} into your account. Balance $${pl.bank.toLocaleString('en-US')}.`);
     }
   }
 
