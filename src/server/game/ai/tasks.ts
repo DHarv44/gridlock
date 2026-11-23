@@ -5,6 +5,7 @@ import { Mode } from '../../../shared/protocol';
 import type { Ped, TaskName } from '../entities';
 import { freeSeat, seatPed } from '../factory';
 import type { World } from '../world';
+import { soldierHostile } from './soldiers';
 
 export function setTask(p: Ped, task: TaskName, target = 0, tx = 0, ty = 0): void {
   const ai = p.ai!;
@@ -125,6 +126,8 @@ export function attack(w: World, p: Ped, dt: number): boolean {
   const ai = p.ai!;
   const t = w.peds.get(ai.target);
   if (!t || t.dead || (t.player && t.player.mode >= Mode.Dead)) { p.trigger = false; return true; }
+  // Soldiers stand down once a player is off the base, not wanted enough and not fighting them.
+  if (p.spec.behaviour === 'military' && !soldierHostile(w, p, t)) { p.trigger = false; return true; }
   armBest(p);
   const pos = w.pedPos(t);
   const d = dist(p.body.x, p.body.y, pos.x, pos.y);

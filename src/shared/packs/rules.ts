@@ -49,6 +49,10 @@ export const RULES = {
   maxPlayers: 6,
   /** Every room is the same city, so a character's last spot means the same place in any room. */
   citySeed: 1337,
+  /** Soldiers leave players alone unless they're inside a fenced compound (a base), wanted at
+   *  least this badly (the level the army is called in at), or attacked a soldier lately. */
+  militaryWanted: 5,
+  militaryGrudgeS: 30,
   startCash: 2500,
   startWeapons: [{ weapon: 'pistol', ammo: 60 }],
   deathCashLoss: 0.15,       // fraction of carried cash dropped on death

@@ -8,6 +8,7 @@ import { unseatPed } from '../factory';
 import type { World } from '../world';
 import { BEHAVIOURS } from './behaviours';
 import { cruise, driveTo } from './driving';
+import { soldierHostile } from './soldiers';
 import { armBest, arrest, attack, extinguish, flee, returnToVehicle, revive, setTask, standAt, wander } from './tasks';
 
 export function updateAi(w: World, dt: number): void {
@@ -93,9 +94,9 @@ function pursue(w: World, p: Ped, v: Vehicle, dt: number): void {
   const ai = p.ai!;
   const t = w.peds.get(ai.target);
   const pl = t?.player;
-  const giveUp = !t || t.dead || (pl && (pl.wanted === 0 || pl.mode >= Mode.Dead));
-  if (giveUp) { v.siren = false; setTask(p, 'drive'); return; }
   const military = p.spec.behaviour === 'military';
+  const giveUp = !t || t.dead || (pl && (pl.wanted === 0 || pl.mode >= Mode.Dead)) || (military && !soldierHostile(w, p, t));
+  if (giveUp) { v.siren = false; setTask(p, 'drive'); return; }
   const lethal = !pl || pl.lethal || military;
   v.siren = !!v.spec.siren;
   const pos = w.pedPos(t!);

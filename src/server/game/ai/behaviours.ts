@@ -1,12 +1,13 @@
 // Personalities: how each NPC behaviour picks tasks and reacts. Keyed by the archetype's
 // `behaviour` field from the ped pack.
 import { dist } from '../../../shared/math';
-import { type Behaviour, RESPECT, WEAPONS, hostile, zoneIndex } from '../../../shared/packs';
+import { type Behaviour, RESPECT, WEAPONS, hostile } from '../../../shared/packs';
 import { Mode } from '../../../shared/protocol';
 import type { Ped } from '../entities';
 import { unseatPed } from '../factory';
 import { crime, isLawful } from '../systems/wanted';
 import type { World } from '../world';
+import { onBase, soldierHostile } from './soldiers';
 import { setTask } from './tasks';
 
 export interface BehaviourDef {
@@ -17,7 +18,6 @@ export interface BehaviourDef {
 }
 
 const armed = (p: Ped) => p.weapons.some((h) => WEAPONS[h.w].kind !== 'melee' && h.ammo + h.clip > 0);
-const BASE_ZONE = (() => { try { return zoneIndex('base'); } catch { return -1; } })();
 
 function fightOrFlight(w: World, p: Ped, attacker: Ped): void {
   if (p.ai!.task === 'attack' && p.ai!.target === attacker.id) return;
@@ -34,6 +34,9 @@ function fightOrFlight(w: World, p: Ped, attacker: Ped): void {
 function alertAllies(w: World, p: Ped, attacker: Ped, radius: number): void {
   w.pedsNear(p.body.x, p.body.y, radius, (o) => {
     if (o === p || o.dead || !o.ai || o.faction !== p.faction || o === attacker) return;
+    // An attack on one of them is an attack on all of them: they hold the grudge too.
+    o.ai.enemy = attacker.id;
+    o.ai.enemyT = w.time;
     if (o.ai.task !== 'attack') setTask(o, 'attack', attacker.id);
   });
 }
@@ -65,10 +68,12 @@ function lawPerceive(w: World, p: Ped, military: boolean): void {
     if (!t || t.dead || pl.mode >= Mode.Dead) continue;
     const tp = w.pedPos(t);
     const d = dist(pos.x, pos.y, tp.x, tp.y);
-    if (military && pl.wanted === 0 && d < 30 && w.map.zoneAt(tp.x, tp.y) === BASE_ZONE && !w.statics.raycast(pos.x, pos.y, tp.x, tp.y, 1.2)) {
+    // Soldiers: only on their base, or wanted badly enough for the army (soldiers.ts).
+    if (military && pl.wanted === 0 && d < 30 && onBase(w, tp.x, tp.y) && !w.statics.raycast(pos.x, pos.y, tp.x, tp.y, 1.2)) {
       crime(w, t, 'trespass', tp.x, tp.y);
     }
     if (pl.wanted === 0 || d > 60) continue;
+    if (military && !soldierHostile(w, p, t)) continue;
     if (w.statics.raycast(pos.x, pos.y, tp.x, tp.y, 1.4) && d > 12) continue;
     engage(w, p, t, pl.lethal || military);
     return;
@@ -134,7 +139,8 @@ const law = (military: boolean): BehaviourDef => ({
   attacked: (w, p, a) => {
     if (isLawful(a)) return;
     if (a.player && a.player.wanted > 0) { engage(w, p, a, true); return; }
-    if (!a.player) { if (p.vehicle && p.seat === 0) unseatPed(w, p, true); if (!p.vehicle) setTask(p, 'attack', a.id); }
+    // NPCs get fought; so do players who attack a soldier, wanted or not.
+    if (!a.player || military) { if (p.vehicle && p.seat === 0) unseatPed(w, p, true); if (!p.vehicle) setTask(p, 'attack', a.id); }
     alertAllies(w, p, a, 30);
   },
   noise: (w, p, _x, _y, s) => {
