@@ -30,11 +30,17 @@ export class Jobs {
   onMessage(m: S2C): boolean {
     switch (m.t) {
       case 'mission': this.onJob = !!m.m; this.pickT = 0; this.hud.setMission(m.m, m.result); return true;
-      case 'mode': this.hud.setMode(m.mode, m.round); return true;
+      case 'mode': this.hud.setMode(m.mode, m.round, m.ends, m.it, this.myId); return true;
       case 'round': this.hud.showRound(m.winner, m.standings); return true;
       default: return false;
     }
   }
+
+  /** Your player id and everyone in the room (for tag's "who's it"); set by the game. */
+  myId = 0;
+  players: PlayerInfo[] = [];
+  /** Tag: the player id who's "it" (0 = nobody, or not playing tag). */
+  get it(): number { return this.hud.mode.score === 'tag' ? this.hud.it : 0; }
 
   private lastAnswer = 0;
   /** Booths that ring for you: one per gang with work for you (the nearest one), re-picked now and
@@ -82,7 +88,7 @@ export class Jobs {
     this.boothView.update(dt, (b) => this.ringing.has(b.id), glow, night);
     if (this.boothView.newRing) for (const b of this.ringingBooths()) sound.play('phone_ring', b.x, b.y);
     this.marker.update(dt, you?.mt ?? null, me, glow, view);
-    if (you) this.hud.update(serverNow, you.rs, mine);
+    if (you) this.hud.update(serverNow, you.rs, mine, this.players);
   }
 
   /** Radar blips: ringing phones and the current objective. */

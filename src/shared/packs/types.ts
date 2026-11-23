@@ -179,7 +179,8 @@ export interface GameMode {
   id: string;
   name: string;
   /** 'none' free roam; 'frags' player kills; 'earned' cash earned this round. */
-  score: 'none' | 'frags' | 'earned';
+  /** `tag`: one player is "it"; target is the round length (s); least time as it wins. */
+  score: 'none' | 'frags' | 'earned' | 'tag';
   target: number;
   blurb: string;
 }

@@ -121,6 +121,6 @@ export function playerList(w: World): PlayerInfo[] {
   return [...w.players.values()].map((pl) => {
     const p = w.peds.get(pl.pid);
     const pos = p ? w.pedPos(p) : { x: 0, y: 0 };
-    return { id: pl.id, name: pl.name, color: pl.color, pid: pl.pid, x: r2(pos.x), y: r2(pos.y), cash: pl.cash, felonies: Object.values(pl.felonies).reduce((a, n) => a + n, 0), deaths: pl.deaths, wl: pl.wanted, ping: pl.ping, frags: pl.frags, earned: pl.earned, ...(pl.look ? { look: pl.look } : {}) };
+    return { id: pl.id, name: pl.name, color: pl.color, pid: pl.pid, x: r2(pos.x), y: r2(pos.y), cash: pl.cash, felonies: Object.values(pl.felonies).reduce((a, n) => a + n, 0), deaths: pl.deaths, wl: pl.wanted, ping: pl.ping, frags: pl.frags, earned: pl.earned, itS: Math.round(pl.itTime), ...(pl.look ? { look: pl.look } : {}) };
   });
 }

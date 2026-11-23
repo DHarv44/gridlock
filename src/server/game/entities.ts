@@ -168,6 +168,7 @@ export interface Player {
   cell: { next: number; ringing: string; ringEnds: number; dialCd: Record<string, number>; known: Set<string> };
   frags: number;                  // player kills this round
   earned: number;                 // cash earned this round
+  itTime: number;                 // seconds spent "it" this round (tag)
   /** Character being played (absent for guests); its progress is sent back to the browser. */
   character?: { id: string };
   look?: CharLook;

@@ -53,9 +53,11 @@ Not built (ask first): exploding pumps, a kiosk counter, a fuel gauge.
   with you. ("Goods" have no system yet.)
 server/game/systems/business.ts; `npx tsx scripts/business.ts`.
 
-## E. Tag (small)
-A room mode next to free roam, frag race and money race: one player is "it", marked on everyone's map;
-"it" passes to whoever kills them; whoever has spent the least time "it" when the round ends wins.
+## E. Tag (small; done)
+A room mode next to free roam, frag race and money race (server/rounds.ts): one player is "it" (red
+ring, radar/map marker, "IT ·" off-screen); when "it" kills a player, that player is it; killing "it"
+only slows them down. 10-minute rounds (while two or more play); least time "it" wins.
+`npx tsx scripts/tag.ts`.
 
 ## F. Going into buildings, in place (large)
 Walk through a door and the roof fades away: the floor plan shows from the same camera in the same

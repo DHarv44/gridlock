@@ -90,6 +90,7 @@ export interface PlayerInfo {
   ping: number;
   frags: number;           // player kills this round
   earned: number;          // cash earned this round
+  itS?: number;            // seconds spent "it" this round (tag)
   look?: CharLook;         // saved characters' chosen look (guests use the archetype look)
 }
 
@@ -113,7 +114,8 @@ export type S2C =
   | { t: 'profile'; p: Profile }
   | { t: 'msg'; kind: 'info' | 'chat' | 'kill' | 'money' | 'warn'; text: string }
   | { t: 'mission'; m: MissionInfo | null; result?: 'passed' | 'failed' }
-  | { t: 'mode'; mode: string; round: number }
+  /** `ends`: server ms the round ends (timed modes); `it`: the player id who's "it" (tag). */
+  | { t: 'mode'; mode: string; round: number; ends?: number; it?: number }
   | { t: 'round'; mode: string; winner: string; standings: [string, number][] }
   | { t: 'pong'; ts: number; st: number }
   /** Cell phone: a contact (gang id) calling, a call missed, or a call over (with what they said). */

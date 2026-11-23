@@ -64,7 +64,9 @@ own character's last spot, in that vehicle.
   back room puts you in touch with any gang that will work with you.
 - **Kill-frenzy crates**: red-and-black crates in parks and lots. Grab one for a weapon and a timer.
 - **Room modes** (picked when creating a game): Free roam, Frag race (first to 10 player kills),
-  Money race (first to earn $50,000). The winner is announced and a new round starts.
+  Money race (first to earn $50,000), Tag (one player is "it", marked for everyone; kill someone
+  while you're it and they're it; least time it after 10 minutes wins). The winner is announced and
+  a new round starts.
 
 ## Controls
 

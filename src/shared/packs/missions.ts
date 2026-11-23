@@ -48,6 +48,7 @@ export const MARK_NAMES = ['Razor', 'Smiley', 'Big Lou', 'Two-Tone', 'Fat Mike',
 export const MODES: GameMode[] = [
   { id: 'free', name: 'Free roam', score: 'none', target: 0, blurb: 'No rules. Do jobs, buy property, cause trouble.' },
   { id: 'frags', name: 'Frag race', score: 'frags', target: 10, blurb: 'First to 10 player kills wins the round.' },
+  { id: 'tag', name: 'Tag', score: 'tag', target: 600, blurb: "One player is it, marked for everyone. Kill someone while you're it and they're it. Least time as it after 10 minutes wins." },
   { id: 'money', name: 'Money race', score: 'earned', target: 50000, blurb: 'First to earn $50,000 this round wins.' },
 ];
 

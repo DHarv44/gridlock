@@ -66,6 +66,7 @@ export class Room {
     w.onKill = (killer, victim) => {
       this.missions.onKill(killer, victim);
       if (killer?.player && victim.player && killer !== victim) killer.player.frags++;
+      this.rounds.onKill(w, killer?.player ?? undefined, victim.player ?? undefined);
     };
     w.onCrate = (pl, pk) => this.missions.onCrate(pl, pk);
     w.onFelony = (pl) => this.sendProfile(pl);
@@ -106,7 +107,7 @@ export class Room {
       respawnT: 0, garage: [...prof.garage].filter((v) => v < VEHICLES.length), owned: [...prof.owned].filter((id) => this.econ.owners.get(id) === key),
       garageCar: 0, ping: 0, send: (m) => conn.send(JSON.stringify(m)), sendRaw: (s) => conn.send(s),
       spawnCdT: 0, bustT: 0, lastPlace: -1, gunCrimeT: -9, seenCheckT: 0, sent: new Map(), snapCount: 0,
-      respect: { ...(prof.respect ?? {}) }, mission: null, boothCd: new Map(), cell: newCell(w, prof.respect ?? {}), frags: 0, earned: 0,
+      respect: { ...(prof.respect ?? {}) }, mission: null, boothCd: new Map(), cell: newCell(w, prof.respect ?? {}), frags: 0, earned: 0, itTime: 0,
       ...(character ? { character: { id: character.id }, look: character.look } : {}),
     };
     // Characters pick up where they left off (any room: it's the same city); others at the hospital.
@@ -263,6 +264,7 @@ export class Room {
     this.business.update();
     this.tickCount++;
     if (this.tickCount % TICK_HZ === 0) this.rounds.check(w);
+    this.rounds.tick(w, DT);
     if (this.tickCount % SNAP_EVERY === 0) {
       for (const pl of w.players.values()) pl.sendRaw(JSON.stringify(buildSnapshot(w, pl)));
       w.fx = [];

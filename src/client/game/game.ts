@@ -99,6 +99,7 @@ export class Game {
     this.predict = new Predictor(statics, this.map);
     this.radar = new Minimap(this.map);
     this.jobs = new Jobs(this.stage.scene, this.hud.root, city);
+    this.jobs.myId = myId;
     this.offscreen = new OffscreenPlayers(this.hud.root);
     this.phone = new Phone(this.hud.root);
     this.phone.send = (msg) => conn.send(msg);
@@ -196,7 +197,7 @@ export class Game {
         this.predict.reconcile(m.you, m.ack);
         routeFx(m.fx, this.fx, this.sound, this.store, this.cam);
         break;
-      case 'players': this.players = m.list; break;
+      case 'players': this.players = m.list; this.jobs.players = m.list; break;
       case 'owners':
         this.owners = new Map(m.list.filter((o): o is [number, string] => o[1] !== null));
         this.storefronts.setOwners(this.owners);
@@ -286,6 +287,9 @@ export class Game {
     this.buildingUniforms.uNight.value = night;
     signalGlows(this.props, this.store, this.fx.glow, night, vr);
     this.storefronts.putGlows(this.fx.glow, night, vr);
+    // Tag: a red ring pulsing under whoever's it.
+    const it = this.itSpot();
+    if (it) this.fx.glow.put(it.x, it.y, 0.09, 3.2 + Math.sin(performance.now() / 160) * 0.7, 1, 0, 1, 0.12, 0.08, 0.7);
     this.gas.putGlows(this.fx.glow, night, vr);
     this.view.sync(this.store, dt, own, this.tags(), night, vr);
     this.fx.update(dt);
@@ -295,8 +299,15 @@ export class Game {
     ownEngine(this.store, this.you && this.you.mode !== Mode.Dead ? own : null, this.sound, dt);
     trafficEngines(this.store, own, this.sound, dt);
     this.stage.render();
-    this.offscreen.update(this.stage.camera, this.players, this.myId, (p) => this.store.all.get(p.pid) ?? p);
+    this.offscreen.update(this.stage.camera, this.players, this.myId, (p) => this.store.all.get(p.pid) ?? p, this.jobs.it);
     this.updateHud(own);
+  }
+
+  /** Tag: where whoever's it is now (their smooth on-screen position when known). */
+  private itSpot(): { x: number; y: number } | null {
+    const id = this.jobs.it;
+    const p = id ? this.players.find((x) => x.id === id) : undefined;
+    return p ? this.store.all.get(p.pid) ?? p : null;
   }
 
   private tags(): Map<number, PlayerTag> {
@@ -329,11 +340,13 @@ export class Game {
     const owned = new Set(this.profile.owned);
     const wp = this.waypoint;
     wp.update(own);
-    // Job blips, plus a red marker on any of your businesses a gang is leaning on.
+    // Job blips, a red marker on any of your businesses a gang is leaning on, and (tag) whoever's it.
     const blips = [...this.jobs.blips(you), ...(this.profile.trouble ?? []).map(([id]) => {
       const p = this.map.city.properties[id];
       return { x: p.x, y: p.y, color: '#ff3b30', shape: 'star' as const };
     })];
+    const it = this.itSpot();
+    if (it && this.jobs.it !== this.myId) blips.push({ x: it.x, y: it.y, color: '#ff2a2a', shape: 'star' });
     this.radar.drawRadar(ctx, 220, own.x, own.y, own.angle, range, this.players, this.myId, owned, hostiles, blips, wp.point, wp.route);
     if (this.bigMap.isOpen) {
       this.bigMap.draw({ me: { x: own.x, y: own.y, angle: own.angle }, players: this.players, meId: this.myId, owned, owners: this.owners,

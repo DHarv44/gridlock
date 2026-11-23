@@ -17,7 +17,7 @@ export class OffscreenPlayers {
   }
 
   /** `at` gives a player's current spot (the smooth on-screen position when known). */
-  update(camera: THREE.Camera, players: PlayerInfo[], meId: number, at: (p: PlayerInfo) => { x: number; y: number }): void {
+  update(camera: THREE.Camera, players: PlayerInfo[], meId: number, at: (p: PlayerInfo) => { x: number; y: number }, itId = 0): void {
     const w = window.innerWidth, h = window.innerHeight, cx = w / 2, cy = h / 2;
     const seen = new Set<number>();
     for (const p of players) {
@@ -37,8 +37,9 @@ export class OffscreenPlayers {
         this.root.appendChild(el);
         this.marks.set(p.id, el);
       }
-      el.style.setProperty('--op', p.color);
-      el.querySelector('.op-name')!.textContent = p.name;
+      el.style.setProperty('--op', p.id === itId ? '#ff2a2a' : p.color);
+      el.querySelector('.op-name')!.textContent = p.id === itId ? `IT · ${p.name}` : p.name;
+      el.classList.toggle('it', p.id === itId);
       el.style.transform = `translate(${(cx + dx * k).toFixed(1)}px, ${(cy + dy * k).toFixed(1)}px)`;
       (el.querySelector('.op-arrow') as HTMLElement).style.transform = `rotate(${Math.atan2(dy, dx).toFixed(3)}rad)`;
       // The name sits on the screen side of the arrow, so it never runs off the edge it's pinned to.
