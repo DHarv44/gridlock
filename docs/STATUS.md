@@ -16,8 +16,16 @@
 - Economy: gun shops, armor, hospital heals, car dealers (garage), respray (clears wanted), chop shop,
   homes (respawn + garage) and businesses (hourly income).
 
+- Detail pass (2026-11-22): podium/setback towers and split-height blocks, parapets, rooftop gear
+  (stairwells, AC units, vents, water tanks, solar, skylights, helipads, antennas), gable-roof houses with
+  chimneys, backyards with pools/patios/hedges, awnings, procedural facades (frames, floor bands,
+  storefronts, lit windows at night). Cars use extruded side profiles with bevels, reflective paint/glass,
+  mirrors, plates, rims. Street lamps with arms, live traffic signals (shared timing with the AI), hydrants,
+  bins, mailboxes, bus shelters, benches, fountains. Animated water, bridge decks with railings and piers.
+  Peds with hair, hands, shoes, belts. ~125 fps / ~100 draw calls at max zoom on the dev machine.
+
 ## Known gaps / next
-- Detail pass requested by the user: richer buildings (facades, roof detail), car models, peds, props.
 - No missions/jobs yet; sandbox only.
+- Trucks, bus, tank and aircraft still use box models (cars got the profile treatment).
 - Gamepad not supported.
 - Hosting for internet play: see README (port-forward, or deploy; ask the user before deploying).
