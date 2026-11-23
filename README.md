@@ -20,8 +20,10 @@ Open http://localhost:5228, pick a name, **Create game**, then send friends the 
   there to keep them across deploys.
 
 **Radio:** in any vehicle press R (controller: D-pad up) to cycle Off and the stations
-(src/shared/packs/radio.ts; the first is Weather Station). A station plays every audio file
-(.m4a, .mp3, .ogg, .wav) in its folder: `radio/<station id>/` in the project, or a local
+(src/shared/packs/radio.ts; the first is 98.2 The Spa). Stations are broadcasts on the server's
+clock: every player on a station hears the same song at the same moment, and switching cars
+never restarts anything (you join whatever is on air). A station plays every audio file
+(.m4a, .mp3, .wav; lengths are read from the files) in its folder: `radio/<station id>/` in the project, or a local
 library folder named in `radio.local.json` (not committed), e.g.
 `{ "weather": "D:/Music/weather" }`. Folders are read live, so new songs just show up.
 Deployed servers only have what is in `radio/` (or a mounted volume).

@@ -1,11 +1,13 @@
-// Radio: lists each station's tracks and serves them (with range requests so players can tune in
-// mid-song). A station's folder comes from radio.local.json (station id → absolute folder, for a
+// Radio: lists each station's tracks with their lengths (the broadcast schedule in
+// shared/radioSchedule.ts is built from them) and serves the files with range requests. A station's folder comes from radio.local.json (station id → absolute folder, for a
 // local music library, not committed) or else radio/<station id>/ in the project. Folders are read
 // on each request, so dropping a new song in is enough.
 import { createReadStream, existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { basename, extname, join, resolve } from 'node:path';
 import { RADIO } from '../shared/packs';
+import type { RadioListing, RadioTrack } from '../shared/radioSchedule';
+import { audioDuration } from './audioDuration';
 
 const ROOT = resolve(process.cwd(), 'radio');
 const LOCAL = resolve(process.cwd(), 'radio.local.json');
@@ -21,12 +23,34 @@ function tracks(dir: string): string[] {
   try { return readdirSync(dir).filter((f) => TYPES[extname(f).toLowerCase()] && statSync(join(dir, f)).isFile()).sort(); } catch { return []; }
 }
 
-/** Handles /api/radio (station → tracks) and /radio/<station>/<file>; false if not ours. */
+/** Path → [size, mtime, seconds]: a file is only read again when it changes. */
+const durations = new Map<string, [number, number, number | null]>();
+
+function lengthOf(full: string): number | null {
+  const st = statSync(full);
+  const hit = durations.get(full);
+  if (hit && hit[0] === st.size && hit[1] === st.mtimeMs) return hit[2];
+  const d = audioDuration(readFileSync(full), extname(full).toLowerCase());
+  if (d === null) console.warn(`[radio] can't read the length of ${full}; it won't be broadcast`);
+  durations.set(full, [st.size, st.mtimeMs, d]);
+  return d;
+}
+
+/** Every station's playlist with track lengths: what the broadcast schedule is built from. */
+function playlists(): Record<string, RadioTrack[]> {
+  return Object.fromEntries(Object.entries(folders()).map(([id, dir]) => [id, tracks(dir).flatMap((file) => {
+    const dur = lengthOf(join(dir, file));
+    return dur && dur > 1 ? [{ file, dur: Math.round(dur * 1000) / 1000 }] : [];
+  })]));
+}
+
+/** Handles /api/radio and /radio/<station>/<file>; false if not ours. */
 export function radioRoutes(req: IncomingMessage, res: ServerResponse, path: string): boolean {
   if (path === '/api/radio') {
-    const dirs = folders();
+    // `now` lets clients line their clocks up with the server's, so everyone hears the same moment.
+    const body: RadioListing = { now: Date.now(), stations: playlists() };
     res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
-    res.end(JSON.stringify(Object.fromEntries(Object.entries(dirs).map(([id, dir]) => [id, tracks(dir)]))));
+    res.end(JSON.stringify(body));
     return true;
   }
   if (!path.startsWith('/radio/')) return false;
