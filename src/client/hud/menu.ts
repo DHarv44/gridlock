@@ -16,9 +16,10 @@ const LEVELS: { q: Quality; label: string; sub: string }[] = [
 ];
 
 const SUMMARY: [Action[], string][] = [
-  [['forward', 'back'], 'Run / drive'], [['left', 'right'], 'Turn / steer'], [['fire'], 'Fire / swing (auto-aims ahead)'], [['aim'], 'Aim: hold, then the mouse turns you'], [['jump'], 'Jump'],
-  [['action'], 'Action: get in/out, carjack, shops, property'], [['handbrake'], 'Handbrake'],
-  [['prevWeapon', 'nextWeapon'], 'Switch weapon'],
+  [['footUp', 'footLeft', 'footDown', 'footRight'], 'Move'], [['jump'], 'Jump'], [['sprint'], 'Sprint'],
+  [['gas', 'brake'], 'Accelerate / brake'], [['steerLeft', 'steerRight'], 'Steer'], [['handbrake'], 'Handbrake'],
+  [['fire'], 'Fire / swing (auto-aims ahead)'], [['aim'], 'Aim: hold, then the mouse turns you'],
+  [['action'], 'Action: get in/out, carjack, shops, property'], [['prevWeapon', 'nextWeapon'], 'Switch weapon'],
 ];
 
 export interface MenuDeps { pane: Pane; sound: Sound; quality: QualityGovernor; input: Input; code: string; record: () => Record<string, number>; leave: () => void }
@@ -36,9 +37,10 @@ function keySummary(input: Input): string {
 
 function padSummary(input: Input): string {
   const btn = PAD_ACTIONS.filter((p) => SUMMARY_PAD.includes(p.id)).map((p) => [padButtonName(input.pad.buttonFor(p.id)), p.label]);
-  return [...padAxes(), ...btn].map(([k, label]) => `<kbd>${k}</kbd><span>${label}</span>`).join('');
+  const sticks = padAxes().filter((a) => a.group === 'On foot' || a.group === 'Car').map((a) => [a.input, `${a.use} (${a.group.toLowerCase()})`]);
+  return [...sticks, ...btn].map(([k, label]) => `<kbd>${k}</kbd><span>${label}</span>`).join('');
 }
-const SUMMARY_PAD: PadAction[] = ['action', 'jump', 'sprint', 'fire', 'prevWeapon', 'nextWeapon'];
+const SUMMARY_PAD: PadAction[] = ['action', 'jump', 'sprint', 'handbrake', 'fire', 'prevWeapon', 'nextWeapon'];
 
 export function openMenu(d: MenuDeps): void {
   const { pane, sound, quality, input, code } = d;

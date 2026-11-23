@@ -1,5 +1,6 @@
 // Gamepad (browser standard mapping): analog sticks and triggers, rebindable buttons, edge detection.
 // No package: the Gamepad API is polled once per frame.
+import { type Context, overlaps } from './controls';
 
 const DPAD = ['D-pad up', 'D-pad down', 'D-pad left', 'D-pad right'];
 const XBOX = ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'View', 'Menu', 'Left stick click', 'Right stick click', ...DPAD, 'Guide'];
@@ -14,32 +15,45 @@ const isPlayStation = (id: string) => /054c|dualshock|dualsense|wireless control
 /** Raw button indices used to drive menus (fixed, so menus always work). */
 export const PAD = { a: 0, b: 1, lb: 4, rb: 5, up: 12, down: 13, left: 14, right: 15 } as const;
 
-export type PadAction = 'fire' | 'action' | 'jump' | 'sprint' | 'prevWeapon' | 'nextWeapon' | 'horn' | 'radio' | 'map' | 'scores' | 'menu';
+export type PadAction = 'jump' | 'sprint' | 'handbrake' | 'horn' | 'climb' | 'descend'
+  | 'fire' | 'prevWeapon' | 'nextWeapon' | 'action' | 'radio' | 'map' | 'scores' | 'menu';
 
-/** Button actions with their default buttons. Sticks and triggers are fixed (see padAxes). */
-export const PAD_ACTIONS: { id: PadAction; label: string; button: number }[] = [
-  { id: 'fire', label: 'Fire', button: 5 },
-  { id: 'action', label: 'Action: get in/out, shops, properties', button: 3 },
-  { id: 'jump', label: 'Jump · handbrake · helicopter climb', button: 0 },
-  { id: 'sprint', label: 'Sprint · helicopter descend', button: 1 },
-  { id: 'prevWeapon', label: 'Previous weapon', button: 14 },
-  { id: 'nextWeapon', label: 'Next weapon', button: 15 },
-  { id: 'horn', label: 'Horn / siren', button: 10 },
-  { id: 'radio', label: 'Radio station', button: 12 },
-  { id: 'map', label: 'City map', button: 8 },
-  { id: 'scores', label: 'Scores (hold)', button: 13 },
-  { id: 'menu', label: 'Pause menu', button: 9 },
+/** Button actions, each its own setting, grouped by where they apply; the same button can do
+ *  different jobs in different groups (A: jump / handbrake / climb). Sticks and triggers are
+ *  fixed (see padAxes). */
+export const PAD_ACTIONS: { id: PadAction; label: string; context: Context; group: string; button: number }[] = [
+  { id: 'jump', label: 'Jump', context: 'foot', group: 'On foot', button: 0 },
+  { id: 'sprint', label: 'Sprint', context: 'foot', group: 'On foot', button: 1 },
+  { id: 'handbrake', label: 'Handbrake', context: 'car', group: 'Car', button: 0 },
+  { id: 'horn', label: 'Horn / siren', context: 'car', group: 'Car', button: 10 },
+  { id: 'climb', label: 'Climb', context: 'air', group: 'Helicopter', button: 0 },
+  { id: 'descend', label: 'Descend', context: 'air', group: 'Helicopter', button: 1 },
+  { id: 'fire', label: 'Fire / swing', context: 'any', group: 'Weapons', button: 5 },
+  { id: 'prevWeapon', label: 'Previous weapon', context: 'any', group: 'Weapons', button: 14 },
+  { id: 'nextWeapon', label: 'Next weapon', context: 'any', group: 'Weapons', button: 15 },
+  { id: 'action', label: 'Action: get in/out, shops, property', context: 'any', group: 'General', button: 3 },
+  { id: 'radio', label: 'Radio station', context: 'any', group: 'General', button: 12 },
+  { id: 'map', label: 'City map', context: 'any', group: 'General', button: 8 },
+  { id: 'scores', label: 'Scores (hold)', context: 'any', group: 'General', button: 13 },
+  { id: 'menu', label: 'Pause menu', context: 'any', group: 'General', button: 9 },
 ];
 
-/** The fixed stick and trigger layout, named for the pad in use. */
-export const padAxes = (): [string, string][] => [
-  ['Left stick', 'Move on foot (any direction, push further to run) · steer'],
-  ['Right stick', 'Aim on foot · tank turret'],
-  [padButtonName(7), 'Accelerate · fire on foot'],
-  [padButtonName(6), 'Brake / reverse'],
+/** The fixed stick and trigger layout per group, named for the pad in use. */
+export const padAxes = (): { group: string; input: string; use: string }[] => [
+  { group: 'On foot', input: 'Left stick', use: 'Move (any direction; push further to run)' },
+  { group: 'On foot', input: 'Right stick', use: 'Aim' },
+  { group: 'On foot', input: padButtonName(7), use: 'Fire' },
+  { group: 'Car', input: 'Left stick', use: 'Steer' },
+  { group: 'Car', input: padButtonName(7), use: 'Accelerate' },
+  { group: 'Car', input: padButtonName(6), use: 'Brake / reverse' },
+  { group: 'Helicopter', input: 'Left stick', use: 'Turn' },
+  { group: 'Helicopter', input: padButtonName(7), use: 'Fly forward' },
+  { group: 'Helicopter', input: padButtonName(6), use: 'Fly back' },
+  { group: 'Tank', input: 'Right stick', use: 'Turret' },
 ];
 
-const STORE = 'gridlock.pad.v1';
+// Bumped when defaults change (v2: every action its own setting, grouped by context).
+const STORE = 'gridlock.pad.v2';
 const DEAD = 0.16;
 
 /** Radial deadzone rescaled to 0..1 so small stick motions still move smoothly. */
@@ -75,9 +89,10 @@ export class Pad {
     return this.map.get(a) ?? -1;
   }
 
-  /** Binds a button; any other action on that button loses it. */
+  /** Binds a button; actions that could clash with this one (same or overlapping group) lose it. */
   bind(a: PadAction, button: number): void {
-    for (const [k, v] of this.map) if (v === button && k !== a) this.map.set(k, -1);
+    const ctx = PAD_ACTIONS.find((d) => d.id === a)!.context;
+    for (const d of PAD_ACTIONS) if (d.id !== a && this.map.get(d.id) === button && overlaps(d.context, ctx)) this.map.set(d.id, -1);
     this.map.set(a, button);
     this.save();
   }

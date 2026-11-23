@@ -33,8 +33,10 @@ export class Steering {
     }
     const pad = input.pad;
     input.triggerFires = !inCar;
-    const turn = input.axis('left', 'right');
-    const fwd = input.axis('back', 'forward');
+    // Each kind of moving has its own keys: on foot, driving, flying.
+    const air = inCar && you.vt >= 0 && VEHICLES[you.vt].movement === 'rotor';
+    const turn = !inCar ? input.axis('footLeft', 'footRight') : air ? input.axis('heliLeft', 'heliRight') : input.axis('steerLeft', 'steerRight');
+    const fwd = !inCar ? input.axis('footDown', 'footUp') : air ? input.axis('heliBack', 'heliForward') : input.axis('brake', 'gas');
     const firing = input.held('fire');
     if (inCar) {
       this.lastHeading = heading;

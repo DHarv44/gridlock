@@ -1,6 +1,7 @@
 // Esc → Controls: tabs for Keyboard / Mouse (two key slots per action) and Controller (one button
-// per action, plus the fixed stick and trigger layout). Click a slot, then press the new key or button.
-import { type Action, ACTIONS, keyName, MAX_KEYS } from '../game/controls';
+// per action, plus the fixed stick and trigger layout), both grouped by where the action applies.
+// Click a slot, then press the new key or button.
+import { type Action, ACTIONS, CONTROL_GROUPS as GROUPS, keyName, MAX_KEYS } from '../game/controls';
 import { PAD_ACTIONS, padAxes, padButtonName, type PadAction } from '../game/gamepad';
 import type { Input } from '../game/input';
 import type { Pane, PaneRow } from './pane';
@@ -41,7 +42,7 @@ export function openControls(pane: Pane, input: Input, back: () => void, tab: Ta
     pane.refresh();
   };
 
-  const keyRows = (): PaneRow[] => ACTIONS.map((def) => ({
+  const keyRows = (): PaneRow[] => GROUPS.flatMap((g) => ACTIONS.filter((d) => d.group === g)).map((def) => ({
     name: def.label,
     group: def.group,
     slots: input.bindings.slots(def.id).slice(0, MAX_KEYS).map((code, i) => {
@@ -50,14 +51,15 @@ export function openControls(pane: Pane, input: Input, back: () => void, tab: Ta
     }),
   }));
 
-  const padRows = (): PaneRow[] => [
-    ...PAD_ACTIONS.map((def): PaneRow => {
+  // Each group: its rebindable buttons, then its fixed sticks and triggers, in the keyboard's order.
+  const padRows = (): PaneRow[] => GROUPS.flatMap((group) => [
+    ...PAD_ACTIONS.filter((d) => d.group === group).map((def): PaneRow => {
       const b = input.pad.buttonFor(def.id);
       const on = waitPad === def.id;
-      return { name: def.label, group: 'Buttons', slots: [{ text: on ? 'press a button…' : padButtonName(b), active: on, empty: b < 0 && !on, onClick: () => listenPad(def.id) }] };
+      return { name: def.label, group, slots: [{ text: on ? 'press a button…' : padButtonName(b), active: on, empty: b < 0 && !on, onClick: () => listenPad(def.id) }] };
     }),
-    ...padAxes().map(([stick, use]): PaneRow => ({ name: use, group: 'Sticks and triggers', price: stick, affordable: true })),
-  ];
+    ...padAxes().filter((a) => a.group === group).map((a): PaneRow => ({ name: a.use, group, price: a.input, affordable: true })),
+  ]);
 
   pane.onClose = stop;
   pane.open(() => {

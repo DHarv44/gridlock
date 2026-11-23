@@ -1,42 +1,68 @@
-// Player actions and their key bindings: two slots per action, each rebindable. On foot WASD are
-// screen directions; in vehicles W/S gas and brake, A/D steer. There is no cursor: holding Aim
-// (right mouse) turns mouse motion into a 360° facing, and mouse buttons bind like keys.
+// Player actions and their key bindings: two slots per action, each rebindable. Every action is
+// its own setting, grouped by where it applies (on foot, car, helicopter, tank, weapons, general);
+// the same key can do different jobs in different groups (Space: jump / handbrake / climb). There
+// is no cursor: holding Aim turns mouse motion into a 360° facing; mouse buttons bind like keys.
 
 export type Action =
-  | 'forward' | 'back' | 'left' | 'right' | 'fire' | 'aim' | 'action' | 'handbrake' | 'jump' | 'sprint' | 'climb' | 'descend'
-  | 'prevWeapon' | 'nextWeapon' | 'horn' | 'radio' | 'turretLeft' | 'turretRight'
-  | 'chat' | 'map' | 'scores';
+  | 'footUp' | 'footDown' | 'footLeft' | 'footRight' | 'jump' | 'sprint'
+  | 'gas' | 'brake' | 'steerLeft' | 'steerRight' | 'handbrake' | 'horn'
+  | 'heliForward' | 'heliBack' | 'heliLeft' | 'heliRight' | 'climb' | 'descend'
+  | 'turretLeft' | 'turretRight'
+  | 'fire' | 'aim' | 'prevWeapon' | 'nextWeapon'
+  | 'action' | 'radio' | 'chat' | 'map' | 'scores';
 
 export type ActionKind = 'held' | 'edge' | 'ui';
 
-export interface ActionDef { id: Action; label: string; kind: ActionKind; group: string; keys: string[] }
+/** Where an action applies; keys only clash between actions whose contexts overlap. */
+export type Context = 'foot' | 'car' | 'air' | 'tank' | 'any';
+
+export interface ActionDef { id: Action; label: string; kind: ActionKind; context: Context; group: string; keys: string[] }
+
+const A = (id: Action, label: string, kind: ActionKind, context: Context, group: string, keys: string[]): ActionDef => ({ id, label, kind, context, group, keys });
 
 export const ACTIONS: ActionDef[] = [
-  { id: 'forward', label: 'Forward / accelerate', kind: 'held', group: 'Movement', keys: ['KeyW', 'ArrowUp'] },
-  { id: 'back', label: 'Back / brake, reverse', kind: 'held', group: 'Movement', keys: ['KeyS', 'ArrowDown'] },
-  { id: 'left', label: 'Turn / steer left', kind: 'held', group: 'Movement', keys: ['KeyA', 'ArrowLeft'] },
-  { id: 'right', label: 'Turn / steer right', kind: 'held', group: 'Movement', keys: ['KeyD', 'ArrowRight'] },
-  { id: 'jump', label: 'Jump', kind: 'held', group: 'Movement', keys: ['Space'] },
-  { id: 'sprint', label: 'Sprint', kind: 'held', group: 'Movement', keys: ['ShiftLeft'] },
-  { id: 'fire', label: 'Fire / swing', kind: 'held', group: 'Weapons', keys: ['Mouse0', 'ControlLeft'] },
-  { id: 'aim', label: 'Aim: while held the mouse turns you any way', kind: 'held', group: 'Weapons', keys: ['Mouse2'] },
-  { id: 'prevWeapon', label: 'Previous weapon', kind: 'edge', group: 'Weapons', keys: ['KeyZ'] },
-  { id: 'nextWeapon', label: 'Next weapon', kind: 'edge', group: 'Weapons', keys: ['KeyX'] },
-  { id: 'action', label: 'Action: get in/out, shops, properties', kind: 'ui', group: 'Movement', keys: ['KeyE', 'KeyF'] },
-  { id: 'handbrake', label: 'Handbrake', kind: 'held', group: 'Vehicles', keys: ['Space'] },
-  { id: 'horn', label: 'Horn / siren', kind: 'edge', group: 'Vehicles', keys: ['KeyH'] },
-  { id: 'radio', label: 'Radio station', kind: 'ui', group: 'Vehicles', keys: ['KeyR'] },
-  { id: 'climb', label: 'Helicopter climb', kind: 'held', group: 'Vehicles', keys: ['Space'] },
-  { id: 'descend', label: 'Helicopter descend', kind: 'held', group: 'Vehicles', keys: ['ShiftLeft'] },
-  { id: 'turretLeft', label: 'Tank turret left', kind: 'held', group: 'Vehicles', keys: ['Comma'] },
-  { id: 'turretRight', label: 'Tank turret right', kind: 'held', group: 'Vehicles', keys: ['Period'] },
-  { id: 'chat', label: 'Chat', kind: 'ui', group: 'Other', keys: ['KeyT'] },
-  { id: 'map', label: 'City map', kind: 'ui', group: 'Other', keys: ['KeyM'] },
-  { id: 'scores', label: 'Scores (hold)', kind: 'ui', group: 'Other', keys: ['Tab'] },
+  A('footUp', 'Move up', 'held', 'foot', 'On foot', ['KeyW', 'ArrowUp']),
+  A('footDown', 'Move down', 'held', 'foot', 'On foot', ['KeyS', 'ArrowDown']),
+  A('footLeft', 'Move left', 'held', 'foot', 'On foot', ['KeyA', 'ArrowLeft']),
+  A('footRight', 'Move right', 'held', 'foot', 'On foot', ['KeyD', 'ArrowRight']),
+  A('jump', 'Jump', 'held', 'foot', 'On foot', ['Space']),
+  A('sprint', 'Sprint', 'held', 'foot', 'On foot', ['ShiftLeft']),
+  A('gas', 'Accelerate', 'held', 'car', 'Car', ['KeyW', 'ArrowUp']),
+  A('brake', 'Brake / reverse', 'held', 'car', 'Car', ['KeyS', 'ArrowDown']),
+  A('steerLeft', 'Steer left', 'held', 'car', 'Car', ['KeyA', 'ArrowLeft']),
+  A('steerRight', 'Steer right', 'held', 'car', 'Car', ['KeyD', 'ArrowRight']),
+  A('handbrake', 'Handbrake', 'held', 'car', 'Car', ['Space']),
+  A('horn', 'Horn / siren', 'edge', 'car', 'Car', ['KeyH']),
+  A('heliForward', 'Fly forward', 'held', 'air', 'Helicopter', ['KeyW', 'ArrowUp']),
+  A('heliBack', 'Fly back', 'held', 'air', 'Helicopter', ['KeyS', 'ArrowDown']),
+  A('heliLeft', 'Turn left', 'held', 'air', 'Helicopter', ['KeyA', 'ArrowLeft']),
+  A('heliRight', 'Turn right', 'held', 'air', 'Helicopter', ['KeyD', 'ArrowRight']),
+  A('climb', 'Climb', 'held', 'air', 'Helicopter', ['Space']),
+  A('descend', 'Descend', 'held', 'air', 'Helicopter', ['ShiftLeft']),
+  A('turretLeft', 'Turret left', 'held', 'tank', 'Tank', ['Comma']),
+  A('turretRight', 'Turret right', 'held', 'tank', 'Tank', ['Period']),
+  A('fire', 'Fire / swing', 'held', 'any', 'Weapons', ['Mouse0', 'ControlLeft']),
+  A('aim', 'Aim (hold: the mouse turns you)', 'held', 'any', 'Weapons', ['Mouse2']),
+  A('prevWeapon', 'Previous weapon', 'edge', 'any', 'Weapons', ['KeyZ']),
+  A('nextWeapon', 'Next weapon', 'edge', 'any', 'Weapons', ['KeyX']),
+  A('action', 'Action: get in/out, shops, property', 'ui', 'any', 'General', ['KeyE', 'KeyF']),
+  A('radio', 'Radio station', 'ui', 'any', 'General', ['KeyR']),
+  A('chat', 'Chat', 'ui', 'any', 'General', ['KeyT']),
+  A('map', 'City map', 'ui', 'any', 'General', ['KeyM']),
+  A('scores', 'Scores (hold)', 'ui', 'any', 'General', ['Tab']),
 ];
 
-// Bumped when defaults change (v8: left click fires, right click aims).
-const STORE = 'gridlock.controls.v8';
+/** The order groups are shown in (keyboard and controller tabs). */
+export const CONTROL_GROUPS = ['On foot', 'Car', 'Helicopter', 'Tank', 'Weapons', 'General'];
+
+/** Do two contexts ever apply at once? (A tank is driven with the car controls.) */
+export function overlaps(a: Context, b: Context): boolean {
+  if (a === 'any' || b === 'any' || a === b) return true;
+  return (a === 'car' && b === 'tank') || (a === 'tank' && b === 'car');
+}
+
+// Bumped when defaults change (v9: every action its own setting, grouped by context).
+const STORE = 'gridlock.controls.v9';
 export const MAX_KEYS = 2;
 
 /** Readable name for a key code or mouse button. */
@@ -82,12 +108,13 @@ export class Bindings {
     return this.byKey.get(code) ?? [];
   }
 
-  /** Puts `code` in one slot of `a` ('' clears it). Twins that never apply at the same time may
-   *  share a key; any other action using the key loses it. */
+  /** Puts `code` in one slot of `a` ('' clears it). Actions in other contexts may share the key
+   *  (Space can jump on foot and handbrake in a car); ones that could clash lose it. */
   setSlot(a: Action, slot: number, code: string): void {
     if (code) {
+      const ctx = ACTIONS.find((d) => d.id === a)!.context;
       for (const def of ACTIONS) {
-        if (def.id === a || sharable(def.id, a)) continue;
+        if (def.id === a || !overlaps(def.context, ctx)) continue;
         this.map.set(def.id, this.slots(def.id).map((k) => (k === code ? '' : k)));
       }
     }
@@ -123,7 +150,3 @@ export class Bindings {
     }
   }
 }
-
-/** Pairs that never apply at the same time, so one key may serve both. */
-const SHARED: [Action, Action][] = [['handbrake', 'climb'], ['jump', 'handbrake'], ['jump', 'climb'], ['sprint', 'descend']];
-const sharable = (a: Action, b: Action) => SHARED.some(([x, y]) => (x === a && y === b) || (x === b && y === a));

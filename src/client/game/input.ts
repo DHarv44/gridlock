@@ -10,8 +10,7 @@ export type NavCmd = 'up' | 'down' | 'left' | 'right' | 'ok' | 'back' | 'zoomIn'
 
 const EDGE_BTN: Partial<Record<Action, number>> = { prevWeapon: BTN.prev, nextWeapon: BTN.next, horn: BTN.horn };
 const KIND = new Map(ACTIONS.map((a) => [a.id, a.kind]));
-/** Vehicle twins of the on-foot pad buttons (the same button does both). */
-const PAD_ALIAS: Partial<Record<Action, PadAction>> = { handbrake: 'jump', climb: 'jump', descend: 'sprint' };
+const PAD_IDS = new Set<string>(PAD_ACTIONS.map((d) => d.id));
 /** How far (px of mouse travel) the virtual aim stick reaches; smaller turns quicker. */
 const AIM_RADIUS = 90;
 const NAV: [number, NavCmd][] = [[PAD.up, 'up'], [PAD.down, 'down'], [PAD.left, 'left'], [PAD.right, 'right'], [PAD.a, 'ok'], [PAD.b, 'back'], [PAD.rb, 'zoomIn'], [PAD.lb, 'zoomOut']];
@@ -108,8 +107,7 @@ export class Input {
     if (this.bindings.keys(a).some((k) => this.down.has(k))) return true;
     if (this.navMode) return false;
     if (a === 'fire' && this.triggerFires && this.pad.rt > 0.35) return true;
-    const pa = PAD_ALIAS[a] ?? (a as PadAction);
-    return PAD_ACTIONS.some((d) => d.id === pa) && this.pad.held(pa);
+    return PAD_IDS.has(a) && this.pad.held(a as PadAction);
   }
 
   /** While a menu pane is open the pad drives it instead of the game. */
