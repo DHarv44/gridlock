@@ -6,7 +6,8 @@ import { Radio } from '../audio/radio';
 import { Sound } from '../audio/sound';
 import { Hud } from '../hud/hud';
 import { openMenu } from '../hud/menu';
-import { paintContent } from '../hud/paintShop';
+import { PaintGarage } from '../hud/paintGarage';
+import { SERVICES } from '../../shared/packs';
 import type { Place } from '../../shared/world/cityTypes';
 import { BigMap } from '../hud/bigMap';
 import { saveProgress } from '../lobby/characterStore';
@@ -50,6 +51,7 @@ export class Game {
   private hud = new Hud();
   private radar: Minimap;
   private pane = new Pane();
+  private garage = new PaintGarage();
   private interact: Interact;
   private jobs: Jobs;
   private sound = new Sound();
@@ -85,9 +87,10 @@ export class Game {
     this.interact = new Interact(city, this.pane);
     this.hud.onChat = (text) => conn.send({ t: 'chat', text });
     this.input.onUi = (a) => this.ui(a);
-    // The pad drives whichever overlay is up: the map (B closes it) or the side pane.
+    // The pad drives whichever overlay is up: the paint shop, the map (B closes it) or the pane.
     this.input.onNav = (c) => {
-      if (!this.bigMap.isOpen) this.pane.nav(c);
+      if (this.garage.isOpen) this.garage.nav(c);
+      else if (!this.bigMap.isOpen) this.pane.nav(c);
       else if (c === 'back') this.bigMap.close();
       else this.bigMap.nav(c);
     };
@@ -143,6 +146,7 @@ export class Game {
         break;
       }
       case 'menu':
+        if (this.garage.isOpen) { this.garage.leave(); return; }
         if (this.bigMap.isOpen) { this.bigMap.close(); return; }
         if (this.pane.isOpen) this.pane.close();
         else openMenu({ pane: this.pane, sound: this.sound, quality: this.quality, input: this.input, code: this.code, record: () => this.profile.felonies ?? {}, leave: () => this.leave() });
@@ -223,7 +227,7 @@ export class Game {
     const now = performance.now();
     const dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
-    this.input.pollPad(dt, this.pane.isOpen || this.bigMap.isOpen);
+    this.input.pollPad(dt, this.pane.isOpen || this.bigMap.isOpen || this.garage.isOpen);
     this.acc += dt;
     let n = 0;
     while (this.acc >= STEP && n < 4) {
@@ -298,15 +302,17 @@ export class Game {
     }
   }
 
-  /** Paint shop: colour menu with a live preview on your car. */
+  /** Paint shop: the car goes into the garage (hidden on the street, controls off) till it's done. */
   private openPaint(place: Place): void {
-    const vid = this.you?.vid ?? 0;
-    let bought = false;
-    const preview = (c: number | null) => { if (!bought) this.view.paintPreview = c === null ? null : { vid, color: c }; };
-    // After paying, keep showing the new colour until the server's snapshot brings it.
-    this.pane.onClose = () => { setTimeout(() => { this.view.paintPreview = null; }, bought ? 700 : 0); };
-    this.pane.open(() => paintContent(place, this.you?.cash ?? 0, (this.you?.wl ?? 0) > 0, this.store.all.get(vid)?.data[6] ?? -1,
-      (kind, id, p) => { bought = true; this.conn.send({ t: 'buy', kind, id, place: p }); }, preview, () => this.pane.close()));
+    const you = this.you;
+    if (!you?.vid || this.garage.isOpen) return;
+    const vid = you.vid;
+    this.view.hiddenVehicle = vid;
+    this.input.enabled = false;
+    this.input.release();
+    this.garage.open({ shop: place.name, type: you.vt, color: this.store.all.get(vid)?.data[6] ?? 0, price: SERVICES[place.spec].price ?? 500,
+      cash: you.cash, wanted: you.wl > 0, buy: (id) => this.conn.send({ t: 'buy', kind: 'respray', id, place: place.id }),
+      paintNow: () => this.store.all.get(vid)?.data[6] ?? -1, close: () => { this.view.hiddenVehicle = 0; this.input.enabled = true; } });
   }
 
   private leave(): void {
