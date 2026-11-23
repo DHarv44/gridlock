@@ -2,7 +2,9 @@ import type { FactionSpec, PedArchetype } from './types';
 
 const SKIN = ['#f1c9a5', '#e0ac69', '#c68642', '#8d5524', '#5c3a21', '#ffdbac', '#a5704a'];
 const CIV_TOP = ['#5c7fa3', '#c94b4b', '#e8e2d0', '#3f6e4a', '#8a6db0', '#d99a3a', '#2d2d33', '#9aa5ad', '#d76f9c', '#4a90a8'];
-const CIV_BOTTOM = ['#2c3e57', '#3a3a3a', '#6b5a45', '#25324a', '#7a7466', '#1f1f22'];
+export const HAIR = ['#1a1410', '#2b1d14', '#4a3020', '#6b4a2a', '#a07a4a', '#c9a76a', '#8a8a8a', '#d8d2c8', '#5a1e14'];
+export const SHOES = ['#141414', '#2b2018', '#e8e6e0', '#3a3a40', '#5a3a24'];
+const CIV_BOTTOM =['#2c3e57', '#3a3a3a', '#6b5a45', '#25324a', '#7a7466', '#1f1f22'];
 
 export const FACTIONS: FactionSpec[] = [
   { id: 'civ', name: 'Civilians', color: '#9aa5ad', hostile: [] },

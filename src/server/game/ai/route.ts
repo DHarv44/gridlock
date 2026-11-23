@@ -74,9 +74,4 @@ export function findRoute(w: World, from: number, to: number): number[] {
   return path.reverse();
 }
 
-/** Light state at an intersection: is the given axis green right now? */
-export function isGreen(node: RoadNode, axis: 'h' | 'v', time: number): boolean {
-  if (!node.lights) return true;
-  const phase = (time + node.id * 3.7) % 22;
-  return axis === 'h' ? phase < 9.5 : phase >= 11 && phase < 20.5;
-}
+export { isGreen } from '../../../shared/world/traffic';

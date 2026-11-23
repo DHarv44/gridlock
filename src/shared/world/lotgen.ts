@@ -159,6 +159,12 @@ export class LotBuilder {
     b.x1 -= front === Dir.E ? fs : front === Dir.W ? back : side;
     b.y0 += front === Dir.N ? fs : front === Dir.S ? back : side;
     b.y1 -= front === Dir.S ? fs : front === Dir.N ? back : side;
+    // Houses are at most ~13 m deep; the rest of the lot is backyard.
+    const maxDepth = this.rng.range(10, 13.5);
+    if (front === Dir.N) b.y1 = Math.min(b.y1, b.y0 + maxDepth);
+    if (front === Dir.S) b.y0 = Math.max(b.y0, b.y1 - maxDepth);
+    if (front === Dir.W) b.x1 = Math.min(b.x1, b.x0 + maxDepth);
+    if (front === Dir.E) b.x0 = Math.max(b.x0, b.x1 - maxDepth);
     if (rectW(b) < 6 || rectH(b) < 6) return;
     this.addBuilding(lot, b, this.rng.range(z.lot.height[0], z.lot.height[1]), z, 'house');
     if (this.rng.chance(0.6)) {

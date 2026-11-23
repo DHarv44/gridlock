@@ -2,7 +2,7 @@
 import { Rng } from '../../shared/rng';
 import { SERVICES, ZONES } from '../../shared/packs';
 import type { CityMap } from '../../shared/world/city';
-import { LAND0, LAND1, LANE_W, type Lot } from '../../shared/world/cityTypes';
+import { LAND0, LAND1, LANE_W, type Lot, type Segment } from '../../shared/world/cityTypes';
 
 export const CHUNK = 128;
 export const PX = 4; // pixels per metre
@@ -66,6 +66,7 @@ export function paintChunk(map: CityMap, cx: number, cy: number, canvas: HTMLCan
     if (!inView(n.x - n.wv, n.y - n.wh, n.x + n.wv, n.y + n.wh)) continue;
     rect(n.x - n.wv / 2, n.y - n.wh / 2, n.x + n.wv / 2, n.y + n.wh / 2, ASPHALT);
   }
+  for (const s of city.segs) roadWear(ctx, s, inView);
 
   // Blocks and lots.
   for (const b of city.blocks) {
@@ -73,6 +74,7 @@ export function paintChunk(map: CityMap, cx: number, cy: number, canvas: HTMLCan
     if (!inView(br.x0, br.y0, br.x1, br.y1)) continue;
     const z = ZONES[b.zone];
     rect(br.x0, br.y0, br.x1, br.y1, z.sidewalk);
+    grid(ctx, { x0: br.x0 + 0.4, y0: br.y0 + 0.4, x1: br.x1 - 0.4, y1: br.y1 - 0.4 }, 1.5, 'rgba(0,0,0,0.08)');
     // Curb edge.
     ctx.strokeStyle = 'rgba(0,0,0,0.25)';
     ctx.lineWidth = 0.25;
@@ -90,12 +92,56 @@ export function paintChunk(map: CityMap, cx: number, cy: number, canvas: HTMLCan
   ctx.globalCompositeOperation = 'source-over';
 }
 
+/** Deterministic per-segment asphalt wear: patches, oil drips down the lanes, manholes. */
+function roadWear(ctx: CanvasRenderingContext2D, s: Segment, inView: (a: number, b: number, c: number, d: number) => boolean): void {
+  const hw = s.width / 2;
+  if (!inView(Math.min(s.x0, s.x1) - hw, Math.min(s.y0, s.y1) - hw, Math.max(s.x0, s.x1) + hw, Math.max(s.y0, s.y1) + hw)) return;
+  const rng = new Rng(s.id * 7919 + 13);
+  const len = s.axis === 'h' ? s.x1 - s.x0 : s.y1 - s.y0;
+  const at = (along: number, across: number): [number, number] => (s.axis === 'h' ? [s.x0 + along, s.y0 + across] : [s.x0 + across, s.y0 + along]);
+  for (let k = 0; k < Math.floor(len / 30); k++) {
+    const [x, y] = at(rng.range(8, len - 8), rng.range(-hw + 1, hw - 1));
+    ctx.fillStyle = rng.chance(0.5) ? 'rgba(20,20,22,0.25)' : 'rgba(120,120,118,0.12)';
+    const a = rng.range(2, 6), b = rng.range(1.5, 3.5);
+    ctx.fillRect(x - a / 2, y - b / 2, s.axis === 'h' ? a : b, s.axis === 'h' ? b : a);
+  }
+  // Faint oil drip line down the middle of each lane.
+  ctx.fillStyle = 'rgba(10,10,10,0.07)';
+  for (let lane = -s.lanes; lane < s.lanes; lane++) {
+    const across = (lane + 0.5) * LANE_W;
+    for (let p = 6; p < len - 6; p += rng.range(6, 16)) {
+      const [x, y] = at(p, across + rng.range(-0.3, 0.3));
+      const l = rng.range(1, 3);
+      ctx.beginPath();
+      ctx.ellipse(x, y, s.axis === 'h' ? l : 0.35, s.axis === 'h' ? 0.35 : l, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  for (let k = 0; k < Math.max(1, Math.floor(len / 70)); k++) {
+    const [x, y] = at(rng.range(10, len - 10), rng.range(-LANE_W, LANE_W));
+    ctx.fillStyle = '#2a2b2e';
+    ctx.beginPath(); ctx.arc(x, y, 0.45, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(160,160,160,0.35)'; ctx.lineWidth = 0.06;
+    ctx.beginPath(); ctx.arc(x, y, 0.32, 0, Math.PI * 2); ctx.stroke();
+  }
+}
+
+function grass(ctx: CanvasRenderingContext2D, r: { x0: number; y0: number; x1: number; y1: number }, seed: number): void {
+  const rng = new Rng(seed);
+  const n = Math.min(900, Math.floor(((r.x1 - r.x0) * (r.y1 - r.y0)) / 3));
+  for (let k = 0; k < n; k++) {
+    ctx.fillStyle = rng.chance(0.5) ? 'rgba(30,60,20,0.18)' : 'rgba(170,200,110,0.12)';
+    const s = rng.range(0.3, 1.4);
+    ctx.fillRect(rng.range(r.x0, r.x1), rng.range(r.y0, r.y1), s, s);
+  }
+}
+
 function paintLot(ctx: CanvasRenderingContext2D, lot: Lot, ground: string): void {
   const r = lot.rect, w = r.x1 - r.x0, h = r.y1 - r.y0;
   const fill = (c: string) => { ctx.fillStyle = c; ctx.fillRect(r.x0, r.y0, w, h); };
+  if (lot.use === 'park' || lot.use === 'yard') { fill(lot.use === 'park' ? '#5c8a43' : '#6a9150'); grass(ctx, r, lot.id * 31 + 7); }
   switch (lot.use) {
     case 'park': {
-      fill('#5c8a43');
       const cx = (r.x0 + r.x1) / 2, cy = (r.y0 + r.y1) / 2;
       ctx.fillStyle = '#b9ad8f';
       ctx.fillRect(cx - 2, r.y0, 4, h);
@@ -109,7 +155,7 @@ function paintLot(ctx: CanvasRenderingContext2D, lot: Lot, ground: string): void
       ctx.fill();
       break;
     }
-    case 'yard': fill('#6a9150'); paintDriveway(ctx, lot); break;
+    case 'yard': paintDriveway(ctx, lot); backyard(ctx, lot); break;
     case 'plaza': fill('#a29d92'); grid(ctx, r, 3, 'rgba(0,0,0,0.08)'); break;
     case 'parking': fill('#45484d'); stallLines(ctx, lot); break;
     case 'containers': fill('#6f6c66'); break;
@@ -149,6 +195,33 @@ function paintDriveway(ctx: CanvasRenderingContext2D, lot: Lot): void {
     case 2: ctx.fillRect(b.x0 + 0.5, b.y1, 3.5, r.y1 - b.y1); break;
     case 1: ctx.fillRect(b.x1, b.y0 + 0.5, r.x1 - b.x1, 3.5); break;
     case 3: ctx.fillRect(r.x0, b.y0 + 0.5, b.x0 - r.x0, 3.5); break;
+  }
+}
+
+/** Hedge outline and, sometimes, a pool or patio behind the house. */
+function backyard(ctx: CanvasRenderingContext2D, lot: Lot): void {
+  const r = lot.rect, b = lot.building?.rect;
+  ctx.strokeStyle = 'rgba(40,70,30,0.8)';
+  ctx.lineWidth = 0.6;
+  ctx.strokeRect(r.x0 + 0.3, r.y0 + 0.3, r.x1 - r.x0 - 0.6, r.y1 - r.y0 - 0.6);
+  if (!b) return;
+  const rng = new Rng(lot.id * 131 + 5);
+  // Free strip behind the house (opposite the street side).
+  const back = lot.front === 0 ? { x0: r.x0 + 1, x1: r.x1 - 1, y0: b.y1 + 1, y1: r.y1 - 1 }
+    : lot.front === 2 ? { x0: r.x0 + 1, x1: r.x1 - 1, y0: r.y0 + 1, y1: b.y0 - 1 }
+    : lot.front === 3 ? { x0: b.x1 + 1, x1: r.x1 - 1, y0: r.y0 + 1, y1: r.y1 - 1 }
+    : { x0: r.x0 + 1, x1: b.x0 - 1, y0: r.y0 + 1, y1: r.y1 - 1 };
+  const w = back.x1 - back.x0, h = back.y1 - back.y0;
+  if (w < 6 || h < 6) return;
+  if (rng.chance(0.35)) {
+    const pw = Math.min(w - 2, rng.range(5, 8)), ph = Math.min(h - 2, rng.range(3.5, 5));
+    const x = back.x0 + (w - pw) / 2, y = back.y0 + (h - ph) / 2;
+    ctx.fillStyle = '#d9d4c6'; ctx.fillRect(x - 0.8, y - 0.8, pw + 1.6, ph + 1.6);
+    ctx.fillStyle = '#3fa7c9'; ctx.fillRect(x, y, pw, ph);
+    ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(x + 0.4, y + 0.4, pw * 0.4, 0.3);
+  } else if (rng.chance(0.5)) {
+    ctx.fillStyle = '#a89c86';
+    ctx.fillRect(back.x0, back.y0, Math.min(w, 5), Math.min(h, 4));
   }
 }
 

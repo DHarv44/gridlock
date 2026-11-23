@@ -1,5 +1,6 @@
 // Pack registry: id -> index lookups shared by client and server. Index order is the wire format.
 import { FACTIONS, PEDS } from './peds';
+export { HAIR, SHOES } from './peds';
 import { PROPERTIES, SERVICES } from './places';
 import type { FactionSpec, PedArchetype, PropertySpec, ServiceSpec, VehicleSpec, WeaponSpec, ZoneSpec } from './types';
 import { VEHICLES } from './vehicles';

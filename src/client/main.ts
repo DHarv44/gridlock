@@ -49,7 +49,7 @@ function start(create: boolean, room: string): void {
       setTimeout(() => {
         const game = new Game(conn, m.id, name, m.room, m.seed, () => { location.hash = ''; location.reload(); });
         (window as unknown as { __game: Game }).__game = game; // dev/debug hook
-        loading.hidden = true;
+        // The loading screen stays up until the first snapshot arrives (Game hides it).
       }, 30);
     }
   });

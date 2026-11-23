@@ -93,7 +93,7 @@ export class WorldView {
   }
 
   private addTag(id: number, v: PedView, tag: PlayerTag, isMe: boolean): void {
-    const ring = new THREE.Mesh(new THREE.RingGeometry(0.75, 0.95, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: tag.color, transparent: true, opacity: 0.9 }));
+    const ring = new THREE.Mesh(new THREE.RingGeometry(1.0, 1.25, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: tag.color, transparent: true, opacity: 0.9 }));
     ring.position.y = 0.05;
     v.root.add(ring);
     this.rings.set(id, ring);

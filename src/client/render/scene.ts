@@ -1,5 +1,6 @@
 // three.js scene, lights and the day/night cycle. World (x, y) maps to three (x, height, y).
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 
 export interface Lighting {
   night: number;          // 0 day .. 1 full night
@@ -43,6 +44,10 @@ export class Stage {
       this.scene.add(l);
     }
     this.scene.fog = new THREE.Fog(SKY_DAY, 500, 900);
+    // Soft studio environment so car paint, glass and chrome pick up reflections.
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    pmrem.dispose();
     this.resize();
     window.addEventListener('resize', () => this.resize());
   }
@@ -57,9 +62,11 @@ export class Stage {
   /** Sun arc, colours and ambient from the in-game clock (minutes since midnight). */
   setTime(gameMinutes: number, focusX: number, focusY: number): void {
     const hour = gameMinutes / 60;
-    const day = Math.max(0, Math.sin(((hour - 6) / 12) * Math.PI));         // 0 at 6:00/18:00, 1 at noon
-    const twilight = Math.max(0, 1 - Math.abs(hour - 18.5) / 1.6) + Math.max(0, 1 - Math.abs(hour - 6) / 1.4);
-    const night = Math.min(1, Math.max(0, 1 - day * 3.5));
+    const s = Math.sin(((hour - 6) / 12) * Math.PI);                       // -1 midnight .. 1 noon
+    const day = Math.max(0, s);
+    const twilight = Math.max(0, 1 - Math.abs(hour - 18.3) / 1.2) + Math.max(0, 1 - Math.abs(hour - 6) / 1.2);
+    // Night falls quickly around 18:00-19:00 and lifts around 5:30-6:30.
+    const night = Math.min(1, Math.max(0, (0.12 - s) / 0.28));
     this.lighting.night = night;
     this.lighting.hour = hour;
     const az = ((hour - 6) / 12) * Math.PI;
@@ -70,7 +77,7 @@ export class Stage {
     const sunColor = new THREE.Color('#fff2dc').lerp(new THREE.Color('#ff9a5a'), Math.min(1, twilight));
     const moon = new THREE.Color('#7f9cff');
     this.sun.color.copy(night > 0.6 ? moon : sunColor);
-    this.sun.intensity = night > 0.6 ? 0.9 : 0.5 + day * 2.0;
+    this.sun.intensity = night > 0.6 ? 0.9 : 0.9 + day * 1.6;
     this.hemi.intensity = 0.95 + day * 0.3 - night * 0.05;
     this.hemi.color.set(night > 0.5 ? '#7d90c8' : '#cfe0ff');
     this.hemi.groundColor.set(night > 0.5 ? '#2a2c3a' : '#4a4438');
@@ -78,6 +85,7 @@ export class Stage {
     this.renderer.setClearColor(sky);
     (this.scene.fog as THREE.Fog).color.copy(sky);
     this.renderer.toneMappingExposure = 1.05 + night * 0.25;
+    this.scene.environmentIntensity = 0.15 + day * 0.65;
   }
 
   render(): void {

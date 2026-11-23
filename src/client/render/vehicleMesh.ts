@@ -16,11 +16,26 @@ const paintColor = (p: Paint, body: string, wrecked: boolean): string => {
   return NAMED[p] ?? '#ff00ff';
 };
 
+function profileGeometry(spec: VehicleSpec, part: Part): THREE.BufferGeometry {
+  const L = spec.length, W = spec.width, H = spec.height;
+  const depth = (part.y[1] - part.y[0]) * W;
+  const bevel = Math.min(0.08, depth * 0.08, H * 0.05);
+  const shape = new THREE.Shape(part.profile!.map(([x, z]) => new THREE.Vector2(x * L, z * H)));
+  const g = new THREE.ExtrudeGeometry(shape, { depth: Math.max(0.02, depth - bevel * 2), bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel * 0.8, bevelSegments: 2, curveSegments: 1 });
+  g.translate(0, 0, part.y[0] * W + bevel);
+  g.clearGroups();
+  return g;
+}
+
 function partGeometry(spec: VehicleSpec, part: Part, color: THREE.Color): THREE.BufferGeometry {
   const L = spec.length, W = spec.width, H = spec.height;
-  const sx = (part.x[1] - part.x[0]) * L, sy = (part.z[1] - part.z[0]) * H, sz = (part.y[1] - part.y[0]) * W;
-  const g = new THREE.BoxGeometry(Math.max(sx, 0.02), Math.max(sy, 0.02), Math.max(sz, 0.02));
-  g.translate(((part.x[0] + part.x[1]) / 2) * L, ((part.z[0] + part.z[1]) / 2) * H, ((part.y[0] + part.y[1]) / 2) * W);
+  let g: THREE.BufferGeometry;
+  if (part.profile) g = profileGeometry(spec, part);
+  else {
+    const sx = (part.x[1] - part.x[0]) * L, sy = (part.z[1] - part.z[0]) * H, sz = (part.y[1] - part.y[0]) * W;
+    g = new THREE.BoxGeometry(Math.max(sx, 0.02), Math.max(sy, 0.02), Math.max(sz, 0.02));
+    g.translate(((part.x[0] + part.x[1]) / 2) * L, ((part.z[0] + part.z[1]) / 2) * H, ((part.y[0] + part.y[1]) / 2) * W);
+  }
   const n = g.attributes.position.count;
   const cols = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) cols.set([color.r, color.g, color.b], i * 3);
@@ -35,22 +50,36 @@ function wheels(spec: VehicleSpec): THREE.BufferGeometry[] {
   if (r === 0) return out;
   const axles = spec.length > 9 ? [0.36, -0.2, -0.36] : spec.movement === 'bike' ? [0.38, -0.38] : [0.33, -0.33];
   const sides = spec.movement === 'bike' ? [0] : [-1, 1];
-  const c = new THREE.Color('#1c1c1c');
+  const tyre = new THREE.Color('#1c1c1c'), rim = new THREE.Color(spec.movement === 'bike' ? '#3a3a3a' : '#9da2a8');
+  const coloured = (g: THREE.BufferGeometry, c: THREE.Color) => {
+    const n = g.attributes.position.count;
+    const cols = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) cols.set([c.r, c.g, c.b], i * 3);
+    g.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+    return g.toNonIndexed();
+  };
   for (const ax of axles) {
     for (const s of sides) {
-      const g = new THREE.CylinderGeometry(r, r, 0.28, 10).rotateX(Math.PI / 2);
-      g.translate(ax * spec.length, r, s * (spec.width / 2 - 0.12));
-      const n = g.attributes.position.count;
-      const cols = new Float32Array(n * 3);
-      for (let i = 0; i < n; i++) cols.set([c.r, c.g, c.b], i * 3);
-      g.setAttribute('color', new THREE.BufferAttribute(cols, 3));
-      out.push(g.toNonIndexed());
+      const z = s * (spec.width / 2 - 0.13);
+      const t = new THREE.CylinderGeometry(r, r, 0.28, 14).rotateX(Math.PI / 2).translate(ax * spec.length, r, z);
+      out.push(coloured(t, tyre));
+      if (s !== 0) {
+        const h = new THREE.CylinderGeometry(r * 0.6, r * 0.6, 0.04, 10).rotateX(Math.PI / 2).translate(ax * spec.length, r, z + s * 0.14);
+        out.push(coloured(h, rim));
+      }
     }
   }
   return out;
 }
 
-interface Built { body: THREE.BufferGeometry; lights: THREE.BufferGeometry | null; animated: { tag: Part['tag']; geo: THREE.BufferGeometry; offset: THREE.Vector3 }[] }
+const SHINY = new Set<Paint>(['glass', 'chrome']);
+
+interface Built {
+  body: THREE.BufferGeometry;
+  shiny: THREE.BufferGeometry | null;
+  lights: THREE.BufferGeometry | null;
+  animated: { tag: Part['tag']; geo: THREE.BufferGeometry; offset: THREE.Vector3 }[];
+}
 const cache = new Map<string, Built>();
 
 function build(type: number, colorIdx: number, wrecked: boolean): Built {
@@ -60,21 +89,25 @@ function build(type: number, colorIdx: number, wrecked: boolean): Built {
   const spec = VEHICLES[type];
   const body = PALETTE[colorIdx] ?? '#888888';
   const staticParts: THREE.BufferGeometry[] = [...wheels(spec)];
+  const shinyParts: THREE.BufferGeometry[] = [];
   const lightParts: THREE.BufferGeometry[] = [];
   const animated: Built['animated'] = [];
   for (const part of spec.model) {
     const col = new THREE.Color(paintColor(part.paint, body, wrecked));
-    const g = partGeometry(spec, part, col).toNonIndexed();
+    const raw = partGeometry(spec, part, col);
+    const g = raw.index ? raw.toNonIndexed() : raw;
     if (part.tag === 'rotor' || part.tag === 'tailrotor' || part.tag === 'turret' || part.tag === 'barrel' || part.tag === 'siren') {
       g.computeBoundingBox();
       const offset = g.boundingBox!.getCenter(new THREE.Vector3());
       if (part.tag === 'rotor' || part.tag === 'tailrotor') g.translate(-offset.x, -offset.y, -offset.z);
       animated.push({ tag: part.tag, geo: g, offset });
     } else if ((part.tag === 'headlight' || part.tag === 'taillight') && !wrecked) lightParts.push(g);
+    else if (SHINY.has(part.paint) && !wrecked) shinyParts.push(g);
     else staticParts.push(g);
   }
   const built: Built = {
     body: mergeGeometries(staticParts)!,
+    shiny: shinyParts.length ? mergeGeometries(shinyParts) : null,
     lights: lightParts.length ? mergeGeometries(lightParts) : null,
     animated,
   };
@@ -82,7 +115,9 @@ function build(type: number, colorIdx: number, wrecked: boolean): Built {
   return built;
 }
 
-const bodyMat = new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 70, specular: new THREE.Color('#3a3a3a') });
+// Paint reflects the scene environment (set up in Stage); glass and chrome are mirror-like.
+const bodyMat = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0.35, roughness: 0.38 });
+const shinyMat = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0.9, roughness: 0.08 });
 const lightMat = new THREE.MeshBasicMaterial({ vertexColors: true });
 export const sirenMats = {
   red: new THREE.MeshBasicMaterial({ color: '#ff2a2a' }), redDim: new THREE.MeshLambertMaterial({ color: '#661010' }),
@@ -107,6 +142,7 @@ export function makeVehicle(type: number, colorIdx: number, wrecked: boolean): V
   body.castShadow = true;
   body.receiveShadow = true;
   root.add(body);
+  if (b.shiny) root.add(new THREE.Mesh(b.shiny, shinyMat));
   if (b.lights) root.add(new THREE.Mesh(b.lights, lightMat));
   const view: VehicleView = { root, turret: null, rotors: [], tailRotors: [], sirens: [], key: `${type}:${colorIdx}:${wrecked}` };
   for (const a of b.animated) {

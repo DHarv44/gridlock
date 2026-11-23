@@ -7,6 +7,8 @@ export interface Part {
   y: [number, number];   // -0.5..0.5 across width (+ = right side)
   z: [number, number];   // 0..1 of height
   paint: Paint;
+  /** Optional side silhouette [x, z] points; when set the part is this outline extruded across y. */
+  profile?: [number, number][];
   tag?: 'rotor' | 'tailrotor' | 'turret' | 'barrel' | 'siren' | 'headlight' | 'taillight';
 }
 

@@ -18,7 +18,7 @@ const civPeds = [{ id: 'civilian', weight: 10 }, { id: 'business', weight: 2 }, 
 export const ZONES: ZoneSpec[] = [
   {
     id: 'downtown', name: 'Downtown', mapColor: '#4b4f5c', ground: '#8b8d90', sidewalk: '#a4a5a6',
-    lot: { min: 26, max: 60, setback: [2, 5], height: [32, 58], coverage: 0.9 }, layout: 'buildings',
+    lot: { min: 26, max: 60, setback: [2, 5], height: [30, 52], coverage: 0.9 }, layout: 'buildings',
     wall: ['#5b6a7a', '#3d4a5a', '#7d8a96', '#4a5560', '#6e7d70', '#8a8f99'], roof: ['#3a3d42', '#4a4d52', '#55585e'],
     trees: 0.05, parkingChance: 0.05, plazaChance: 0.12, pedDensity: 9,
     peds: [{ id: 'business', weight: 8 }, { id: 'civilian', weight: 6 }, { id: 'tourist', weight: 2 }, { id: 'guard', weight: 0.4 }, { id: 'cop', weight: 0.5 }],
@@ -56,7 +56,7 @@ export const ZONES: ZoneSpec[] = [
     id: 'suburbs', name: 'Suburbs', mapColor: '#4e6a45', ground: '#6f8f4e', sidewalk: '#b4b2a8',
     lot: { min: 16, max: 22, setback: [4, 6], height: [4.5, 7.5], coverage: 0.5 }, layout: 'houses',
     wall: ['#e8e2d0', '#d6c8a8', '#b8c4c8', '#c8a888', '#e0d4b8', '#a8b898', '#d0b0a0'], roof: ['#5a3a30', '#3f4a55', '#4a4a4a', '#6b4a3a', '#2f3a40'],
-    trees: 1.4, parkingChance: 0, plazaChance: 0, pedDensity: 1.6,
+    trees: 3.2, parkingChance: 0, plazaChance: 0, pedDensity: 1.6,
     peds: [{ id: 'civilian', weight: 8 }, { id: 'elder', weight: 3 }],
     trafficDensity: 0.4, traffic: civTraffic, parked: civParked, parkedDensity: 0.7, roadDrop: 0.22, windows: 0.3,
   },

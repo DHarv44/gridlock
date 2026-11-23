@@ -1,7 +1,7 @@
 // Top-down chase camera: looks straight down, rises with speed, leads movement and aim.
 import * as THREE from 'three';
 
-const FOOT_HEIGHT = 92;
+const FOOT_HEIGHT = 98;
 const MAX_HEIGHT = 230;
 
 export class ChaseCamera {
@@ -22,7 +22,10 @@ export class ChaseCamera {
 
   update(dt: number, tx: number, ty: number, vx: number, vy: number, alt: number, aimX: number, aimY: number, driving: boolean): void {
     const speed = Math.hypot(vx, vy);
-    const want = Math.min(MAX_HEIGHT, FOOT_HEIGHT + (driving ? speed * 3.1 : 0) + alt * 0.9);
+    const dev = window as unknown as { __camHeight?: number; __camAt?: { x: number; y: number } }; // dev hooks
+    if (dev.__camAt) { tx = dev.__camAt.x; ty = dev.__camAt.y; vx = 0; vy = 0; aimX = tx; aimY = ty; }
+    const forced = dev.__camHeight;
+    const want = forced ?? Math.min(MAX_HEIGHT, FOOT_HEIGHT + (driving ? speed * 3.1 : 0) + alt * 0.9);
     this.height += (want - this.height) * Math.min(1, dt * (want > this.height ? 1.4 : 0.8));
     // Lead toward travel direction (vehicles) or the aim point (on foot).
     const lx = driving ? vx * 1.1 : (aimX - tx) * 0.22;

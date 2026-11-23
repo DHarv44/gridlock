@@ -15,6 +15,8 @@ import { CityMeshes } from '../render/cityMeshes';
 import { Effects } from '../render/effects';
 import { Ground } from '../render/ground';
 import { Stage } from '../render/scene';
+import type { StreetProps } from '../render/streetProps';
+import { Water } from '../render/water';
 import { type OwnState, type PlayerTag, WorldView } from '../render/worldView';
 import { routeFx } from './fxRouter';
 import { Input } from './input';
@@ -70,10 +72,25 @@ export class Game {
     this.input.onUi = (a) => this.ui(a);
     conn.on((m) => this.onMessage(m));
     this.buildingUniforms = meshes.uniforms;
+    this.props = meshes.props;
+    this.water = new Water(this.stage.scene, this.map);
     requestAnimationFrame(() => this.frame());
   }
 
   private buildingUniforms: { uNight: { value: number } };
+  private props: StreetProps;
+  private water: Water;
+
+  /** Signal lamps follow the server clock; they also cast a small coloured glow. */
+  private signals(night: number, vr: { x0: number; y0: number; x1: number; y1: number }): void {
+    const t = this.store.serverNow() / 1000;
+    for (const s of this.props.updateSignals(t)) {
+      if (s.x < vr.x0 || s.x > vr.x1 || s.y < vr.y0 || s.y > vr.y1) continue;
+      const st = this.props.stateOf(s, t);
+      const [r, g, b] = st === 2 ? [0.2, 1, 0.4] : st === 1 ? [1, 0.7, 0.1] : [1, 0.15, 0.1];
+      this.fx.glow.put(s.x, s.y, 5.9, 1.5 + night * 1.5, 1, 0, r, g, b, 0.45 + night * 0.4);
+    }
+  }
 
   private ui(a: string): void {
     switch (a) {
@@ -101,6 +118,7 @@ export class Game {
   private onMessage(m: S2C): void {
     switch (m.t) {
       case 's':
+        if (!this.you) document.getElementById('loading')!.hidden = true;
         this.store.ingest(m.st, m.e);
         this.gameMinutes = m.gt;
         this.you = m.you;
@@ -186,8 +204,10 @@ export class Game {
     this.stage.setTime(forced ?? this.gameMinutes, this.cam.x, this.cam.y);
     const night = this.stage.lighting.night;
     this.buildingUniforms.uNight.value = night;
+    this.signals(night, vr);
     this.view.sync(this.store, dt, own, this.tags(), night, vr);
     this.fx.update(dt);
+    this.water.update(dt);
     this.sirens(own);
     this.stage.render();
     this.updateHud(own);
