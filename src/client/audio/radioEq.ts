@@ -1,19 +1,24 @@
-// The radio line's waveform: a smooth, glowing line drawn from the music actually playing. The radio's
+// The radio line's waveform: one smooth, flowing, glowing wave whose height follows the music actually
+// playing, band by band (bass left, treble right). The radio's
 // two decks are routed through an AnalyserNode once an AudioContext is running (routing them earlier
 // would silence them), then on to the speakers as before. Routed, an element's own volume no longer
 // counts (Chrome ignores it), so each deck gets a GainNode and the radio sets its level there
 // (`gains`); the elements stay at full volume.
 
-/** Points along the line, how quickly a spike falls back (higher = quicker), and the bands shown. */
-const POINTS = 72;
-const FOLLOW = 6;
+/** Bands across the line, how quickly they swell and settle (per second), the bands' range, and
+ *  how finely the curve is drawn. */
+const POINTS = 48;
+const RISE = 16, FOLLOW = 4;
 const LO_HZ = 50, HI_HZ = 12000;
+const SAMPLES = 170;
 
 export class RadioEq {
   private ctx: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private data: Uint8Array<ArrayBuffer> = new Uint8Array(0);
   private wave = new Float32Array(POINTS);
+  private smooth = new Float32Array(POINTS);
+  private phase = 0;
   private attached = false;
   private trying = false;
   /** Per-deck level once routed (null until then: the radio sets the elements' volume instead). */
@@ -55,7 +60,7 @@ export class RadioEq {
   /** Draws the line in `color`; `gain` undoes the music volume so quiet settings still move it. */
   draw(dt: number, color: string, gain: number): void {
     const an = this.analyser, ctx = this.ctx;
-    const fall = Math.min(1, dt * FOLLOW);
+    const fall = Math.min(1, dt * FOLLOW), rise = Math.min(1, dt * RISE);
     if (an && ctx) {
       // Each point's height is the loudness of its own band (bass on the left, treble on the
       // right): up at once on a hit, back down slowly, so beats spike instead of averaging away.
@@ -69,22 +74,32 @@ export class RadioEq {
         for (let j = a; j < b; j++) m = Math.max(m, this.data[j]);
         // Spread the loud end (0.38..0.88 of the dB scale) over the full height; treble gets a lift.
         const v = Math.min(1, Math.max(0, (m / 255 - 0.38) / 0.5) ** 1.15 * lift * (1 + i / POINTS * 0.6));
-        this.wave[i] = v > this.wave[i] ? v : this.wave[i] + (v - this.wave[i]) * fall;
+        // Swells quickly on a hit and settles slowly: lively, never twitchy.
+        this.wave[i] += (v - this.wave[i]) * (v > this.wave[i] ? rise : fall);
       }
     } else for (let i = 0; i < POINTS; i++) this.wave[i] *= 1 - fall;
+    // Blur across neighbouring bands so the shape rolls rather than steps.
+    for (let i = 0; i < POINTS; i++) {
+      let s = 0, n = 0;
+      for (let j = -3; j <= 3; j++) { const k = i + j; if (k < 0 || k >= POINTS) continue; const wt = 4 - Math.abs(j); s += this.wave[k] * wt; n += wt; }
+      this.smooth[i] = s / n;
+    }
+    const loud = this.smooth.reduce((a, b) => a + b, 0) / POINTS;
+    this.phase += dt * (2.2 + loud * 5); // the wave flows faster when the music is busier
     const g = this.canvas.getContext('2d')!;
     const w = this.canvas.width, h = this.canvas.height, mid = h / 2;
     g.clearRect(0, 0, w, h);
     g.lineJoin = 'round'; g.lineCap = 'round';
-    // Fade the ends so the line grows out of nothing at either side.
+    // One flowing wave whose height follows the music band by band, fading out at both ends.
     const path = () => {
       g.beginPath();
-      for (let i = 0; i < POINTS; i++) {
-        const x = (i / (POINTS - 1)) * w;
-        const taper = Math.sin((i / (POINTS - 1)) * Math.PI);
-        // Alternate up and down: a waveform whose swing is the band's loudness.
-        const y = mid - (i % 2 ? 1 : -1) * this.wave[i] * (0.3 + 0.7 * taper) * (mid - 4);
-        if (i) g.lineTo(x, y); else g.moveTo(x, y);
+      for (let s = 0; s <= SAMPLES; s++) {
+        const t = s / SAMPLES, x = t * w;
+        const f = t * (POINTS - 1), i = Math.floor(f), env = this.smooth[i] + (this.smooth[Math.min(POINTS - 1, i + 1)] - this.smooth[i]) * (f - i);
+        const taper = Math.sin(t * Math.PI);
+        const osc = 0.7 * Math.sin(t * 30 + this.phase) + 0.3 * Math.sin(t * 57 - this.phase * 1.6);
+        const y = mid - osc * (0.06 + env) * taper * (mid - 4);
+        if (s) g.lineTo(x, y); else g.moveTo(x, y);
       }
     };
     path();
