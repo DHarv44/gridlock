@@ -9,6 +9,7 @@ import type { Blip } from '../game/jobs';
 import type { Pt } from '../game/route';
 import { bakeCityMap } from './mapArt';
 import { MapLegend } from './mapLegend';
+import { phoneBlip } from './phoneIcon';
 import { PLACE_ICON } from './minimap';
 
 export const WAYPOINT_COLOR = '#ff4fd8';
@@ -136,6 +137,12 @@ export class BigMap {
     }
     for (const b of f.blips) {
       const [px, py] = this.toScreen(b.x, b.y);
+      if (b.shape === 'phone') {
+        if (this.hidden.has('phones')) continue;
+        phoneBlip(ctx, px, py, 9, b.color);
+        this.pins.push({ x: px, y: py, label: 'Payphone ringing: walk into it to answer' });
+        continue;
+      }
       ctx.fillStyle = b.color; ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     }

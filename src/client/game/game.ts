@@ -259,7 +259,7 @@ export class Game {
     this.view.sync(this.store, dt, own, this.tags(), night, vr);
     this.fx.update(dt);
     this.water.update(dt);
-    this.jobs.update(dt, this.you, own, this.fx.glow, night, vr, this.store.serverNow(), this.players.find((p) => p.id === this.myId));
+    this.jobs.update(dt, this.you, own, this.fx.glow, night, vr, this.store.serverNow(), this.players.find((p) => p.id === this.myId), this.sound);
     nearestSiren(this.store, own, this.sound);
     ownEngine(this.store, this.you && this.you.mode !== Mode.Dead ? own : null, this.sound, dt);
     this.stage.render();

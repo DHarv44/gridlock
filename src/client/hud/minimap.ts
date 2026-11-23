@@ -6,6 +6,7 @@ import type { CityMap } from '../../shared/world/city';
 import type { Blip } from '../game/jobs';
 import type { Pt } from '../game/route';
 import { MAP_COLORS, bakeCityMap } from './mapArt';
+import { phoneBlip } from './phoneIcon';
 
 const SCALE = 0.5; // px per metre in the baked image
 const WAYPOINT_COLOR = '#ff4fd8';
@@ -70,9 +71,10 @@ export class Minimap {
       ctx.beginPath(); ctx.moveTo(px, py - 5); ctx.lineTo(px + 5, py + 4); ctx.lineTo(px - 5, py + 4); ctx.fill();
     }
     for (const b of blips) {
-      // Job objective sticks to the radar edge so you always know which way to go.
-      const [px, py] = b.shape === 'star' ? clampEdge(...to(b.x, b.y)) : to(b.x, b.y);
+      // The job objective and ringing phones stick to the radar edge so you always know which way to go.
+      const [px, py] = b.shape === 'star' || b.shape === 'phone' ? clampEdge(...to(b.x, b.y)) : to(b.x, b.y);
       if (px < -6 || py < -6 || px > size + 6 || py > size + 6) continue;
+      if (b.shape === 'phone') { phoneBlip(ctx, px, py, 6.5, b.color); continue; }
       ctx.fillStyle = b.color; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
       ctx.beginPath();
       if (b.shape === 'star') { ctx.moveTo(px, py - 7); ctx.lineTo(px + 6, py + 5); ctx.lineTo(px - 6, py + 5); ctx.closePath(); }

@@ -46,7 +46,13 @@ JOBS = {
     "horn_air": {"src": "horn_air", "mode": "whole", "max": 1.2},
     "horn_bus": {"src": "horn_bus", "mode": "whole", "max": 1.1, "span": (0, 1.15)},
     "horn_icecream": {"src": "horn_icecream", "mode": "whole", "max": 4.5, "span": (0, 5)},
-    "engine_car": {"src": "engine_car", "mode": "loop", "max": 3.0},
+    # engine_car's first source (Freesound 522225, a Peugeot 308 idle) sounded like a diesel truck
+    # once pitched up; ordinary cars now use a petrol Mini Cooper.
+    "engine_car": {"src": "engine_mini", "mode": "loop", "max": 1.8},
+    "engine_suv": {"src": "engine_crv", "mode": "loop", "max": 3.0},
+    "engine_sport": {"src": "engine_maserati", "mode": "loop", "max": 2.5},
+    "engine_muscle": {"src": "engine_firebird", "mode": "loop", "max": 2.6},
+    "phone_ring": {"src": "phone_ring", "mode": "first", "max": 2.2},
     "engine_diesel": {"src": "engine_diesel", "mode": "loop", "max": 3.0},
     "engine_bike": {"src": "engine_bike", "mode": "loop", "max": 3.0},
 }

@@ -4,6 +4,7 @@
 import { SERVICES } from '../../shared/packs';
 import type { CityMap } from '../../shared/world/city';
 import { PLACE_ICON } from './minimap';
+import { handset } from './phoneIcon';
 
 const STORE = 'gridlock.mapHidden';
 
@@ -21,6 +22,7 @@ export class MapLegend {
     count.set('property', map.city.properties.length);
     const rows: Row[] = [
       ...Object.entries(PLACE_ICON).filter(([k]) => count.has(k)).map(([key, v]) => ({ key, label: v.label, icon: dot(v.color, v.glyph) })),
+      { key: 'phones', label: 'Ringing payphone', icon: phone() },
       { key: 'property', label: 'Property', icon: house() },
       { key: 'players', label: 'Players', icon: dot('#ffffff', '') },
     ];
@@ -81,6 +83,18 @@ function dot(color: string, glyph: string): HTMLElement {
   s.style.background = color;
   s.textContent = glyph;
   return s;
+}
+
+function phone(): HTMLElement {
+  const c = document.createElement('canvas');
+  c.className = 'ml-icon ml-canvas';
+  c.width = c.height = 40;
+  const g = c.getContext('2d')!;
+  g.scale(2, 2);
+  g.fillStyle = '#d8dde3'; g.strokeStyle = '#000'; g.lineWidth = 1.5;
+  g.beginPath(); g.arc(10, 10, 8.5, 0, Math.PI * 2); g.fill(); g.stroke();
+  handset(g, 10, 10.6, 5.3, '#111');
+  return c;
 }
 
 function house(): HTMLElement {

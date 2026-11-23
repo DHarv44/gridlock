@@ -43,14 +43,15 @@ export function nearestSiren(store: EntityStore, me: { x: number; y: number } | 
   sound.siren(best);
 }
 
-let lastSpeed = 0;
-/** Your vehicle's engine: how hard it works is its speed against its top speed, plus a lift while
- *  it's picking up speed. On foot (or in a vehicle with no engine voice) it's silent. */
+let lastSpeed = 0, throttle = 0;
+/** Your vehicle's engine: its speed against its top speed picks the gear and revs; the throttle is
+ *  read from how hard it's gaining speed (smoothed). On foot, or with no engine voice, it's silent. */
 export function ownEngine(store: EntityStore, own: { vid: number; vx: number; vy: number } | null, sound: Sound, dt: number): void {
   const spec = own?.vid ? VEHICLES[store.all.get(own.vid)?.data[2] ?? -1] : undefined;
-  if (!own || !spec?.engine) { sound.engine(null, 0); lastSpeed = 0; return; }
+  if (!own || !spec?.engine) { sound.engine(null, 0, 0); lastSpeed = 0; throttle = 0; return; }
   const speed = Math.hypot(own.vx, own.vy);
-  const gaining = dt > 0 ? Math.max(0, Math.min(1, (speed - lastSpeed) / dt / spec.accel)) : 0;
+  const gaining = dt > 0 ? Math.max(0, Math.min(1, (speed - lastSpeed) / dt / (spec.accel * 0.5))) : 0;
+  throttle += (gaining - throttle) * Math.min(1, dt * 6);
   lastSpeed = speed;
-  sound.engine(spec.engine, speed / spec.maxSpeed + gaining * 0.25);
+  sound.engine(spec.engine, speed / spec.maxSpeed, throttle);
 }

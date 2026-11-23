@@ -30,12 +30,22 @@ const VOICES: Record<string, { file: string; gain: number; vary?: number; gap?: 
   horn_bus: { file: 'horn_bus', gain: 0.4, vary: 0.02 },
   horn_icecream: { file: 'horn_icecream', gain: 0.3, gap: 4.5 },
   cash: { file: 'cash', gain: 0.22 },
+  /** Payphones ringing for you (silent until the CC0 recording is fetched and prepared). */
+  phone_ring: { file: 'phone_ring', gain: 0.4 },
 };
 const SIREN_GAIN = 0.3;
-/** Your own vehicle's engine: kept under the guns and the radio. Idle level, and how far pitch and
- *  level rise at top speed. */
-const ENGINE = { gain: 0.11, rise: 0.6, rate: 0.85, pitch: 0.85 };
-const ENGINES = ['engine_car', 'engine_diesel', 'engine_bike'];
+/** Your own vehicle's engine, kept under the guns and the radio. Each engine runs through its gears:
+ *  within a gear the pitch (playback rate) climbs from `low` to `high`, then drops at the shift.
+ *  Stopped, it idles at the recording's own pitch. `gain` is the idle level; on the throttle it rises
+ *  by `push`. A diesel truck stays low and narrow; a V8 or a bike revs high. */
+const ENGINES: Record<string, { gears: number; low: number; high: number; gain: number; push: number }> = {
+  engine_car: { gears: 5, low: 1.05, high: 1.85, gain: 0.1, push: 0.6 },
+  engine_suv: { gears: 5, low: 1.0, high: 1.7, gain: 0.1, push: 0.55 },
+  engine_sport: { gears: 6, low: 1.1, high: 2.2, gain: 0.11, push: 0.8 },
+  engine_muscle: { gears: 4, low: 1.05, high: 1.95, gain: 0.12, push: 0.8 },
+  engine_diesel: { gears: 8, low: 1.0, high: 1.38, gain: 0.11, push: 0.5 },
+  engine_bike: { gears: 5, low: 1.1, high: 2.3, gain: 0.1, push: 0.7 },
+};
 /** Most sounds playing at once; past this, new ones are dropped. */
 const MAX_VOICES = 28;
 
@@ -98,7 +108,7 @@ export class Sound {
       this.master.gain.value = this.muted ? 0 : this.volume * 0.6;
       const comp = ctx.createDynamicsCompressor();
       this.master.connect(comp).connect(ctx.destination);
-      const names = new Set([...Object.values(VOICES).map((v) => v.file), 'siren', ...ENGINES]);
+      const names = new Set([...Object.values(VOICES).map((v) => v.file), 'siren', ...Object.keys(ENGINES)]);
       for (const name of names) {
         const url = urlOf(name);
         if (!url) continue;
@@ -138,14 +148,15 @@ export class Sound {
     src.start(t);
   }
 
-  /** Call every frame with your vehicle's engine voice (or null on foot) and how hard it's working
-   *  (0 idle .. 1 flat out): one loop whose pitch and level follow it. Traffic has no engine sound. */
-  engine(name: string | null, load: number): void {
+  /** Call every frame with your vehicle's engine voice (or null on foot), its speed as a fraction of
+   *  top speed and the throttle (0..1): one loop that runs through the gears. Traffic has no engine. */
+  engine(name: string | null, speed: number, throttle: number): void {
     const ctx = this.ctx;
     if (!ctx || !this.master) return;
     if (this.engineSrc && name !== this.engineName) this.stopEngine();
     const buf = name ? this.buffers.get(name) : undefined;
-    if (!name || !buf || this.muted) return;
+    const e = name ? ENGINES[name] : undefined;
+    if (!name || !buf || !e || this.muted) return;
     if (!this.engineSrc) {
       this.engineName = name;
       this.engineSrc = ctx.createBufferSource();
@@ -156,9 +167,16 @@ export class Sound {
       this.engineSrc.connect(this.engineGain).connect(this.master);
       this.engineSrc.start(ctx.currentTime, Math.random() * buf.duration);
     }
-    const k = Math.max(0, Math.min(1, load));
-    this.engineSrc.playbackRate.setTargetAtTime(ENGINE.rate + ENGINE.pitch * k, ctx.currentTime, 0.12);
-    this.engineGain!.gain.setTargetAtTime(ENGINE.gain * (1 + ENGINE.rise * k), ctx.currentTime, 0.12);
+    const s = Math.max(0, Math.min(1, speed)), th = Math.max(0, Math.min(1, throttle));
+    let rate = 1; // idle
+    if (s > 0.02) {
+      const g = Math.min(e.gears - 1, Math.floor(s * e.gears));
+      const inGear = s * e.gears - g;
+      rate = e.low + (e.high - e.low) * inGear;
+    }
+    // Faster changes on the throttle (revs climb), slower when coasting.
+    this.engineSrc.playbackRate.setTargetAtTime(rate, ctx.currentTime, th > 0.1 ? 0.06 : 0.18);
+    this.engineGain!.gain.setTargetAtTime(e.gain * (1 + e.push * th) * (0.85 + 0.3 * s), ctx.currentTime, 0.1);
   }
 
   private stopEngine(): void {

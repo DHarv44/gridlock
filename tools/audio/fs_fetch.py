@@ -44,6 +44,11 @@ CHOSEN = [  # key, sound id (the page's address names the author: freesound.org/
     ("engine_car", 522225),
     ("engine_diesel", 128160),
     ("engine_bike", 119455),
+    ("engine_mini", 269771),     # 2002 Mini Cooper 1.6 petrol idle: ordinary cars (engine_car)
+    ("engine_crv", 369054),      # Honda CR-V idle, exterior: SUVs, pickups, vans (engine_suv)
+    ("engine_maserati", 585215), # Maserati GranTurismo V8 idle: sports cars (engine_sport)
+    ("engine_firebird", 157142), # 1975 Pontiac Firebird, free exhaust: muscle cars (engine_muscle)
+    ("phone_ring", 456433),      # Western Electric 500 bell: ringing payphones
 ]
 CC0 = "creativecommons.org/publicdomain/zero"
 

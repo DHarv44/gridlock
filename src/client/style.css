@@ -177,6 +177,7 @@ button.danger { background: #8a2420; border-color: #8a2420; }
 .map-legend .ml-name { flex: 1; }
 .map-legend .ml-count { font-size: 13px; color: var(--dim); font-variant-numeric: tabular-nums; }
 .map-legend .ml-icon { flex: none; width: 20px; height: 20px; border-radius: 50%; border: 2px solid #000; display: grid; place-items: center; font-size: 12px; font-weight: 800; color: #111; line-height: 1; }
+.map-legend .ml-canvas { border: 0; border-radius: 0; }
 .map-legend .ml-house { border: 0; border-radius: 0; background: #6fe08a; clip-path: polygon(50% 0, 100% 45%, 100% 100%, 0 100%, 0 45%); }
 
 /* Jobs, respect, modes */

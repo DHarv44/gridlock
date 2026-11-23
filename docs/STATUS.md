@@ -52,6 +52,7 @@
 - Map (M) with waypoints and road routes; radio (R) with stations from packs/radio.ts.
 
 ## Known gaps / next
+- **The plan: docs/PLAN.md** (milestones A–G, agreed 2026-11-23). Work milestone by milestone.
 - Trucks, bus, tank and aircraft still use box models. Cars have per-style models (packs/carModels.ts)
   plus a plan-view `shape` (rounded nose/tail, cabin tumblehome, hips) applied by render/bodyShape.ts.
 - Hosting for internet play: see README (port-forward, or deploy; ask the user before deploying).
