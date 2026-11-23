@@ -147,7 +147,7 @@ export class Radio {
       return;
     }
     this.target = 1;
-    this.display.tuned(s.name, s.color);
+    this.display.tuned(s);
     if (this.item?.station === s.id) {
       // Back in a car on the station that's still running (the grace period): carry on.
       this.nowPlaying(this.item);
@@ -251,8 +251,8 @@ export class Radio {
   private nowPlaying(it: Item): void {
     const s = RADIO.find((r) => r.id === it.station);
     if (!s || !this.inVehicle) return;
-    if (it.ad) { this.display.nowPlaying(s.name, s.color, 'Commercial', ''); return; }
+    if (it.ad) { this.display.nowPlaying(s, 'Commercial', ''); return; }
     const t = this.list(it.station).songs.find((x) => x.file === it.file);
-    if (t) this.display.nowPlaying(s.name, s.color, t.title ?? it.file.replace(/\.[^.]+$/, ''), t.artist ?? '');
+    if (t) this.display.nowPlaying(s, t.title ?? it.file.replace(/\.[^.]+$/, ''), t.artist ?? '');
   }
 }

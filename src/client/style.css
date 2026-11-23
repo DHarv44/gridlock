@@ -75,20 +75,22 @@ button:disabled { opacity: 0.4; cursor: default; }
 .gs-buy span { color: var(--cash); margin-left: 6px; }
 .gs-buy.short span { color: #b0302a; }
 @media (max-width: 700px) { .garage-box { flex-direction: column; height: calc(100vh - 32px); } .garage-side { width: auto; border-left: none; border-top: 1px solid var(--line); } }
-/* Radio: one quiet line at the bottom centre (radioDisplay.ts); bright for a moment on a change. */
-.radio-line { position: fixed; left: 50%; bottom: 20px; transform: translate(-50%, 6px); z-index: 6; pointer-events: none;
-  display: flex; align-items: center; gap: 10px; max-width: min(640px, 52vw); white-space: nowrap;
-  font: 500 15px Bahnschrift, "Segoe UI", sans-serif; text-shadow: 0 1px 0 #000, 0 0 8px rgba(0,0,0,0.85);
+/* Radio (radioDisplay.ts), stacked at the bottom centre the old GTA way: waveform, Song — Artist,
+   then the station in its own typeface with a heavy black outline. Bright on a change, then dim. */
+.radio-line { position: fixed; left: 50%; bottom: 16px; transform: translate(-50%, 8px); z-index: 6; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; max-width: min(720px, 56vw); text-align: center; white-space: nowrap;
   opacity: 0; transition: opacity 1.2s ease, transform 0.6s ease; }
 .radio-line.on { opacity: 0.55; transform: translate(-50%, 0); }
 .radio-line.on.bright { opacity: 1; transition: opacity 0.25s ease, transform 0.6s ease; }
-.radio-line .rl-eq { flex: none; width: 48px; height: 14px; opacity: 0.85; }
-.radio-line .rl-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.radio-line .rl-station { font-weight: 700; letter-spacing: 0.04em; }
-.radio-line .rl-title { color: #fff; }
-.radio-line .rl-title::before { content: '·'; color: var(--dim); margin: 0 9px; }
-.radio-line .rl-artist { color: var(--dim); }
-.radio-line .rl-artist::before { content: '—'; margin: 0 7px; }
+.radio-line .rl-wave { width: 340px; max-width: 100%; height: 38px; }
+.radio-line .rl-track { max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+  font: 600 21px Bahnschrift, "Segoe UI", sans-serif; letter-spacing: 0.02em; color: #fff;
+  text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 0 10px rgba(0,0,0,0.8); }
+.radio-line .rl-artist { color: #c9ced4; }
+.radio-line .rl-artist::before { content: '—'; margin: 0 9px; color: #9aa1a8; }
+.radio-line .rl-station { max-width: 100%; overflow: hidden; text-overflow: ellipsis; padding: 0 6px 2px;
+  font: 400 34px Bahnschrift, sans-serif; line-height: 1.15; letter-spacing: 0.02em;
+  -webkit-text-stroke: 5px #000; paint-order: stroke fill; text-shadow: 3px 4px 0 #000; }
 .chars { display: flex; flex-direction: column; gap: 6px; }
 .chars-head { color: var(--dim); font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; }
 .char { display: flex; align-items: center; gap: 12px; padding: 6px 10px; background: #14171c; border: 1px solid var(--line); border-radius: 4px; cursor: pointer; }

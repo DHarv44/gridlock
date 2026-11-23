@@ -1,17 +1,18 @@
-// The radio line's equaliser: a dozen thin bars that move with the music actually playing. The
-// radio's two decks are routed through an AnalyserNode once an AudioContext is running (routing them
-// earlier would silence them), then on to the speakers as before. Routed, an element's own volume
-// no longer counts (Chrome ignores it), so each deck gets a GainNode and the radio sets its level
-// there (`gains`); the elements stay at full volume.
+// The radio line's waveform: a smooth, glowing line drawn from the music actually playing. The radio's
+// two decks are routed through an AnalyserNode once an AudioContext is running (routing them earlier
+// would silence them), then on to the speakers as before. Routed, an element's own volume no longer
+// counts (Chrome ignores it), so each deck gets a GainNode and the radio sets its level there
+// (`gains`); the elements stay at full volume.
 
-const BARS = 12;
-const LO_HZ = 60, HI_HZ = 9000;
+/** Points along the line, and how quickly it follows the music (higher = twitchier). */
+const POINTS = 96;
+const FOLLOW = 14;
 
 export class RadioEq {
   private ctx: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private data: Uint8Array<ArrayBuffer> = new Uint8Array(0);
-  private levels = new Float32Array(BARS);
+  private wave = new Float32Array(POINTS);
   private attached = false;
   private trying = false;
   /** Per-deck level once routed (null until then: the radio sets the elements' volume instead). */
@@ -19,8 +20,8 @@ export class RadioEq {
   readonly canvas = document.createElement('canvas');
 
   constructor() {
-    this.canvas.className = 'rl-eq';
-    this.canvas.width = 96; this.canvas.height = 28; // drawn at 2x, shown at 48 x 14
+    this.canvas.className = 'rl-wave';
+    this.canvas.width = 680; this.canvas.height = 76; // drawn at 2x, shown at 340 x 38
   }
 
   /** Routes the decks through the analyser (once; only when sound is allowed to run). */
@@ -31,8 +32,7 @@ export class RadioEq {
       const go = () => {
         if (this.attached || ctx.state !== 'running') return;
         const an = ctx.createAnalyser();
-        an.fftSize = 1024;
-        an.smoothingTimeConstant = 0.75;
+        an.fftSize = 2048;
         this.gains = decks.map((d) => {
           const g = ctx.createGain();
           g.gain.value = d.volume; // carry the level over, then the element plays flat out
@@ -42,38 +42,48 @@ export class RadioEq {
         });
         an.connect(ctx.destination);
         this.analyser = an;
-        this.data = new Uint8Array(an.frequencyBinCount);
+        this.data = new Uint8Array(an.fftSize);
         this.attached = true;
       };
       if (ctx.state === 'running') go();
       else { this.trying = true; void ctx.resume().then(go).finally(() => { this.trying = false; }); }
-    } catch { /* no Web Audio: the bars stay still */ }
+    } catch { /* no Web Audio: the line stays flat */ }
   }
 
-  /** Draws the bars in `color`; `gain` undoes the music volume so quiet settings still move them. */
+  /** Draws the line in `color`; `gain` undoes the music volume so quiet settings still move it. */
   draw(dt: number, color: string, gain: number): void {
-    const an = this.analyser, ctx = this.ctx;
-    if (an && ctx) {
-      an.getByteFrequencyData(this.data);
-      const nyq = ctx.sampleRate / 2, n = this.data.length;
-      for (let i = 0; i < BARS; i++) {
-        // Log-spaced bands, so the bass doesn't get one bar and the cymbals eight.
-        const f0 = LO_HZ * (HI_HZ / LO_HZ) ** (i / BARS), f1 = LO_HZ * (HI_HZ / LO_HZ) ** ((i + 1) / BARS);
-        const a = Math.floor((f0 / nyq) * n), b = Math.max(a + 1, Math.ceil((f1 / nyq) * n));
+    const an = this.analyser;
+    const k = Math.min(1, dt * FOLLOW);
+    if (an) {
+      an.getByteTimeDomainData(this.data);
+      const step = Math.floor(this.data.length / POINTS);
+      for (let i = 0; i < POINTS; i++) {
+        // Average each stretch of samples: a calm line, not hiss.
         let s = 0;
-        for (let k = a; k < b; k++) s += this.data[k];
-        const v = Math.min(1, (s / (b - a) / 255) * gain * (1 + i * 0.06));
-        // Quick to rise, slow to fall: reads as music, not flicker.
-        this.levels[i] = v > this.levels[i] ? v : this.levels[i] + (v - this.levels[i]) * Math.min(1, dt * 7);
+        for (let j = 0; j < step; j++) s += this.data[i * step + j] - 128;
+        const v = Math.max(-1, Math.min(1, (s / step / 128) * gain * 2.4));
+        this.wave[i] += (v - this.wave[i]) * k;
       }
-    } else this.levels.fill(0);
+    } else for (let i = 0; i < POINTS; i++) this.wave[i] *= 1 - k;
     const g = this.canvas.getContext('2d')!;
-    const w = this.canvas.width, h = this.canvas.height, bw = w / BARS;
+    const w = this.canvas.width, h = this.canvas.height, mid = h / 2;
     g.clearRect(0, 0, w, h);
-    g.fillStyle = color;
-    for (let i = 0; i < BARS; i++) {
-      const bh = Math.max(2, this.levels[i] ** 1.4 * h);
-      g.fillRect(i * bw + 1, h - bh, bw - 3, bh);
-    }
+    g.lineJoin = 'round'; g.lineCap = 'round';
+    // Fade the ends so the line grows out of nothing at either side.
+    const path = () => {
+      g.beginPath();
+      for (let i = 0; i < POINTS; i++) {
+        const x = (i / (POINTS - 1)) * w;
+        const taper = Math.sin((i / (POINTS - 1)) * Math.PI);
+        const y = mid - this.wave[i] * taper * (mid - 6);
+        if (i) g.lineTo(x, y); else g.moveTo(x, y);
+      }
+    };
+    path();
+    g.strokeStyle = 'rgba(0,0,0,0.7)'; g.lineWidth = 9; g.stroke();
+    path();
+    g.shadowColor = color; g.shadowBlur = 14;
+    g.strokeStyle = color; g.lineWidth = 4; g.stroke();
+    g.shadowBlur = 0;
   }
 }
