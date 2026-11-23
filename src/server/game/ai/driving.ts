@@ -54,10 +54,10 @@ function extend(w: World, d: DriveState): void {
  * Speed cap from whatever is in front of the vehicle. `still` = the nearest blocker is a parked,
  * empty or wrecked car (worth driving around); `ped` = someone standing in the road.
  */
-function clearance(w: World, v: Vehicle, aggressive: boolean, keepGap = false): { cap: number; ped: boolean; still: boolean } {
+function clearance(w: World, v: Vehicle, aggressive: boolean, keepGap = false): { cap: number; ped: boolean; still: boolean; stalled: boolean } {
   const b = v.body, c = Math.cos(b.angle), s = Math.sin(b.angle);
   const hl = v.spec.length / 2, hw = v.spec.width / 2;
-  let cap = Infinity, ped = false, still = false;
+  let cap = Infinity, ped = false, still = false, stalled = false;
   const look = 14 + Math.abs(forwardSpeed(b)) * 1.1;
   w.vehiclesNear(b.x + c * look / 2, b.y + s * look / 2, look / 2 + 10, (o) => {
     if (o === v || (o.spec.movement === 'rotor' && o.body.alt > 2)) return;
@@ -71,6 +71,8 @@ function clearance(w: World, v: Vehicle, aggressive: boolean, keepGap = false): 
       // Worth going around: parked/empty/wrecked cars, or a driven car stalled for no reason
       // (not one patiently queuing at a light or junction).
       still = Math.hypot(o.body.vx, o.body.vy) < 0.5 && (o.wrecked || o.burning >= 0 || !o.seats[0] || o.idleT > 8);
+      // Someone sitting at the wheel in the road for no reason: the one car worth honking at.
+      stalled = still && !!o.seats[0] && !o.wrecked && o.burning < 0;
     }
   });
   if (!aggressive) {
@@ -81,10 +83,10 @@ function clearance(w: World, v: Vehicle, aggressive: boolean, keepGap = false): 
       const f = rx * c + ry * s, l = -rx * s + ry * c;
       if (f <= 0 || f > hl + 9 || Math.abs(l) > hw + 1) return;
       const pc = Math.max(0, (f - hl - 2.5) * 0.8);
-      if (pc < cap) { cap = pc; ped = true; still = false; }
+      if (pc < cap) { cap = pc; ped = true; still = false; stalled = false; }
     });
   }
-  return { cap, ped, still };
+  return { cap, ped, still, stalled };
 }
 
 /** Is the lane to the left (oncoming side) free of traffic for an overtake? */
@@ -201,10 +203,16 @@ export function cruise(w: World, v: Vehicle, p: Ped, dt: number, panic = false):
   // Overtakes crawl past (bumps under ~4 m/s do no damage).
   if (d.bypassT > 0) { d.bypassT -= dt; target = Math.min(target, 4); }
   else target = Math.min(target, clear.cap);
-  if ((clear.ped || clear.cap < 1) && vf < 1 && !held) {
+  // Horn only when it's called for: a person standing in the road, or a driver stopped in it for
+  // no reason, after a moment's wait; then a long pause before the next. Never at a queue, a light
+  // or an empty/wrecked car. honkT counts up while there's cause, and below zero is the pause.
+  const blocked = (clear.ped || clear.cap < 1) && vf < 1 && !held;
+  if (blocked && (clear.ped || clear.stalled) && clear.cap < 1.5) {
     d.honkT += dt;
+    if (d.honkT > 1.5) { d.honkT = -(8 + (v.id % 5)); v.horn = true; }
+  } else d.honkT = Math.min(0, d.honkT + dt);
+  if (blocked) {
     d.blockT += dt;
-    if (d.honkT > 2.5) { d.honkT = -3; v.horn = true; }
     // Go around: a parked/wrecked car after a moment, a person who won't move after a while,
     // but only when the oncoming lane is clear.
     const wait = clear.still ? 1.5 : clear.ped ? 4 : Infinity; // queues are waited out

@@ -4,6 +4,7 @@
 import { RULES } from '../src/shared/packs';
 import type { Vehicle } from '../src/server/game/entities';
 import { Room } from '../src/server/room';
+import { FX } from '../src/shared/protocol';
 
 process.env.GRIDLOCK_DATA = 'data-smoke';
 const SECONDS = Number(process.argv[2] ?? 180);
@@ -20,6 +21,11 @@ for (const [i, [u, v]] of spots.entries()) {
   p.body.x = b.rect.x0 + 1; p.body.y = b.rect.y0 + 1;
 }
 room.stop();
+
+// Horns: AI drivers should only honk at a person in the road or a driver stopped for no reason.
+let honks = 0;
+const emit = w.emit.bind(w);
+w.emit = (...e: number[]) => { if (e[0] === FX.Horn) honks++; emit(...e); };
 
 const stopped = new Map<number, number>(); // vehicle -> seconds stopped
 const driverOf = (v: Vehicle) => (v.seats[0] ? w.peds.get(v.seats[0]) : undefined);
@@ -81,3 +87,4 @@ for (let k = 0; k < SECONDS * 30; k++) {
 }
 console.log('crashes by state:', JSON.stringify(Object.fromEntries([...crashWhy].sort((a, b) => b[1] - a[1]).slice(0, 12))));
 console.log(`avg stuck share ${(100 * sumStuckFrac / Math.max(1, samples)).toFixed(0)}%, peak jam ${peakJam} cars, AI crash hits ${crashes}, cap ${RULES.carCap}`);
+console.log(`horns: ${honks} in ${SECONDS}s (${(honks / SECONDS * 60).toFixed(1)} a minute across the city)`);
