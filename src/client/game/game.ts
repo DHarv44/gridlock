@@ -79,6 +79,9 @@ export class Game {
     this.hud.onChat = (text) => conn.send({ t: 'chat', text });
     this.input.onUi = (a) => this.ui(a);
     this.input.onNav = (c) => this.pane.nav(c);
+    // Browsers only reveal a controller after one of its buttons is pressed: say when it's seen.
+    window.addEventListener('gamepadconnected', (e) => this.hud.notify(`Controller connected: ${e.gamepad.id.replace(/\s*\(.*$/, '') || 'gamepad'}`, 'info'));
+    window.addEventListener('gamepaddisconnected', () => this.hud.notify('Controller disconnected', 'warn'));
     conn.on((m) => this.onMessage(m));
     // Ctrl is the default fire key: guard against Ctrl+W / Ctrl+R closing the game by accident.
     if (import.meta.env.PROD) window.onbeforeunload = (e) => { if (this.running) e.preventDefault(); };

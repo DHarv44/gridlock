@@ -37,12 +37,14 @@ data loses access to that browser's characters.
 
 ## Controls
 
-Keyboard or controller. On foot W/A/S/D (or arrows) run north/west/south/east on screen and you
-face the way you run; shots go that way and auto-aim at whoever is ahead of you (±16°). The mouse
-pointer plays no part. Esc → Change controls has a Keyboard / Mouse tab (two keys per action;
+Keyboard and mouse, or a controller. On foot W/A/S/D (or arrows) run north/west/south/east on
+screen and you face the way you run (or aim with right mouse); shots go that way and auto-aim at
+whoever is ahead of you (±16°). There is no cursor in play. Esc → Change controls has a Keyboard / Mouse tab (two keys per action;
 Delete clears a slot) and a Controller tab (rebind buttons).
 
-**Controller** (any standard-mapped pad, no setup): the left stick moves in any direction and how far
+**Controller** (any standard-mapped pad, no setup; browsers reveal a pad only after you press one
+of its buttons on the game page, and only over https or localhost, so a plain-http LAN address
+won't see it; the game says "Controller connected" when it does): the left stick moves in any direction and how far
 you push sets the pace; the right stick aims (tank turret in a tank). In vehicles the left stick
 steers in proportion, RT is the gas, LT the brake and reverse. RT also fires on foot. Defaults: RB fire, Y action,
 A jump/handbrake/climb, B sprint/descend, D-pad left/right weapons, D-pad down scores, View map,
@@ -54,7 +56,8 @@ The semi tows an articulated trailer: it swings wide on turns, can jackknife, an
 | --- | --- |
 | W/A/S/D or arrows | On foot: run north / west / south / east (diagonals too) |
 | W/S · A/D in vehicles | Gas / brake, reverse · steer |
-| Ctrl | Fire ahead (auto-aims at the nearest person in front) |
+| Left click or Ctrl | Fire / swing ahead (auto-aims at the nearest person in front) |
+| Right mouse (hold) | Aim: mouse motion turns you any direction while WASD keeps moving you (no cursor); aims a tank's turret |
 | , / . | Tank turret left / right |
 | Space | Jump on foot · handbrake in cars · climb in helicopters |
 | Shift | Descend in helicopters |

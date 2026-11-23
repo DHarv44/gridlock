@@ -1,9 +1,9 @@
 // Player actions and their key bindings: two slots per action, each rebindable. On foot WASD are
-// screen directions; in vehicles W/S gas and brake, A/D steer. The mouse pointer position never
-// matters; mouse buttons can be bound like keys.
+// screen directions; in vehicles W/S gas and brake, A/D steer. There is no cursor: holding Aim
+// (right mouse) turns mouse motion into a 360° facing, and mouse buttons bind like keys.
 
 export type Action =
-  | 'forward' | 'back' | 'left' | 'right' | 'fire' | 'action' | 'handbrake' | 'jump' | 'sprint' | 'climb' | 'descend'
+  | 'forward' | 'back' | 'left' | 'right' | 'fire' | 'aim' | 'action' | 'handbrake' | 'jump' | 'sprint' | 'climb' | 'descend'
   | 'prevWeapon' | 'nextWeapon' | 'horn' | 'turretLeft' | 'turretRight'
   | 'chat' | 'map' | 'scores';
 
@@ -18,7 +18,8 @@ export const ACTIONS: ActionDef[] = [
   { id: 'right', label: 'Turn / steer right', kind: 'held', group: 'Movement', keys: ['KeyD', 'ArrowRight'] },
   { id: 'jump', label: 'Jump', kind: 'held', group: 'Movement', keys: ['Space'] },
   { id: 'sprint', label: 'Sprint', kind: 'held', group: 'Movement', keys: ['ShiftLeft'] },
-  { id: 'fire', label: 'Fire', kind: 'held', group: 'Weapons', keys: ['ControlLeft', 'ControlRight'] },
+  { id: 'fire', label: 'Fire / swing', kind: 'held', group: 'Weapons', keys: ['Mouse0', 'ControlLeft'] },
+  { id: 'aim', label: 'Aim: while held the mouse turns you any way', kind: 'held', group: 'Weapons', keys: ['Mouse2'] },
   { id: 'prevWeapon', label: 'Previous weapon', kind: 'edge', group: 'Weapons', keys: ['KeyZ'] },
   { id: 'nextWeapon', label: 'Next weapon', kind: 'edge', group: 'Weapons', keys: ['KeyX'] },
   { id: 'action', label: 'Action: get in/out, shops, properties', kind: 'ui', group: 'Movement', keys: ['KeyE', 'KeyF'] },
@@ -33,8 +34,8 @@ export const ACTIONS: ActionDef[] = [
   { id: 'scores', label: 'Scores (hold)', kind: 'ui', group: 'Other', keys: ['Tab'] },
 ];
 
-// New key: drops settings saved while the old mouse-aim style existed.
-const STORE = 'gridlock.controls.v7';
+// Bumped when defaults change (v8: left click fires, right click aims).
+const STORE = 'gridlock.controls.v8';
 export const MAX_KEYS = 2;
 
 /** Readable name for a key code or mouse button. */

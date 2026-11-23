@@ -12,6 +12,8 @@ const EDGE_BTN: Partial<Record<Action, number>> = { prevWeapon: BTN.prev, nextWe
 const KIND = new Map(ACTIONS.map((a) => [a.id, a.kind]));
 /** Vehicle twins of the on-foot pad buttons (the same button does both). */
 const PAD_ALIAS: Partial<Record<Action, PadAction>> = { handbrake: 'jump', climb: 'jump', descend: 'sprint' };
+/** How far (px of mouse travel) the virtual aim stick reaches; smaller turns quicker. */
+const AIM_RADIUS = 90;
 const NAV: [number, NavCmd][] = [[PAD.up, 'up'], [PAD.down, 'down'], [PAD.left, 'left'], [PAD.right, 'right'], [PAD.a, 'ok'], [PAD.b, 'back']];
 
 export class Input {
@@ -30,10 +32,26 @@ export class Input {
   capture: ((code: string) => void) | null = null;
   onUi: (a: UiAction) => void = () => {};
 
-  constructor(canvas: HTMLCanvasElement) {
+  /** Mouse aim: while Aim is held, mouse motion steers a virtual stick (screen space, px). */
+  private aimX = 0;
+  private aimY = 0;
+  private aiming = false;
+  /** Current facing, kept by Steering so a new aim starts where you already face. */
+  facingHint = 0;
+
+  constructor(private canvas: HTMLCanvasElement) {
     window.addEventListener('keydown', (e) => this.key(e, e.code, true));
     window.addEventListener('keyup', (e) => this.key(e, e.code, false));
     window.addEventListener('blur', () => this.release());
+    window.addEventListener('mousemove', (e) => {
+      if (!this.aiming) return;
+      this.aimX += e.movementX;
+      this.aimY += e.movementY;
+      const m = Math.hypot(this.aimX, this.aimY);
+      if (m > AIM_RADIUS) { this.aimX *= AIM_RADIUS / m; this.aimY *= AIM_RADIUS / m; }
+    });
+    // No cursor over the game: the pointer's position never matters.
+    canvas.style.cursor = 'none';
     window.addEventListener('mousedown', (e) => {
       if (this.capture) { e.preventDefault(); this.takeCapture(`Mouse${e.button}`); return; }
       if (e.target === canvas) this.press(`Mouse${e.button}`, true);
@@ -74,6 +92,7 @@ export class Input {
     for (const a of this.bindings.actionsFor(code)) {
       const kind = KIND.get(a);
       if (a === 'scores') { this.onUi(isDown ? 'scoreOn' : 'scoreOff'); continue; }
+      if (a === 'aim') { if (isDown && this.enabled) this.startAim(); else if (!isDown) this.stopAim(); continue; }
       if (!isDown) continue;
       if (kind === 'ui') { this.onUi(a as UiAction); continue; }
       if (!this.enabled) continue;
@@ -162,5 +181,28 @@ export class Input {
   release(): void {
     this.down.clear();
     this.pressed.clear();
+    this.stopAim();
+  }
+
+  /** Facing chosen with the mouse while Aim is held, or null. */
+  mouseAim(): number | null {
+    if (!this.aiming || !this.enabled || Math.hypot(this.aimX, this.aimY) < 6) return null;
+    return Math.atan2(this.aimY, this.aimX);
+  }
+
+  private startAim(): void {
+    if (this.aiming) return;
+    this.aiming = true;
+    // Start from the way you already face, so pressing Aim doesn't spin you.
+    this.aimX = Math.cos(this.facingHint) * AIM_RADIUS * 0.6;
+    this.aimY = Math.sin(this.facingHint) * AIM_RADIUS * 0.6;
+    // Pointer lock keeps the mouse from leaving the window while you turn (not always allowed).
+    try { void (this.canvas.requestPointerLock() as unknown as Promise<void> | undefined)?.catch?.(() => {}); } catch { /* unsupported */ }
+  }
+
+  private stopAim(): void {
+    if (!this.aiming) return;
+    this.aiming = false;
+    if (document.pointerLockElement === this.canvas) document.exitPointerLock();
   }
 }
