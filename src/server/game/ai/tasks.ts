@@ -1,0 +1,221 @@
+// On-foot AI tasks. Each sets the ped's controls/aim/trigger for this tick.
+import { angleDiff, dist } from '../../../shared/math';
+import { WEAPONS } from '../../../shared/packs';
+import { Mode } from '../../../shared/protocol';
+import type { Ped, TaskName } from '../entities';
+import { freeSeat, seatPed } from '../factory';
+import type { World } from '../world';
+
+export function setTask(p: Ped, task: TaskName, target = 0, tx = 0, ty = 0): void {
+  const ai = p.ai!;
+  ai.task = task; ai.t = 0; ai.target = target; ai.tx = tx; ai.ty = ty; ai.workT = 0;
+  if (task !== 'wander') ai.crossing = false;
+}
+
+function stop(p: Ped): void {
+  p.ctl.mx = 0; p.ctl.my = 0;
+}
+
+/** Steers toward a point with simple unsticking. Returns remaining distance. */
+export function moveToward(w: World, p: Ped, tx: number, ty: number, speed: number, dt: number): number {
+  const ai = p.ai!;
+  const dx = tx - p.body.x, dy = ty - p.body.y;
+  const d = Math.hypot(dx, dy);
+  if (d < 0.05) { stop(p); return d; }
+  let mx = dx / d, my = dy / d;
+  if (ai.sideT > 0) {
+    ai.sideT -= dt;
+    mx += -my * ai.sideDir * 1.4; my += mx * ai.sideDir * 1.4;
+    const m = Math.hypot(mx, my); mx /= m; my /= m;
+  }
+  const k = speed / Math.max(speed, p.spec.runSpeed);
+  p.ctl.mx = mx * k; p.ctl.my = my * k;
+  p.ctl.sprint = speed > p.spec.walkSpeed * 1.5;
+  const moving = Math.hypot(p.body.vx, p.body.vy);
+  if (moving < speed * 0.25) ai.stuckT += dt; else ai.stuckT = Math.max(0, ai.stuckT - dt);
+  if (ai.stuckT > 0.8) { ai.stuckT = 0; ai.sideT = 1.2; ai.sideDir = w.rng.chance(0.5) ? 1 : -1; }
+  if (!p.trigger) p.aim = Math.atan2(my, mx);
+  return d;
+}
+
+const ringCorner = (r: { x0: number; y0: number; x1: number; y1: number }, c: number): [number, number] => {
+  const i = 1.5;
+  return [[r.x0 + i, r.y0 + i], [r.x1 - i, r.y0 + i], [r.x1 - i, r.y1 - i], [r.x0 + i, r.y1 - i]][c] as [number, number];
+};
+
+function snapToBlock(w: World, p: Ped): boolean {
+  const ai = p.ai!;
+  let b = w.map.blockAt(p.body.x, p.body.y);
+  if (!b) {
+    outer: for (const d of [6, 10, 14, 20]) {
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]]) {
+        b = w.map.blockAt(p.body.x + dx * d, p.body.y + dy * d);
+        if (b) break outer;
+      }
+    }
+  }
+  if (!b) return false;
+  ai.block = b.id;
+  let best = 0, bd = Infinity;
+  for (let c = 0; c < 4; c++) {
+    const [cx, cy] = ringCorner(b.rect, c);
+    const d = Math.hypot(cx - p.body.x, cy - p.body.y);
+    if (d < bd) { bd = d; best = c; }
+  }
+  ai.corner = best;
+  ai.cdir = w.rng.chance(0.5) ? 1 : -1;
+  return true;
+}
+
+/** Walks the sidewalk ring around a block, sometimes crossing to a neighbouring block. */
+export function wander(w: World, p: Ped, dt: number): void {
+  const ai = p.ai!;
+  if (ai.block < 0 && !snapToBlock(w, p)) { stop(p); return; }
+  const block = w.city.blocks[ai.block];
+  const [tx, ty] = ai.crossing ? [ai.tx, ai.ty] : ringCorner(block.rect, ai.corner);
+  const d = moveToward(w, p, tx, ty, p.spec.walkSpeed, dt);
+  if (d > 1.2) return;
+  if (ai.crossing) { ai.crossing = false; snapToBlock(w, p); return; }
+  if (w.rng.chance(0.3)) {
+    const c = ai.corner;
+    const outs: [number, number][] = [[[0, -1], [-1, 0]], [[0, -1], [1, 0]], [[0, 1], [1, 0]], [[0, 1], [-1, 0]]][c] as [number, number][];
+    const [ox, oy] = w.rng.pick(outs);
+    for (let s = 8; s <= 26; s += 2) {
+      const nb = w.map.blockAt(tx + ox * s, ty + oy * s);
+      if (nb && nb.id !== block.id) {
+        ai.tx = tx + ox * (s + 1.5); ai.ty = ty + oy * (s + 1.5);
+        ai.crossing = true;
+        return;
+      }
+      if (w.map.isWater(tx + ox * s, ty + oy * s)) break;
+    }
+  }
+  if (w.rng.chance(0.06)) ai.cdir = ai.cdir === 1 ? -1 : 1;
+  ai.corner = (ai.corner + ai.cdir + 4) % 4;
+}
+
+export function standAt(w: World, p: Ped, dt: number): void {
+  const post = p.ai!.post;
+  if (post && dist(p.body.x, p.body.y, post.x, post.y) > 1) { moveToward(w, p, post.x, post.y, p.spec.walkSpeed, dt); return; }
+  stop(p);
+  if (post) p.aim = post.angle;
+}
+
+export function flee(w: World, p: Ped, dt: number): boolean {
+  const ai = p.ai!;
+  const dx = p.body.x - ai.tx, dy = p.body.y - ai.ty;
+  const d = Math.hypot(dx, dy) || 1;
+  moveToward(w, p, p.body.x + (dx / d) * 10, p.body.y + (dy / d) * 10, p.spec.runSpeed, dt);
+  return ai.t > 7 || d > 60;
+}
+
+/** Switches to the best weapon that still has ammo. */
+export function armBest(p: Ped): void {
+  for (let i = p.weapons.length - 1; i >= 0; i--) {
+    const h = p.weapons[i];
+    const s = WEAPONS[h.w];
+    if (s.clip === 0 || h.clip + h.ammo > 0) {
+      if (p.wi !== i) { p.wi = i; p.reloadT = 0; }
+      return;
+    }
+  }
+}
+
+export function attack(w: World, p: Ped, dt: number): boolean {
+  const ai = p.ai!;
+  const t = w.peds.get(ai.target);
+  if (!t || t.dead || (t.player && t.player.mode >= Mode.Dead)) { p.trigger = false; return true; }
+  armBest(p);
+  const pos = w.pedPos(t);
+  const d = dist(p.body.x, p.body.y, pos.x, pos.y);
+  if (d > 110 || (d > 70 && ai.t > 20)) { p.trigger = false; return true; }
+  const spec = WEAPONS[p.weapons[p.wi].w];
+  const want = Math.atan2(pos.y - p.body.y, pos.x - p.body.x);
+  const range = spec.kind === 'melee' ? 1.1 : Math.min(spec.range * 0.75, 32);
+  const los = !w.statics.raycast(p.body.x, p.body.y, pos.x, pos.y, 1.2);
+  if (d > range || !los) {
+    moveToward(w, p, pos.x, pos.y, p.spec.runSpeed, dt);
+    p.aim = want;
+    p.trigger = los && spec.kind !== 'melee' && d < spec.range && w.rng.chance(0.5) ? !p.triggerPrev || spec.auto : false;
+    return false;
+  }
+  stop(p);
+  p.aim = p.aim + angleDiff(p.aim, want) * Math.min(1, dt * 10);
+  const aligned = Math.abs(angleDiff(p.aim, want)) < 0.2;
+  p.trigger = aligned && (spec.auto || !p.triggerPrev);
+  return false;
+}
+
+export function arrest(w: World, p: Ped, dt: number): boolean {
+  const ai = p.ai!;
+  const t = w.peds.get(ai.target);
+  const pl = t?.player;
+  if (!t || !pl || t.dead || pl.wanted === 0 || pl.mode >= Mode.Dead) return true;
+  const pos = w.pedPos(t);
+  const d = dist(p.body.x, p.body.y, pos.x, pos.y);
+  p.trigger = false;
+  if (d > 100) return true;
+  const reach = t.vehicle ? (w.vehicles.get(t.vehicle)?.spec.width ?? 2) / 2 + 1.6 : 1.5;
+  if (d > reach) { moveToward(w, p, pos.x, pos.y, p.spec.runSpeed, dt); return false; }
+  stop(p);
+  p.aim = Math.atan2(pos.y - p.body.y, pos.x - p.body.x);
+  const tv = t.vehicle ? w.vehicles.get(t.vehicle) : undefined;
+  const slow = tv ? Math.hypot(tv.body.vx, tv.body.vy) < 1.5 : Math.hypot(t.body.vx, t.body.vy) < 2.6;
+  if (slow) pl.bustT += dt * 2; // decays at 1x in the player system
+  return false;
+}
+
+export function revive(w: World, p: Ped, dt: number): boolean {
+  const ai = p.ai!;
+  const body = w.peds.get(ai.target);
+  if (!body || !body.dead || body.player) return true;
+  const d = moveToward(w, p, body.body.x, body.body.y, p.spec.runSpeed, dt);
+  if (d > 1.3) return false;
+  stop(p);
+  ai.workT += dt;
+  if (ai.workT < 3) return false;
+  body.dead = false;
+  body.hp = body.spec.hp * 0.5;
+  body.revived = true;
+  body.bodyCalled = false;
+  if (body.ai) { body.ai.block = -1; setTask(body, 'wander'); }
+  return true;
+}
+
+export function extinguish(w: World, p: Ped, dt: number): boolean {
+  const ai = p.ai!;
+  let near: { x: number; y: number } | null = null, nd = Infinity;
+  for (const f of w.fires.values()) {
+    const d = dist(ai.tx, ai.ty, f.x, f.y);
+    if (d < 25 && d < nd) { nd = d; near = f; }
+  }
+  for (const v of w.vehicles.values()) {
+    if (v.burning < 0) continue;
+    const d = dist(ai.tx, ai.ty, v.body.x, v.body.y);
+    if (d < 25 && d < nd) { nd = d; near = v.body; }
+  }
+  if (!near || ai.t > 40) return true;
+  const d = moveToward(w, p, near.x, near.y, p.spec.runSpeed, dt);
+  if (d > 6) return false;
+  stop(p);
+  p.aim = Math.atan2(near.y - p.body.y, near.x - p.body.x);
+  ai.workT += dt;
+  for (const f of w.fires.values()) if (dist(near.x, near.y, f.x, f.y) < 7) f.life -= dt * 4;
+  for (const v of w.vehicles.values()) {
+    if (v.burning >= 0 && dist(near.x, near.y, v.body.x, v.body.y) < 7) { v.burning = -1; v.hp = Math.max(v.hp, 1); }
+  }
+  return false;
+}
+
+/** Walks back to the crew vehicle (ai.target) and gets in. */
+export function returnToVehicle(w: World, p: Ped, dt: number): boolean {
+  const v = w.vehicles.get(p.ai!.target);
+  if (!v || v.wrecked || p.ai!.t > 30) return true;
+  const d = moveToward(w, p, v.body.x, v.body.y, p.spec.runSpeed, dt);
+  if (d > Math.max(v.spec.length, v.spec.width) / 2 + 1.4) return false;
+  const seat = v.seats[0] ? freeSeat(v, 1) : 0;
+  if (seat < 0) return true;
+  seatPed(w, p, v, seat);
+  setTask(p, seat === 0 ? 'drive' : 'none');
+  return false;
+}

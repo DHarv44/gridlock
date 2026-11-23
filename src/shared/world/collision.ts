@@ -1,0 +1,219 @@
+// Static collision world: axis-aligned boxes (buildings, containers, fences) and tree trunks,
+// bucketed in a uniform grid. Used by server physics and client-side prediction alike.
+import type { City } from './cityTypes';
+import { MAP_SIZE } from './cityTypes';
+
+export interface Box2 { x0: number; y0: number; x1: number; y1: number; h: number }
+export interface Circle2 { x: number; y: number; r: number; h: number }
+export interface Hit { nx: number; ny: number; depth: number }
+export interface RayHit { t: number; nx: number; ny: number }
+
+const CELL = 24;
+const N = Math.ceil(MAP_SIZE / CELL);
+const TRUNK_R = 0.45;
+
+export class StaticWorld {
+  readonly boxes: Box2[] = [];
+  readonly circles: Circle2[] = [];
+  private boxCells: number[][] = Array.from({ length: N * N }, () => []);
+  private circleCells: number[][] = Array.from({ length: N * N }, () => []);
+  private stamp: Uint32Array;
+  private stampC: Uint32Array;
+  private q = 1;
+
+  constructor(city: City) {
+    for (const b of city.buildings) this.addBox({ ...b.rect, h: b.h });
+    for (const o of city.obstacles) this.addBox({ ...o.rect, h: o.h });
+    for (const t of city.trees) this.addCircle({ x: t.x, y: t.y, r: TRUNK_R, h: 7 });
+    this.stamp = new Uint32Array(this.boxes.length);
+    this.stampC = new Uint32Array(this.circles.length);
+  }
+
+  private static cellRange(x0: number, y0: number, x1: number, y1: number): [number, number, number, number] {
+    const c = (v: number) => Math.max(0, Math.min(N - 1, Math.floor(v / CELL)));
+    return [c(x0), c(y0), c(x1), c(y1)];
+  }
+
+  private addBox(b: Box2): void {
+    const id = this.boxes.push(b) - 1;
+    const [i0, j0, i1, j1] = StaticWorld.cellRange(b.x0, b.y0, b.x1, b.y1);
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) this.boxCells[j * N + i].push(id);
+  }
+
+  private addCircle(c: Circle2): void {
+    const id = this.circles.push(c) - 1;
+    const [i0, j0, i1, j1] = StaticWorld.cellRange(c.x - c.r, c.y - c.r, c.x + c.r, c.y + c.r);
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) this.circleCells[j * N + i].push(id);
+  }
+
+  /** Calls fn for each box/circle overlapping the query rect (each once). */
+  near(x0: number, y0: number, x1: number, y1: number, box: (b: Box2) => void, circle?: (c: Circle2) => void): void {
+    const q = ++this.q;
+    const [i0, j0, i1, j1] = StaticWorld.cellRange(x0, y0, x1, y1);
+    for (let j = j0; j <= j1; j++) {
+      for (let i = i0; i <= i1; i++) {
+        for (const id of this.boxCells[j * N + i]) {
+          if (this.stamp[id] === q) continue;
+          this.stamp[id] = q;
+          box(this.boxes[id]);
+        }
+        if (!circle) continue;
+        for (const id of this.circleCells[j * N + i]) {
+          if (this.stampC[id] === q) continue;
+          this.stampC[id] = q;
+          circle(this.circles[id]);
+        }
+      }
+    }
+  }
+
+  /** Pushes a circle out of static geometry taller than z. Mutates p; returns the last hit or null. */
+  resolveCircle(p: { x: number; y: number }, r: number, z = 0): Hit | null {
+    let hit: Hit | null = null;
+    this.near(p.x - r, p.y - r, p.x + r, p.y + r, (b) => {
+      if (b.h <= z) return;
+      const cx = Math.max(b.x0, Math.min(p.x, b.x1)), cy = Math.max(b.y0, Math.min(p.y, b.y1));
+      let dx = p.x - cx, dy = p.y - cy;
+      const d2 = dx * dx + dy * dy;
+      if (d2 >= r * r) return;
+      if (d2 > 1e-9) {
+        const d = Math.sqrt(d2);
+        dx /= d; dy /= d;
+        p.x += dx * (r - d); p.y += dy * (r - d);
+        hit = { nx: dx, ny: dy, depth: r - d };
+      } else {
+        // Centre inside the box: exit through the nearest face.
+        const l = p.x - b.x0, rr = b.x1 - p.x, t = p.y - b.y0, bt = b.y1 - p.y;
+        const m = Math.min(l, rr, t, bt);
+        if (m === l) { p.x = b.x0 - r; hit = { nx: -1, ny: 0, depth: m + r }; }
+        else if (m === rr) { p.x = b.x1 + r; hit = { nx: 1, ny: 0, depth: m + r }; }
+        else if (m === t) { p.y = b.y0 - r; hit = { nx: 0, ny: -1, depth: m + r }; }
+        else { p.y = b.y1 + r; hit = { nx: 0, ny: 1, depth: m + r }; }
+      }
+    }, (c) => {
+      if (c.h <= z) return;
+      const dx = p.x - c.x, dy = p.y - c.y, rr = r + c.r;
+      const d2 = dx * dx + dy * dy;
+      if (d2 >= rr * rr || d2 < 1e-9) return;
+      const d = Math.sqrt(d2);
+      p.x += (dx / d) * (rr - d); p.y += (dy / d) * (rr - d);
+      hit = { nx: dx / d, ny: dy / d, depth: rr - d };
+    });
+    return hit;
+  }
+
+  /**
+   * Separates an oriented box (centre, angle, half extents) from static geometry.
+   * Mutates o; returns the deepest contact normal (pointing away from the obstacle).
+   */
+  resolveObb(o: { x: number; y: number; angle: number }, hl: number, hw: number, z = 0): Hit | null {
+    let worst: Hit | null = null;
+    const c = Math.cos(o.angle), s = Math.sin(o.angle);
+    const ex = Math.abs(c) * hl + Math.abs(s) * hw, ey = Math.abs(s) * hl + Math.abs(c) * hw;
+    for (let pass = 0; pass < 2; pass++) {
+      this.near(o.x - ex - 1, o.y - ey - 1, o.x + ex + 1, o.y + ey + 1, (b) => {
+        if (b.h <= z) return;
+        const h = obbVsAabb(o.x, o.y, c, s, hl, hw, b);
+        if (!h) return;
+        o.x += h.nx * h.depth; o.y += h.ny * h.depth;
+        if (!worst || h.depth > worst.depth) worst = h;
+      }, (ci) => {
+        if (ci.h <= z) return;
+        const h = obbVsCircle(o.x, o.y, c, s, hl, hw, ci);
+        if (!h) return;
+        o.x += h.nx * h.depth; o.y += h.ny * h.depth;
+        if (!worst || h.depth > worst.depth) worst = h;
+      });
+    }
+    return worst;
+  }
+
+  /** First static hit along a segment at height z. t is the fraction along the segment. */
+  raycast(x0: number, y0: number, x1: number, y1: number, z = 1.2): RayHit | null {
+    const dx = x1 - x0, dy = y1 - y0;
+    const out: { best: RayHit | null } = { best: null };
+    const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / CELL));
+    for (let k = 0; k < steps; k++) {
+      const ta = k / steps, tb = (k + 1) / steps;
+      if (out.best && out.best.t < ta) break;
+      const ax = x0 + dx * ta, ay = y0 + dy * ta, bx = x0 + dx * tb, by = y0 + dy * tb;
+      this.near(Math.min(ax, bx), Math.min(ay, by), Math.max(ax, bx), Math.max(ay, by), (b) => {
+        if (b.h <= z) return;
+        const h = rayAabb(x0, y0, dx, dy, b);
+        if (h && (!out.best || h.t < out.best.t)) out.best = h;
+      }, (c) => {
+        if (c.h <= z) return;
+        const h = rayCircle(x0, y0, dx, dy, c.x, c.y, c.r);
+        if (h && (!out.best || h.t < out.best.t)) out.best = h;
+      });
+    }
+    return out.best;
+  }
+}
+
+/** SAT between an OBB and an AABB; returns the minimum translation for the OBB. */
+export function obbVsAabb(x: number, y: number, c: number, s: number, hl: number, hw: number, b: Box2): Hit | null {
+  const bx = (b.x0 + b.x1) / 2, by = (b.y0 + b.y1) / 2, bhx = (b.x1 - b.x0) / 2, bhy = (b.y1 - b.y0) / 2;
+  const dx = x - bx, dy = y - by;
+  const axes: [number, number][] = [[1, 0], [0, 1], [c, s], [-s, c]];
+  let best = Infinity, nx = 0, ny = 0;
+  for (const [ax, ay] of axes) {
+    const ra = hl * Math.abs(c * ax + s * ay) + hw * Math.abs(-s * ax + c * ay);
+    const rb = bhx * Math.abs(ax) + bhy * Math.abs(ay);
+    const d = dx * ax + dy * ay;
+    const o = ra + rb - Math.abs(d);
+    if (o <= 0) return null;
+    if (o < best) { best = o; const sg = d < 0 ? -1 : 1; nx = ax * sg; ny = ay * sg; }
+  }
+  return { nx, ny, depth: best };
+}
+
+export function obbVsCircle(x: number, y: number, c: number, s: number, hl: number, hw: number, ci: { x: number; y: number; r: number }): Hit | null {
+  const dx = ci.x - x, dy = ci.y - y;
+  const lx = dx * c + dy * s, ly = -dx * s + dy * c;
+  const px = Math.max(-hl, Math.min(hl, lx)), py = Math.max(-hw, Math.min(hw, ly));
+  const ex = lx - px, ey = ly - py;
+  const d2 = ex * ex + ey * ey;
+  if (d2 >= ci.r * ci.r) return null;
+  if (d2 < 1e-9) {
+    // Circle centre inside the box: push along the nearest local face.
+    const ox = hl - Math.abs(lx), oy = hw - Math.abs(ly);
+    const [lnx, lny, depth] = ox < oy ? [-Math.sign(lx) || -1, 0, ox + ci.r] : [0, -Math.sign(ly) || -1, oy + ci.r];
+    return { nx: lnx * c - lny * s, ny: lnx * s + lny * c, depth };
+  }
+  const d = Math.sqrt(d2);
+  const wx = (ex * c - ey * s) / d, wy = (ex * s + ey * c) / d;
+  return { nx: -wx, ny: -wy, depth: ci.r - d };
+}
+
+export function rayAabb(x0: number, y0: number, dx: number, dy: number, b: Box2): RayHit | null {
+  let tmin = 0, tmax = 1, nx = 0, ny = 0;
+  if (Math.abs(dx) < 1e-9) { if (x0 < b.x0 || x0 > b.x1) return null; }
+  else {
+    let t1 = (b.x0 - x0) / dx, t2 = (b.x1 - x0) / dx, n = -1;
+    if (t1 > t2) { [t1, t2] = [t2, t1]; n = 1; }
+    if (t1 > tmin) { tmin = t1; nx = n; ny = 0; }
+    tmax = Math.min(tmax, t2);
+    if (tmin > tmax) return null;
+  }
+  if (Math.abs(dy) < 1e-9) { if (y0 < b.y0 || y0 > b.y1) return null; }
+  else {
+    let t1 = (b.y0 - y0) / dy, t2 = (b.y1 - y0) / dy, n = -1;
+    if (t1 > t2) { [t1, t2] = [t2, t1]; n = 1; }
+    if (t1 > tmin) { tmin = t1; nx = 0; ny = n; }
+    tmax = Math.min(tmax, t2);
+    if (tmin > tmax) return null;
+  }
+  return tmin > 0 ? { t: tmin, nx, ny } : null;
+}
+
+export function rayCircle(x0: number, y0: number, dx: number, dy: number, cx: number, cy: number, r: number): RayHit | null {
+  const fx = x0 - cx, fy = y0 - cy;
+  const a = dx * dx + dy * dy, b = 2 * (fx * dx + fy * dy), c = fx * fx + fy * fy - r * r;
+  const disc = b * b - 4 * a * c;
+  if (disc < 0 || a < 1e-12) return null;
+  const t = (-b - Math.sqrt(disc)) / (2 * a);
+  if (t < 0 || t > 1) return null;
+  const hx = x0 + dx * t - cx, hy = y0 + dy * t - cy;
+  return { t, nx: hx / r, ny: hy / r };
+}

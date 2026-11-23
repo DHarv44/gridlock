@@ -1,0 +1,29 @@
+{
+  "name": "gridlock",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "GRIDLOCK: top-down multiplayer crime sandbox (up to 6 players).",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "server": "tsx src/server/main.ts",
+    "build": "vite build",
+    "start": "vite build && tsx src/server/main.ts",
+    "serve": "tsx src/server/main.ts",
+    "typecheck": "tsc --noEmit",
+    "smoke": "tsx scripts/smoke.ts",
+    "bots": "tsx scripts/bots.ts"
+  },
+  "dependencies": {
+    "three": "^0.170.0",
+    "tsx": "^4.19.2",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/three": "^0.170.0",
+    "@types/ws": "^8.5.13",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  }
+}

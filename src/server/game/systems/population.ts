@@ -1,0 +1,271 @@
+// Keeps the streets alive around players: ambient peds, traffic, parked cars, and
+// the fixed vehicles/guards at services. Despawns what nobody can see.
+import { dist2 } from '../../../shared/math';
+import { type PedArchetype, PEDS, RULES, SERVICES, VEHICLES, ZONES, pedIndex, vehicleIndex } from '../../../shared/packs';
+import type { Ped } from '../entities';
+import { removePed, removeVehicle, seatPed, spawnPed, spawnVehicle } from '../factory';
+import { setTask } from '../ai/tasks';
+import type { World } from '../world';
+import { laneSpawn, pedSpawn } from './spawnPoints';
+
+interface FixedSpawn { x: number; y: number; angle: number; type: number; veh: number; readyAt: number }
+interface FixedGuard { x: number; y: number; angle: number; arch: number; ped: number; readyAt: number }
+
+const STANDERS = new Set(['dealer', 'streetwalker', 'guard', 'gang']);
+const BUCKET = 64;
+
+export class Population {
+  private fixed: FixedSpawn[] = [];
+  private guards: FixedGuard[] = [];
+  private spotState = new Map<number, number>();   // parking spot -> vehicle id (0 = rolled empty)
+  private spotBuckets = new Map<number, number[]>();
+  private timer = 0;
+
+  constructor(private w: World) {
+    w.city.parking.forEach((s, i) => {
+      const k = Math.floor(s.y / BUCKET) * 64 + Math.floor(s.x / BUCKET);
+      let arr = this.spotBuckets.get(k);
+      if (!arr) { arr = []; this.spotBuckets.set(k, arr); }
+      arr.push(i);
+    });
+    this.buildFixed();
+  }
+
+  private buildFixed(): void {
+    const w = this.w;
+    for (const place of w.city.services) {
+      const spec = SERVICES[place.spec];
+      const pad = place.pad ?? { x: place.x, y: place.y, angle: 0 };
+      if (spec.verb === 'military') {
+        const lot = w.city.lots[place.lot];
+        const block = w.city.blocks[lot.block];
+        const spots = block.lots.map((i) => w.city.lots[i]).filter((l) => l.use === 'pad' || l.use === 'parking')
+          .map((l) => ({ x: (l.rect.x0 + l.rect.x1) / 2, y: (l.rect.y0 + l.rect.y1) / 2 }));
+        let k = 0;
+        for (const s of spec.spawns ?? []) {
+          for (let n = 0; n < s.count; n++, k++) {
+            const at = spots[k % spots.length] ?? pad;
+            const off = Math.floor(k / Math.max(1, spots.length)) * 9 - 4;
+            this.fixed.push({ x: at.x + off, y: at.y, angle: -Math.PI / 2, type: vehicleIndex(s.vehicle), veh: 0, readyAt: 0 });
+          }
+        }
+        for (const g of spec.guards ?? []) {
+          for (let n = 0; n < g.count; n++) {
+            const at = spots[n % Math.max(1, spots.length)] ?? pad;
+            this.guards.push({ x: at.x + (n % 2 ? 10 : -10), y: at.y + 6, angle: n * 1.3, arch: pedIndex(g.archetype), ped: 0, readyAt: 0 });
+          }
+        }
+        continue;
+      }
+      const rx = -Math.sin(pad.angle), ry = Math.cos(pad.angle);
+      let k = 0;
+      for (const s of spec.spawns ?? []) {
+        for (let n = 0; n < s.count; n++, k++) {
+          const off = (k - ((spec.spawns!.reduce((a, b) => a + b.count, 0) - 1) / 2)) * (VEHICLES[vehicleIndex(s.vehicle)].movement === 'rotor' ? 14 : 4.5);
+          this.fixed.push({ x: pad.x + rx * off, y: pad.y + ry * off, angle: pad.angle, type: vehicleIndex(s.vehicle), veh: 0, readyAt: 0 });
+        }
+      }
+      for (const g of spec.guards ?? []) {
+        for (let n = 0; n < g.count; n++) {
+          this.guards.push({ x: place.x + rx * (2 + n * 1.5), y: place.y + ry * (2 + n * 1.5), angle: pad.angle + Math.PI, arch: pedIndex(g.archetype), ped: 0, readyAt: 0 });
+        }
+      }
+    }
+  }
+
+  update(dt: number): void {
+    this.timer -= dt;
+    if (this.timer > 0) return;
+    this.timer = 0.5;
+    this.despawn();
+    for (const pl of this.w.players.values()) {
+      const p = this.w.peds.get(pl.pid);
+      if (!p) continue;
+      const pos = this.w.pedPos(p);
+      this.ambientPeds(pos.x, pos.y);
+      this.traffic(pos.x, pos.y);
+    }
+    this.parked();
+    this.fixedSpawns();
+  }
+
+  private countNear(x: number, y: number, r: number): { peds: number; cars: number } {
+    let peds = 0, cars = 0;
+    const r2 = r * r;
+    for (const p of this.w.peds.values()) {
+      if (!p.player && !p.persistent && !p.dead && !p.vehicle && dist2(x, y, p.body.x, p.body.y) < r2) peds++;
+    }
+    for (const v of this.w.vehicles.values()) {
+      if (v.seats[0] && !v.persistent && dist2(x, y, v.body.x, v.body.y) < r2) {
+        const d = this.w.peds.get(v.seats[0]);
+        if (d && !d.player) cars++;
+      }
+    }
+    return { peds, cars };
+  }
+
+  private totals(): { peds: number; cars: number } {
+    let cars = 0;
+    for (const v of this.w.vehicles.values()) if (v.seats[0]) cars++;
+    return { peds: this.w.peds.size, cars };
+  }
+
+  private ambientPeds(x: number, y: number): void {
+    const w = this.w;
+    const zi = w.map.zoneAt(x, y);
+    if (zi < 0) return;
+    const z = ZONES[zi];
+    const want = Math.min(RULES.pedCapPerPlayer, Math.max(4, z.pedDensity * 4.5));
+    const have = this.countNear(x, y, 170).peds;
+    const cap = Math.min(RULES.pedCap, RULES.pedCapPerPlayer * w.players.size);
+    for (let k = 0; k < Math.min(3, want - have) && this.totals().peds < cap; k++) {
+      const s = pedSpawn(w, x, y, RULES.spawnRadius[0], RULES.spawnRadius[1]);
+      if (!s) continue;
+      const sz = ZONES[s.block.zone];
+      const arch = pedIndex(w.rng.weighted(sz.peds).id);
+      const spec = PEDS[arch];
+      const group = spec.behaviour === 'gang' ? w.rng.int(2, 4) : 1;
+      for (let g = 0; g < group; g++) {
+        const p = spawnPed(w, arch, s.spot.x + g * 0.9, s.spot.y + g * 0.6, s.spot.angle);
+        this.initNpc(p, spec, s.spot, s.block.id);
+      }
+    }
+  }
+
+  private initNpc(p: Ped, spec: PedArchetype, spot: { x: number; y: number; angle: number }, block: number): void {
+    const ai = p.ai!;
+    ai.block = block;
+    if (STANDERS.has(spec.behaviour) && this.w.rng.chance(0.75)) {
+      ai.post = { x: p.body.x, y: p.body.y, angle: spot.angle };
+      setTask(p, 'stand');
+    } else {
+      setTask(p, 'wander');
+      ai.corner = Math.floor(this.w.rng.next() * 4);
+    }
+  }
+
+  private driverFor(vehicleType: number, zone: number): number {
+    const spec = VEHICLES[vehicleType];
+    if (spec.roles.includes('police')) return pedIndex('cop');
+    if (spec.roles.includes('military')) return pedIndex('soldier');
+    const z = ZONES[zone];
+    if (spec.roles.includes('gang')) {
+      const gangs = z.peds.filter((e) => PEDS[pedIndex(e.id)].behaviour === 'gang');
+      if (gangs.length) return pedIndex(this.w.rng.weighted(gangs).id);
+    }
+    const civs = z.peds.filter((e) => PEDS[pedIndex(e.id)].behaviour === 'civilian');
+    return pedIndex(civs.length ? this.w.rng.weighted(civs).id : 'civilian');
+  }
+
+  private traffic(x: number, y: number): void {
+    const w = this.w;
+    const zi = w.map.zoneAt(x, y);
+    if (zi < 0) return;
+    const z = ZONES[zi];
+    const want = Math.min(RULES.carCapPerPlayer, Math.max(4, z.trafficDensity * 18));
+    const have = this.countNear(x, y, 180).cars;
+    const cap = Math.min(RULES.carCap, RULES.carCapPerPlayer * w.players.size);
+    for (let k = 0; k < Math.min(2, want - have) && this.totals().cars < cap; k++) {
+      const s = laneSpawn(w, x, y, RULES.spawnRadius[0] + 10, RULES.spawnRadius[1]);
+      if (!s) continue;
+      const sz = w.map.zoneAt(s.x, s.y);
+      const pool = ZONES[sz < 0 ? zi : sz].traffic;
+      const type = vehicleIndex(w.rng.weighted(pool).id);
+      const v = spawnVehicle(w, type, s.x, s.y, s.angle);
+      const sp = VEHICLES[type];
+      v.body.vx = Math.cos(s.angle) * 8; v.body.vy = Math.sin(s.angle) * 8;
+      const d = spawnPed(w, this.driverFor(type, sz < 0 ? zi : sz), s.x, s.y, s.angle);
+      seatPed(w, d, v, 0);
+      setTask(d, 'drive');
+      if (sp.roles.includes('police') && v.seats.length > 1 && w.rng.chance(0.5)) {
+        const partner = spawnPed(w, pedIndex('cop'), s.x, s.y);
+        seatPed(w, partner, v, 1);
+        setTask(partner, 'none');
+        partner.ai!.crew = v.id;
+      }
+      d.ai!.crew = sp.roles.includes('police') ? v.id : 0;
+    }
+  }
+
+  private parked(): void {
+    const w = this.w;
+    const seen = new Set<number>();
+    for (const pl of w.players.values()) {
+      const p = w.peds.get(pl.pid);
+      if (!p) continue;
+      const pos = w.pedPos(p);
+      const i0 = Math.floor((pos.x - 170) / BUCKET), i1 = Math.floor((pos.x + 170) / BUCKET);
+      const j0 = Math.floor((pos.y - 170) / BUCKET), j1 = Math.floor((pos.y + 170) / BUCKET);
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+        for (const si of this.spotBuckets.get(j * 64 + i) ?? []) seen.add(si);
+      }
+    }
+    for (const si of seen) {
+      if (this.spotState.has(si)) continue;
+      const s = w.city.parking[si];
+      if (w.nearestPlayerDist2(s.x, s.y) < 70 * 70) continue; // don't pop in view
+      const z = ZONES[s.zone < 0 ? 0 : s.zone];
+      const chance = s.lot !== undefined ? 0.3 : z.parkedDensity * 0.16;
+      if (!w.rng.chance(chance) || w.vehicles.size > RULES.vehicleCap) { this.spotState.set(si, 0); continue; }
+      const v = spawnVehicle(w, vehicleIndex(w.rng.weighted(z.parked).id), s.x, s.y, s.angle);
+      v.spot = si;
+      this.spotState.set(si, v.id);
+    }
+    for (const [si, vid] of this.spotState) {
+      if (seen.has(si)) continue;
+      this.spotState.delete(si);
+      const v = vid ? w.vehicles.get(vid) : undefined;
+      if (v && v.spot === si && !v.seats.some((s) => s) && !v.persistent && !v.owner) removeVehicle(w, v);
+    }
+  }
+
+  private fixedSpawns(): void {
+    const w = this.w;
+    for (const f of this.fixed) {
+      const near = w.nearestPlayerDist2(f.x, f.y);
+      const v = f.veh ? w.vehicles.get(f.veh) : undefined;
+      if (v && dist2(v.body.x, v.body.y, f.x, f.y) > 15 * 15) { f.veh = 0; f.readyAt = w.time + 150; v.spot = -1; continue; }
+      if (!v) f.veh = 0;
+      if (v && near > 300 * 300 && !v.seats.some((s) => s)) { removeVehicle(w, v); f.veh = 0; continue; }
+      if (!f.veh && near < 240 * 240 && near > 60 * 60 && w.time >= f.readyAt) {
+        let blocked = false;
+        w.vehiclesNear(f.x, f.y, 5, () => { blocked = true; });
+        if (blocked) continue;
+        const nv = spawnVehicle(w, f.type, f.x, f.y, f.angle);
+        nv.spot = -2;
+        f.veh = nv.id;
+      }
+    }
+    for (const g of this.guards) {
+      const near = w.nearestPlayerDist2(g.x, g.y);
+      const p = g.ped ? w.peds.get(g.ped) : undefined;
+      if (p && p.dead) { g.ped = 0; g.readyAt = w.time + 120; continue; }
+      if (!p) g.ped = 0;
+      if (p && near > 300 * 300) { removePed(w, p); g.ped = 0; continue; }
+      if (!g.ped && near < 220 * 220 && near > 60 * 60 && w.time >= g.readyAt) {
+        const np = spawnPed(w, g.arch, g.x, g.y, g.angle);
+        np.persistent = true;
+        np.ai!.post = { x: g.x, y: g.y, angle: g.angle };
+        setTask(np, 'stand');
+        g.ped = np.id;
+      }
+    }
+  }
+
+  private despawn(): void {
+    const w = this.w;
+    const far2 = RULES.despawnRadius * RULES.despawnRadius;
+    for (const v of w.vehicles.values()) {
+      if (v.owner || v.persistent) continue;
+      if (v.seats.some((s) => s && w.peds.get(s)?.player)) continue;
+      const near = w.nearestPlayerDist2(v.body.x, v.body.y);
+      const wreckOld = v.wrecked && v.wreckT > 90 && near > 80 * 80;
+      if (wreckOld || (near > far2 && v.spot < 0 && v.spot !== -2)) removeVehicle(w, v);
+    }
+    for (const p of w.peds.values()) {
+      if (p.player || p.persistent || p.vehicle) continue;
+      const near = w.nearestPlayerDist2(p.body.x, p.body.y);
+      if (near > far2 || (p.dead && p.deadT > 75 && near > 50 * 50) || (p.dead && p.deadT > 180)) removePed(w, p);
+    }
+  }
+}

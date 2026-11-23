@@ -1,0 +1,166 @@
+// Per-tick AI update: perception, then the current task for every NPC.
+import { angleDiff, dist } from '../../../shared/math';
+import { WEAPONS } from '../../../shared/packs';
+import { Mode } from '../../../shared/protocol';
+import { forwardSpeed } from '../../../shared/sim/physics';
+import type { Ped, Vehicle } from '../entities';
+import { unseatPed } from '../factory';
+import type { World } from '../world';
+import { BEHAVIOURS } from './behaviours';
+import { cruise, driveTo } from './driving';
+import { armBest, arrest, attack, extinguish, flee, returnToVehicle, revive, setTask, standAt, wander } from './tasks';
+
+export function updateAi(w: World, dt: number): void {
+  for (const p of w.peds.values()) {
+    if (!p.ai || p.dead || p.player) continue;
+    const ai = p.ai;
+    ai.t += dt;
+    if (p.down > 0) { p.ctl.mx = 0; p.ctl.my = 0; p.trigger = false; continue; }
+    ai.think -= dt;
+    if (ai.think <= 0) {
+      ai.think = 0.45 + w.rng.next() * 0.3;
+      BEHAVIOURS[p.spec.behaviour].perceive(w, p);
+    }
+    if (p.burning > 0 && !p.vehicle) {
+      // On fire: run around blindly.
+      if (ai.task !== 'flee') setTask(p, 'flee', 0, p.body.x + w.rng.range(-3, 3), p.body.y + w.rng.range(-3, 3));
+    }
+    if (p.vehicle) vehicleTask(w, p, dt);
+    else footTask(w, p, dt);
+  }
+}
+
+function footTask(w: World, p: Ped, dt: number): void {
+  const ai = p.ai!;
+  let done = false;
+  p.trigger = ai.task === 'attack' ? p.trigger : false;
+  switch (ai.task) {
+    case 'wander': wander(w, p, dt); break;
+    case 'stand': case 'guard': standAt(w, p, dt); break;
+    case 'flee': done = flee(w, p, dt); break;
+    case 'cower': p.ctl.mx = 0; p.ctl.my = 0; done = ai.t > 3; if (done) setTask(p, 'flee', 0, ai.tx, ai.ty); return;
+    case 'attack': done = attack(w, p, dt); break;
+    case 'arrest': done = arrest(w, p, dt); break;
+    case 'revive': done = revive(w, p, dt); break;
+    case 'extinguish': done = extinguish(w, p, dt); break;
+    case 'return': done = returnToVehicle(w, p, dt); break;
+    default: done = true;
+  }
+  if (done) {
+    p.trigger = false;
+    if (ai.task === 'flee') ai.block = -1;
+    BEHAVIOURS[p.spec.behaviour].idle(w, p);
+  }
+}
+
+function vehicleTask(w: World, p: Ped, dt: number): void {
+  const v = w.vehicles.get(p.vehicle);
+  if (!v) { p.vehicle = 0; return; }
+  const ai = p.ai!;
+  if (v.wrecked || v.burning >= 0) {
+    unseatPed(w, p, true);
+    setTask(p, 'flee', 0, v.body.x, v.body.y);
+    return;
+  }
+  if (p.seat !== 0) { passenger(w, p, v); return; }
+  v.ctl.up = false; v.ctl.down = false;
+  switch (ai.task) {
+    case 'pursue': pursue(w, p, v, dt); break;
+    case 'respond': respond(w, p, v, dt); break;
+    default: {
+      if (ai.task !== 'drive') setTask(p, 'drive');
+      if (ai.panicT > 0) ai.panicT -= dt;
+      v.siren = false;
+      if (v.spec.movement === 'rotor') { v.ctl.down = true; v.ctl.throttle = 0; v.ctl.steer = 0; break; }
+      cruise(w, v, p, dt, ai.panicT > 0);
+    }
+  }
+}
+
+/** Everyone gets out; each crew member picks a job against the target. */
+export function crewExit(w: World, v: Vehicle, job: (p: Ped) => void): void {
+  for (const sid of [...v.seats]) {
+    const c = sid ? w.peds.get(sid) : undefined;
+    if (!c || c.player || !c.ai) continue;
+    unseatPed(w, c, true);
+    c.ai.crew = v.id;
+    c.ai.block = -1;
+    job(c);
+  }
+}
+
+function pursue(w: World, p: Ped, v: Vehicle, dt: number): void {
+  const ai = p.ai!;
+  const t = w.peds.get(ai.target);
+  const pl = t?.player;
+  const giveUp = !t || t.dead || (pl && (pl.wanted === 0 || pl.mode >= Mode.Dead));
+  if (giveUp) { v.siren = false; setTask(p, 'drive'); return; }
+  const military = p.spec.behaviour === 'military';
+  const lethal = !pl || pl.lethal || military;
+  v.siren = !!v.spec.siren;
+  const pos = w.pedPos(t!);
+  const tv = t!.vehicle ? w.vehicles.get(t!.vehicle) : undefined;
+  if (v.spec.movement === 'rotor') {
+    driveTo(w, v, p, pos.x, pos.y, dt, { stopAt: 22, ram: false });
+    gunner(w, p, v, pos, lethal);
+    return;
+  }
+  const d = driveTo(w, v, p, pos.x, pos.y, dt, { stopAt: lethal ? 4 : 8, ram: lethal && !!tv });
+  if (v.spec.weapons?.length) { gunner(w, p, v, pos, lethal); if (d > 12) return; }
+  const tSlow = tv ? Math.hypot(tv.body.vx, tv.body.vy) < 2 : true;
+  const mySlow = Math.abs(forwardSpeed(v.body)) < 3;
+  if (d < (tv ? 14 : lethal ? 20 : 12) && tSlow && mySlow && !v.spec.weapons?.length) {
+    crewExit(w, v, (c) => setTask(c, lethal || c.spec.behaviour === 'military' ? 'attack' : 'arrest', t!.id));
+  }
+}
+
+/** Driver-operated mounted weapons (tank cannon, gunship guns). */
+function gunner(w: World, p: Ped, v: Vehicle, pos: { x: number; y: number }, lethal: boolean): void {
+  const want = Math.atan2(pos.y - v.body.y, pos.x - v.body.x);
+  p.aim = want;
+  const d = dist(v.body.x, v.body.y, pos.x, pos.y);
+  const aligned = v.spec.movement === 'rotor' ? Math.abs(angleDiff(v.body.angle, want)) < 0.5 : Math.abs(angleDiff(v.turret, want)) < 0.08;
+  p.trigger = lethal && aligned && d < 85 && d > 8 && !p.triggerPrev;
+  if (v.spec.weapons && v.spec.weapons.length > 1) v.vw = d < 45 ? 0 : 1;
+}
+
+function passenger(w: World, p: Ped, v: Vehicle): void {
+  const driver = v.seats[0] ? w.peds.get(v.seats[0]) : undefined;
+  p.trigger = false;
+  if (!driver) {
+    // Driver gone (shot, jacked): bail out.
+    unseatPed(w, p, true);
+    BEHAVIOURS[p.spec.behaviour].idle(w, p);
+    return;
+  }
+  const dai = driver.ai;
+  if (!dai || dai.task !== 'pursue') return;
+  const t = w.peds.get(dai.target);
+  if (!t || t.dead) return;
+  const lethal = !t.player || t.player.lethal || p.spec.behaviour === 'military';
+  armBest(p);
+  const spec = WEAPONS[p.weapons[p.wi].w];
+  if (!lethal || !spec.driveBy) return;
+  const pos = w.pedPos(t);
+  const d = dist(v.body.x, v.body.y, pos.x, pos.y);
+  if (d > Math.min(spec.range, 45)) return;
+  if (w.statics.raycast(v.body.x, v.body.y, pos.x, pos.y, Math.max(1.2, v.body.alt - 2))) return;
+  p.aim = Math.atan2(pos.y - v.body.y, pos.x - v.body.x);
+  p.trigger = spec.auto || !p.triggerPrev;
+}
+
+function respond(w: World, p: Ped, v: Vehicle, dt: number): void {
+  const ai = p.ai!;
+  v.siren = !!v.spec.siren;
+  const d = driveTo(w, v, p, ai.tx, ai.ty, dt, { stopAt: 9, ram: false, speed: 22 });
+  if (ai.t > 90) { setTask(p, 'drive'); return; }
+  if (d < 16 && Math.abs(forwardSpeed(v.body)) < 1.5) {
+    const job = ai.target;
+    const at = { x: ai.tx, y: ai.ty };
+    v.siren = false;
+    crewExit(w, v, (c) => {
+      if (c.spec.behaviour === 'medic') setTask(c, 'revive', job);
+      else setTask(c, 'extinguish', 0, at.x, at.y);
+    });
+  }
+}
