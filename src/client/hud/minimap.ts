@@ -21,6 +21,8 @@ export const PLACE_ICON: Record<string, { color: string; label: string; glyph: s
   fire: { color: '#c0303a', label: 'Fire station', glyph: 'F' },
   helipad: { color: '#e8e8e8', label: 'Heliport', glyph: 'H' },
   military: { color: '#7fa05a', label: 'Military base', glyph: 'M' },
+  bank: { color: '#3fbf7f', label: 'Bank', glyph: '$' },
+  atm: { color: '#8fe0b0', label: 'ATM', glyph: 'A' },
 };
 
 export class Minimap {

@@ -58,6 +58,8 @@ export interface CharacterLast {
 /** What playing changes on a character; the server sends it back for the browser to save. */
 export interface CharacterProgress {
   cash: number;
+  /** Money in the bank: safe from death and arrest; shops draw on it once cash runs out. */
+  bank: number;
   garage: number[];          // vehicle type indexes
   /** Crime kind → times committed. */
   felonies: Record<string, number>;

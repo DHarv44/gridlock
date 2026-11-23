@@ -137,6 +137,8 @@ export interface Player {
   last: InputMsg;
   ack: number;
   cash: number;
+  /** Banked money: kept through death and arrest; purchases use it after cash. */
+  bank: number;
   deaths: number;
   /** Felony record: crime kind → times committed (saved with the character). */
   felonies: Record<string, number>;

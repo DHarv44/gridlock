@@ -131,15 +131,16 @@ export class GunShop {
 
   /** What buying the picked item means right now: kind, price, label, and whether it can be done. */
   private offer(it: Item, you: YouState): { kind: BuyKind; price: number; label: string; can: boolean; note: string } {
+    const money = you.cash + you.bank; // cash first, then the bank
     if (it.wi < 0) {
       const full = you.ar >= 100;
-      return { kind: 'armor', price: RULES.armorPrice, label: full ? 'Armor full' : 'Buy armor', can: !full && you.cash >= RULES.armorPrice, note: `Armor ${Math.round(you.ar)} / 100` };
+      return { kind: 'armor', price: RULES.armorPrice, label: full ? 'Armor full' : 'Buy armor', can: !full && money >= RULES.armorPrice, note: `Armor ${Math.round(you.ar)} / 100` };
     }
     const w = WEAPONS[it.wi];
     const owned = you.w.some((h) => h[0] === it.wi);
     if (owned && w.clip === 0) return { kind: 'weapon', price: 0, label: 'Owned', can: false, note: 'You have one' };
-    if (owned) return { kind: 'ammo', price: w.ammoPrice, label: `Ammo +${w.ammoBundle}`, can: you.cash >= w.ammoPrice, note: 'Owned' };
-    return { kind: 'weapon', price: w.price, label: 'Buy', can: you.cash >= w.price, note: '' };
+    if (owned) return { kind: 'ammo', price: w.ammoPrice, label: `Ammo +${w.ammoBundle}`, can: money >= w.ammoPrice, note: 'Owned' };
+    return { kind: 'weapon', price: w.price, label: 'Buy', can: money >= w.price, note: '' };
   }
 
   private purchase(): void {
@@ -178,7 +179,7 @@ export class GunShop {
   private update(): void {
     const you = this.visit?.you();
     if (!you || !this.root.firstChild) return;
-    this.root.querySelector('.gs-cash')!.textContent = `Cash ${$(you.cash)}`;
+    this.root.querySelector('.gs-cash')!.textContent = you.bank > 0 ? `Cash ${$(you.cash)} · Bank ${$(you.bank)}` : `Cash ${$(you.cash)}`;
     this.root.querySelectorAll<HTMLElement>('.gs-card').forEach((c, i) => {
       const o = this.offer(this.items[i], you);
       c.querySelector('.gs-card-price')!.textContent = o.note === 'Owned' || o.note === 'You have one' ? 'Owned' : $(o.price);

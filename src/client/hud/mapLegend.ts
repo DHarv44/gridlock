@@ -15,10 +15,11 @@ export class MapLegend {
   readonly hidden = new Set<string>();
   private buttons = new Map<string, HTMLButtonElement>();
 
-  constructor(root: HTMLElement, map: CityMap) {
+  constructor(root: HTMLElement, map: CityMap, atms: number) {
     try { for (const k of JSON.parse(localStorage.getItem(STORE) ?? '[]') as string[]) this.hidden.add(k); } catch { /* none saved */ }
     const count = new Map<string, number>();
     for (const s of map.city.services) { const v = SERVICES[s.spec].verb; count.set(v, (count.get(v) ?? 0) + 1); }
+    if (atms) count.set('atm', atms);
     count.set('property', map.city.properties.length);
     const rows: Row[] = [
       ...Object.entries(PLACE_ICON).filter(([k]) => count.has(k)).map(([key, v]) => ({ key, label: v.label, icon: dot(v.color, v.glyph) })),

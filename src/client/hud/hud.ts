@@ -14,6 +14,7 @@ export class Hud {
   readonly radar: HTMLCanvasElement;
   private clock: HTMLElement;
   private cash: HTMLElement;
+  private bank: HTMLElement;
   private stars: HTMLElement;
   private weapon: HTMLElement;
   private ammo: HTMLElement;
@@ -38,6 +39,7 @@ export class Hud {
     const tr = el('div', 'hud-tr', this.root);
     this.clock = el('div', 'hud-clock', tr);
     this.cash = el('div', 'hud-cash', tr);
+    this.bank = el('div', 'hud-bank', tr);
     this.stars = el('div', 'hud-stars', tr);
     for (let i = 0; i < 5; i++) el('i', '', this.stars).textContent = '★';
     const br = el('div', 'hud-br', this.root);
@@ -80,6 +82,7 @@ export class Hud {
     this.shownCash += (you.cash - this.shownCash) * 0.2;
     if (Math.abs(you.cash - this.shownCash) < 1) this.shownCash = you.cash;
     this.put('cash', `$${Math.round(this.shownCash).toLocaleString('en-US')}`, (v) => { this.cash.textContent = v; });
+    this.put('bank', you.bank > 0 ? `Bank $${you.bank.toLocaleString('en-US')}` : '', (v) => { this.bank.textContent = v; this.bank.hidden = !v; });
     this.put('stars', `${you.wl}:${you.wl > 0 && seen}`, () => {
       [...this.stars.children].forEach((s, i) => s.classList.toggle('on', i < you.wl));
       this.stars.classList.toggle('flash', you.wl > 0 && seen);

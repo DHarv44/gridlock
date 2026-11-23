@@ -19,7 +19,8 @@ export const EDGE_BUTTONS = BTN.enter | BTN.interact | BTN.reload | BTN.next | B
 /** [seq, mx, my, throttle, steer, aim, buttons, weaponWish] */
 export type InputMsg = [number, number, number, number, number, number, number, number];
 
-export type BuyKind = 'weapon' | 'ammo' | 'armor' | 'heal' | 'vehicle' | 'property' | 'garage' | 'respray' | 'chop' | 'sell';
+/** `deposit` / `withdraw`: id is dollars or 'all'; place is a bank's service id, or -1 - an ATM's id. */
+export type BuyKind = 'weapon' | 'ammo' | 'armor' | 'heal' | 'vehicle' | 'property' | 'garage' | 'respray' | 'chop' | 'sell' | 'deposit' | 'withdraw';
 
 export type C2S =
   /** `char`: the player's character from their browser; without it `name` plays an unsaved guest. */
@@ -50,6 +51,7 @@ export interface YouState {
   hp: number;
   ar: number;
   cash: number;
+  bank: number;            // banked money
   wl: number;              // wanted level 0..5
   heat: number;
   w: number[][];           // [weaponIndex, ammo, clip]

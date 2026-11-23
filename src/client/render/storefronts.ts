@@ -3,6 +3,7 @@
 // properties get a FOR SALE board out front. Signs lie flat and read north-up from the camera.
 import * as THREE from 'three';
 import { PROPERTIES, SERVICES } from '../../shared/packs';
+import { signWidth } from '../../shared/world/atms';
 import { type City, DIR_VEC, type Lot, type Place } from '../../shared/world/cityTypes';
 import type { ParticleLayer } from './particles';
 
@@ -100,7 +101,7 @@ export class Storefronts {
     add(boxGeo, frame, fcx, doorH + 0.5, fcy, along ? facadeLen * 0.92 : 0.3, 1.1, along ? 0.3 : facadeLen * 0.92);
     // Sign board over the sidewalk, flat so it reads from above, its long side along the facade and
     // kept within it. On east/west fronts it turns a quarter so the text's top points at the wall.
-    const w = Math.min(facadeLen * 0.95, Math.max(5, text.length * 1.4)), h = 2.2;
+    const w = signWidth(text, facadeLen), h = 2.2;
     const lo = (along ? b.x0 : b.y0) + w / 2, hi = (along ? b.x1 : b.y1) - w / 2;
     const mid = Math.min(Math.max(along ? wx : wy, lo), Math.max(lo, hi));
     const sx = along ? mid : wx + dx * 1.6, sy = along ? wy + dy * 1.6 : mid;

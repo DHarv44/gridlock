@@ -102,7 +102,7 @@ function youState(w: World, pl: Player, p: Ped | undefined): YouState {
     mode: pl.mode === Mode.Foot && v ? (p!.seat === 0 ? Mode.Driver : Mode.Passenger) : pl.mode,
     // [x, y, angle, vx, vy, av, alt, trailer angle] — the trailer for client prediction of rigs.
     body: b ? [b.x, b.y, b.angle, b.vx, b.vy, b.av, b.alt, v && p!.seat === 0 && v.spec.trailer ? v.trailer : b.angle] : [0, 0, 0, 0, 0, 0, 0, 0],
-    hp: Math.ceil(p?.hp ?? 0), ar: Math.ceil(p?.armor ?? 0), cash: pl.cash, wl: pl.wanted, heat: Math.round(pl.heat),
+    hp: Math.ceil(p?.hp ?? 0), ar: Math.ceil(p?.armor ?? 0), cash: pl.cash, bank: pl.bank, wl: pl.wanted, heat: Math.round(pl.heat),
     w: p ? p.weapons.map((h) => [h.w, h.ammo, h.clip]) : [], wi: p?.wi ?? 0, rl: p ? a2(p.reloadT) : 0,
     vt: v ? v.type : -1, vhp: v ? Math.max(0, Math.round((v.hp / v.spec.hp) * 100) / 100) : 0,
     respawn: Math.max(0, a2(pl.respawnT)),

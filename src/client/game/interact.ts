@@ -1,6 +1,7 @@
 // Finds the shop/property the player is standing at and drives its pane.
 import { PROPERTIES, SERVICES } from '../../shared/packs';
 import { Mode, type Profile, type YouState } from '../../shared/protocol';
+import { atmsOf } from '../../shared/world/atms';
 import type { City, Place } from '../../shared/world/cityTypes';
 import type { Pane } from '../hud/pane';
 import { type Buy, propertyContent, serviceContent } from '../hud/places';
@@ -15,7 +16,12 @@ export class Interact {
   current: Spot | null = null;
   private openSpot: Spot | null = null;
 
-  constructor(private city: City, private pane: Pane) {}
+  /** ATMs as places to walk up to (verb 'atm'; id -1 - the ATM's id, which the server expects). */
+  private atms: Place[];
+
+  constructor(private city: City, private pane: Pane) {
+    this.atms = atmsOf(city).map((a) => ({ id: -1 - a.id, lot: -1, verb: 'atm', spec: -1, x: a.x, y: a.y, name: 'ATM' }));
+  }
 
   /** Nearest usable place for the current position/mode, or null. */
   find(x: number, y: number, you: YouState): Spot | null {
@@ -23,7 +29,7 @@ export class Interact {
     const driving = you.mode === Mode.Driver;
     let best: Spot | null = null, bd = Infinity;
     const consider = (place: Place, property: boolean) => {
-      const verb = property ? PROPERTIES[place.spec].kind : SERVICES[place.spec].verb;
+      const verb = property ? PROPERTIES[place.spec].kind : place.verb;
       const dDoor = Math.hypot(place.x - x, place.y - y);
       const dPad = place.pad ? Math.hypot(place.pad.x - x, place.pad.y - y) : Infinity;
       let d = Infinity;
@@ -34,6 +40,7 @@ export class Interact {
     };
     for (const s of this.city.services) if (!AUTOMATIC.has(SERVICES[s.spec].verb)) consider(s, false);
     for (const p of this.city.properties) consider(p, true);
+    for (const a of this.atms) consider(a, false);
     return best;
   }
 

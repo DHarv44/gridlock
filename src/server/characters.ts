@@ -33,7 +33,7 @@ export function sanitizeCharacter(raw: unknown): CharacterSave | null {
   return {
     id, name, look: cleanLook(c.look),
     created: int(c.created, 0, 8.64e15), lastPlayed: int(c.lastPlayed, 0, 8.64e15),
-    cash: int(c.cash, 0, MAX_CASH), garage,
+    cash: int(c.cash, 0, MAX_CASH), bank: int(c.bank, 0, MAX_CASH), garage,
     felonies: tally(c.felonies, Object.keys(CRIMES), 0, 1_000_000),
     deaths: int(c.deaths, 0, 1_000_000),
     respect: tally(c.respect, GANGS, -100, 100),
@@ -57,4 +57,4 @@ function cleanLast(raw: unknown): CharacterLast | null {
 
 /** What the player's browser should save now. */
 export const progressOf = (pl: Player): CharacterProgress =>
-  ({ cash: pl.cash, garage: [...pl.garage], felonies: { ...pl.felonies }, deaths: pl.deaths, respect: { ...pl.respect } });
+  ({ cash: pl.cash, bank: pl.bank, garage: [...pl.garage], felonies: { ...pl.felonies }, deaths: pl.deaths, respect: { ...pl.respect } });

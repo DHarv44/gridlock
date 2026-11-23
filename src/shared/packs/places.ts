@@ -22,6 +22,7 @@ export const SERVICES: ServiceSpec[] = [
   { id: 'armory', name: 'Fort Calder Motor Pool', verb: 'military', zones: ['base'], count: 1, sign: '#5d7a3a', signText: 'MOTOR POOL',
     spawns: [{ vehicle: 'tank', count: 2 }, { vehicle: 'gunship', count: 1 }, { vehicle: 'army_truck', count: 1 }, { vehicle: 'jeep', count: 2 }],
     guards: [{ archetype: 'soldier', count: 6 }] },
+  { id: 'bank', name: 'Harbor Trust Bank', verb: 'bank', zones: ['downtown', 'midtown', 'commercial'], count: 3, sign: '#1e5a46', signText: 'BANK', atm: true },
 ];
 
 export const PROPERTIES: PropertySpec[] = [
@@ -30,10 +31,10 @@ export const PROPERTIES: PropertySpec[] = [
   { id: 'apartment', name: 'Apartment', kind: 'home', zones: ['residential', 'midtown', 'barrio'], count: 8, price: 30000, income: 0, garage: 1 },
   { id: 'loft', name: 'Warehouse Loft', kind: 'home', zones: ['industrial'], count: 3, price: 65000, income: 0, garage: 6 },
   { id: 'penthouse', name: 'Penthouse', kind: 'home', zones: ['downtown'], count: 4, price: 350000, income: 0, garage: 8 },
-  { id: 'corner_store', name: 'Corner Store', kind: 'business', zones: ['commercial', 'residential', 'barrio', 'projects'], count: 8, price: 25000, income: 450, garage: 0, signText: '24/7', signColor: '#2bb34a' },
-  { id: 'diner', name: 'Diner', kind: 'business', zones: ['commercial', 'midtown'], count: 4, price: 50000, income: 900, garage: 0, signText: 'DINER', signColor: '#e04e8c' },
-  { id: 'car_wash', name: 'Car Wash', kind: 'business', zones: ['commercial', 'industrial'], count: 3, price: 70000, income: 1300, garage: 0, signText: 'CAR WASH', signColor: '#3ab0e0' },
-  { id: 'nightclub', name: 'Nightclub', kind: 'business', zones: ['midtown', 'downtown'], count: 3, price: 180000, income: 3500, garage: 0, signText: 'CLUB', signColor: '#a040ff' },
+  { id: 'corner_store', name: 'Corner Store', kind: 'business', zones: ['commercial', 'residential', 'barrio', 'projects'], count: 8, price: 25000, income: 450, garage: 0, signText: '24/7', signColor: '#2bb34a', atm: true },
+  { id: 'diner', name: 'Diner', kind: 'business', zones: ['commercial', 'midtown'], count: 4, price: 50000, income: 900, garage: 0, signText: 'DINER', signColor: '#e04e8c', atm: true },
+  { id: 'car_wash', name: 'Car Wash', kind: 'business', zones: ['commercial', 'industrial'], count: 3, price: 70000, income: 1300, garage: 0, signText: 'CAR WASH', signColor: '#3ab0e0', atm: true },
+  { id: 'nightclub', name: 'Nightclub', kind: 'business', zones: ['midtown', 'downtown'], count: 3, price: 180000, income: 3500, garage: 0, signText: 'CLUB', signColor: '#a040ff', atm: true },
   { id: 'warehouse', name: 'Warehouse', kind: 'business', zones: ['industrial', 'docks'], count: 4, price: 120000, income: 2200, garage: 0, signText: 'STORAGE', signColor: '#d9661b' },
   { id: 'office_tower', name: 'Office Tower', kind: 'business', zones: ['downtown'], count: 3, price: 600000, income: 11000, garage: 0, signText: 'OFFICES', signColor: '#9fb4c4' },
 ];

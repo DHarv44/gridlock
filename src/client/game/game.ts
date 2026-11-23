@@ -26,6 +26,8 @@ import { Ground } from '../render/ground';
 import { Stage } from '../render/scene';
 import type { StreetProps } from '../render/streetProps';
 import { Storefronts } from '../render/storefronts';
+import { addAtms } from '../render/atms';
+import { atmsOf } from '../../shared/world/atms';
 import { Water } from '../render/water';
 import { type OwnState, type PlayerTag, WorldView } from '../render/worldView';
 import { routeFx } from './fxRouter';
@@ -116,6 +118,7 @@ export class Game {
     this.props = meshes.props;
     this.water = new Water(this.stage.scene, this.map);
     this.storefronts = new Storefronts(this.stage.scene, city);
+    addAtms(this.stage.scene, atmsOf(city));
     new Graffiti(this.stage.scene, city, meshes.graffitiSpots);
     this.quality = new QualityGovernor(this.stage);
     this.quality.onAuto = (q) => this.hud.notify(`Graphics set to ${q} for a smoother frame rate (Esc to change)`, 'info');
@@ -137,7 +140,7 @@ export class Game {
         // otherwise get into the nearest car or out of this one.
         if (this.pane.isOpen) { this.pane.close(); break; }
         if (!this.interact.current) { this.input.pressEnter(); break; }
-        if (!this.interact.current.property && SERVICES[this.interact.current.place.spec].verb === 'gunshop') { this.openGunShop(this.interact.current.place); break; }
+        if (!this.interact.current.property && this.interact.current.place.verb === 'gunshop') { this.openGunShop(this.interact.current.place); break; }
         if (this.you) this.interact.toggle(() => this.you!, () => this.profile, this.owners, this.myName, (kind, id, place) => this.conn.send({ t: 'buy', kind, id, place }));
         break;
       case 'chat':
@@ -332,7 +335,7 @@ export class Game {
     this.input.enabled = false;
     this.input.release();
     this.garage.open({ shop: place.name, type: you.vt, color: this.store.all.get(vid)?.data[6] ?? 0, price: SERVICES[place.spec].price ?? 500,
-      cash: you.cash, wanted: you.wl > 0, buy: (id) => this.conn.send({ t: 'buy', kind: 'respray', id, place: place.id }),
+      cash: you.cash + you.bank, wanted: you.wl > 0, buy: (id) => this.conn.send({ t: 'buy', kind: 'respray', id, place: place.id }),
       paintNow: () => this.store.all.get(vid)?.data[6] ?? -1, close: () => { this.view.hiddenVehicle = 0; this.input.enabled = true; } });
   }
 

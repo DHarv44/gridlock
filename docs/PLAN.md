@@ -19,12 +19,13 @@ doesn't distract.
 
 ## B. Money you can keep (medium)
 Carried cash is at risk (15% dropped on death, 20% fine when busted); banked money isn't.
-- B1. A bank balance on the character (sent and saved like cash, checked by the server).
-- B2. ATMs on street corners: deposit / withdraw in a slide-in pane.
-- B3. Banks (a service place in commercial districts and downtown): same, plus business income lands
-  there.
-- B4. Paying: shops, dealers and property take carried cash first, then the bank for the rest.
-Done when: money survives death in the bank and purchases draw on it.
+- B1. (done) A bank balance on the character (sent and saved like cash, checked by the server).
+- B2. (done) ATMs on the walls of banks and of businesses flagged `atm` in the packs (shared/world/atms.ts,
+  21 in the city): deposit / withdraw in the slide-in pane.
+- B3. (done) Banks (Harbor Trust, 3, downtown / midtown / commercial): the same at the counter;
+  business income is paid into the bank.
+- B4. (done) Paying: shops, dealers and property take carried cash first, then the bank for the rest.
+Done when: money survives death in the bank and purchases draw on it. `npx tsx scripts/bank.ts`.
 
 ## C. Cell phone (medium)
 - C1. A phone that slides up in your character's hand, styled like the game (not a web pop-up):

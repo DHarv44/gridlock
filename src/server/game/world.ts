@@ -35,6 +35,8 @@ export class World {
   onFelony: (pl: Player) => void = () => {};
   /** Adds money to a player (counts toward money-race rounds). */
   earn: (pl: Player, amount: number) => void = (pl, amount) => { pl.cash += amount; };
+  /** Adds money straight to a player's bank (business income); counts toward money races too. */
+  earnToBank: (pl: Player, amount: number) => void = (pl, amount) => { pl.bank += amount; };
   private nextId = 1;
 
   constructor(readonly seed: number) {

@@ -8,9 +8,22 @@ export type Buy = (kind: BuyKind, id: string, place: number) => void;
 
 const $ = (n: number) => `$${n.toLocaleString('en-US')}`;
 
+/** An ATM or a bank's counter: your balance, deposit, withdraw. */
+function bankContent(place: Place, you: YouState, buy: Buy): PaneContent {
+  const rows: PaneRow[] = [
+    { name: 'Deposit all cash', sub: 'Banked money is safe if you die or get busted', price: $(you.cash), disabled: you.cash <= 0, group: 'Deposit', onClick: () => buy('deposit', 'all', place.id) },
+  ];
+  for (const n of [100, 500, 1000, 5000]) {
+    rows.push({ name: `Withdraw ${$(n)}`, disabled: you.bank < n, group: 'Withdraw', onClick: () => buy('withdraw', String(n), place.id) });
+  }
+  rows.push({ name: 'Withdraw everything', price: $(you.bank), disabled: you.bank <= 0, group: 'Withdraw', onClick: () => buy('withdraw', 'all', place.id) });
+  return { title: place.name, subtitle: `Cash ${$(you.cash)} · Bank ${$(you.bank)}`, rows };
+}
+
 export function serviceContent(place: Place, you: YouState, buy: Buy): PaneContent {
+  if (place.verb === 'atm' || place.verb === 'bank') return bankContent(place, you, buy);
   const spec = SERVICES[place.spec];
-  const cash = you.cash;
+  const cash = you.cash + you.bank; // shops take cash first, then the bank
   const rows: PaneRow[] = [];
   const driving = you.mode === Mode.Driver;
   switch (spec.verb) {
@@ -60,7 +73,7 @@ export function propertyContent(place: Place, you: YouState, profile: Profile, o
     ? `Home · garage for ${spec.garage} · respawn point`
     : `Business · earns ${$(spec.income)} every game hour`;
   if (!owner) {
-    rows.push({ name: `Buy ${spec.name}`, sub: info, price: $(spec.price), affordable: you.cash >= spec.price, onClick: () => buy('property', '', place.id) });
+    rows.push({ name: `Buy ${spec.name}`, sub: info, price: $(spec.price), affordable: you.cash + you.bank >= spec.price, onClick: () => buy('property', '', place.id) });
   } else if (!mine) {
     rows.push({ name: `Owned by ${owner}`, sub: info, disabled: true });
   } else {

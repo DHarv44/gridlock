@@ -26,7 +26,7 @@ export function createCharacter(rawName: string, look: unknown): CharacterSave |
   if (list.some((c) => c.name.toLowerCase() === name.toLowerCase())) return 'You already have a character with that name.';
   const now = Date.now();
   const id = [...crypto.getRandomValues(new Uint8Array(8))].map((b) => b.toString(16).padStart(2, '0')).join('');
-  const c: CharacterSave = { id, name, look: cleanLook(look), created: now, lastPlayed: now, cash: RULES.startCash, garage: [], felonies: {}, deaths: 0, respect: {} };
+  const c: CharacterSave = { id, name, look: cleanLook(look), created: now, lastPlayed: now, cash: RULES.startCash, bank: 0, garage: [], felonies: {}, deaths: 0, respect: {} };
   store([c, ...list]);
   return c;
 }
@@ -40,7 +40,7 @@ export function saveProgress(id: string, p: CharacterProgress): void {
   const list = loadCharacters();
   const c = list.find((x) => x.id === id);
   if (!c) return; // deleted meanwhile
-  Object.assign(c, { cash: p.cash, garage: p.garage, felonies: p.felonies, deaths: p.deaths, respect: p.respect, lastPlayed: Date.now() });
+  Object.assign(c, { cash: p.cash, bank: p.bank, garage: p.garage, felonies: p.felonies, deaths: p.deaths, respect: p.respect, lastPlayed: Date.now() });
   // No spot while dead or busted: keep the last good one.
   if (p.last) c.last = p.last;
   store(list);

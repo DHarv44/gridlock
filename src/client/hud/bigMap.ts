@@ -4,6 +4,7 @@
 import { DISTRICTS, FACTIONS, PROPERTIES, SERVICES } from '../../shared/packs';
 import type { PlayerInfo } from '../../shared/protocol';
 import type { CityMap } from '../../shared/world/city';
+import { type Atm, atmsOf } from '../../shared/world/atms';
 import { MAP_SIZE } from '../../shared/world/cityTypes';
 import type { Blip } from '../game/jobs';
 import type { Pt } from '../game/route';
@@ -32,6 +33,7 @@ export class BigMap {
   private cy = MAP_SIZE / 2;
   private zoom = 0.9;
   private hidden: Set<string>;
+  private atms: Atm[];
   private pins: Pin[] = [];
   private mouse: { x: number; y: number } | null = null;
   private drag: { x: number; y: number; moved: boolean } | null = null;
@@ -41,7 +43,8 @@ export class BigMap {
 
   constructor(private root: HTMLElement, private canvas: HTMLCanvasElement, private map: CityMap) {
     this.baked = bakeCityMap(map, 1);
-    this.hidden = new MapLegend(root, map).hidden;
+    this.atms = atmsOf(map.city);
+    this.hidden = new MapLegend(root, map, this.atms.length).hidden;
     canvas.addEventListener('mousedown', (e) => { if (e.button === 0) this.drag = { x: e.offsetX, y: e.offsetY, moved: false }; });
     canvas.addEventListener('mousemove', (e) => {
       this.padMode = false;
@@ -134,6 +137,14 @@ export class BigMap {
       const [px, py] = this.toScreen(s.x, s.y);
       pin(ctx, px, py, icon.color, icon.glyph);
       this.pins.push({ x: px, y: py, label: s.name });
+    }
+    if (!this.hidden.has('atm')) {
+      const icon = PLACE_ICON.atm;
+      for (const a of this.atms) {
+        const [px, py] = this.toScreen(a.x, a.y);
+        pin(ctx, px, py, icon.color, icon.glyph, 6.5);
+        this.pins.push({ x: px, y: py, label: 'ATM' });
+      }
     }
     for (const b of f.blips) {
       const [px, py] = this.toScreen(b.x, b.y);

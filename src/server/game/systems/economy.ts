@@ -2,7 +2,9 @@
 import { dist } from '../../../shared/math';
 import { PALETTE, PROPERTIES, RULES, SERVICES, VEHICLES, WEAPONS, paletteFor, vehicleIndex, weaponIndex } from '../../../shared/packs';
 import { type BuyKind, Mode, PK } from '../../../shared/protocol';
+import { type Atm, atmsOf } from '../../../shared/world/atms';
 import type { Place } from '../../../shared/world/cityTypes';
+import { bankMove } from './banking';
 import type { Player } from '../entities';
 import { giveWeapon, removeVehicle, spawnVehicle, unseatPed } from '../factory';
 import type { World } from '../world';
@@ -14,7 +16,12 @@ export class Economy {
   private lastHour = -1;
   onChange: () => void = () => {};
 
-  constructor(private w: World) {}
+  /** Every ATM in the city (shared/world/atms.ts: the clients work out the same list). */
+  readonly atms: Atm[];
+
+  constructor(private w: World) {
+    this.atms = atmsOf(w.city);
+  }
 
   /** Player id -> service place the player's car is currently sitting on (-1 none). */
   private onPad = new Map<number, number>();
@@ -91,9 +98,10 @@ export class Economy {
       if (!pl || spec.income <= 0) continue;
       totals.set(pl, (totals.get(pl) ?? 0) + spec.income);
     }
+    // Business income is paid into the bank, where it's safe.
     for (const [pl, amount] of totals) {
-      w.earn(pl, amount);
-      w.notify('money', `+$${amount} business income`, pl);
+      w.earnToBank(pl, amount);
+      w.notify('money', `+$${amount} business income, paid into your bank`, pl);
     }
   }
 
@@ -103,6 +111,7 @@ export class Economy {
 
   /** Validates and performs a purchase. Returns an error message or null. */
   buy(pl: Player, kind: BuyKind, id: string, placeId: number): string | null {
+    if (kind === 'deposit' || kind === 'withdraw') return bankMove(this.w, this.atms, pl, kind, id, placeId);
     const w = this.w;
     const p = w.peds.get(pl.pid);
     if (!p || p.dead || pl.mode >= Mode.Dead) return 'Not now.';
@@ -112,9 +121,12 @@ export class Economy {
     const pos = w.pedPos(p);
     const reach = Math.min(dist(pos.x, pos.y, place.x, place.y), place.pad ? dist(pos.x, pos.y, place.pad.x, place.pad.y) : Infinity);
     if (reach > 12) return 'Too far away.';
+    // Carried cash first; the bank covers the rest.
     const pay = (price: number) => {
-      if (pl.cash < price) return false;
-      pl.cash -= price;
+      if (pl.cash + pl.bank < price) return false;
+      const fromCash = Math.min(pl.cash, price);
+      pl.cash -= fromCash;
+      pl.bank -= price - fromCash;
       return true;
     };
 
@@ -126,26 +138,26 @@ export class Economy {
         const owned = p.weapons.some((h) => h.w === wi);
         if (kind === 'ammo' && !owned) return 'Buy the weapon first.';
         const price = kind === 'weapon' && !owned ? ws.price : ws.ammoPrice;
-        if (!pay(price)) return 'Not enough cash.';
+        if (!pay(price)) return 'Not enough money.';
         const slot = giveWeapon(p, wi, ws.clip === 0 ? 0 : ws.ammoBundle);
         if (kind === 'weapon') p.wi = slot;
         return null;
       }
       case 'armor':
         if (SERVICES[place.spec].verb !== 'gunshop') return 'Not sold here.';
-        if (!pay(RULES.armorPrice)) return 'Not enough cash.';
+        if (!pay(RULES.armorPrice)) return 'Not enough money.';
         p.armor = 100;
         return null;
       case 'heal':
         if (SERVICES[place.spec].verb !== 'hospital') return 'No doctors here.';
-        if (!pay(RULES.healPrice)) return 'Not enough cash.';
+        if (!pay(RULES.healPrice)) return 'Not enough money.';
         p.hp = p.spec.hp;
         return null;
       case 'vehicle': {
         const spec = SERVICES[place.spec];
         if (spec.verb !== 'dealer' || !spec.stock?.includes(id)) return 'Not sold here.';
         const vi = vehicleIndex(id);
-        if (!pay(VEHICLES[vi].price)) return 'Not enough cash.';
+        if (!pay(VEHICLES[vi].price)) return 'Not enough money.';
         pl.garage.push(vi);
         this.deliver(pl, vi, place);
         this.onChange();
@@ -161,7 +173,7 @@ export class Economy {
       case 'property': {
         if (this.owners.has(place.id)) return 'Already owned.';
         const spec = PROPERTIES[place.spec];
-        if (!pay(spec.price)) return 'Not enough cash.';
+        if (!pay(spec.price)) return 'Not enough money.';
         this.owners.set(place.id, pl.name.toLowerCase());
         pl.owned.push(place.id);
         w.notify('info', `${pl.name} bought ${place.name}`);
@@ -177,7 +189,7 @@ export class Economy {
         const chosen = id === '' ? -1 : Number(id);
         if (id !== '' && !(Number.isInteger(chosen) && chosen >= 0 && chosen < PALETTE.length)) return 'No such colour.';
         const price = spec.price ?? 500;
-        if (!pay(price)) return 'Not enough cash.';
+        if (!pay(price)) return 'Not enough money.';
         const pal = paletteFor(v.spec.colors);
         v.color = chosen >= 0 ? chosen : pal[(pal.indexOf(v.color) + 1 + Math.floor(w.rng.next() * (pal.length - 1))) % pal.length];
         v.hp = v.spec.hp;

@@ -217,7 +217,7 @@ export interface DistrictSpec {
 }
 
 export type ServiceVerb = 'gunshop' | 'dealer' | 'respray' | 'chopshop' | 'hospital' | 'police'
-  | 'fire' | 'military' | 'helipad';
+  | 'fire' | 'military' | 'helipad' | 'bank';
 
 export interface ServiceSpec {
   id: string;
@@ -231,6 +231,7 @@ export interface ServiceSpec {
   spawns?: { vehicle: string; count: number }[];
   guards?: { archetype: string; count: number }[];
   price?: number;               // respray cost
+  atm?: boolean;                // an ATM on the wall beside the door
 }
 
 export interface PropertySpec {
@@ -244,6 +245,7 @@ export interface PropertySpec {
   garage: number;               // cars stored (homes)
   signText?: string;            // storefront sign (businesses)
   signColor?: string;
+  atm?: boolean;                // an ATM on the wall beside the door
 }
 
 export interface Squad { vehicle: string; crew: string[] }

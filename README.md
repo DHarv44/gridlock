@@ -51,6 +51,10 @@ own character's last spot, in that vehicle.
   turf-war rampages. Pay plus respect with the gang (and less with its rivals).
 - **Respect**: three meters under your wanted stars. Kill a gang's members and it drops; sink low
   enough and that gang jumps you on sight and stops offering work.
+- **Banks and ATMs**: dying drops some of the cash you carry and getting busted costs a fine, but
+  money in the bank is safe. Bank it at an ATM (on the walls of banks, corner stores, diners, clubs
+  and car washes) or a bank's counter. Shops take your cash first, then the bank for the rest.
+  Business income is paid into the bank.
 - **Kill-frenzy crates**: red-and-black crates in parks and lots. Grab one for a weapon and a timer.
 - **Room modes** (picked when creating a game): Free roam, Frag race (first to 10 player kills),
   Money race (first to earn $50,000). The winner is announced and a new round starts.
