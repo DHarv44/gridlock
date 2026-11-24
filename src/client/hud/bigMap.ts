@@ -23,7 +23,11 @@ export interface MapFrame {
   owned: Set<number>; owners: Map<number, string>;
   blips: Blip[];
   waypoint: Pt | null; route: Pt[];
+  /** Road route to the job objective (drawn in the objective's yellow). */
+  jobRoute: Pt[];
 }
+
+const JOB_COLOR = '#ffd21f';
 
 interface Pin { x: number; y: number; label: string }
 
@@ -176,12 +180,13 @@ export class BigMap {
   }
 
   private route(ctx: CanvasRenderingContext2D, f: MapFrame): void {
-    if (f.route.length > 1) {
+    for (const [r, color] of [[f.jobRoute, JOB_COLOR], [f.route, WAYPOINT_COLOR]] as const) {
+      if (r.length < 2) continue;
       ctx.beginPath();
-      f.route.forEach((p, i) => { const [x, y] = this.toScreen(p.x, p.y); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
+      r.forEach((p, i) => { const [x, y] = this.toScreen(p.x, p.y); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
       ctx.lineJoin = 'round'; ctx.lineCap = 'round';
       ctx.setLineDash([]); ctx.lineWidth = 7; ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.stroke();
-      ctx.setLineDash([12, 8]); ctx.lineWidth = 3.5; ctx.strokeStyle = WAYPOINT_COLOR; ctx.stroke();
+      ctx.setLineDash([12, 8]); ctx.lineWidth = 3.5; ctx.strokeStyle = color; ctx.stroke();
       ctx.setLineDash([]);
     }
     if (f.waypoint) { const [x, y] = this.toScreen(f.waypoint.x, f.waypoint.y); waypointPin(ctx, x, y, 1.3); }

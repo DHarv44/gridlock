@@ -39,3 +39,23 @@ export class Waypoint {
     this.route = this.router.route(from, this.point);
   }
 }
+
+/** The road route to the current job objective (which may move: a mark driving off), re-planned as
+ *  you both move. It goes when the job does, not on arrival. */
+export class JobRoute {
+  route: Pt[] = [];
+  private router: Router;
+  private t = 0;
+
+  constructor(city: City) {
+    this.router = new Router(city);
+  }
+
+  update(target: Pt | null, from: Pt): void {
+    if (!target) { this.route = []; return; }
+    const now = performance.now() / 1000;
+    if (this.route.length && now - this.t < REPLAN_S) { this.route[0] = from; return; }
+    this.t = now;
+    this.route = this.router.route(from, target);
+  }
+}

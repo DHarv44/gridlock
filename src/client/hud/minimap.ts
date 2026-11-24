@@ -10,6 +10,7 @@ import { phoneBlip } from './phoneIcon';
 
 const SCALE = 0.5; // px per metre in the baked image
 const WAYPOINT_COLOR = '#ff4fd8';
+const JOB_COLOR = '#ffd21f';
 
 export const PLACE_ICON: Record<string, { color: string; label: string; glyph: string }> = {
   gunshop: { color: '#ff4a3d', label: 'Guns', glyph: 'G' },
@@ -35,7 +36,7 @@ export class Minimap {
 
   /** Draws the radar centred on (x, y) with `range` metres to the edge. */
   drawRadar(ctx: CanvasRenderingContext2D, size: number, x: number, y: number, angle: number, range: number, players: PlayerInfo[], meId: number,
-    owned: Set<number>, hostiles: { x: number; y: number }[], blips: Blip[] = [], waypoint: Pt | null = null, route: Pt[] = []): void {
+    owned: Set<number>, hostiles: { x: number; y: number }[], blips: Blip[] = [], waypoint: Pt | null = null, route: Pt[] = [], jobRoute: Pt[] = []): void {
     const k = size / 2 / range;
     ctx.save();
     ctx.clearRect(0, 0, size, size);
@@ -52,12 +53,14 @@ export class Minimap {
       const dx = px - size / 2, dy = py - size / 2, d = Math.hypot(dx, dy), m = size / 2 - 9;
       return d > m ? [size / 2 + (dx / d) * m, size / 2 + (dy / d) * m] as const : [px, py] as const;
     };
-    if (route.length > 1) {
+    // Road routes: the job's in the objective's yellow, your own waypoint's in pink.
+    for (const [r, color] of [[jobRoute, JOB_COLOR], [route, WAYPOINT_COLOR]] as const) {
+      if (r.length < 2) continue;
       ctx.beginPath();
-      route.forEach((p, i) => { const [px, py] = to(p.x, p.y); if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py); });
+      r.forEach((p, i) => { const [px, py] = to(p.x, p.y); if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py); });
       ctx.lineJoin = 'round'; ctx.lineCap = 'round';
       ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.stroke();
-      ctx.setLineDash([7, 5]); ctx.lineWidth = 2.5; ctx.strokeStyle = WAYPOINT_COLOR; ctx.stroke();
+      ctx.setLineDash([7, 5]); ctx.lineWidth = 2.5; ctx.strokeStyle = color; ctx.stroke();
       ctx.setLineDash([]);
     }
     for (const s of this.map.city.services) {

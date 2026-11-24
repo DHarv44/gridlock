@@ -82,12 +82,11 @@ export class Jobs {
   /** The phones ringing for you now. */
   ringingBooths(): Booth[] { return this.booths.filter((b) => this.ringing.has(b.id)); }
 
-  update(dt: number, you: YouState | null, me: { x: number; y: number } | null, glow: ParticleLayer, night: number,
-    view: { x0: number; y0: number; x1: number; y1: number }, serverNow: number, mine: PlayerInfo | undefined, sound: Sound): void {
+  update(dt: number, you: YouState | null, me: { x: number; y: number } | null, glow: ParticleLayer, night: number, serverNow: number, mine: PlayerInfo | undefined, sound: Sound): void {
     if ((this.pickT -= dt) <= 0 || (this.onJob && this.ringing.size)) { this.pick(you, me); this.pickT = 12; }
     this.boothView.update(dt, (b) => this.ringing.has(b.id), glow, night);
     if (this.boothView.newRing) for (const b of this.ringingBooths()) sound.play('phone_ring', b.x, b.y);
-    this.marker.update(dt, you?.mt ?? null, me, glow, view);
+    this.marker.update(dt, you?.mt ?? null, glow);
     if (you) this.hud.update(serverNow, you.rs, mine, this.players);
   }
 

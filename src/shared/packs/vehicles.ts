@@ -40,11 +40,12 @@ export const VEHICLES: VehicleSpec[] = [
   { ...car, horn: 'horn_icecream', engine: 'engine_diesel', id: 'icecream', name: 'Ice Cream Van', length: 5.4, width: 2.1, height: 2.5, mass: 2600, maxSpeed: 26, accel: 6, hp: 500, price: 15000, colors: [0], roles: ['traffic'], shape: S.boxy, model: [...M.van(), ...M.stripe('#ff8fc8', 0.6, 0.75), ...M.roofSign('#ff8fc8')] },
   { ...heavy, horn: 'horn_bus', id: 'bus', name: 'City Bus', length: 11.5, width: 2.6, height: 3.2, mass: 11000, maxSpeed: 22, seats: 8, hp: 900, price: 60000, colors: [7, 0, 5], roles: ['traffic'], model: M.bus() },
   { ...heavy, id: 'boxtruck', name: 'Box Truck', price: 30000, colors: [0, 5, 7, 3], roles: ['traffic', 'parked'], model: M.boxTruck() },
-  // A tractor turns like a truck: pivots on its rear axle, 11 m turning circle at a crawl, and
-  // no more cornering force than a loaded rig can take; the fifth wheel sits just ahead of the
-  // rear axle so the trailer follows inside the turn.
+  // A tractor turns like a truck: pivots on its rear axle, a 6.5 m turning radius at a crawl and
+  // a cap on cornering force, so it takes a street corner up to ~45 km/h but not at speed
+  // (scripts/semi.ts); the fifth wheel sits just ahead of the rear axle so the trailer follows
+  // inside the turn.
   { ...heavy, id: 'semi', name: 'Hauler Rig', length: 6.6, width: 2.5, height: 3.2, maxSpeed: 26, mass: 9000, turnRate: 1.9, hp: 1000, price: 85000, colors: [5, 7, 1, 0, 12], roles: ['traffic', 'parked'], model: M.semiTractor(),
-    rearAxle: 2.1, minTurnRadius: 11, maxLateral: 3.5,
+    rearAxle: 2.1, minTurnRadius: 6.5, maxLateral: 9,
     trailer: { length: 11, width: 2.55, height: 3.6, model: M.boxTrailer(), hitch: 1.85 } },
   { ...heavy, id: 'garbage', name: 'Garbage Truck', length: 8.5, mass: 9000, maxSpeed: 20, price: 35000, colors: [18, 9, 0], roles: ['traffic'], model: M.garbage() },
   { ...car, horn: 'horn_small', engine: 'engine_bike', id: 'streetbike', name: 'Streetbike', movement: 'bike', length: 2.1, width: 0.8, height: 1.2, mass: 220, maxSpeed: 46, accel: 15, brake: 22, grip: 10, turnRate: 3.2, hp: 150, seats: 2, openTop: true, price: 14000, colors: 'bright', roles: ['traffic', 'parked'], shape: undefined, model: M.bike(),

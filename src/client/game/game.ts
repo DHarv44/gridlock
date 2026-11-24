@@ -21,7 +21,7 @@ import type { Place } from '../../shared/world/cityTypes';
 import { BigMap } from '../hud/bigMap';
 import { saveProgress } from '../lobby/characterStore';
 import { Minimap } from '../hud/minimap';
-import { Waypoint } from './waypoint';
+import { JobRoute, Waypoint } from './waypoint';
 import { Pane } from '../hud/pane';
 import type { Connection } from '../net/connection';
 import { EntityStore } from '../net/entities';
@@ -87,6 +87,7 @@ export class Game {
   private running = true;
   private bigMap: BigMap;
   private waypoint: Waypoint;
+  private jobRoute: JobRoute;
   private chatting = false;
 
   constructor(private conn: Connection, private myId: number, private myName: string, private code: string, seed: number, private onLeave: () => void) {
@@ -124,6 +125,7 @@ export class Game {
     };
     this.bigMap = new BigMap(this.hud.bigmap, this.hud.bigmapCanvas, this.map);
     this.waypoint = new Waypoint(city);
+    this.jobRoute = new JobRoute(city);
     this.bigMap.onWaypoint = (p) => { const o = this.ownState(1); this.waypoint.set(p, o); };
     this.waypoint.onArrive = () => this.hud.notify('Waypoint reached', 'info');
     // Browsers only reveal a controller after one of its buttons is pressed: say when one is seen.
@@ -310,7 +312,7 @@ export class Game {
     this.view.sync(this.store, dt, own, this.tags(), night, vr);
     this.fx.update(dt);
     this.water.update(dt);
-    this.jobs.update(dt, this.you, disp, this.fx.glow, night, vr, this.store.serverNow(), this.players.find((p) => p.id === this.myId), this.sound);
+    this.jobs.update(dt, this.you, disp, this.fx.glow, night, this.store.serverNow(), this.players.find((p) => p.id === this.myId), this.sound);
     nearestSiren(this.store, disp, this.sound);
     ownEngine(this.store, this.you && this.you.mode !== Mode.Dead ? own : null, this.sound, dt);
     trafficEngines(this.store, disp, this.sound, dt);
@@ -358,6 +360,8 @@ export class Game {
     const owned = new Set(this.profile.owned);
     const wp = this.waypoint;
     wp.update(disp);
+    const job = this.jobRoute;
+    job.update(you.mt ? { x: you.mt[0], y: you.mt[1] } : null, disp);
     // Job blips, a red marker on any of your businesses a gang is leaning on, and (tag) whoever's it.
     const blips = [...this.jobs.blips(you), ...(this.profile.trouble ?? []).map(([id]) => {
       const p = this.map.city.properties[id];
@@ -365,10 +369,10 @@ export class Game {
     })];
     const it = this.itSpot();
     if (it && this.jobs.it !== this.myId) blips.push({ x: it.x, y: it.y, color: '#ff2a2a', shape: 'star' });
-    this.radar.drawRadar(ctx, 220, disp.x, disp.y, own.angle, range, this.players, this.myId, owned, hostiles, blips, wp.point, wp.route);
+    this.radar.drawRadar(ctx, 220, disp.x, disp.y, own.angle, range, this.players, this.myId, owned, hostiles, blips, wp.point, wp.route, job.route);
     if (this.bigMap.isOpen) {
       this.bigMap.draw({ me: { x: disp.x, y: disp.y, angle: own.angle }, players: this.players, meId: this.myId, owned, owners: this.owners,
-        blips, waypoint: wp.point, route: wp.route });
+        blips, waypoint: wp.point, route: wp.route, jobRoute: job.route });
     }
   }
 
