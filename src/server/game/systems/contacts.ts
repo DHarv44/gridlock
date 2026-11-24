@@ -95,8 +95,9 @@ function vehicleHit(w: World, a: Vehicle, b: Vehicle, h: Hit): void {
   if (impact > 4) {
     const base = (impact - 4) * 11;
     const da = a.seats[0], db = b.seats[0];
-    damageVehicle(w, a, base * clamp(mb / ma, 0.15, 4) * (b.spec.crushes ? 4 : 1), db);
-    damageVehicle(w, b, base * clamp(ma / mb, 0.15, 4) * (a.spec.crushes ? 4 : 1), da);
+    // Each takes the dent on the side facing the other (the normal points from b towards a).
+    damageVehicle(w, a, base * clamp(mb / ma, 0.15, 4) * (b.spec.crushes ? 4 : 1), db, { x: a.body.x - h.nx * 50, y: a.body.y - h.ny * 50 });
+    damageVehicle(w, b, base * clamp(ma / mb, 0.15, 4) * (a.spec.crushes ? 4 : 1), da, { x: b.body.x + h.nx * 50, y: b.body.y + h.ny * 50 });
     if (impact > 8) w.emit(FX.Spark, Math.round((a.body.x + b.body.x) / 2), Math.round((a.body.y + b.body.y) / 2));
     for (const v of [a, b]) {
       for (const sid of v.seats) {

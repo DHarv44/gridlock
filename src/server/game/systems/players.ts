@@ -3,6 +3,7 @@ import { dist } from '../../../shared/math';
 import { PLAYER_ARCHETYPE, RULES, UNARMED, WEAPONS, weaponIndex } from '../../../shared/packs';
 import { BTN, EDGE_BUTTONS, type InputMsg, Mode } from '../../../shared/protocol';
 import { SPRINT, stepVehicle } from '../../../shared/sim/physics';
+import { wallCrash } from '../combat/damage';
 import { onAttacked } from '../ai/reactions';
 import { tickWeapon, tryFire } from '../combat/fire';
 import type { Ped, Player, Vehicle } from '../entities';
@@ -61,7 +62,8 @@ function applyInput(w: World, pl: Player, p: Ped, inp: InputMsg, dt: number): vo
       v.ctl.handbrake = (btn & BTN.handbrake) !== 0;
       v.ctl.up = (btn & BTN.up) !== 0; v.ctl.down = (btn & BTN.down) !== 0;
       if (btn & BTN.horn) { if (v.spec.siren) v.siren = !v.siren; else v.horn = true; }
-      stepVehicle(v.body, v.spec, v.ctl, dt, w.statics, true, (x, y) => w.map.onRoad(x, y));
+      const vx = v.body.vx, vy = v.body.vy;
+      wallCrash(w, v, stepVehicle(v.body, v.spec, v.ctl, dt, w.statics, true, (x, y) => w.map.onRoad(x, y)), vx, vy);
       if (v.spec.turret) v.turret = turnTurret(v.turret, aim, dt, v.spec.turret);
       p.body.x = v.body.x; p.body.y = v.body.y;
     }

@@ -78,9 +78,29 @@ export function dropPickup(w: World, type: number, x: number, y: number, value: 
   w.pickups.set(id, { id, kind: 'pickup', type, x, y, value, weapon, life: 90 });
 }
 
-export function damageVehicle(w: World, v: Vehicle, amount: number, attackerId: number): void {
+/** Which side of the vehicle faces a point: 0 front, 1 rear, 2 left, 3 right. */
+export function sideFacing(v: Vehicle, x: number, y: number): number {
+  const c = Math.cos(v.body.angle), s = Math.sin(v.body.angle);
+  const lx = (x - v.body.x) * c + (y - v.body.y) * s, ly = -(x - v.body.x) * s + (y - v.body.y) * c;
+  // Measured against the body's shape, so a hit near a corner of a long truck still reads as a side.
+  if (Math.abs(lx) / (v.spec.length / 2) >= Math.abs(ly) / (v.spec.width / 2)) return lx >= 0 ? 0 : 1;
+  return ly < 0 ? 2 : 3;
+}
+
+/** Damage per side as levels 0-3 (scuffed, dented, smashed), from the share of the vehicle's
+ *  hit points that side has taken. */
+const DENT_LEVELS = [0.06, 0.18, 0.35];
+export function damageLevels(v: Vehicle): number[] {
+  return v.dents.map((d) => DENT_LEVELS.filter((t) => d >= t * v.spec.hp).length);
+}
+
+/** `from`: where the hit came from (the shooter, the blast, the other car): that side of the body
+ *  takes the dent. Without it (fire, flames) the damage is spread round. */
+export function damageVehicle(w: World, v: Vehicle, amount: number, attackerId: number, from?: { x: number; y: number }): void {
   if (v.wrecked || amount <= 0) return;
   v.hp -= amount;
+  if (from) v.dents[sideFacing(v, from.x, from.y)] += amount;
+  else for (let i = 0; i < 4; i++) v.dents[i] += amount / 4;
   const attacker = w.peds.get(attackerId);
   if (attacker) {
     for (const sid of v.seats) {
@@ -94,6 +114,16 @@ export function damageVehicle(w: World, v: Vehicle, amount: number, attackerId: 
     if (attacker?.player) v.stolenBy = attacker.player.id; // remembered for kill credit
   }
 }
+
+/** Running into a wall: `impact` is the speed into it (from stepVehicle), (vx, vy) the velocity
+ *  just before, so the side you were heading with takes the dent. Gentle bumps do nothing. */
+export function wallCrash(w: World, v: Vehicle, impact: number, vx: number, vy: number): void {
+  if (impact <= WALL_SAFE) return;
+  const sp = Math.hypot(vx, vy) || 1;
+  damageVehicle(w, v, (impact - WALL_SAFE) * 10, 0, { x: v.body.x + (vx / sp) * 50, y: v.body.y + (vy / sp) * 50 });
+  if (impact > 12) w.emit(FX.Spark, Math.round(v.body.x + (vx / sp) * v.spec.length / 2), Math.round(v.body.y + (vy / sp) * v.spec.length / 2));
+}
+const WALL_SAFE = 7;
 
 /** Turns a burning vehicle into a wreck with a blast. */
 export function wreckVehicle(w: World, v: Vehicle): void {
@@ -133,7 +163,7 @@ export function explode(w: World, x: number, y: number, radius: number, dmg: num
     v.body.vx += ((v.body.x - x) / (d || 1)) * push;
     v.body.vy += ((v.body.y - y) / (d || 1)) * push;
     v.body.av += (w.rng.next() - 0.5) * push * 0.3;
-    damageVehicle(w, v, dmg * 2.4 * k, attackerId);
+    damageVehicle(w, v, dmg * 2.4 * k, attackerId, { x, y });
   });
   if (w.rng.chance(0.35) && !w.map.isWater(x, y)) spawnFire(w, x, y, 2.5, 8, attackerId);
   onNoise(w, x, y, 70, attackerId, true);

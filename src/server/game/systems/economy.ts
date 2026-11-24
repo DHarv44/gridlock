@@ -187,6 +187,7 @@ export class Economy {
         const pal = paletteFor(v.spec.colors);
         v.color = chosen >= 0 ? chosen : pal[(pal.indexOf(v.color) + 1 + Math.floor(w.rng.next() * (pal.length - 1))) % pal.length];
         v.hp = v.spec.hp;
+        v.dents = [0, 0, 0, 0]; // the bodywork's knocked out too
         const wanted = pl.wanted > 0;
         clearHeat(pl);
         w.notify('money', `${wanted ? 'Resprayed. Heat is off' : 'Resprayed'} · -$${price}`, pl);

@@ -7,7 +7,8 @@ import { FLOOR_H, floorOf, groundOf } from '../../shared/world/levels';
 import { putCarLights } from './carLights';
 import type { Effects } from './effects';
 import { animatePed, HIP_H, makePed, type PedView, ridePed, setPedWeapon } from './pedMesh';
-import { lampMats, makeVehicle, sirenMats, type VehicleView } from './vehicleMesh';
+import { lampMaterial, makeVehicle, showDamage, sirenMats, type VehicleView } from './vehicleMesh';
+import { decodeDamage } from './vehicleDamage';
 
 export interface OwnState { pid: number; vid: number; x: number; y: number; angle: number; alt: number; driving: boolean; vx: number; vy: number; trailer?: number }
 export interface PlayerTag { name: string; color: string; look?: CharLook }
@@ -161,9 +162,12 @@ export class WorldView {
 
   private vehicle(e: ViewEntity, dt: number, own: OwnState | null, night: number): void {
     const d = e.data;
-    const type = d[2], color = d[6], flags = d[7], dmg = d[10];
+    const type = d[2], color = d[6], flags = d[7];
     const spec = VEHICLES[type];
     const wreck = !!(flags & VF.wreck);
+    const { overall: dmg, sides } = decodeDamage(d[10] ?? 0);
+    // A wreck has been through a fire and a blast: battered all round, whatever it was before.
+    const dents = wreck ? sides.map((l) => Math.max(l, 2)) : sides;
     const key = `${type}:${color}:${wreck}`;
     let v = this.vehs.get(e.id);
     if (!v || v.key !== key) {
@@ -177,6 +181,7 @@ export class WorldView {
     v.root.position.set(x, alt, y);
     v.root.rotation.y = -a;
     v.root.visible = e.id !== this.hiddenVehicle;
+    showDamage(v, spec, e.id, dents);
     if (v.turret) v.turret.rotation.y = -(e.turret - e.angle);
     // Trailer swing relative to the cab: your own rig's is predicted with the cab; others' come
     // from the server, interpolated.
@@ -197,9 +202,13 @@ export class WorldView {
       this.fx.glow.put(x, y, 0.1, 9 + night * 6, 1, 0, col[0], col[1], col[2], 0.18 + night * 0.25);
     }
     const lit = !!(flags & VF.lights) && !wreck;
-    for (const m of v.lamps) m.material = lit ? lampMats.on : lampMats.off;
-    putCarLights(this.fx.beams, this.fx.glow, spec, type, x, y, a, alt, trailerAngle, flags, night);
-    if ((flags & VF.smoke || dmg >= 2) && !wreck && Math.random() < dt * 8) this.fx.smoke(x + c * spec.length * 0.35, y + s * spec.length * 0.35, alt + spec.height, dmg >= 2 ? 0.6 : 0.2);
+    for (const m of v.lamps) m.material = lampMaterial(v, m, lit);
+    putCarLights(this.fx.beams, this.fx.glow, spec, type, x, y, a, alt, trailerAngle, flags, night, dents);
+    // Smoke from under the bonnet: a badly hurt vehicle, or a smashed front end (the engine's there).
+    const steam = dmg >= 2 || dents[0] >= 2;
+    if ((flags & VF.smoke || steam) && !wreck && Math.random() < dt * (dents[0] >= 3 ? 12 : 8)) {
+      this.fx.smoke(x + c * spec.length * 0.35, y + s * spec.length * 0.35, alt + spec.height * 0.8, dmg >= 2 || dents[0] >= 3 ? 0.6 : 0.3);
+    }
     if (flags & VF.burning) { this.fx.fire(x, y, spec.width); if (night > 0.1) this.fx.glow.put(x, y, 0.1, 10, 1, 0, 1, 0.5, 0.15, 0.35 * night); }
     if (wreck && Math.random() < dt * 3) this.fx.smoke(x, y, 1.5, 1);
     // Tyre marks when sliding.

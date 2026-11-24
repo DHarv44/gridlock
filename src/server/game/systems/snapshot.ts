@@ -2,6 +2,7 @@
 import { r2 } from '../../../shared/math';
 import { GANGS, RULES } from '../../../shared/packs';
 import { objectivePoint } from '../missions/kinds';
+import { damageLevels } from '../combat/damage';
 import { EK, FULL_SNAP_EVERY, FX, Mode, PF, type PlayerInfo, type S2C, VF, type YouState } from '../../../shared/protocol';
 import type { Ped, Player, Vehicle } from '../entities';
 import type { World } from '../world';
@@ -60,7 +61,9 @@ export function buildSnapshot(w: World, pl: Player): S2C {
   for (const v of w.vehicles.values()) {
     const air = v.spec.movement === 'rotor' && v.body.alt > 3;
     if (!near(v.body.x, v.body.y, air ? R2 * 1.7 : R2)) continue;
-    const dmg = v.wrecked ? 3 : v.hp < v.spec.hp * 0.35 ? 2 : v.hp < v.spec.hp * 0.7 ? 1 : 0;
+    // Overall state in the low 2 bits, then each side's dent level (front, rear, left, right), 2 bits each.
+    const overall = v.wrecked ? 3 : v.hp < v.spec.hp * 0.35 ? 2 : v.hp < v.spec.hp * 0.7 ? 1 : 0;
+    const dmg = damageLevels(v).reduce((acc, l, i) => acc | (l << (2 + i * 2)), overall);
     e.push([v.id, EK.Veh, v.type, r2(v.body.x), r2(v.body.y), a2(v.body.angle), v.color, vehFlags(w, v), a2(v.body.alt), a2(v.turret), dmg, v.spec.trailer ? a2(v.trailer) : 0]);
     // Riders sit in plain sight (bikes, open-top cars): sent as peds carrying the vehicle and the seat they're on.
     const saddles = v.spec.saddles;

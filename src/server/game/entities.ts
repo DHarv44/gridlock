@@ -98,6 +98,9 @@ export interface Vehicle {
   fireCalled: boolean;
   horn: boolean;
   trailer: number;          // articulated trailer heading (semis), else = body angle
+  /** Damage taken on each side (front, rear, left, right), in hit points: what the model shows as
+   *  dents, broken lamps and glass (combat/damage.ts damageLevels). */
+  dents: number[];
 }
 
 export interface Projectile {

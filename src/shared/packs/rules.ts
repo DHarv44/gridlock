@@ -14,9 +14,9 @@ const gunship: Squad = { vehicle: 'gunship', crew: ['soldier'] };
 
 /** Wanted levels 1..5 (index 0 = level 1). */
 export const WANTED: WantedLevel[] = [
-  { heat: 10, lethal: false, squads: [{ squad: patrol, max: 2 }, { squad: motor, max: 1 }] },
-  { heat: 40, lethal: true, squads: [{ squad: patrol, max: 3 }, { squad: motor, max: 1 }, { squad: interceptor, max: 1 }] },
-  { heat: 100, lethal: true, squads: [{ squad: patrol, max: 2 }, { squad: interceptor, max: 2 }, { squad: swat, max: 1 }, { squad: air, max: 1 }] },
+  { heat: 10, lethal: false, squads: [{ squad: patrol, max: 3 }, { squad: motor, max: 1 }] },
+  { heat: 40, lethal: true, squads: [{ squad: patrol, max: 4 }, { squad: motor, max: 2 }, { squad: interceptor, max: 2 }] },
+  { heat: 100, lethal: true, squads: [{ squad: patrol, max: 3 }, { squad: interceptor, max: 2 }, { squad: swat, max: 2 }, { squad: air, max: 1 }] },
   { heat: 200, lethal: true, squads: [{ squad: interceptor, max: 2 }, { squad: swat, max: 2 }, { squad: feds, max: 2 }, { squad: air, max: 1 }] },
   { heat: 350, lethal: true, squads: [{ squad: feds, max: 2 }, { squad: army, max: 1 }, { squad: gunTruck, max: 2 }, { squad: mrap, max: 1 }, { squad: armor, max: 1 }, { squad: gunship, max: 1 }] },
 ];

@@ -146,7 +146,7 @@ function melee(w: World, p: Ped, spec: WeaponSpec, aim: number): void {
   w.vehiclesNear(p.body.x, p.body.y, spec.range + 3, (v) => {
     if (v.id === p.vehicle) return;
     const hit = rayVehicle(p.body.x, p.body.y, Math.cos(aim) * (spec.range + 0.5), Math.sin(aim) * (spec.range + 0.5), v);
-    if (hit !== null) damageVehicle(w, v, spec.damage * spec.vehicleMul, p.id);
+    if (hit !== null) damageVehicle(w, v, spec.damage * spec.vehicleMul, p.id, p.body);
   });
 }
 
@@ -182,7 +182,7 @@ function hitscan(w: World, p: Ped, x0: number, y0: number, z: number, angle: num
   } else if (hitVeh) {
     const v = hitVeh as Vehicle;
     hitType = HIT.metal;
-    damageVehicle(w, v, spec.damage * spec.vehicleMul, p.id);
+    damageVehicle(w, v, spec.damage * spec.vehicleMul, p.id, { x: x0, y: y0 });
     if (!v.spec.armored) {
       // Bullets through glass and open tops can reach occupants.
       for (const sid of v.seats) {

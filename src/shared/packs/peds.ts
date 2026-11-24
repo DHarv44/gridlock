@@ -27,7 +27,7 @@ export const FACTIONS: FactionSpec[] = [
 const base = { hp: 100, armor: 0, walkSpeed: 1.5, runSpeed: 5.2, courage: 0.1, accuracy: 0.4, loadout: [], cash: [5, 60] as [number, number] };
 
 export const PEDS: PedArchetype[] = [
-  { ...base, id: 'player', name: 'Player', behaviour: 'player', faction: 'player', runSpeed: 5.6, courage: 1, accuracy: 1, cash: [0, 0],
+  { ...base, id: 'player', name: 'Player', behaviour: 'player', faction: 'player', runSpeed: 6.5, courage: 1, accuracy: 1, cash: [0, 0],
     look: { skin: SKIN, top: ['#ffffff'], bottom: ['#2c3e57', '#3a3a3a'] } },
 
   { ...base, id: 'civilian', name: 'Civilian', behaviour: 'civilian', faction: 'civ',

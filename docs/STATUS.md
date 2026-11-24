@@ -65,6 +65,12 @@
   its road (player or AI driving it): eases to the kerb, stops, and moves off a few seconds after
   it's gone (ai/driving.ts sirenApproaching, cruise). AI emergency drivers pass yielding traffic on
   the left when it's clear. `npx tsx scripts/sirens.ts`.
+- Vehicle damage per side (2026-11-23): every hit dents the side it came from (shots: the shooter;
+  blasts; car-on-car; wall crashes, which now do damage above 7 m/s); levels 0-3 per side packed into
+  the snapshot (protocol 13). The model crumples that side in a vertex shader (render/vehicleDamage.ts:
+  deeper and further in per level, broken-up shading, scrape streaks and grime, glass going dark),
+  lamps on a smashed end go out (one at 2, both at 3), a smashed front smokes. Respray fixes it.
+  `npx tsx scripts/damage.ts`.
 - Riders on bikes and everyone in an open-top car (Army Jeep, Spyder) are drawn, seated in their
   seats (spec `saddles`, protocol 11); gun trucks (Humvee, MRAP) traverse a roof
   gun like the tank (spec `turret`). `npx tsx scripts/riders.ts`, `npx tsx scripts/turret.ts`.

@@ -6,6 +6,7 @@ import { PALETTE, type Paint, type Part, VEHICLES, type VehicleSpec } from '../.
 import { hitchOffset } from '../../shared/sim/physics';
 import { densify, shapeGeometry, widthAt } from './bodyShape';
 import { type Model, type ModelPart, vehicleModel } from './models';
+import { type Dents, makeDents, setDents } from './vehicleDamage';
 
 const NAMED: Record<string, string> = {
   glass: '#1b2632', dark: '#202326', chrome: '#c9ccd0', trim: '#2a2c30', headlight: '#fff6d8', taillight: '#c4161c',
@@ -203,6 +204,26 @@ export interface VehicleView {
   /** Pivot at the hitch; rotate it by (trailer angle - vehicle angle). */
   trailer: THREE.Group | null;
   key: string;
+  /** The cab's body / glass / lamp meshes, and their dent materials once it's taken damage. */
+  cab: { body: THREE.Mesh; shiny: THREE.Mesh | null; lamps: THREE.Mesh | null };
+  dents: Dents | null;
+}
+
+/** Shows the vehicle's dent levels (front, rear, left, right): the cab swaps to its own denting
+ *  materials the first time it's damaged; a clean one keeps the shared ones. */
+export function showDamage(v: VehicleView, spec: VehicleSpec, seed: number, sides: number[]): void {
+  if (!v.dents) {
+    if (!sides.some((s) => s > 0)) return;
+    v.dents = makeDents(spec, seed, { body: bodyMat, shiny: shinyMat, lampOn: lampMats.on, lampOff: lampMats.off });
+    v.cab.body.material = v.dents.body;
+    if (v.cab.shiny) v.cab.shiny.material = v.dents.shiny;
+  }
+  setDents(v.dents, sides);
+}
+
+/** The lamp material to use this frame (the dented one if the cab is damaged). */
+export function lampMaterial(v: VehicleView, m: THREE.Mesh, on: boolean): THREE.Material {
+  return v.dents && m === v.cab.lamps ? (on ? v.dents.lampOn : v.dents.lampOff) : on ? lampMats.on : lampMats.off;
 }
 
 export function makeVehicle(type: number, colorIdx: number, wrecked: boolean): VehicleView {
@@ -213,9 +234,11 @@ export function makeVehicle(type: number, colorIdx: number, wrecked: boolean): V
   body.castShadow = true;
   body.receiveShadow = true;
   root.add(body);
-  if (b.shiny) root.add(new THREE.Mesh(b.shiny, shinyMat));
-  const view: VehicleView = { root, turret: null, rotors: [], tailRotors: [], sirens: [], lamps: [], trailer: null, key: `${type}:${colorIdx}:${wrecked}` };
-  if (b.lights) { const m = new THREE.Mesh(b.lights, lampMats.off); view.lamps.push(m); root.add(m); }
+  const shiny = b.shiny ? new THREE.Mesh(b.shiny, shinyMat) : null;
+  if (shiny) root.add(shiny);
+  const view: VehicleView = { root, turret: null, rotors: [], tailRotors: [], sirens: [], lamps: [], trailer: null, key: `${type}:${colorIdx}:${wrecked}`,
+    cab: { body, shiny, lamps: null }, dents: null };
+  if (b.lights) { const m = new THREE.Mesh(b.lights, lampMats.off); view.lamps.push(m); view.cab.lamps = m; root.add(m); }
   if (b.trailer && spec.trailer) {
     const pivot = new THREE.Group();
     pivot.position.x = -hitchOffset(spec);

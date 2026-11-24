@@ -58,17 +58,25 @@ function lamps(type: number): Lamps {
 const BEAM_LEN = 15;
 const BEAM_W = 6.5;
 
+/** A smashed end loses its lamps: at level 2 the one on the more battered side, at 3 all of them. */
+function working(lampList: Lamp[], level: number, left: number, right: number): Lamp[] {
+  if (level >= 3) return [];
+  if (level < 2) return lampList;
+  return lampList.filter((p) => (left >= right ? p.y >= 0 : p.y <= 0));
+}
+
 /** Puts this frame's lights for one vehicle. `night` is 0 (day) to 1; `trailer` is the trailer's
- *  heading for rigs. Nothing is drawn unless the vehicle has its lights on. */
+ *  heading for rigs; `dents` the dent level of each side (front, rear, left, right). Nothing is
+ *  drawn unless the vehicle has its lights on. */
 export function putCarLights(beams: ParticleLayer, glow: ParticleLayer, spec: VehicleSpec, type: number,
-  x: number, y: number, a: number, alt: number, trailer: number, flags: number, night: number): void {
+  x: number, y: number, a: number, alt: number, trailer: number, flags: number, night: number, dents: number[]): void {
   if (!(flags & VF.lights) || flags & VF.wreck) return;
   // Lights come on at dusk, faint against the last of the daylight, full strength once it's dark.
   const k = 0.25 + 0.75 * night;
   const c = Math.cos(a), s = Math.sin(a);
   const l = lamps(type);
   const ground = alt < 0.5; // aircraft don't throw beams on the road
-  for (const h of l.head) {
+  for (const h of working(l.head, dents[0], dents[2], dents[3])) {
     const lx = x + c * h.x - s * h.y, ly = y + s * h.x + c * h.y;
     glow.put(lx, ly, alt + h.z + 0.05, 1.1, 1, 0, 1, 0.96, 0.85, 0.85 * k);
     if (!ground) continue;
@@ -79,7 +87,7 @@ export function putCarLights(beams: ParticleLayer, glow: ParticleLayer, spec: Ve
   }
   // Tail lights: on the cab, or on the back of a rig's trailer.
   const brake = !!(flags & VF.brake), reverse = !!(flags & VF.reverse);
-  let rear = l.tail, rx = x, ry = y, ra = a;
+  let rear = working(l.tail, dents[1], dents[2], dents[3]), rx = x, ry = y, ra = a;
   if (spec.trailer && l.trailerTail.length) {
     const hx = x - c * hitchOffset(spec), hy = y - s * hitchOffset(spec);
     rear = l.trailerTail; ra = trailer;
