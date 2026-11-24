@@ -4,7 +4,7 @@
 // on the other side and play in your character's voice, clean. One bubble at a time; a call that
 // comes in during another waits its turn.
 import * as THREE from 'three';
-import { CALLERS, CALLS, type CallSituation, DEFAULT_VOICE, FACTIONS, GANG_CALLERS, lineId, youLineId } from '../../shared/packs';
+import { CALLERS, CALLS, type CallSituation, DEFAULT_VOICE, FACTIONS, GANG_CALLERS, genderOf, lineId, youLineId } from '../../shared/packs';
 import type { S2C } from '../../shared/protocol';
 import type { Line } from '../audio/phoneVoice';
 import type { Sound } from '../audio/sound';
@@ -14,7 +14,9 @@ import { clipOf } from '../audio/voiceClips';
 interface Step { who: string; text: string; id?: string }
 type TalkMsg = Extract<S2C, { t: 'talk' }>;
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+/** Bubble text: escaped, with a line's breaks kept (a blank line shows as one break). */
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!))
+  .replace(/\n{2,}/g, '\n');
 /** Long enough to read a bubble with no voice to time it. */
 const readTime = (text: string) => 0.9 + text.length * 0.055;
 const sleep = (s: number) => new Promise((r) => setTimeout(r, s * 1000));
@@ -49,9 +51,15 @@ export class Talk {
       const situation = s as CallSituation;
       const turns = CALLS[who]?.[situation]?.[x];
       if (!turns) continue;
-      turns.forEach((t, k) => steps.push(typeof t === 'string'
-        ? { who, text: t, id: lineId(who, situation, x, k) }
-        : { who: '', text: t.you, id: youLineId(this.voice, lineId(who, situation, x, k)) }));
+      turns.forEach((t, k) => {
+        const id = lineId(who, situation, x, k);
+        if (typeof t === 'string') steps.push({ who, text: t, id });
+        else if ('you' in t) steps.push({ who: '', text: t.you, id: youLineId(this.voice, id) });
+        else {
+          const g = genderOf(this.voice);
+          steps.push({ who, text: t[g], id: `${id}_${g}` });
+        }
+      });
     }
     if (!steps.length) return;
     this.queue.push({ via: m.via, steps });

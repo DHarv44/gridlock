@@ -6,7 +6,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { CALLERS, CALLS, type CallSituation, lineId, PLAYER_VOICES, VOICE_SAMPLE, youLineId } from '../src/shared/packs';
+import { CALLERS, CALLS, type CallSituation, lineId, PLAYER_VOICES, type Turn, VOICE_SAMPLE, youLineId } from '../src/shared/packs';
 
 const root = resolve(import.meta.dirname, '..');
 const out = join(root, 'src/client/voice');
@@ -18,10 +18,12 @@ const lines: { id: string; text: string; ref: string; ex: number; cfg: number; t
 for (const [who, situations] of Object.entries(CALLS)) {
   const caller = CALLERS.find((c) => c.id === who);
   if (!caller) throw new Error(`calls for unknown caller ${who}`);
-  for (const [situation, exchanges] of Object.entries(situations) as [CallSituation, (string | { you: string })[][]][]) {
+  for (const [situation, exchanges] of Object.entries(situations) as [CallSituation, Turn[][]][]) {
     exchanges.forEach((turns, x) => turns.forEach((t, k) => {
-      if (typeof t !== 'string') return;
-      lines.push({ id: lineId(who, situation, x, k), text: t, ref: caller.voice.ref, ex: caller.voice.ex, cfg: caller.voice.cfg, takes: 3 });
+      const line = (id: string, text: string) => lines.push({ id, text, ref: caller.voice.ref, ex: caller.voice.ex, cfg: caller.voice.cfg, takes: 3 });
+      const id = lineId(who, situation, x, k);
+      if (typeof t === 'string') line(id, t);
+      else if ('male' in t) { line(`${id}_male`, t.male); line(`${id}_female`, t.female); }
     }));
   }
 }
@@ -30,8 +32,8 @@ for (const [who, situations] of Object.entries(CALLS)) {
 for (const pv of PLAYER_VOICES) {
   const say = (key: string, text: string) => lines.push({ id: youLineId(pv.id, key), text, ref: pv.voice.ref, ex: pv.voice.ex, cfg: pv.voice.cfg, takes: 3 });
   for (const [who, situations] of Object.entries(CALLS)) {
-    for (const [situation, exchanges] of Object.entries(situations) as [CallSituation, (string | { you: string })[][]][]) {
-      exchanges.forEach((turns, x) => turns.forEach((t, k) => { if (typeof t !== 'string') say(lineId(who, situation, x, k), t.you); }));
+    for (const [situation, exchanges] of Object.entries(situations) as [CallSituation, Turn[][]][]) {
+      exchanges.forEach((turns, x) => turns.forEach((t, k) => { if (typeof t !== 'string' && 'you' in t) say(lineId(who, situation, x, k), t.you); }));
     }
   }
   say('sample', VOICE_SAMPLE);

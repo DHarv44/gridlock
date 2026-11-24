@@ -6,10 +6,13 @@
 // voice), made by `npx tsx scripts/voice-calls.ts`. Lines never mention a job's details (those are
 // on the job panel), never explain the game, and never assume whether you're a man or a woman.
 // Every crew talks like who they are (docs/STORY.md "The cast"). An introduction ends on you,
-// because the job's brief follows it in the same call.
+// because the job's brief follows it in the same call. Line breaks in a line are kept: they're
+// how it's read aloud, and the bubble shows them.
 
-/** A turn in an exchange: the caller's line, or your reply. */
-export type Turn = string | { you: string };
+/** A turn in an exchange: the caller's line; the caller's line in a version for a male and a
+ *  female character (clips `<line id>_male` / `_female`, picked by your character's voice); or
+ *  your reply. */
+export type Turn = string | { male: string; female: string } | { you: string };
 
 export interface Caller {
   id: string;
@@ -33,11 +36,21 @@ export const CALLERS: Caller[] = [
 /** Who picks up a gang's phone: the boss first, then whoever else takes its calls. */
 export const GANG_CALLERS: Record<string, string[]> = { v22: ['nico', 'lupe'], d9: ['declan', 'danny'], oro7: ['eleni'] };
 
+const bennyHello = (you: string) => `Hey, there you are!
+Benny Lutz here.
+
+You don't know me, but word travels fast around here you know
+And the word is you're new, you're broke, and you can drive.
+
+That about right?...
+
+${you}?`;
+
 /** Each caller's exchanges by situation (one is picked at random each time). */
 export const CALLS: Record<string, Partial<Record<CallSituation, Turn[][]>>> = {
   benny: {
     intro: [[
-      "Hey, there you are! Benny Lutz. You don't know me, but word travels fast around here, and the word is you're new, you're broke, and you can drive. That about right, pal?",
+      { male: bennyHello('Pal'), female: bennyHello('Hun') },
       { you: "How'd you get this number?" },
       "Pal, I got everybody's number. Listen, nobody in this town is gonna call your cell until they trust you. Till then, you hear a payphone ringing out on the street, don't walk past it. Might be for you.",
       { you: "And what's in it for you?" },
@@ -302,6 +315,10 @@ export const PLAYER_VOICES: { id: string; name: string; who: 'man' | 'woman'; vo
   { id: 'easy', name: 'Easy', who: 'woman', voice: { ref: 'pv_easy', ex: 0.5, cfg: 0.5 } },
 ];
 export const DEFAULT_VOICE = 'steady';
+
+/** Whether callers talk to you as a man or a woman: by your character's voice. */
+export const genderOf = (voice: string): 'male' | 'female' =>
+  PLAYER_VOICES.find((p) => p.id === voice)?.who === 'woman' ? 'female' : 'male';
 
 /** A voice id from a save, or the default. */
 export const cleanVoice = (v: unknown): string => (PLAYER_VOICES.some((p) => p.id === v) ? String(v) : DEFAULT_VOICE);
