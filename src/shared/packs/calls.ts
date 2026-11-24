@@ -60,7 +60,17 @@ export const CALLS: Record<string, Partial<Record<CallSituation, Turn[][]>>> = {
       { you: "How'd you get this number?" },
       { male: bennyNumber('Buddy'), female: bennyNumber('Lady') },
       { you: "And what's in it for you?" },
-      "Me? I'm a people person. Also, anything nice you happen to drive off with, you bring it by my shop, and we both do alright. Welcome to Bayhaven, pal.",
+      `For me???
+
+I'm a people person.
+
+And hey,
+anything nice you happen to drive off with,
+you bring it to me...
+
+Stop by my shop, and we both do alright.
+
+See you around`,
     ]],
   },
 
