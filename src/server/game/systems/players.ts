@@ -120,7 +120,8 @@ function toggleVehicle(w: World, pl: Player, p: Ped): void {
     if (v && v.seats[0] === 0) { v.ctl.throttle = 0; v.ctl.steer = 0; }
     if (speed >= RULES.bailDie) killPed(w, p, null, true);
     else if (speed > RULES.bailFall) {
-      p.down = Math.max(p.down, 0.8 + speed * 0.06);
+      // Down briefly just over the line, longer the harder you hit the road.
+      p.down = Math.max(p.down, 0.5 + (speed - RULES.bailFall) * 0.05);
       damagePed(w, p, (speed - RULES.bailFall) ** 2 * 0.2, 0, { vehicle: true });
     }
     return;

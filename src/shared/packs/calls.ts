@@ -22,7 +22,9 @@ export const CALLERS: Caller[] = [
   { id: 'lupe', name: 'Lupe', voice: { ref: 'lupe', ex: 0.45, cfg: 0.5 } },
   { id: 'sal', name: 'Sal', voice: { ref: 'sal', ex: 0.4, cfg: 0.55 } },
   { id: 'tito', name: 'Tito', voice: { ref: 'tito', ex: 0.75, cfg: 0.35 } },
-  { id: 'vega', name: 'Ines Vega', voice: { ref: 'vega', ex: 0.35, cfg: 0.5 } },
+  // Reference from Kokoro's most expressive voice; enough exaggeration that "cold" doesn't go flat,
+  // and a lower cfg so her sentences run on naturally.
+  { id: 'vega', name: 'Ines Vega', voice: { ref: 'vega', ex: 0.65, cfg: 0.35 } },
 ];
 
 /** Who picks up a gang's phone: the boss first, then whoever else takes its calls. */
@@ -92,39 +94,74 @@ export const CALLS: Record<string, Partial<Record<CallSituation, Turn[][]>>> = {
     fail: [["Oof. The boss is gonna be mad. Not at me, though. At you."]],
   },
   vega: {
+    // Calm and controlled, but there's someone in there: dry amusement, a little warmth for people
+    // who are useful, and the menace underneath it. Full sentences that run on; never clipped.
     intro: [[
-      'This is Ines Vega. I speak for Oro Seven.',
-      'We pay well, and on time. In return, we expect the same.',
+      "Hello. My name is Ines Vega, and I speak for Oro Seven. Benny tells me you're looking for work.",
+      "We pay well, and we always pay on time. All we ask, in return, is the same courtesy from you.",
       { you: 'What do you need?' },
-      "Something simple, to start. Let's see how you handle simple.",
+      "Oh, something simple, to start with. I'd like to see how you handle simple.",
     ]],
     hit: [
-      ['A man owes us more than money now. The details are on your map. Be thorough.'],
-      ["There's a lieutenant who has been careless with our name. Correct that. Permanently."],
+      ["There's a man who owes us a great deal more than money now. You'll find him on your map. Please, be thorough."],
+      ["One of their lieutenants has been very careless with our name. I'd like you to correct that, permanently."],
     ],
     torch: [
-      ['A vehicle needs to stop existing. Fire is quickest. Keep your face out of it.'],
-      ['A rival is very attached to a car. Help him let go.'],
+      ["There's a car that I'd like to stop existing, and fire is always the quickest way. Just keep your face out of it, would you?"],
+      ["A rival of ours is terribly attached to his car. I think you should help him let it go."],
     ],
     steal: [
-      ['We need a particular vehicle delivered. Clean. Not a scratch on it.'],
-      ['El Jefe has an eye for a certain car. Collect it for him. Gently.'],
+      ["We need a very particular car brought in, and I mean clean. Not one scratch on it."],
+      ["El Jefe has taken a liking to a certain car. Would you collect it for him? Gently, please."],
     ],
     courier: [
-      ["A parcel is waiting, and the clock is already running. Don't keep us waiting."],
-      ['There is a package that should have been somewhere else ten minutes ago. Fix that.'],
+      ["There's a parcel waiting for you, and I'm afraid the clock is already running. Don't keep us waiting."],
+      ["A package that should have been somewhere else ten minutes ago is still sitting there. Could you fix that for me?"],
     ],
     frenzy: [
-      ["I would prefer a negotiation. They don't. Reduce their numbers."],
-      ['Their people are standing on our ground. Remove them.'],
+      ["Honestly, I'd much rather we talked it out. They wouldn't. So go and make their numbers smaller."],
+      ["Their people are standing on our ground as if they own it. Please, remove them."],
     ],
-    pass: [['Efficient. The payment has been made.'], ["That was well done. We'll remember it."]],
-    fail: [['That was expensive. For you, as well as for us.'], ["We expected better. Don't make us wonder about you."]],
-    busy: [["You're occupied. Another time, then."]],
-    nothing: [["There's nothing for you at the moment. We'll be in touch."]],
+    pass: [["Very efficient. I like that. The money's already with you."], ["Now that was nicely done. We won't forget it."]],
+    fail: [["Well. That was expensive, for you as much as for us."], ["We expected better than that. Please, don't make us start wondering about you."]],
+    busy: [["Ah, you're busy. Another time, then."]],
+    nothing: [["I'm sorry, there's nothing for you just now. We'll be in touch."]],
   },
 };
 
 /** The id of a caller's line: `<caller>_<situation>_<exchange>_<turn>` (its clip's file name). */
 export const lineId = (caller: string, situation: CallSituation, exchange: number, turn: number): string =>
   `${caller}_${situation}_${exchange}_${turn}`;
+
+/** The voices a player's character can have (picked in the character creator). Your side of a
+ *  call is voiced in it: the replies in the exchanges above, and a line back after a brief, a job
+ *  done or blown (REPLIES). */
+export const PLAYER_VOICES: { id: string; name: string; who: 'man' | 'woman'; voice: Caller['voice'] }[] = [
+  { id: 'steady', name: 'Steady', who: 'man', voice: { ref: 'pv_steady', ex: 0.45, cfg: 0.5 } },
+  { id: 'rough', name: 'Rough', who: 'man', voice: { ref: 'pv_rough', ex: 0.5, cfg: 0.5 } },
+  { id: 'london', name: 'London', who: 'man', voice: { ref: 'pv_london', ex: 0.45, cfg: 0.5 } },
+  { id: 'warm', name: 'Warm', who: 'man', voice: { ref: 'pv_warm', ex: 0.5, cfg: 0.5 } },
+  { id: 'bright', name: 'Bright', who: 'woman', voice: { ref: 'pv_bright', ex: 0.55, cfg: 0.5 } },
+  { id: 'smoky', name: 'Smoky', who: 'woman', voice: { ref: 'pv_smoky', ex: 0.4, cfg: 0.5 } },
+  { id: 'crisp', name: 'Crisp', who: 'woman', voice: { ref: 'pv_crisp', ex: 0.45, cfg: 0.5 } },
+  { id: 'easy', name: 'Easy', who: 'woman', voice: { ref: 'pv_easy', ex: 0.5, cfg: 0.5 } },
+];
+export const DEFAULT_VOICE = 'steady';
+
+/** A voice id from a save, or the default. */
+export const cleanVoice = (v: unknown): string => (PLAYER_VOICES.some((p) => p.id === v) ? String(v) : DEFAULT_VOICE);
+
+/** What you say back after the caller's part (one picked at random); briefs share one list. */
+export const REPLIES: Record<'brief' | 'pass' | 'fail' | 'busy' | 'nothing', string[]> = {
+  brief: ['On it.', 'Consider it done.', 'Leave it with me.', 'Yeah, yeah. I heard you.'],
+  pass: ['Nice doing business with you.', 'Told you I was good.'],
+  fail: ["Yeah. I know.", 'It went sideways. It happens.'],
+  busy: ["I'll call you back."],
+  nothing: ['Fine. Call me.'],
+};
+
+/** The line you say as a demo in the character creator. */
+export const VOICE_SAMPLE = "Yeah, I can do that. What's it pay?";
+
+/** Clip ids for your side: a reply in an exchange (by its line id), a REPLIES line, the sample. */
+export const youLineId = (voice: string, key: string): string => `you_${voice}_${key}`;

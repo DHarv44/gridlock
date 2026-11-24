@@ -4,15 +4,18 @@
 // on the other side and aren't voiced. One bubble at a time; a call that comes in during another
 // waits its turn.
 import * as THREE from 'three';
-import { CALLERS, CALLS, type CallSituation, FACTIONS, GANG_CALLERS, lineId } from '../../shared/packs';
+import { CALLERS, CALLS, type CallSituation, DEFAULT_VOICE, FACTIONS, GANG_CALLERS, lineId, REPLIES, youLineId } from '../../shared/packs';
 import type { S2C } from '../../shared/protocol';
 import type { Line } from '../audio/phoneVoice';
 import type { Sound } from '../audio/sound';
+import { clipOf } from '../audio/voiceClips';
 
-const CLIPS = import.meta.glob('../voice/*.ogg', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
-const clipOf = (id: string): string | undefined => CLIPS[`../voice/${id}.ogg`];
+/** Which list of your lines back follows a situation (none after an introduction). */
+const REPLY_FOR: Partial<Record<CallSituation, keyof typeof REPLIES>> = {
+  hit: 'brief', torch: 'brief', steal: 'brief', courier: 'brief', frenzy: 'brief', pass: 'pass', fail: 'fail', busy: 'busy', nothing: 'nothing',
+};
 
-/** One bubble: the caller's voiced line (`id` names its clip), or your reply (`who` empty). */
+/** One bubble: a voiced line (`id` names its clip): the caller's, or yours (`who` empty). */
 interface Step { who: string; text: string; id?: string }
 type TalkMsg = Extract<S2C, { t: 'talk' }>;
 
@@ -35,6 +38,8 @@ export class Talk {
   private v = new THREE.Vector3();
   /** A call is on the line (who's speaking, and how it came in), or it's over (null). */
   onLine: (who: string | null, via: Line) => void = () => {};
+  /** Your character's voice (packs/calls.ts PLAYER_VOICES). */
+  voice = DEFAULT_VOICE;
 
   constructor(parent: HTMLElement, private sound: Sound) {
     this.root.className = 'talk';
@@ -45,11 +50,19 @@ export class Talk {
 
   play(m: TalkMsg): void {
     const steps: Step[] = [];
-    for (const [who, situation, x] of m.parts) {
-      const turns = CALLS[who]?.[situation as CallSituation]?.[x];
-      turns?.forEach((t, k) => steps.push(typeof t === 'string'
-        ? { who, text: t, id: lineId(who, situation as CallSituation, x, k) }
-        : { who: '', text: t.you }));
+    for (const [who, s, x] of m.parts) {
+      const situation = s as CallSituation;
+      const turns = CALLS[who]?.[situation]?.[x];
+      if (!turns) continue;
+      turns.forEach((t, k) => steps.push(typeof t === 'string'
+        ? { who, text: t, id: lineId(who, situation, x, k) }
+        : { who: '', text: t.you, id: youLineId(this.voice, lineId(who, situation, x, k)) }));
+      // And you answer back (unless the exchange already ended on you).
+      const list = REPLY_FOR[situation];
+      if (list && typeof turns[turns.length - 1] === 'string') {
+        const i = Math.floor(Math.random() * REPLIES[list].length);
+        steps.push({ who: '', text: REPLIES[list][i], id: youLineId(this.voice, `reply_${list}_${i}`) });
+      }
     }
     if (!steps.length) return;
     this.queue.push({ via: m.via, steps });
@@ -63,10 +76,9 @@ export class Talk {
       this.onLine(call.steps.find((s) => s.who)?.who ?? null, call.via);
       for (const s of call.steps) {
         this.show(s);
-        if (s.who) {
-          const spoke = await this.sound.line(s.id ? clipOf(s.id) : undefined, call.via);
-          await sleep(spoke > 0 ? 0.45 : readTime(s.text));
-        } else await sleep(readTime(s.text));
+        // The caller comes down the line; you're speaking where you stand.
+        const spoke = await this.sound.line(s.id ? clipOf(s.id) : undefined, s.who ? call.via : 'local');
+        await sleep(spoke > 0 ? 0.45 : readTime(s.text));
       }
       this.hide();
       this.onLine(null, call.via);

@@ -94,10 +94,10 @@ export const RULES = {
   robAlarm: 4,               // seconds in, the silent alarm goes off...
   robWanted: 2,              // ...putting you on at least this many stars
   tillRefill: 900,           // seconds for an emptied till to fill up again
-  // Bailing out of a moving vehicle (m/s): above `bailFall` you're thrown down and hurt (more the
-  // faster), at `bailDie` (about 90 km/h) and up it kills you.
-  bailFall: 5,
-  bailDie: 25,
+  // Bailing out of a moving vehicle (m/s): up to `bailFall` (about 32 km/h) you step out; above it
+  // you're thrown down and hurt (more the faster); at `bailDie` (about 95 km/h) it kills you.
+  bailFall: 9,
+  bailDie: 26,
   // Jobs done with company: other players riding with you, or this close when it's done, split the
   // pay evenly with you.
   shareRange: 30,

@@ -6,7 +6,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { CALLERS, CALLS, type CallSituation, lineId } from '../src/shared/packs';
+import { CALLERS, CALLS, type CallSituation, lineId, PLAYER_VOICES, REPLIES, VOICE_SAMPLE, youLineId } from '../src/shared/packs';
 
 const root = resolve(import.meta.dirname, '..');
 const out = join(root, 'src/client/voice');
@@ -24,6 +24,18 @@ for (const [who, situations] of Object.entries(CALLS)) {
       lines.push({ id: lineId(who, situation, x, k), text: t, ref: caller.voice.ref, ex: caller.voice.ex, cfg: caller.voice.cfg, takes: 3 });
     }));
   }
+}
+// Your side, in every voice a character can have: the replies in the exchanges, the lines back
+// (REPLIES) and the creator's sample.
+for (const pv of PLAYER_VOICES) {
+  const say = (key: string, text: string) => lines.push({ id: youLineId(pv.id, key), text, ref: pv.voice.ref, ex: pv.voice.ex, cfg: pv.voice.cfg, takes: 3 });
+  for (const [who, situations] of Object.entries(CALLS)) {
+    for (const [situation, exchanges] of Object.entries(situations) as [CallSituation, (string | { you: string })[][]][]) {
+      exchanges.forEach((turns, x) => turns.forEach((t, k) => { if (typeof t !== 'string') say(lineId(who, situation, x, k), t.you); }));
+    }
+  }
+  for (const [key, list] of Object.entries(REPLIES)) list.forEach((text, i) => say(`reply_${key}_${i}`, text));
+  say('sample', VOICE_SAMPLE);
 }
 
 // A line whose words changed since its takes were made gets fresh takes.

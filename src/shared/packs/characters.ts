@@ -75,6 +75,8 @@ export interface CharacterSave extends CharacterProgress {
   id: string;
   name: string;
   look: CharLook;
+  /** Their voice on the phone (packs/calls.ts PLAYER_VOICES); older characters have none yet. */
+  voice?: string;
   created: number;
   lastPlayed: number;
 }

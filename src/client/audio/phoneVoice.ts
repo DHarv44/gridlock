@@ -4,7 +4,8 @@
 // - cell: a digital call. A little wider, no hiss, but the codec's grain (quantised) and now and
 //   then a few tens of milliseconds dropping out.
 
-export type Line = 'payphone' | 'cell';
+/** How a line is heard: down a payphone's or a cell's line, or `local`: you, speaking (clean). */
+export type Line = 'payphone' | 'cell' | 'local';
 
 /** Plays `buf` down a phone line into `out`; resolves when it's finished. */
 export function playOnLine(ctx: AudioContext, out: AudioNode, buf: AudioBuffer, line: Line, gain: number): Promise<void> {
@@ -26,7 +27,9 @@ export function playOnLine(ctx: AudioContext, out: AudioNode, buf: AudioBuffer, 
     return lp;
   };
 
-  if (line === 'payphone') {
+  if (line === 'local') {
+    src.connect(bus);
+  } else if (line === 'payphone') {
     const narrow = band(320, 3000);
     const honk = keep(ctx.createBiquadFilter()); honk.type = 'peaking'; honk.frequency.value = 1700; honk.Q.value = 1.1; honk.gain.value = 5;
     const sat = keep(ctx.createWaveShaper()); sat.curve = softClip(2.2); sat.oversample = '2x';

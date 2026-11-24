@@ -54,7 +54,7 @@ export class CharacterPicker {
   }
 
   private create(d: Draft): void {
-    const c = createCharacter(d.name, d.look);
+    const c = createCharacter(d.name, d.look, d.voice);
     if (typeof c === 'string') {
       if (this.creator) { this.creator.error = c; this.creator.render(); }
       return;

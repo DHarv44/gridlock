@@ -1,6 +1,6 @@
 // The player's characters, kept in this browser's local storage: looks, cash, cars, record,
 // respect. Taken along when joining a game; the server sends progress back to save here.
-import { type CharacterProgress, type CharacterSave, cleanLook, cleanName, MAX_CHARACTERS, RULES } from '../../shared/packs';
+import { type CharacterProgress, type CharacterSave, cleanLook, cleanName, cleanVoice, MAX_CHARACTERS, RULES } from '../../shared/packs';
 
 const KEY = 'gridlock.characters.v1';
 
@@ -18,7 +18,7 @@ function store(list: CharacterSave[]): void {
 }
 
 /** Makes a new character, or returns why it can't. */
-export function createCharacter(rawName: string, look: unknown): CharacterSave | string {
+export function createCharacter(rawName: string, look: unknown, voice?: string): CharacterSave | string {
   const name = cleanName(rawName);
   if (!name) return 'Names need 2–16 letters or digits.';
   const list = loadCharacters();
@@ -26,7 +26,7 @@ export function createCharacter(rawName: string, look: unknown): CharacterSave |
   if (list.some((c) => c.name.toLowerCase() === name.toLowerCase())) return 'You already have a character with that name.';
   const now = Date.now();
   const id = [...crypto.getRandomValues(new Uint8Array(8))].map((b) => b.toString(16).padStart(2, '0')).join('');
-  const c: CharacterSave = { id, name, look: cleanLook(look), created: now, lastPlayed: now, cash: RULES.startCash, bank: 0, garage: [], felonies: {}, deaths: 0, respect: {} };
+  const c: CharacterSave = { id, name, look: cleanLook(look), voice: cleanVoice(voice), created: now, lastPlayed: now, cash: RULES.startCash, bank: 0, garage: [], felonies: {}, deaths: 0, respect: {} };
   store([c, ...list]);
   return c;
 }
@@ -40,7 +40,7 @@ export function saveProgress(id: string, p: CharacterProgress): void {
   const list = loadCharacters();
   const c = list.find((x) => x.id === id);
   if (!c) return; // deleted meanwhile
-  Object.assign(c, { cash: p.cash, bank: p.bank, garage: p.garage, felonies: p.felonies, deaths: p.deaths, respect: p.respect, lastPlayed: Date.now() });
+  Object.assign(c, { cash: p.cash, bank: p.bank, garage: p.garage, felonies: p.felonies, deaths: p.deaths, respect: p.respect, met: p.met ?? c.met, lastPlayed: Date.now() });
   // No spot while dead or busted: keep the last good one.
   if (p.last) c.last = p.last;
   store(list);

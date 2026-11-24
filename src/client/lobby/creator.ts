@@ -1,9 +1,21 @@
 // Character creator: big preview, name with a dice roll, look swatches, Random / Undo / Redo
 // (Ctrl+Z / Ctrl+Y outside the name field). Edits are recorded as {name, look} snapshots.
-import { CHARACTER_LOOKS, type CharLook, LOOK_PARTS, type LookPart, NAME_PARTS } from '../../shared/packs';
+import { CHARACTER_LOOKS, type CharLook, LOOK_PARTS, type LookPart, NAME_PARTS, PLAYER_VOICES, youLineId } from '../../shared/packs';
+import { clipOf } from '../audio/voiceClips';
 import { figureCanvas } from './figure';
 
-export interface Draft { name: string; look: CharLook }
+export interface Draft { name: string; look: CharLook; voice: string }
+
+/** Plays a voice's sample line (one at a time). */
+let sampleAudio: HTMLAudioElement | null = null;
+function playSample(voice: string): void {
+  const url = clipOf(youLineId(voice, 'sample'));
+  if (!url) return;
+  sampleAudio?.pause();
+  sampleAudio = new Audio(url);
+  sampleAudio.volume = 0.8;
+  void sampleAudio.play().catch(() => { /* blocked or missing: stays quiet */ });
+}
 
 const LABEL: Record<LookPart, string> = { skin: 'Skin', hair: 'Hair colour', hairStyle: 'Hair', top: 'Top', bottom: 'Trousers', hat: 'Hat' };
 const rnd = (n: number) => Math.floor(Math.random() * n);
@@ -26,7 +38,7 @@ export function randomLook(hats = true): CharLook {
 }
 
 export class Creator {
-  private draft: Draft = { name: rollName(), look: randomLook(false) };
+  private draft: Draft = { name: rollName(), look: randomLook(false), voice: PLAYER_VOICES[Math.floor(Math.random() * PLAYER_VOICES.length)].id };
   /** The name came from a roll (Random may re-roll it); typing makes it the player's own. */
   private rolledName = true;
   private undo: Draft[] = [];
@@ -102,7 +114,7 @@ export class Creator {
       b.addEventListener('click', act);
       tools.appendChild(b);
     };
-    tool('Random', 'Random look and name', true, () => this.apply({ name: this.rolledName ? rollName() : this.draft.name, look: randomLook() }), 'grow');
+    tool('Random', 'Random look and name', true, () => this.apply({ ...this.draft, name: this.rolledName ? rollName() : this.draft.name, look: randomLook() }), 'grow');
     tool('↶', 'Undo (Ctrl+Z)', this.undo.length > 0, () => this.step(this.undo, this.redo));
     tool('↷', 'Redo (Ctrl+Y)', this.redo.length > 0, () => this.step(this.redo, this.undo));
     s.appendChild(tools);
@@ -126,7 +138,29 @@ export class Creator {
     row.append(name, dice);
     f.appendChild(row);
     for (const part of LOOK_PARTS) f.appendChild(this.partRow(part));
+    f.appendChild(this.voiceRow());
     return f;
+  }
+
+  /** The voice they speak with on the phone: pick one and hear it say a line. */
+  private voiceRow(): HTMLElement {
+    const box = el('div', 'look-part');
+    box.appendChild(el('small', 'look-label', 'Voice'));
+    for (const who of ['man', 'woman'] as const) {
+      const row = el('div', 'segmented voices');
+      for (const v of PLAYER_VOICES.filter((p) => p.who === who)) {
+        const on = this.draft.voice === v.id;
+        const b = el('button', `seg${on ? ' on' : ''}`, `${v.name} ▸`);
+        b.title = `Hear ${v.name}`;
+        b.addEventListener('click', () => {
+          playSample(v.id);
+          if (!on) this.apply({ ...this.draft, voice: v.id });
+        });
+        row.appendChild(b);
+      }
+      box.appendChild(row);
+    }
+    return box;
   }
 
   private partRow(part: LookPart): HTMLElement {

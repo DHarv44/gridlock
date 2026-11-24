@@ -17,7 +17,7 @@ import { OffscreenPlayers } from '../hud/offscreenPlayers';
 import { Phone } from '../hud/phone';
 import { Talk } from '../hud/talk';
 import { PaintGarage } from '../hud/paintGarage';
-import { SERVICES } from '../../shared/packs';
+import { cleanVoice, SERVICES } from '../../shared/packs';
 import type { Place } from '../../shared/world/cityTypes';
 import { BigMap } from '../hud/bigMap';
 import { saveProgress } from '../lobby/characterStore';
@@ -352,6 +352,11 @@ export class Game {
     return m;
   }
 
+
+  /** Your character's voice on the phone (guests and older characters get the default). */
+  setVoice(v: string | undefined): void {
+    this.talk.voice = cleanVoice(v);
+  }
 
   /** Other players inside vehicles, by vehicle id. Riders drawn on a bike or open top have their own
    *  ped (and tag), so they're left out. */

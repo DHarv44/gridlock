@@ -29,7 +29,7 @@ are written to be read aloud: plain words, the person's rhythm in the punctuatio
 | **Lupe Reyes** | Varrio 22, Nico's sister, the mechanic | `lupe` (ef_dora) | Dry, careful, the brains. Cleans up Nico's messes. |
 | **Sal Moreno** | Diablos 9, the boss | `sal` (am_onyx, -2 st) | Deep, slow, few words. Threatens by understating. |
 | **Tito Vargas** | Diablos 9, Sal's lieutenant | `tito` (am_echo, +1 st) | Wired, talks too much, laughs at his own jokes. Selling Sal out. |
-| **Ines Vega** | Oro 7, the boss's right hand | `vega` (af_kore) | Calm, cold, precise. Never raises her voice; talks about everything as business. |
+| **Ines Vega** | Oro 7, the boss's right hand | `vega` (af_heart) | Calm and controlled, never raises her voice; dry amusement and a little warmth for the useful, menace underneath. Polite full sentences. |
 | **Don Aurelio** | Oro 7, El Jefe | `aurelio` (em_santa, -2 st) | Old, unhurried, courteous. Calls only when it matters. |
 | **Det. Ray Kowalski** | Bayhaven PD, on Price's payroll | `kowalski` (am_michael, -1 st) | Tired, sarcastic, matter-of-fact about the things he does. |
 | **Harlan Price** | the developer | `price` (bm_fable) | Smooth, warm, British, never says what he means. |

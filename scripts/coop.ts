@@ -81,8 +81,9 @@ const bail = (speed: number) => {
   room.tick();
   return { out: !pa.vehicle, down: pa.down > 0, hurt: pa.spec.hp - pa.hp, dead: pa.dead };
 };
-const slow = bail(3), mid = bail(15), fast = bail(RULES.bailDie + 2);
+const slow = bail(3), town = bail(RULES.bailFall - 0.5), mid = bail(15), fast = bail(RULES.bailDie + 2);
 check(slow.out && !slow.down && slow.hurt === 0, 'at 3 m/s you just step out');
+check(town.out && !town.down && town.hurt === 0, `at ${RULES.bailFall - 0.5} m/s (town speed) you still land on your feet`);
 check(mid.out && mid.down && mid.hurt > 0 && !mid.dead, `at 15 m/s you're thrown down and hurt (-${Math.round(mid.hurt)} hp)`);
 check(fast.out && fast.dead, `at ${RULES.bailDie + 2} m/s it kills you`);
 
