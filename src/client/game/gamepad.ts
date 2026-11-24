@@ -141,7 +141,11 @@ export class Pad {
   rawPressed(i: number): boolean { return !!this.buttons[i] && !this.prev[i]; }
   rawReleased(i: number): boolean { return !this.buttons[i] && !!this.prev[i]; }
 
-  held(a: PadAction): boolean { return this.rawHeld(this.buttonFor(a)); }
-  pressed(a: PadAction): boolean { return this.rawPressed(this.buttonFor(a)); }
-  released(a: PadAction): boolean { return this.rawReleased(this.buttonFor(a)); }
+  /** Buttons something on screen has taken for now (a ringing phone's D-pad, A and B): the game's
+   *  actions don't see them, the sticks and triggers still drive. */
+  readonly taken = new Set<number>();
+
+  held(a: PadAction): boolean { const b = this.buttonFor(a); return !this.taken.has(b) && this.rawHeld(b); }
+  pressed(a: PadAction): boolean { const b = this.buttonFor(a); return !this.taken.has(b) && this.rawPressed(b); }
+  released(a: PadAction): boolean { const b = this.buttonFor(a); return !this.taken.has(b) && this.rawReleased(b); }
 }

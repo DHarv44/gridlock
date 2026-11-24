@@ -14,11 +14,11 @@ const gunship: Squad = { vehicle: 'gunship', crew: ['soldier'] };
 
 /** Wanted levels 1..5 (index 0 = level 1). */
 export const WANTED: WantedLevel[] = [
-  { heat: 10, lethal: false, squads: [{ squad: patrol, max: 3 }, { squad: motor, max: 1 }] },
-  { heat: 40, lethal: true, squads: [{ squad: patrol, max: 4 }, { squad: motor, max: 2 }, { squad: interceptor, max: 2 }] },
-  { heat: 100, lethal: true, squads: [{ squad: patrol, max: 3 }, { squad: interceptor, max: 2 }, { squad: swat, max: 2 }, { squad: air, max: 1 }] },
-  { heat: 200, lethal: true, squads: [{ squad: interceptor, max: 2 }, { squad: swat, max: 2 }, { squad: feds, max: 2 }, { squad: air, max: 1 }] },
-  { heat: 350, lethal: true, squads: [{ squad: feds, max: 2 }, { squad: army, max: 1 }, { squad: gunTruck, max: 2 }, { squad: mrap, max: 1 }, { squad: armor, max: 1 }, { squad: gunship, max: 1 }] },
+  { heat: 10, lethal: false, respond: 10, every: 9, squads: [{ squad: patrol, max: 3 }, { squad: motor, max: 1 }] },
+  { heat: 40, lethal: true, respond: 7, every: 6, squads: [{ squad: patrol, max: 4 }, { squad: motor, max: 2 }, { squad: interceptor, max: 2 }] },
+  { heat: 100, lethal: true, respond: 5, every: 4.5, squads: [{ squad: patrol, max: 3 }, { squad: interceptor, max: 2 }, { squad: swat, max: 2 }, { squad: air, max: 1 }] },
+  { heat: 200, lethal: true, respond: 3, every: 3.5, squads: [{ squad: interceptor, max: 2 }, { squad: swat, max: 2 }, { squad: feds, max: 2 }, { squad: air, max: 1 }] },
+  { heat: 350, lethal: true, respond: 3, every: 3.5, squads: [{ squad: feds, max: 2 }, { squad: army, max: 1 }, { squad: gunTruck, max: 2 }, { squad: mrap, max: 1 }, { squad: armor, max: 1 }, { squad: gunship, max: 1 }] },
 ];
 
 /** Crimes: heat added when witnessed by a lawful unit (civilian witnesses report half), and the

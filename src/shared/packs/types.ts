@@ -296,6 +296,10 @@ export interface WantedLevel {
   heat: number;                 // heat needed to reach this level
   squads: { squad: Squad; max: number }[];
   lethal: boolean;              // cops shoot instead of arresting
+  /** Seconds after reaching this level before its first unit is sent (the call goes out, a car is
+   *  free, it drives over), then between units. Patrols already on the street react at once. */
+  respond: number;
+  every: number;
 }
 
 export interface ServiceCall { squad: Squad; maxActive: number }

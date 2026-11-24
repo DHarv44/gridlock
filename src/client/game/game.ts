@@ -124,7 +124,7 @@ export class Game {
     this.input.onNav = (c) => {
       if (this.garage.isOpen) this.garage.nav(c);
       else if (this.shop.isOpen) this.shop.nav(c);
-      else if (this.phone.capturing) this.phone.nav(c);
+      else if (this.phone.capturing || this.phone.ringingNow) this.phone.nav(c);
       else if (!this.bigMap.isOpen) this.pane.nav(c);
       else if (c === 'back') this.bigMap.close();
       else this.bigMap.nav(c);
@@ -281,7 +281,7 @@ export class Game {
     const now = performance.now();
     const dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
-    this.input.pollPad(dt, this.pane.isOpen || this.bigMap.isOpen || this.garage.isOpen || this.shop.isOpen || this.phone.capturing);
+    this.input.pollPad(dt, this.pane.isOpen || this.bigMap.isOpen || this.garage.isOpen || this.shop.isOpen || this.phone.capturing, this.phone.ringingNow);
     this.acc += dt;
     let n = 0;
     while (this.acc >= STEP && n < 4) {

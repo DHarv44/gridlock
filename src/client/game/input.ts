@@ -116,10 +116,20 @@ export class Input {
   private navMode = false;
 
   /** Polls the controller once per frame: buttons become actions (or menu navigation). */
-  pollPad(dt: number, navMode: boolean): void {
+  /** `callMode`: a call is ringing. The phone takes the D-pad, A and B to pick Answer or Decline
+   *  (passed on as nav commands) while the sticks and triggers keep driving. */
+  pollPad(dt: number, navMode: boolean, callMode = false): void {
     const pad = this.pad;
     pad.poll();
     this.navMode = navMode;
+    pad.taken.clear();
+    if (callMode && !navMode && pad.connected) {
+      for (const [b, c] of NAV) {
+        if (b === PAD.lb || b === PAD.rb) continue;
+        pad.taken.add(b);
+        if (pad.rawPressed(b)) this.onNav(c);
+      }
+    }
     const ly = pad.ly;
     // Sticks and triggers don't reach the game while a menu or chat has the controller.
     if (navMode || !this.enabled) pad.lx = pad.ly = pad.rx = pad.ry = pad.lt = pad.rt = 0;

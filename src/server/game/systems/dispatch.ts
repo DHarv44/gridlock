@@ -12,6 +12,8 @@ import { laneSpawn } from './spawnPoints';
 export class Dispatch {
   private timer = 0;
   private lastSpawn = new Map<number, number>();
+  /** Player id -> the wanted level they last rose to, and when. */
+  private reached = new Map<number, { level: number; t: number }>();
 
   constructor(private w: World) {}
 
@@ -21,6 +23,11 @@ export class Dispatch {
     this.timer = 1;
     this.cleanup();
     for (const pl of this.w.players.values()) {
+      // When each player reached their current level: its units take a while to get going.
+      const at = this.reached.get(pl.id);
+      if (pl.wanted <= 0) this.reached.delete(pl.id);
+      else if (!at || pl.wanted > at.level) this.reached.set(pl.id, { level: pl.wanted, t: this.w.time });
+      else if (pl.wanted < at.level) at.level = pl.wanted; // cooling off: no fresh delay
       if (pl.wanted > 0 && pl.mode < Mode.Dead) this.wanted(pl.id, pl.wanted);
     }
     this.medics();
@@ -66,8 +73,9 @@ export class Dispatch {
     const pl = w.players.get(playerId)!;
     const target = w.peds.get(pl.pid);
     if (!target) return;
-    if (w.time - (this.lastSpawn.get(playerId) ?? -99) < 3.5) return;
     const spec = WANTED[level - 1];
+    if (w.time - (this.reached.get(playerId)?.t ?? w.time) < spec.respond) return;
+    if (w.time - (this.lastSpawn.get(playerId) ?? -99) < spec.every) return;
     const pos = w.pedPos(target);
     let total = 0;
     for (const s of w.squads.values()) if (s.player === playerId) total++;

@@ -57,6 +57,10 @@ export class Phone {
    *  (the handset just shows who it is), so you keep driving or walking. */
   get capturing(): boolean { return this.isOpen && this.screen !== 'ring' && this.screen !== 'talk'; }
 
+  /** A call ringing on screen: the controller's D-pad, A and B pick Answer / Decline (game/input.ts);
+   *  on the keyboard Enter answers and Backspace declines. */
+  get ringingNow(): boolean { return this.isOpen && this.screen === 'ring'; }
+
   /** The phone button: answers a ringing call, otherwise takes the phone out or puts it away. */
   button(): void {
     if (this.ringing && this.screen === 'ring' && this.isOpen) this.answer();
@@ -180,9 +184,12 @@ export class Phone {
   }
 
   private onKey(e: KeyboardEvent): void {
-    // A call ringing or on the line leaves every key to the game, except Backspace to decline.
+    // A call ringing or on the line leaves the keys to the game (the arrows steer), except Enter to
+    // answer and Backspace to decline.
     if (!this.capturing) {
-      if (e.code === 'Backspace' && !e.repeat) { e.preventDefault(); e.stopPropagation(); this.back(); }
+      if (e.repeat || this.screen !== 'ring' || (e.code !== 'Enter' && e.code !== 'Backspace')) return;
+      e.preventDefault(); e.stopPropagation();
+      if (e.code === 'Enter') this.answer(); else this.decline();
       return;
     }
     const map: Record<string, NavCmd> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'ok', Backspace: 'back' };
