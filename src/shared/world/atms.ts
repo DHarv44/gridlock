@@ -28,6 +28,18 @@ export function atmsOf(city: City): Atm[] {
     // Just past the end of the shop's sign so it shows from above (the sign is centred on the
     // door unless that would run it off the wall: storefronts.ts), else as far along as fits.
     let at: number;
+    // A narrow front mostly taken up by its sign (a gas station's kiosk): the sign hangs out over the
+    // ATM there, so it goes round the corner on the side wall instead, near the front, in plain view.
+    if (signText && signWidth(signText, hi - lo + 1.6) > (hi - lo + 1.6) * 0.6) {
+      const side = along ? (b.x1 - place.x > place.x - b.x0 ? b.x1 : b.x0) : (b.y1 - place.y > place.y - b.y0 ? b.y1 : b.y0);
+      const face = side === (along ? b.x1 : b.y1) ? 1 : -1; // which way the side wall faces
+      const back = (along ? wallY : wallX) - (along ? dy : dx) * 1.6; // a little way back from the front corner
+      const wx = along ? side + face * 0.22 : back, wy = along ? back : side + face * 0.22;
+      const dir = along ? (face > 0 ? 1 : 3) : (face > 0 ? 2 : 0);
+      const [sx, sy] = DIR_VEC[dir];
+      out.push({ id: out.length, wx, wy, x: wx + sx * STAND, y: wy + sy * STAND, dir });
+      return;
+    }
     if (signText) {
       const w = signWidth(signText, hi - lo + 1.6), half = w / 2;
       const mid = Math.min(Math.max(door, lo - 0.8 + half), Math.max(lo - 0.8 + half, hi + 0.8 - half));

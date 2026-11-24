@@ -105,7 +105,13 @@ button:disabled { opacity: 0.4; cursor: default; }
 .ph-row .ph-from small { font-weight: 400; color: #7f8b98; }
 .ph-row:has(.ph-preview) { flex-direction: column; align-items: stretch; gap: 2px; }
 .ph-preview { font-size: 12px; color: #9aa4af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ph-bubble { align-self: flex-start; max-width: 92%; background: #26323f; border-radius: 14px 14px 14px 4px; padding: 9px 12px; font-size: 14px; line-height: 1.35; }
+/* A speech bubble: white, outlined, with a tail at the bottom left pointing at whoever's talking. */
+.ph-bubble { position: relative; align-self: flex-start; max-width: 88%; margin: 2px 0 14px 6px; background: #f6f3ea; color: #15171a;
+  border: 2px solid #15171a; border-radius: 16px; padding: 9px 12px; font-size: 14px; font-weight: 600; line-height: 1.35;
+  box-shadow: 2px 3px 0 rgba(0,0,0,0.45); }
+.ph-bubble::before, .ph-bubble::after { content: ''; position: absolute; left: 14px; width: 0; height: 0; border-style: solid; }
+.ph-bubble::before { bottom: -13px; border-width: 13px 12px 0 0; border-color: #15171a transparent transparent transparent; }
+.ph-bubble::after { bottom: -9px; left: 16px; border-width: 9px 8px 0 0; border-color: #f6f3ea transparent transparent transparent; }
 .ph-hint-time { font-size: 11px; color: #7f8b98; padding-left: 4px; }
 .ph-empty { font-size: 13px; color: #8d97a2; line-height: 1.4; margin: 6px 4px; }
 .ph-balance { display: flex; flex-direction: column; padding: 8px 6px; border-bottom: 1px solid rgba(255,255,255,0.06); }
