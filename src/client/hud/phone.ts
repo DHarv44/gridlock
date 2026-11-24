@@ -2,7 +2,7 @@
 // whose number you have: call to ask for work), Messages (texts) and Bank. A gang calling pops it up
 // with Answer / Decline. Arrows + Enter work it, Backspace goes back, P / Esc puts it away; WASD
 // still walks you while it's out. The server decides everything (missions/cell.ts).
-import { FACTIONS, GANGS, RESPECT } from '../../shared/packs';
+import { CALLERS, FACTIONS, GANG_CALLERS, GANGS, RESPECT } from '../../shared/packs';
 import type { S2C, YouState } from '../../shared/protocol';
 import type { NavCmd } from '../game/input';
 
@@ -14,8 +14,10 @@ const APPS: { id: Screen; label: string; glyph: string }[] = [
   { id: 'messages', label: 'Messages', glyph: '✉' },
   { id: 'bank', label: 'Bank', glyph: '$' },
 ];
-const gangName = (g: string) => FACTIONS.find((f) => f.id === g)?.name ?? g;
-const gangColor = (g: string) => FACTIONS.find((f) => f.id === g)?.color ?? '#ccc';
+/** A caller as the phone shows them: a gang, a person (packs/calls.ts), in their gang's colour. */
+const gangOf = (id: string) => Object.entries(GANG_CALLERS).find(([, crew]) => crew.includes(id))?.[0] ?? id;
+const gangName = (g: string) => CALLERS.find((c) => c.id === g)?.name ?? FACTIONS.find((f) => f.id === g)?.name ?? g;
+const gangColor = (g: string) => FACTIONS.find((f) => f.id === gangOf(g))?.color ?? '#ccc';
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 const $ = (n: number) => `$${n.toLocaleString('en-US')}`;
 
@@ -50,6 +52,16 @@ export class Phone {
   }
 
   get isOpen(): boolean { return this.root.classList.contains('open'); }
+
+  /** Whether the phone has the controls: browsing it does. A call ringing or on the line doesn't
+   *  (the handset just shows who it is), so you keep driving or walking. */
+  get capturing(): boolean { return this.isOpen && this.screen !== 'ring' && this.screen !== 'talk'; }
+
+  /** The phone button: answers a ringing call, otherwise takes the phone out or puts it away. */
+  button(): void {
+    if (this.ringing && this.screen === 'ring' && this.isOpen) this.answer();
+    else this.toggle();
+  }
 
   toggle(): void { if (this.isOpen) this.close(); else this.open('home'); }
 
@@ -86,6 +98,16 @@ export class Phone {
   }
 
   private ringT = 0;
+
+  /** A voiced call on the line (hud/talk.ts): the handset shows who it is while they talk, and goes
+   *  away when they're done. */
+  line(who: string | null): void {
+    if (who) {
+      this.ringing = '';
+      this.talk = { gang: who, text: 'On the line', until: Infinity };
+      this.open('talk');
+    } else if (this.isOpen && this.screen === 'talk') this.close();
+  }
 
   /** Every frame: live balances, the clock, the ringtone, and calls winding up. */
   update(dt: number, you: YouState | null, clock: string): void {
@@ -146,7 +168,7 @@ export class Phone {
 
   private answer(): void {
     this.send({ t: 'call', accept: true });
-    this.talk = { gang: this.ringing, text: '…', until: performance.now() + 8000 };
+    this.talk = { gang: this.ringing, text: 'Connecting…', until: performance.now() + 8000 };
     this.ringing = '';
     this.go('talk');
   }
@@ -158,6 +180,11 @@ export class Phone {
   }
 
   private onKey(e: KeyboardEvent): void {
+    // A call ringing or on the line leaves every key to the game, except Backspace to decline.
+    if (!this.capturing) {
+      if (e.code === 'Backspace' && !e.repeat) { e.preventDefault(); e.stopPropagation(); this.back(); }
+      return;
+    }
     const map: Record<string, NavCmd> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'ok', Backspace: 'back' };
     const c = map[e.code];
     if (!c) return;
@@ -211,8 +238,9 @@ export class Phone {
       btns.children[0].classList.add('ph-answer');
       btns.children[1].classList.add('ph-decline');
     } else if (s === 'talk') {
+      // What's said shows as speech bubbles beside you (hud/talk.ts); the handset shows who.
       const g = this.talk.gang;
-      box.innerHTML = `<div class="ph-call"><small>On the line</small><b style="color:${gangColor(g)}">${esc(gangName(g))}</b></div><div class="ph-bubble">${esc(this.talk.text)}</div>`;
+      box.innerHTML = `<div class="ph-call"><small>${esc(this.talk.text)}</small><b style="color:${gangColor(g)}">${esc(gangName(g))}</b></div>`;
     }
   }
 }

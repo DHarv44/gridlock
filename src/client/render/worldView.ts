@@ -41,6 +41,46 @@ export class WorldView {
   /** A vehicle not drawn on the street (yours, while it's inside the paint shop). */
   hiddenVehicle = 0;
 
+  /** Other players riding inside vehicles (not drawn: their ped's in the car), by vehicle id: their
+   *  names float over the car instead. Set by the game each frame. */
+  carTags = new Map<number, PlayerTag[]>();
+  private carLabels = new Map<number, { key: string; sprite: THREE.Sprite }>();
+
+  /** Names of the players inside a vehicle, stacked over it in their colours. */
+  private carLabel(id: number, root: THREE.Object3D, height: number): void {
+    const list = this.carTags.get(id);
+    const have = this.carLabels.get(id);
+    const key = list?.map((t) => `${t.name}:${t.color}`).join('|') ?? '';
+    if (have && have.key !== key) { this.dropCarLabel(id); }
+    if (!key) return;
+    let l = this.carLabels.get(id);
+    if (!l) {
+      const c = document.createElement('canvas');
+      c.width = 256; c.height = 48 * list!.length + 16;
+      const ctx = c.getContext('2d')!;
+      ctx.font = 'bold 34px Bahnschrift, Segoe UI, sans-serif';
+      ctx.textAlign = 'center'; ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+      list!.forEach((t, i) => { ctx.strokeText(t.name, 128, 44 + i * 48); ctx.fillStyle = t.color; ctx.fillText(t.name, 128, 44 + i * 48); });
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
+      sprite.scale.set(8, 8 * c.height / 256, 1);
+      sprite.renderOrder = 10;
+      this.carLabels.set(id, l = { key, sprite });
+    }
+    if (l.sprite.parent !== root) root.add(l.sprite);
+    l.sprite.position.set(0, height + 2.2 + l.sprite.scale.y / 2, 0);
+  }
+
+  private dropCarLabel(id: number): void {
+    const l = this.carLabels.get(id);
+    if (!l) return;
+    l.sprite.removeFromParent();
+    (l.sprite.material as THREE.SpriteMaterial).map?.dispose();
+    l.sprite.material.dispose();
+    this.carLabels.delete(id);
+  }
+
   constructor(private scene: THREE.Scene, private fx: Effects, private lamps: { x: number; y: number }[]) {}
 
   sync(store: EntityStore, dt: number, own: OwnState | null, tags: Map<number, PlayerTag>, night: number, view: { x0: number; y0: number; x1: number; y1: number }): void {
@@ -67,7 +107,7 @@ export class WorldView {
 
   private prune(seen: Set<number>): void {
     for (const [id, v] of this.peds) if (!seen.has(id)) { v.root.removeFromParent(); this.peds.delete(id); this.dropTag(id); }
-    for (const [id, v] of this.vehs) if (!seen.has(id)) { this.scene.remove(v.root); this.vehs.delete(id); }
+    for (const [id, v] of this.vehs) if (!seen.has(id)) { this.scene.remove(v.root); this.vehs.delete(id); this.dropCarLabel(id); }
     for (const [id, o] of this.objs) if (!seen.has(id)) { this.scene.remove(o); this.objs.delete(id); }
   }
 
@@ -182,6 +222,7 @@ export class WorldView {
     v.root.rotation.y = -a;
     v.root.visible = e.id !== this.hiddenVehicle;
     showDamage(v, spec, e.id, dents);
+    this.carLabel(e.id, v.root, spec.height);
     if (v.turret) v.turret.rotation.y = -(e.turret - e.angle);
     // Trailer swing relative to the cab: your own rig's is predicted with the cab; others' come
     // from the server, interpolated.

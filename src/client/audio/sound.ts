@@ -4,6 +4,7 @@
 import { FLOOR_H, groundOf } from '../../shared/world/levels';
 import { ENGINES, EngineVoice, TRAFFIC } from './engines';
 import { playTune } from './handset';
+import { type Line, playOnLine } from './phoneVoice';
 
 /** Every voice the game plays: its recording, gain, pitch wobble (random ± fraction) and the least
  *  time between two plays (rapid-fire weapons would otherwise stack dozens of copies). */
@@ -144,6 +145,27 @@ export class Sound {
     this.playing++;
     src.onended = () => { this.playing--; src.disconnect(); gain.disconnect(); };
     src.start(t);
+  }
+
+  private lines = new Map<string, Promise<AudioBuffer | null>>();
+
+  /** Speaks a voiced line (a clip URL) down a phone line; resolves with its length in seconds once
+   *  it's finished (0 straight away if there's no clip: the caller's bubble times itself then).
+   *  Muted, it still waits out the line's length, so a conversation keeps its pace. */
+  async line(url: string | undefined, via: Line): Promise<number> {
+    const ctx = this.ensure();
+    if (!ctx || !this.master || !url) return 0;
+    let p = this.lines.get(url);
+    if (!p) {
+      p = fetch(url).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+        .then((a) => ctx.decodeAudioData(a)).catch(() => null);
+      this.lines.set(url, p);
+    }
+    const buf = await p;
+    if (!buf) return 0;
+    if (this.muted || this.volume <= 0) { await new Promise((r) => setTimeout(r, buf.duration * 1000)); return buf.duration; }
+    await playOnLine(ctx, this.master, buf, via, 1.1);
+    return buf.duration;
   }
 
   /** Plays one of the cell phone's synthesised tunes (audio/handset.ts): 'ringtone' or 'text'. */

@@ -5,7 +5,7 @@
 export {};
 process.env.GRIDLOCK_DATA = 'data-smoke/cell';
 const { Room } = await import('../src/server/room');
-const { GANGS, PROPERTIES, RESPECT } = await import('../src/shared/packs');
+const { GANGS, MISSIONS, PROPERTIES, RESPECT } = await import('../src/shared/packs');
 
 let failures = 0;
 const check = (ok: boolean, what: string) => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${what}`); if (!ok) failures++; };
@@ -16,7 +16,7 @@ const room = new Room('CELL', 303);
 room.stop();
 const pl = room.join('Caller', { send: (d) => msgs.push(JSON.parse(d)), close: () => {} }, {
   id: 'cell01', name: 'Caller', look: {} as never, created: 1, lastPlayed: 1, cash: 100, bank: 0, garage: [], felonies: {}, deaths: 0,
-  respect: { [g1]: RESPECT.cellAt + 5, [g2]: 10 },
+  respect: { [g1]: RESPECT.cellAt + 5, [g2]: 10 }, met: ['benny'], // Benny's welcome is tested in coop.ts
 });
 if (typeof pl === 'string') throw new Error(pl);
 room.stop();
@@ -25,6 +25,8 @@ const ticks = (n: number) => { for (let i = 0; i < n; i++) room.tick(); };
 const since = (k: number) => msgs.slice(k);
 const texts = (k: number) => since(k).filter((m) => m.t === 'text') as unknown as { from: string; body: string }[];
 const calls = (k: number) => since(k).filter((m) => m.t === 'call') as unknown as { gang: string; state: string; text?: string }[];
+/** What's said on the line (voiced exchanges: [caller, situation, exchange]). */
+const said = (k: number) => since(k).filter((m) => m.t === 'talk').flatMap((m) => (m as unknown as { parts: [string, string, number][] }).parts);
 
 ticks(5);
 check(texts(0).length === 0, 'a number you already had on joining is not texted again');
@@ -43,7 +45,7 @@ const ring = calls(k).find((c) => c.state === 'ring');
 check(!!ring && room.cell.contacts(pl).includes(ring.gang), 'a contact calls when you are free');
 room.cell.answer(pl, true);
 check(!!pl.mission && pl.mission.giver === ring?.gang, 'answering starts that gang\'s job');
-check(calls(k).some((c) => c.state === 'end' && !!c.text), 'they say something on the line');
+check(said(k).some(([, s]) => s === MISSIONS[pl.mission!.spec].kind), 'they brief you on the line');
 // No calls while working.
 k = msgs.length;
 pl.cell.next = 0;
@@ -72,7 +74,7 @@ check(before && room.cell.dial(pl, g1) === null && pl.mission?.giver === g1, 'ri
 room.missions.drop(pl);
 k = msgs.length;
 room.cell.dial(pl, g1);
-check(!pl.mission && calls(k).some((c) => c.text?.startsWith('Nothing right now')), 'the same contact needs a while before more work');
+check(!pl.mission && said(k).some(([, s]) => s === 'nothing'), 'the same contact needs a while before more work');
 check(room.cell.dial(pl, g3) !== null, "a gang that doesn't trust you can't be rung");
 // Phone jobs pay more: the same job spec's reward range, scaled.
 room.missions.offer(pl, g2, 10);

@@ -65,6 +65,17 @@
   its road (player or AI driving it): eases to the kerb, stops, and moves off a few seconds after
   it's gone (ai/driving.ts sirenApproaching, cruise). AI emergency drivers pass yielding traffic on
   the left when it's clear. `npx tsx scripts/sirens.ts`.
+- Voiced calls (2026-11-23): docs/STORY.md (Bayhaven, the three crews, Harlan Price) and its cast in
+  packs/calls.ts; 61 lines voiced with Chatterbox (one reference voice per person, made from Kokoro
+  by the workbench `voice_ref` tool, rendered three takes a line and checked back with faster-whisper:
+  `npx tsx scripts/voice-calls.ts`) to src/client/voice/*.ogg (~1 MB, loaded per call). Server picks
+  who speaks (missions/talk.ts; `met` saved with the character), the client plays them as comic
+  bubbles beside you (hud/talk.ts) down a payphone or cell line (audio/phoneVoice.ts). A ringing
+  phone no longer takes the controls (P / LB answers, Backspace declines). Protocol 14.
+- Company (2026-11-23): waypoints go to the server and show, in each player's colour, to everyone in
+  the same vehicle; players riding inside a car have their names over it; a passed job's pay is split
+  with the players riding with you or within RULES.shareRange; you can bail out of a moving vehicle
+  (thrown down and hurt over RULES.bailFall, killed from RULES.bailDie). `npx tsx scripts/coop.ts`.
 - Helicopters (2026-11-23): cruise ~24 m/s (air drag sets it: accel / HELI_DRAG). They set down on
   roofs: StaticWorld.floorAt from the drawn massing (world/massing.ts, shared so server and client
   agree; per-building RNG). Getting out on a tower or apartment roof takes the roof stairs to its

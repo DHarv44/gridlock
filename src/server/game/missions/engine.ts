@@ -1,6 +1,6 @@
 // Missions: payphone offers, kill-frenzy crates, gang respect, per-player job progress.
 import { dist } from '../../../shared/math';
-import { faction, GANGS, MISSIONS, RESPECT, weaponIndex } from '../../../shared/packs';
+import { faction, GANGS, MISSIONS, RESPECT, RULES, weaponIndex } from '../../../shared/packs';
 import { type MissionInfo, Mode, PK, type S2C } from '../../../shared/protocol';
 import { type Booth, type CrateSpot, gangSpots } from '../../../shared/world/gangSpots';
 import type { MissionState, Pickup, Ped, Player } from '../entities';
@@ -8,6 +8,7 @@ import { giveWeapon } from '../factory';
 import type { World } from '../world';
 import { factionName, fill, markName, release } from './helpers';
 import { KINDS, objectivePoint } from './kinds';
+import { briefCall, gangCaller, talk } from './talk';
 
 const clampR = (v: number) => Math.max(RESPECT.min, Math.min(RESPECT.max, v));
 
@@ -41,7 +42,7 @@ export class Missions {
     const { i } = pool[Math.floor(w.rng.next() * pool.length)];
     const rivals = faction(booth.gang).hostile.filter((f) => GANGS.includes(f));
     pl.boothCd.set(boothId, w.time + RESPECT.phoneCooldown);
-    this.begin(pl, i, booth.gang, rivals[Math.floor(w.rng.next() * rivals.length)] ?? '', booth);
+    this.begin(pl, i, booth.gang, rivals[Math.floor(w.rng.next() * rivals.length)] ?? '', booth, 1, 'payphone');
     return null;
   }
 
@@ -53,10 +54,11 @@ export class Missions {
     const pool = MISSIONS.map((m, i) => ({ m, i })).filter(({ m }) => m.giver === gang || m.giver === 'gang');
     const { i } = pool[Math.floor(w.rng.next() * pool.length)];
     const rivals = faction(gang).hostile.filter((f) => GANGS.includes(f));
-    this.begin(pl, i, gang, rivals[Math.floor(w.rng.next() * rivals.length)] ?? '', w.pedPos(p), payMul);
+    this.begin(pl, i, gang, rivals[Math.floor(w.rng.next() * rivals.length)] ?? '', w.pedPos(p), payMul, 'cell');
   }
 
-  private begin(pl: Player, specIndex: number, giver: string, rival: string, from: { x: number; y: number }, payMul = 1): void {
+  /** `via`: how the job was given, if by phone: the giver's voice briefs you down that line. */
+  private begin(pl: Player, specIndex: number, giver: string, rival: string, from: { x: number; y: number }, payMul = 1, via?: 'payphone' | 'cell'): void {
     const w = this.w;
     const spec = MISSIONS[specIndex];
     const r = (spec.reward[0] + w.rng.next() * (spec.reward[1] - spec.reward[0])) * payMul;
@@ -74,6 +76,7 @@ export class Missions {
     }
     pl.mission = st;
     this.send(pl, true);
+    if (via && GANGS.includes(giver)) briefCall(w, pl, giver, spec.kind, via);
   }
 
   private info(st: MissionState): MissionInfo {
@@ -107,14 +110,45 @@ export class Missions {
       if (p) { p.weapons = p.weapons.filter((h) => h.w !== st.weapon); p.wi = Math.min(p.wi, p.weapons.length - 1); }
     }
     if (passed) {
-      w.earn(pl, st.reward);
+      // Done with company: whoever rode with you or was close by splits the pay with you evenly
+      // (the gang's respect is yours: it was your job).
+      const crew = this.crewOf(pl);
+      const share = Math.floor(st.reward / (crew.length + 1));
+      w.earn(pl, share);
+      for (const c of crew) {
+        w.earn(c, share);
+        w.notify('money', `+$${share.toLocaleString('en-US')} · your share of ${pl.name}'s ${spec.title}`, c);
+      }
       if (st.giver) this.adjust(pl, st.giver, spec.respect);
       if (st.rival && spec.rivalRespect) this.adjust(pl, st.rival, -spec.rivalRespect);
-      w.notify('money', `+$${st.reward.toLocaleString('en-US')} · ${spec.title} passed`, pl);
+      w.notify('money', crew.length
+        ? `+$${share.toLocaleString('en-US')} · ${spec.title} passed (split ${crew.length + 1} ways)`
+        : `+$${st.reward.toLocaleString('en-US')} · ${spec.title} passed`, pl);
     } else {
       if (st.giver) this.adjust(pl, st.giver, -Math.ceil(spec.respect / 3));
     }
     pl.send({ t: 'mission', m: null, result: passed ? 'passed' : 'failed' } satisfies S2C);
+    // The gang rings to say so (they have your number now, one way or another).
+    if (GANGS.includes(st.giver)) {
+      const who = gangCaller(w, pl, st.giver, passed ? 'pass' : 'fail');
+      if (who) talk(w, pl, 'cell', [[who, passed ? 'pass' : 'fail']]);
+    }
+  }
+
+  /** The other players in on a job when it's done: riding in your vehicle, or alive within
+   *  RULES.shareRange of you on the same floor. */
+  private crewOf(pl: Player): Player[] {
+    const w = this.w, me = w.peds.get(pl.pid);
+    if (!me) return [];
+    const at = w.pedPos(me);
+    return [...w.players.values()].filter((o) => {
+      if (o === pl) return false;
+      const p = w.peds.get(o.pid);
+      if (!p || p.dead) return false;
+      if (me.vehicle && p.vehicle === me.vehicle) return true;
+      const q = w.pedPos(p);
+      return dist(at.x, at.y, q.x, q.y) <= RULES.shareRange;
+    });
   }
 
   private adjust(pl: Player, gang: string, delta: number): void {

@@ -3,7 +3,7 @@ import { dist } from '../../../shared/math';
 import { PLAYER_ARCHETYPE, RULES, UNARMED, WEAPONS, weaponIndex } from '../../../shared/packs';
 import { BTN, EDGE_BUTTONS, type InputMsg, Mode } from '../../../shared/protocol';
 import { SPRINT, stepVehicle } from '../../../shared/sim/physics';
-import { wallCrash } from '../combat/damage';
+import { damagePed, killPed, wallCrash } from '../combat/damage';
 import { leaveOnRoof } from './lifts';
 import { onAttacked } from '../ai/reactions';
 import { tickWeapon, tryFire } from '../combat/fire';
@@ -113,9 +113,16 @@ function toggleVehicle(w: World, pl: Player, p: Ped): void {
         return;
       }
     }
-    if (v && Math.hypot(v.body.vx, v.body.vy) > 9) return;
+    // Bailing out on the move: step out at a crawl, get thrown down and hurt faster, and at speed
+    // it's the last thing you do. The vehicle rolls on without you.
+    const speed = v ? Math.hypot(v.body.vx, v.body.vy) : 0;
     unseatPed(w, p, true);
     if (v && v.seats[0] === 0) { v.ctl.throttle = 0; v.ctl.steer = 0; }
+    if (speed >= RULES.bailDie) killPed(w, p, null, true);
+    else if (speed > RULES.bailFall) {
+      p.down = Math.max(p.down, 0.8 + speed * 0.06);
+      damagePed(w, p, (speed - RULES.bailFall) ** 2 * 0.2, 0, { vehicle: true });
+    }
     return;
   }
   const v = nearestVehicle(w, p);

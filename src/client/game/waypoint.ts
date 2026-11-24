@@ -40,8 +40,11 @@ export class Waypoint {
   }
 }
 
-/** The road route to the current job objective (which may move: a mark driving off), re-planned as
- *  you both move. It goes when the job does, not on arrival. */
+/** A waypoint as the radar and map draw it: the point, the road route to it, whose colour. */
+export interface Mark { point: Pt; route: Pt[]; color: string }
+
+/** The road route to a point that may move (the job objective: a mark driving off; a friend's
+ *  waypoint), re-planned as you both move. It goes when the point does, not on arrival. */
 export class JobRoute {
   route: Pt[] = [];
   private router: Router;

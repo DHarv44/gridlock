@@ -2,6 +2,7 @@
 import { RULES, VEHICLES } from '../shared/packs';
 import { type C2S, type InputMsg, Mode, PLAYER_COLORS, type S2C, SNAP_EVERY, TICK_HZ } from '../shared/protocol';
 import { DT } from '../shared/sim/physics';
+import { MAP_SIZE } from '../shared/world/cityTypes';
 import { updateAi } from './game/ai/brain';
 import type { Player } from './game/entities';
 import { removeVehicle, unseatPed } from './game/factory';
@@ -105,7 +106,7 @@ export class Room {
     const roomProf = this.profiles[key];
     const c = character;
     const prof: SavedProfile = c
-      ? { cash: c.cash, bank: c.bank, garage: c.garage, owned: roomProf?.owned ?? [], felonies: c.felonies, deaths: c.deaths, respect: c.respect }
+      ? { cash: c.cash, bank: c.bank, garage: c.garage, owned: roomProf?.owned ?? [], felonies: c.felonies, deaths: c.deaths, respect: c.respect, met: c.met }
       : roomProf ?? { cash: RULES.startCash, garage: [], owned: [], felonies: {}, deaths: 0 };
     const used = new Set([...w.players.values()].map((p) => p.color));
     const color = PLAYER_COLORS.find((c) => !used.has(c)) ?? PLAYER_COLORS[0];
@@ -115,7 +116,7 @@ export class Room {
       respawnT: 0, garage: [...prof.garage].filter((v) => v < VEHICLES.length), owned: [...prof.owned].filter((id) => this.econ.owners.get(id) === key),
       garageCar: 0, ping: 0, send: (m) => conn.send(JSON.stringify(m)), sendRaw: (s) => conn.send(s),
       spawnCdT: 0, bustT: 0, lastPlace: -1, gunCrimeT: -9, seenCheckT: 0, sent: new Map(), snapCount: 0,
-      respect: { ...(prof.respect ?? {}) }, mission: null, boothCd: new Map(), cell: newCell(w, prof.respect ?? {}), frags: 0, earned: 0, itTime: 0,
+      respect: { ...(prof.respect ?? {}) }, met: new Set(prof.met ?? []), mission: null, boothCd: new Map(), cell: newCell(w, prof.respect ?? {}), frags: 0, earned: 0, itTime: 0,
       ...(character ? { character: { id: character.id }, look: character.look } : {}),
     };
     // Characters pick up where they left off (any room: it's the same city); others at the hospital.
@@ -195,6 +196,12 @@ export class Room {
       case 'ping':
         pl.send({ t: 'pong', ts: msg.ts, st: Math.round(this.world.time * 1000) } satisfies S2C);
         break;
+      case 'waypoint': {
+        // Your map waypoint, shared with whoever rides with you (sent in the player list).
+        const at = Array.isArray(msg.at) ? msg.at.map(Number) : null;
+        pl.waypoint = at && at.length === 2 && at.every((v) => Number.isFinite(v) && v >= 0 && v <= MAP_SIZE) ? [Math.round(at[0]), Math.round(at[1])] : null;
+        break;
+      }
     }
   }
 
@@ -207,7 +214,7 @@ export class Room {
   }
 
   private storeProfile(pl: Player): void {
-    this.profiles[pl.name.toLowerCase()] = { cash: pl.cash, bank: pl.bank, garage: pl.garage, owned: pl.owned, felonies: pl.felonies, deaths: pl.deaths, respect: pl.respect };
+    this.profiles[pl.name.toLowerCase()] = { cash: pl.cash, bank: pl.bank, garage: pl.garage, owned: pl.owned, felonies: pl.felonies, deaths: pl.deaths, respect: pl.respect, met: [...pl.met] };
     this.sendSave(pl);
   }
 

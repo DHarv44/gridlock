@@ -1,15 +1,15 @@
-// Radar: the baked city map around you, place pins, players, hostiles, job blips, and the
-// waypoint route as a dashed line (the marker clings to the edge when it's out of range).
+// Radar: the baked city map around you, place pins, players, hostiles, job blips, and waypoint
+// routes as dashed lines in their owners' colours (markers cling to the edge when out of range).
 import { SERVICES } from '../../shared/packs';
 import type { PlayerInfo } from '../../shared/protocol';
 import type { CityMap } from '../../shared/world/city';
 import type { Blip } from '../game/jobs';
 import type { Pt } from '../game/route';
+import type { Mark } from '../game/waypoint';
 import { MAP_COLORS, bakeCityMap } from './mapArt';
 import { phoneBlip } from './phoneIcon';
 
 const SCALE = 0.5; // px per metre in the baked image
-const WAYPOINT_COLOR = '#ff4fd8';
 const JOB_COLOR = '#ffd21f';
 
 export const PLACE_ICON: Record<string, { color: string; label: string; glyph: string }> = {
@@ -36,7 +36,7 @@ export class Minimap {
 
   /** Draws the radar centred on (x, y) with `range` metres to the edge. */
   drawRadar(ctx: CanvasRenderingContext2D, size: number, x: number, y: number, angle: number, range: number, players: PlayerInfo[], meId: number,
-    owned: Set<number>, hostiles: { x: number; y: number }[], blips: Blip[] = [], waypoint: Pt | null = null, route: Pt[] = [], jobRoute: Pt[] = []): void {
+    owned: Set<number>, hostiles: { x: number; y: number }[], blips: Blip[] = [], marks: Mark[] = [], jobRoute: Pt[] = []): void {
     const k = size / 2 / range;
     ctx.save();
     ctx.clearRect(0, 0, size, size);
@@ -53,8 +53,9 @@ export class Minimap {
       const dx = px - size / 2, dy = py - size / 2, d = Math.hypot(dx, dy), m = size / 2 - 9;
       return d > m ? [size / 2 + (dx / d) * m, size / 2 + (dy / d) * m] as const : [px, py] as const;
     };
-    // Road routes: the job's in the objective's yellow, your own waypoint's in pink.
-    for (const [r, color] of [[jobRoute, JOB_COLOR], [route, WAYPOINT_COLOR]] as const) {
+    // Road routes: the job's in the objective's yellow, each waypoint's (yours, and those of whoever
+    // rides with you) in its owner's colour.
+    for (const [r, color] of [[jobRoute, JOB_COLOR] as const, ...marks.map((m) => [m.route, m.color] as const)]) {
       if (r.length < 2) continue;
       ctx.beginPath();
       r.forEach((p, i) => { const [px, py] = to(p.x, p.y); if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py); });
@@ -87,9 +88,9 @@ export class Minimap {
       else ctx.arc(px, py, 3.5, 0, Math.PI * 2);
       ctx.fill(); ctx.stroke();
     }
-    if (waypoint) {
-      const [px, py] = clampEdge(...to(waypoint.x, waypoint.y));
-      ctx.fillStyle = WAYPOINT_COLOR; ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+    for (const m of marks) {
+      const [px, py] = clampEdge(...to(m.point.x, m.point.y));
+      ctx.fillStyle = m.color; ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(px, py, 2.2, 0, Math.PI * 2); ctx.fill();
     }

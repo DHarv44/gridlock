@@ -9,6 +9,7 @@ import { DISTRICTS, ZONES } from './zones';
 
 export { CRIMES, type CrimeKind, FELONIES, RULES, SERVICE_CALLS, WANTED } from './rules';
 export { MARK_NAMES, MISSIONS, MODES, RESPECT } from './missions';
+export { CALLERS, CALLS, type Caller, type CallSituation, GANG_CALLERS, lineId, type Turn } from './calls';
 export { PALETTE, PALETTE_NAMES, paletteFor } from './palette';
 export { RADIO, type RadioStation } from './radio';
 export { ARMOR_MODEL } from './weaponModels';

@@ -168,11 +168,15 @@ export interface Player {
   sent: Map<number, string>;
   snapCount: number;
   respect: Record<string, number>;
+  /** Callers who've introduced themselves (packs/calls.ts; saved with the character). */
+  met: Set<string>;
+  /** Their map waypoint, shared with whoever rides with them. */
+  waypoint?: [number, number] | null;
   mission: MissionState | null;
   boothCd: Map<number, number>;   // booth id -> world time it may ring again
   /** Cell phone (missions/cell.ts): when the next call comes, who's ringing and until when, each
    *  contact's wait before it has work again, and the gangs whose number you've been texted. */
-  cell: { next: number; ringing: string; ringEnds: number; dialCd: Record<string, number>; known: Set<string> };
+  cell: { next: number; ringing: string; ringEnds: number; dialCd: Record<string, number>; known: Set<string>; introAt: number };
   frags: number;                  // player kills this round
   earned: number;                 // cash earned this round
   itTime: number;                 // seconds spent "it" this round (tag)

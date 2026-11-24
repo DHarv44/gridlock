@@ -15,13 +15,14 @@ import { Showroom } from '../hud/showroom';
 const SHOWROOMS = new Set(['gunshop', 'dealer']);
 import { OffscreenPlayers } from '../hud/offscreenPlayers';
 import { Phone } from '../hud/phone';
+import { Talk } from '../hud/talk';
 import { PaintGarage } from '../hud/paintGarage';
 import { SERVICES } from '../../shared/packs';
 import type { Place } from '../../shared/world/cityTypes';
 import { BigMap } from '../hud/bigMap';
 import { saveProgress } from '../lobby/characterStore';
 import { Minimap } from '../hud/minimap';
-import { JobRoute, Waypoint } from './waypoint';
+import { JobRoute, type Mark, Waypoint } from './waypoint';
 import { Pane } from '../hud/pane';
 import type { Connection } from '../net/connection';
 import { EntityStore } from '../net/entities';
@@ -68,6 +69,7 @@ export class Game {
   private shop = new Showroom();
   private offscreen: OffscreenPlayers;
   private phone: Phone;
+  private talk: Talk;
   private gas: GasStations;
   private interiors: Interiors;
   /** The client's collision world (prediction); vault gates mirror the server's. */
@@ -108,6 +110,9 @@ export class Game {
     this.jobs.myId = myId;
     this.offscreen = new OffscreenPlayers(this.hud.root);
     this.phone = new Phone(this.hud.root);
+    this.talk = new Talk(this.hud.root, this.sound);
+    // A call on your cell: the handset shows who's on the line while they talk.
+    this.talk.onLine = (who, via) => { if (via === 'cell') this.phone.line(who); };
     this.phone.send = (msg) => conn.send(msg);
     this.phone.ring = () => this.sound.tune('ringtone');
     this.phone.textTone = () => this.sound.tune('text');
@@ -119,7 +124,7 @@ export class Game {
     this.input.onNav = (c) => {
       if (this.garage.isOpen) this.garage.nav(c);
       else if (this.shop.isOpen) this.shop.nav(c);
-      else if (this.phone.isOpen) this.phone.nav(c);
+      else if (this.phone.capturing) this.phone.nav(c);
       else if (!this.bigMap.isOpen) this.pane.nav(c);
       else if (c === 'back') this.bigMap.close();
       else this.bigMap.nav(c);
@@ -127,8 +132,13 @@ export class Game {
     this.bigMap = new BigMap(this.hud.bigmap, this.hud.bigmapCanvas, this.map);
     this.waypoint = new Waypoint(city);
     this.jobRoute = new JobRoute(city);
-    this.bigMap.onWaypoint = (p) => { const o = this.ownState(1); this.waypoint.set(p, o); };
-    this.waypoint.onArrive = () => this.hud.notify('Waypoint reached', 'info');
+    // Your waypoint goes to the server too: whoever rides with you sees it, in your colour.
+    this.bigMap.onWaypoint = (p) => {
+      const o = this.ownState(1);
+      this.waypoint.set(p, o);
+      conn.send({ t: 'waypoint', at: p ? [p.x, p.y] : null });
+    };
+    this.waypoint.onArrive = () => { this.hud.notify('Waypoint reached', 'info'); conn.send({ t: 'waypoint', at: null }); };
     // Browsers only reveal a controller after one of its buttons is pressed: say when one is seen.
     // Only standard gamepads count (sticks, throttles and headsets also report as gamepads).
     const padName = (g: Gamepad) => g.id.replace(/\s*\(.*$/, '') || 'gamepad';
@@ -180,7 +190,7 @@ export class Game {
         if (this.bigMap.isOpen) this.bigMap.close(); else this.bigMap.open(o?.x ?? 1024, o?.y ?? 1024);
         break;
       }
-      case 'phone': if (!this.garage.isOpen && !this.shop.isOpen) this.phone.toggle(); break;
+      case 'phone': if (!this.garage.isOpen && !this.shop.isOpen) this.phone.button(); break;
       case 'menu':
         if (this.garage.isOpen) { this.garage.leave(); return; }
         if (this.shop.isOpen) { this.shop.leave(); return; }
@@ -196,6 +206,7 @@ export class Game {
   }
 
   private onMessage(m: S2C): void {
+    if (m.t === 'talk') { this.talk.play(m); return; }
     if (this.jobs.onMessage(m) || this.phone.onMessage(m)) return;
     switch (m.t) {
       case 's':
@@ -270,7 +281,7 @@ export class Game {
     const now = performance.now();
     const dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
-    this.input.pollPad(dt, this.pane.isOpen || this.bigMap.isOpen || this.garage.isOpen || this.shop.isOpen || this.phone.isOpen);
+    this.input.pollPad(dt, this.pane.isOpen || this.bigMap.isOpen || this.garage.isOpen || this.shop.isOpen || this.phone.capturing);
     this.acc += dt;
     let n = 0;
     while (this.acc >= STEP && n < 4) {
@@ -310,6 +321,7 @@ export class Game {
     this.gas.putGlows(this.fx.glow, night, vr);
     if (own && up) this.interiors.update(up.x, up.y, !own.vid, up.f);
     this.interiors.putGlows(this.fx.glow, night);
+    this.view.carTags = this.carTags();
     this.view.sync(this.store, dt, own, this.tags(), night, vr);
     this.fx.update(dt);
     this.water.update(dt);
@@ -318,7 +330,9 @@ export class Game {
     ownEngine(this.store, this.you && this.you.mode !== Mode.Dead ? own : null, this.sound, dt);
     trafficEngines(this.store, disp, this.sound, dt);
     this.stage.render();
-    this.offscreen.update(this.stage.camera, this.players, this.myId, (p) => { const e = this.store.all.get(p.pid); return e ? groundOf(e.x, e.y) : p; }, this.jobs.it);
+    // Call bubbles hang beside your head (upstairs: over your building, at your floor's height).
+    this.talk.update(this.stage.camera, own && up ? { x: up.x, h: up.f * FLOOR_H + own.alt + 2.9, y: up.y } : null);
+    this.offscreen.update(this.stage.camera, this.players, this.myId, (p) => this.playerSpot(p), this.jobs.it);
     this.updateHud(own, disp);
   }
 
@@ -338,6 +352,26 @@ export class Game {
     return m;
   }
 
+
+  /** Other players inside vehicles, by vehicle id. Riders drawn on a bike or open top have their own
+   *  ped (and tag), so they're left out. */
+  private carTags(): Map<number, PlayerTag[]> {
+    const m = new Map<number, PlayerTag[]>();
+    for (const p of this.players) {
+      if (p.id === this.myId || !p.vid || this.store.all.has(p.pid)) continue;
+      const list = m.get(p.vid) ?? [];
+      list.push({ name: p.name, color: p.color });
+      m.set(p.vid, list);
+    }
+    return m;
+  }
+
+  /** Where a player is on the map: their ped if it's drawn, else the vehicle they're in (smooth),
+   *  else the player list's once-a-second position. */
+  private playerSpot(p: PlayerInfo): { x: number; y: number } {
+    const e = this.store.all.get(p.pid) ?? (p.vid ? this.store.all.get(p.vid) : undefined);
+    return e ? groundOf(e.x, e.y) : p;
+  }
 
   /** `own` where you really are (lifts, doors); `disp` where you are over the map (radar, map, route). */
   private updateHud(own: OwnState | null, disp: OwnState | null): void {
@@ -363,6 +397,7 @@ export class Game {
     wp.update(disp);
     const job = this.jobRoute;
     job.update(you.mt ? { x: you.mt[0], y: you.mt[1] } : null, disp);
+    const marks = this.waypointMarks(wp, disp, you.vid);
     // Job blips, a red marker on any of your businesses a gang is leaning on, and (tag) whoever's it.
     const blips = [...this.jobs.blips(you), ...(this.profile.trouble ?? []).map(([id]) => {
       const p = this.map.city.properties[id];
@@ -370,11 +405,33 @@ export class Game {
     })];
     const it = this.itSpot();
     if (it && this.jobs.it !== this.myId) blips.push({ x: it.x, y: it.y, color: '#ff2a2a', shape: 'star' });
-    this.radar.drawRadar(ctx, 220, disp.x, disp.y, own.angle, range, this.players, this.myId, owned, hostiles, blips, wp.point, wp.route, job.route);
+    this.radar.drawRadar(ctx, 220, disp.x, disp.y, own.angle, range, this.players, this.myId, owned, hostiles, blips, marks, job.route);
     if (this.bigMap.isOpen) {
       this.bigMap.draw({ me: { x: disp.x, y: disp.y, angle: own.angle }, players: this.players, meId: this.myId, owned, owners: this.owners,
-        blips, waypoint: wp.point, route: wp.route, jobRoute: job.route });
+        blips, waypoint: wp.point, marks, jobRoute: job.route });
     }
+  }
+
+  /** Routes to riders' waypoints, by player id (re-planned as you go). */
+  private mateRoutes = new Map<number, JobRoute>();
+
+  /** Waypoints to draw: yours, and those of the other players riding in your vehicle, each in its
+   *  owner's colour with a road route from where you are. */
+  private waypointMarks(wp: Waypoint, from: { x: number; y: number }, vid: number): Mark[] {
+    const mine = this.players.find((p) => p.id === this.myId);
+    const marks: Mark[] = wp.point ? [{ point: wp.point, route: wp.route, color: mine?.color ?? '#ff4fd8' }] : [];
+    const seen = new Set<number>();
+    for (const p of this.players) {
+      if (p.id === this.myId || !vid || p.vid !== vid || !p.wp) continue;
+      let r = this.mateRoutes.get(p.id);
+      if (!r) this.mateRoutes.set(p.id, r = new JobRoute(this.map.city));
+      const point = { x: p.wp[0], y: p.wp[1] };
+      r.update(point, from);
+      marks.push({ point, route: r.route, color: p.color });
+      seen.add(p.id);
+    }
+    for (const id of this.mateRoutes.keys()) if (!seen.has(id)) this.mateRoutes.delete(id);
+    return marks;
   }
 
   /** Shops with a counter (gun shop, dealership): you step up to it (controls off) till you walk out. */

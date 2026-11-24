@@ -8,6 +8,7 @@ import { type Atm, atmsOf } from '../../shared/world/atms';
 import { MAP_SIZE } from '../../shared/world/cityTypes';
 import type { Blip } from '../game/jobs';
 import type { Pt } from '../game/route';
+import type { Mark } from '../game/waypoint';
 import { bakeCityMap } from './mapArt';
 import { MapLegend } from './mapLegend';
 import { phoneBlip } from './phoneIcon';
@@ -22,7 +23,10 @@ export interface MapFrame {
   players: PlayerInfo[]; meId: number;
   owned: Set<number>; owners: Map<number, string>;
   blips: Blip[];
-  waypoint: Pt | null; route: Pt[];
+  /** Your own waypoint (clicking it again clears it). */
+  waypoint: Pt | null;
+  /** Every waypoint to draw (yours and those of whoever rides with you), in its owner's colour. */
+  marks: Mark[];
   /** Road route to the job objective (drawn in the objective's yellow). */
   jobRoute: Pt[];
 }
@@ -180,7 +184,7 @@ export class BigMap {
   }
 
   private route(ctx: CanvasRenderingContext2D, f: MapFrame): void {
-    for (const [r, color] of [[f.jobRoute, JOB_COLOR], [f.route, WAYPOINT_COLOR]] as const) {
+    for (const [r, color] of [[f.jobRoute, JOB_COLOR] as const, ...f.marks.map((m) => [m.route, m.color] as const)]) {
       if (r.length < 2) continue;
       ctx.beginPath();
       r.forEach((p, i) => { const [x, y] = this.toScreen(p.x, p.y); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
@@ -189,7 +193,7 @@ export class BigMap {
       ctx.setLineDash([12, 8]); ctx.lineWidth = 3.5; ctx.strokeStyle = color; ctx.stroke();
       ctx.setLineDash([]);
     }
-    if (f.waypoint) { const [x, y] = this.toScreen(f.waypoint.x, f.waypoint.y); waypointPin(ctx, x, y, 1.3); }
+    for (const m of f.marks) { const [x, y] = this.toScreen(m.point.x, m.point.y); waypointPin(ctx, x, y, 1.3, m.color); }
   }
 
   private properties(ctx: CanvasRenderingContext2D, f: MapFrame): void {
@@ -249,11 +253,11 @@ export function pin(ctx: CanvasRenderingContext2D, x: number, y: number, color: 
 }
 
 /** Teardrop marker standing on (x, y). */
-export function waypointPin(ctx: CanvasRenderingContext2D, x: number, y: number, k = 1): void {
+export function waypointPin(ctx: CanvasRenderingContext2D, x: number, y: number, k = 1, color = WAYPOINT_COLOR): void {
   ctx.save(); ctx.translate(x, y); ctx.scale(k, k);
   ctx.beginPath();
   ctx.moveTo(0, 0); ctx.bezierCurveTo(-3, -6, -9, -10, -9, -17); ctx.arc(0, -17, 9, Math.PI, 0); ctx.bezierCurveTo(9, -10, 3, -6, 0, 0);
-  ctx.fillStyle = WAYPOINT_COLOR; ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.fill(); ctx.stroke();
+  ctx.fillStyle = color; ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.fill(); ctx.stroke();
   ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, -17, 3.5, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 }

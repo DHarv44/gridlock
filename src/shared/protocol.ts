@@ -4,7 +4,7 @@ import type { CharacterProgress, CharacterSave, CharLook } from './packs/charact
 export const TICK_HZ = 30;
 export const SNAP_EVERY = 2;             // snapshots at 15 Hz
 export const INTERP_DELAY_MS = 120;
-export const PROTOCOL_VERSION = 13;
+export const PROTOCOL_VERSION = 14;
 /** Every Nth snapshot carries every entity in full (others list unchanged ones in `k`). */
 export const FULL_SNAP_EVERY = 30;
 
@@ -34,6 +34,7 @@ export type C2S =
   | { t: 'chat'; text: string }
   | { t: 'call'; accept: boolean }        // answer / decline the call that's ringing
   | { t: 'dial'; gang: string }           // ring a contact to ask for work
+  | { t: 'waypoint'; at: [number, number] | null } // your map waypoint (shared with whoever rides with you)
   | { t: 'ping'; ts: number };
 
 export const EK = { Ped: 0, Veh: 1, Proj: 2, Pickup: 3, Fire: 4 } as const;
@@ -93,6 +94,8 @@ export interface PlayerInfo {
   earned: number;          // cash earned this round
   itS?: number;            // seconds spent "it" this round (tag)
   look?: CharLook;         // saved characters' chosen look (guests use the archetype look)
+  vid: number;             // the vehicle they're in (0 on foot)
+  wp?: [number, number];   // their map waypoint: shown to everyone riding with them
 }
 
 export interface Profile {
@@ -123,6 +126,9 @@ export type S2C =
   | { t: 'call'; gang: string; state: 'ring' | 'missed' | 'end'; text?: string }
   /** A text message to the phone. */
   | { t: 'text'; from: string; body: string }
+  /** A spoken exchange on the phone (packs/calls.ts): each part is [caller, situation, exchange
+   *  index], played in order; `via` sets how it sounds (a payphone's line, or a cell's). */
+  | { t: 'talk'; via: 'payphone' | 'cell'; parts: [string, string, number][] }
   /** Vault doors standing open (interior indexes; world/interiors.ts). */
   | { t: 'gates'; open: number[] }
   /** The character's progress, for the browser to save (sent every few seconds and after buys). */

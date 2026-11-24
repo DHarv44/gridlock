@@ -98,7 +98,11 @@ too long, shoot the clerk or leave and it's over; some clerks go for a gun (`fig
 refill over RULES.tillRefill; another player's business is robbed from its safe and they get a
 text; your own staff won't play along. server/game/systems/robbery.ts; `npx tsx scripts/robbery.ts`.
 
-## H. Jobs with teeth (proposed 2026-11-23, waiting on the user's go)
+## H. Jobs with teeth (started 2026-11-23; story and cast in docs/STORY.md)
+H1 first pass done: voiced calls (packs/calls.ts; clips by `npx tsx scripts/voice-calls.ts` with the
+workbench voice tools) played as comic bubbles beside you through a payphone or cell line
+(hud/talk.ts, audio/phoneVoice.ts): Benny's welcome on a newcomer's cell, each boss's introduction,
+briefs per job kind, done / blown calls, busy and nothing-on. H2-H4 next.
 The user: payphone jobs need better interaction, "comic bubbles or something", "GTA style scripts".
 Today a job is one of five fixed kinds with a one-line brief in a banner.
 - H1. The call: answering a payphone (or the cell) plays a short scripted exchange in comic speech

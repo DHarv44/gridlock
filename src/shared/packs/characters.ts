@@ -65,6 +65,8 @@ export interface CharacterProgress {
   felonies: Record<string, number>;
   deaths: number;
   respect: Record<string, number>;
+  /** Callers (packs/calls.ts) who've introduced themselves: their first call isn't repeated. */
+  met?: string[];
   last?: CharacterLast;
 }
 

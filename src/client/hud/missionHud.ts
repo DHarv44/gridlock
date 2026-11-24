@@ -58,7 +58,9 @@ export class MissionHud {
       this.title.textContent = `${g ? g.name : 'Kill Frenzy'} · ${m.title}`;
       this.title.style.color = g?.color ?? '#ff5a4f';
       this.objective.textContent = m.objective;
-      if (started) this.flash(m.brief, 'brief', 6000);
+      // Gang work is briefed by its caller on the phone (hud/talk.ts); a kill-frenzy crate has no
+      // one to say it, so its brief shows here.
+      if (started && !g) this.flash(m.brief, 'brief', 6000);
     }
     if (result) this.flash(result === 'passed' ? 'JOB DONE!' : 'JOB FAILED', result, 3000);
   }
