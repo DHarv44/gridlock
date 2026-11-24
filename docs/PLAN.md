@@ -98,6 +98,24 @@ too long, shoot the clerk or leave and it's over; some clerks go for a gun (`fig
 refill over RULES.tillRefill; another player's business is robbed from its safe and they get a
 text; your own staff won't play along. server/game/systems/robbery.ts; `npx tsx scripts/robbery.ts`.
 
+## H. Jobs with teeth (proposed 2026-11-23, waiting on the user's go)
+The user: payphone jobs need better interaction, "comic bubbles or something", "GTA style scripts".
+Today a job is one of five fixed kinds with a one-line brief in a banner.
+- H1. The call: answering a payphone (or the cell) plays a short scripted exchange in comic speech
+  bubbles: the gang's boss (a named character per gang, their own voice in the writing) and your
+  replies, typed out, Enter / E / A to move on. You can still move while it plays (shared world, no
+  pause). Hanging up mid-call turns the job down.
+- H2. Scripts: a job is a list of steps in packs/ (nouns), run by engine verbs: go to, collect,
+  kill, steal, deliver, destroy, survive, wait, follow, escort, defend, and `say` (the boss rings
+  mid-job, or a bubble over someone in the world: the mark taunting, a lookout yelling). Steps can
+  branch on what happened (the mark got away, the car's damaged).
+- H3. Teeth: twists the script can throw (an ambush, the mark bolts in a car, a cop tip-off with
+  stars, the package is a bomb on a timer, a double-cross by the giver); failing costs respect, and
+  blowing a job badly can get a crew sent after you.
+- H4. Story chains: each gang has a run of scripted jobs that unlock as they respect you more and
+  end in a big job with a payoff (cash, a perk, the gang's turf going friendly); random odd jobs
+  stay in between.
+
 ## G. Mobile (parked, 2026-11-23)
 The user wants the website usable on a phone: not a mobile port (no touch-control scheme, app install
 or radio re-encodes unless asked). Parked for now; when it comes back, keep it to that.
