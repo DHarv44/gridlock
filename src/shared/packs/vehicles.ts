@@ -61,7 +61,8 @@ export const VEHICLES: VehicleSpec[] = [
   { ...heavy, id: 'firetruck', name: 'Fire Truck', length: 9, width: 2.5, height: 3, mass: 12000, maxSpeed: 30, accel: 6, hp: 1200, seats: 2, price: 0, colors: [5], roles: ['fire'], siren: true, model: [...M.boxTruck('body'), ...M.ladder(), ...M.lightbar(0.35)] },
 
   // Military
-  { ...car, horn: 'horn_deep', engine: 'engine_suv', id: 'jeep', name: 'Army Jeep', length: 4.3, width: 2.0, height: 1.7, mass: 1900, maxSpeed: 36, accel: 10, grip: 8.5, hp: 500, openTop: true, price: 0, colors: [20, 19], roles: ['military'], model: [...M.pickup()] },
+  { ...car, horn: 'horn_deep', engine: 'engine_suv', id: 'jeep', name: 'Army Jeep', length: 4.3, width: 2.0, height: 1.7, mass: 1900, maxSpeed: 36, accel: 10, grip: 8.5, hp: 500, openTop: true, price: 0, colors: [20, 19], roles: ['military'], model: [...M.pickup()],
+    saddles: [{ x: -0.2, y: -0.42, z: 0.8, lean: -0.12 }, { x: -0.2, y: 0.42, z: 0.8, lean: -0.12 }, { x: -1.4, y: -0.42, z: 0.8, lean: -0.12 }, { x: -1.4, y: 0.42, z: 0.8, lean: -0.12 }] },
   { ...heavy, id: 'army_truck', name: 'Army Truck', length: 7.8, mass: 8000, maxSpeed: 26, hp: 900, seats: 6, price: 0, colors: [19, 20], roles: ['military'], model: [...M.boxTruck('olive'), ...M.canopy()] },
   { ...heavy, id: 'tank', name: 'Battle Tank', movement: 'tracks', length: 7.6, width: 3.6, height: 2.6, mass: 50000, maxSpeed: 14, accel: 4, brake: 12, reverse: 6, grip: 20, turnRate: 1.1, hp: 3000, seats: 1, armored: true, crushes: true, weapons: ['tank_cannon'], turret: 1.4, price: 0, colors: [20, 19], roles: ['military'], model: M.tank() },
 
@@ -72,7 +73,8 @@ export const VEHICLES: VehicleSpec[] = [
   { ...chopper, id: 'gunship', name: 'Gunship', length: 13, width: 3, maxSpeed: 42, accel: 11, turnRate: 2.1, hp: 1800, seats: 2, armored: true, weapons: ['heli_gun', 'heli_rockets'], price: 0, colors: [19, 3], roles: ['military_air'], model: M.attackHeli() },
 
   // Added later: appended so existing type indices (saved garages) keep their meaning.
-  { ...car, engine: 'engine_sport', id: 'roadster', name: 'Spyder', turnIn: 0.4, length: 4.2, width: 1.85, height: 1.15, mass: 1150, maxSpeed: 44, accel: 13.5, brake: 28, grip: 9.5, turnRate: 2.8, hp: 260, seats: 2, openTop: true, price: 48000, colors: 'bright', roles: ['traffic', 'parked'], shape: S.roadster, model: M.roadster() },
+  { ...car, engine: 'engine_sport', id: 'roadster', name: 'Spyder', turnIn: 0.4, length: 4.2, width: 1.85, height: 1.15, mass: 1150, maxSpeed: 44, accel: 13.5, brake: 28, grip: 9.5, turnRate: 2.8, hp: 260, seats: 2, openTop: true, price: 48000, colors: 'bright', roles: ['traffic', 'parked'], shape: S.roadster, model: M.roadster(),
+    saddles: [{ x: -0.45, y: -0.39, z: 0.66, lean: -0.15 }, { x: -0.45, y: 0.39, z: 0.66, lean: -0.15 }] },
 
   // Military utility vehicles: the Humvee and the MRAP, each also as a gun truck whose driver
   // aims a roof machine gun.

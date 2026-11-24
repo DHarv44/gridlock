@@ -1,5 +1,5 @@
-// Headless check that people on motorbikes are sent to clients as riders (with the bike and seat),
-// while people inside closed vehicles still aren't. `npx tsx scripts/riders.ts`
+// Headless check that people on motorbikes and in open-top cars are sent to clients as riders (with
+// the vehicle and seat), while people inside closed vehicles still aren't. `npx tsx scripts/riders.ts`
 export {};
 process.env.GRIDLOCK_DATA = 'data-smoke/riders';
 const { Room } = await import('../src/server/room');
@@ -36,6 +36,18 @@ const r = sent(rider.id), p = sent(pillion.id);
 check(!!r && r[8] === bike.id && r[9] === 0, 'the rider is sent on the bike, seat 0');
 check(!!p && p[8] === bike.id && p[9] === 1, 'the pillion passenger is sent, seat 1');
 check(!sent(driver.id), 'a driver inside a car is not sent');
+
+// Open-top cars: everyone aboard sits in plain sight, side by side.
+for (const id of ['jeep', 'roadster']) {
+  const spec = VEHICLES[vehicleIndex(id)];
+  check((spec.saddles?.length ?? 0) === spec.seats && spec.saddles!.every((s) => s.y !== undefined), `${id}: a seat for everyone aboard`);
+}
+const jeep = spawnVehicle(w, vehicleIndex('jeep'), me.body.x, me.body.y + 8, 0);
+const crew = [0, 1, 2, 3].map((seat) => { const p = spawnPed(w, pedIndex('cop'), jeep.body.x, jeep.body.y, 0, false); seatPed(w, p, jeep, seat); return p; });
+pl.sent = new Map();
+const snap2 = buildSnapshot(w, pl);
+if (snap2.t !== 's') throw new Error('no snapshot');
+check(crew.every((p, seat) => snap2.e.some((d) => d[0] === p.id && d[1] === EK.Ped && d[8] === jeep.id && d[9] === seat)), 'the jeep\'s four occupants are sent in their seats');
 
 console.log(failures ? `${failures} check(s) failed` : 'all rider checks passed');
 process.exit(failures ? 1 : 0);

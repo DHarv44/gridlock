@@ -62,7 +62,7 @@ export function buildSnapshot(w: World, pl: Player): S2C {
     if (!near(v.body.x, v.body.y, air ? R2 * 1.7 : R2)) continue;
     const dmg = v.wrecked ? 3 : v.hp < v.spec.hp * 0.35 ? 2 : v.hp < v.spec.hp * 0.7 ? 1 : 0;
     e.push([v.id, EK.Veh, v.type, r2(v.body.x), r2(v.body.y), a2(v.body.angle), v.color, vehFlags(w, v), a2(v.body.alt), a2(v.turret), dmg, v.spec.trailer ? a2(v.trailer) : 0]);
-    // Riders sit in plain sight (bikes): sent as peds carrying the vehicle and the seat they're on.
+    // Riders sit in plain sight (bikes, open-top cars): sent as peds carrying the vehicle and the seat they're on.
     const saddles = v.spec.saddles;
     if (saddles) {
       v.seats.forEach((pid, seat) => {

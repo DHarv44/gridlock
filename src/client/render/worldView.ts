@@ -14,6 +14,7 @@ export interface PlayerTag { name: string; color: string; look?: CharLook }
 
 /** Riders shrink from the larger-than-life street size to about 1.1x life, to sit a real-size bike. */
 const RIDER_SCALE = 0.7;
+const SEAT_SCALE = 0.58;
 const projGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.8, 6).rotateZ(Math.PI / 2);
 const grenadeGeo = new THREE.SphereGeometry(0.16, 8, 6);
 const pickupGeo = new THREE.BoxGeometry(0.7, 0.35, 0.45);
@@ -120,10 +121,12 @@ export class WorldView {
     const saddle = veh ? VEHICLES[veh.data[2]].saddles?.[seat] : undefined;
     if (!bike || !saddle) return false;
     if (v.root.parent !== bike.root) bike.root.add(v.root);
-    const k = RIDER_SCALE;
+    // Sitting in a car (side by side, front and back) they need to be smaller to fit than astride a bike.
+    const k = VEHICLES[veh!.data[2]].movement === 'bike' ? RIDER_SCALE : SEAT_SCALE;
     v.root.scale.setScalar(k);
     v.root.rotation.set(0, 0, 0);
-    v.root.position.set(saddle.x - k * HIP_H * Math.sin(saddle.lean), saddle.z - k * HIP_H * Math.cos(saddle.lean), 0);
+    // The model's left side is local -z (Blender +y), so + y (the driver's right) is + z.
+    v.root.position.set(saddle.x - k * HIP_H * Math.sin(saddle.lean), saddle.z - k * HIP_H * Math.cos(saddle.lean), saddle.y ?? 0);
     v.root.visible = bike.root.visible;
     setPedWeapon(v, d[7]);
     ridePed(v, saddle.lean, !!(d[6] & PF.aim));

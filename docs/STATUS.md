@@ -65,7 +65,8 @@
   its road (player or AI driving it): eases to the kerb, stops, and moves off a few seconds after
   it's gone (ai/driving.ts sirenApproaching, cruise). AI emergency drivers pass yielding traffic on
   the left when it's clear. `npx tsx scripts/sirens.ts`.
-- Riders on bikes are drawn (spec `saddles`, protocol 11); gun trucks (Humvee, MRAP) traverse a roof
+- Riders on bikes and everyone in an open-top car (Army Jeep, Spyder) are drawn, seated in their
+  seats (spec `saddles`, protocol 11); gun trucks (Humvee, MRAP) traverse a roof
   gun like the tank (spec `turret`). `npx tsx scripts/riders.ts`, `npx tsx scripts/turret.ts`.
 
 ## Known gaps / next
