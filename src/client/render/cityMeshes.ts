@@ -33,7 +33,7 @@ export class CityMeshes {
     const open = new Set(city.interiors.map((i) => i.building));
     city.buildings.forEach((b, bi) => {
       const owner = open.has(bi) ? bi : -1;
-      const ms = massesFor(b, rng);
+      const ms = massesFor(b, city.seed, bi);
       masses.push(...ms.map((m) => ({ ...m, owner })));
       const lot = city.lots[b.lot];
       for (const batch of Object.values(out)) batch.owner = owner;

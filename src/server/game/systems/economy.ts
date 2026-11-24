@@ -6,7 +6,7 @@ import { type Atm, atmsOf } from '../../../shared/world/atms';
 import type { Place } from '../../../shared/world/cityTypes';
 import { bankMove } from './banking';
 import type { Business } from './business';
-import { ride } from './lifts';
+import { ride, toRoof } from './lifts';
 
 /** Pad ids for owned properties, kept apart from service ids. */
 const PROP_PAD = 100000;
@@ -104,7 +104,7 @@ export class Economy {
   buy(pl: Player, kind: BuyKind, id: string, placeId: number): string | null {
     if (kind === 'deposit' || kind === 'withdraw') return bankMove(this.w, this.atms, pl, kind, id, placeId);
     if (kind === 'collect' || kind === 'payoff' || kind === 'meet') return this.business ? this.business.act(pl, kind, id, placeId) : 'Not now.';
-    if (kind === 'floor') return ride(this.w, pl, placeId, Number(id));
+    if (kind === 'floor') return id === 'roof' ? toRoof(this.w, pl, placeId) : ride(this.w, pl, placeId, Number(id));
     const w = this.w;
     const p = w.peds.get(pl.pid);
     if (!p || p.dead || pl.mode >= Mode.Dead) return 'Not now.';

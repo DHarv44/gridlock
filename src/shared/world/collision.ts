@@ -4,6 +4,7 @@ import type { City } from './cityTypes';
 import { MAP_SIZE } from './cityTypes';
 import { FLAT_PROPS } from './interiors';
 import { WORLD_X } from './levels';
+import { KIND, massesFor } from './massing';
 
 /** `gate`: a box that can open (a vault door: its interior's index); open gates are passed through. */
 export interface Box2 { x0: number; y0: number; x1: number; y1: number; h: number; gate?: number }
@@ -47,6 +48,43 @@ export class StaticWorld {
     for (const t of city.trees) this.addCircle({ x: t.x, y: t.y, r: TRUNK_R, h: 7 });
     this.stamp = new Uint32Array(this.boxes.length);
     this.stampC = new Uint32Array(this.circles.length);
+    // Roofs, by the blocks each building is drawn as (world/massing.ts: a tower's podium and shaft
+    // are separate roofs). Walk-in buildings are walls round an open room, so their collision boxes
+    // have no roof of their own. What a helicopter can set down on.
+    city.buildings.forEach((b, bi) => {
+      for (const m of massesFor(b, city.seed, bi)) {
+        // A house's pitched roof: it sits on the ridge, half a metre or so above the eaves.
+        const id = this.roofs.push({ ...m.r, h: m.h + (m.kind === KIND.house ? 0.8 : 0), bi }) - 1;
+        const [i0, j0, i1, j1] = StaticWorld.cellRange(m.r.x0, m.r.y0, m.r.x1, m.r.y1);
+        for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) this.roofCells[j * N + i].push(id);
+      }
+    });
+  }
+
+  private roofs: (Box2 & { bi: number })[] = [];
+  private roofCells: number[][] = Array.from({ length: N * N }, () => []);
+
+  /** Height of what's under a point on the street map: the highest roof whose footprint holds it at
+   *  least `inset` metres in from the edge, else 0 (the street). Upper-floor strips have no roofs. */
+  floorAt(x: number, y: number, inset = 0): number {
+    if (x < 0 || y < 0 || x >= MAP_SIZE || y >= MAP_SIZE) return 0;
+    let top = 0;
+    for (const id of this.roofCells[Math.floor(y / CELL) * N + Math.floor(x / CELL)]) {
+      const r = this.roofs[id];
+      if (r.h > top && x >= r.x0 + inset && x <= r.x1 - inset && y >= r.y0 + inset && y <= r.y1 - inset) top = r.h;
+    }
+    return top;
+  }
+
+  /** The building (index) whose roof is under a point, if any (as floorAt). */
+  roofAt(x: number, y: number, inset = 0): number {
+    if (x < 0 || y < 0 || x >= MAP_SIZE || y >= MAP_SIZE) return -1;
+    let best = -1, top = 0;
+    for (const id of this.roofCells[Math.floor(y / CELL) * N + Math.floor(x / CELL)]) {
+      const r = this.roofs[id];
+      if (r.h > top && x >= r.x0 + inset && x <= r.x1 - inset && y >= r.y0 + inset && y <= r.y1 - inset) { top = r.h; best = r.bi; }
+    }
+    return best;
   }
 
   private static cellRange(x0: number, y0: number, x1: number, y1: number): [number, number, number, number] {

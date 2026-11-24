@@ -5,10 +5,9 @@ import type { Rng } from '../../shared/rng';
 import { type Building, DIR_VEC, type Lot } from '../../shared/world/cityTypes';
 import type { Batch } from './instancing';
 
-export interface Mass { r: Rect; base: number; h: number; wall: string; roof: string; win: number; kind: number }
-
-/** kind codes for the building shader: 0 flat roof, 1 corrugated (warehouse), 2 house. */
-export const KIND = { flat: 0, metal: 1, house: 2 } as const;
+// Massing lives in shared/world/massing.ts (the server needs the same roofs).
+import { KIND, type Mass } from '../../shared/world/massing';
+export { KIND, type Mass, massesFor } from '../../shared/world/massing';
 
 export interface DetailBatches {
   box: Batch;
@@ -26,35 +25,6 @@ const shade = (hex: string, k: number): string => {
 const inset = (r: Rect, d: number): Rect => ({ x0: r.x0 + d, y0: r.y0 + d, x1: r.x1 - d, y1: r.y1 - d });
 const W = (r: Rect) => r.x1 - r.x0;
 const D = (r: Rect) => r.y1 - r.y0;
-
-export function massesFor(b: Building, rng: Rng): Mass[] {
-  const win = b.kind === 'house' ? 0.25 : b.windows;
-  const base = { wall: b.wall, roof: b.roof, win, kind: b.kind === 'house' ? KIND.house : b.kind === 'warehouse' || b.kind === 'hangar' ? KIND.metal : KIND.flat };
-  const r = b.rect;
-  if (b.kind === 'tower' && W(r) > 20 && D(r) > 20) {
-    const podium = rng.range(7, 13);
-    const ins = rng.range(2.5, Math.min(6, Math.min(W(r), D(r)) * 0.18));
-    const shaft = inset(r, ins);
-    const out: Mass[] = [{ ...base, r, base: 0, h: podium, roof: shade(b.roof, 1.1) }];
-    if (rng.chance(0.45) && W(shaft) > 14 && D(shaft) > 14) {
-      const split = b.h * rng.range(0.7, 0.85);
-      out.push({ ...base, r: shaft, base: 0, h: split });
-      out.push({ ...base, r: inset(shaft, rng.range(2, 3.5)), base: 0, h: b.h });
-    } else out.push({ ...base, r: shaft, base: 0, h: b.h });
-    return out;
-  }
-  if (b.kind === 'block' && rng.chance(0.45) && Math.max(W(r), D(r)) > 16) {
-    const t = rng.range(0.38, 0.62);
-    const lower = b.h * rng.range(0.55, 0.85);
-    if (W(r) >= D(r)) {
-      const cx = r.x0 + W(r) * t;
-      return [{ ...base, r: { ...r, x1: cx }, base: 0, h: b.h }, { ...base, r: { ...r, x0: cx }, base: 0, h: lower }];
-    }
-    const cy = r.y0 + D(r) * t;
-    return [{ ...base, r: { ...r, y1: cy }, base: 0, h: b.h }, { ...base, r: { ...r, y0: cy }, base: 0, h: lower }];
-  }
-  return [{ ...base, r, base: 0, h: b.kind === 'house' ? b.h - 1.6 : b.h }];
-}
 
 /** Places non-overlapping rooftop items on a roof rectangle. */
 class RoofPlanner {

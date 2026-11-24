@@ -23,7 +23,8 @@ function bankContent(place: Place, you: YouState, buy: Buy): PaneContent {
 /** A tower's elevator or an apartment block's stairs (game/interact.ts: id is the interior index,
  *  `spec` how many floors are above the lobby, `lot` the floor this lift stop is on). */
 function liftContent(place: Place, buy: Buy): PaneContent {
-  const rows: PaneRow[] = [];
+  // Up to the roof: back into a helicopter you set down there.
+  const rows: PaneRow[] = [{ name: 'Roof', sub: 'Helicopter', onClick: () => buy('floor', 'roof', place.id) }];
   for (let f = place.spec; f >= 0; f--) {
     rows.push({ name: f === 0 ? 'Lobby' : `Floor ${f + 1}`, sub: f === place.lot ? 'You are here' : undefined, disabled: f === place.lot,
       onClick: () => buy('floor', String(f), place.id) });

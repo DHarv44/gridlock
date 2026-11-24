@@ -65,6 +65,11 @@
   its road (player or AI driving it): eases to the kerb, stops, and moves off a few seconds after
   it's gone (ai/driving.ts sirenApproaching, cruise). AI emergency drivers pass yielding traffic on
   the left when it's clear. `npx tsx scripts/sirens.ts`.
+- Helicopters (2026-11-23): cruise ~24 m/s (air drag sets it: accel / HELI_DRAG). They set down on
+  roofs: StaticWorld.floorAt from the drawn massing (world/massing.ts, shared so server and client
+  agree; per-building RNG). Getting out on a tower or apartment roof takes the roof stairs to its
+  top floor; the lift's Roof stop puts you back in. On a roof with no way down you stay aboard.
+  `npx tsx scripts/heli.ts`.
 - Vehicle damage per side (2026-11-23): every hit dents the side it came from (shots: the shooter;
   blasts; car-on-car; wall crashes, which now do damage above 7 m/s); levels 0-3 per side packed into
   the snapshot (protocol 13). The model crumples that side in a vertex shader (render/vehicleDamage.ts:

@@ -9,6 +9,10 @@ export const PED_RADIUS = 0.35;
 export const SPRINT = 1.45;
 export const HELI_MAX_ALT = 48;
 export const HELI_CLIMB = 9;
+const HELI_DRAG = 0.45;
+/** How near the middle of a roof a helicopter's centre must be to set down on it (metres in from
+ *  the edge it may hang over). */
+const HELI_PAD = 0.8;
 
 export interface Body {
   x: number; y: number; angle: number;
@@ -163,10 +167,13 @@ export function trailerCentre(b: Body, spec: VehicleSpec, trailerAngle: number):
 }
 
 function stepHeli(b: Body, spec: VehicleSpec, c: Controls, dt: number, world: StaticWorld, driven: boolean): number {
-  const flying = b.alt > 1.5;
+  // Whatever's under it is the floor: the street, or a roof it can set down on.
+  const floor = world.floorAt(b.x, b.y, HELI_PAD);
+  const flying = b.alt > floor + 1.5;
   if (driven && c.up) b.alt = Math.min(HELI_MAX_ALT, b.alt + HELI_CLIMB * dt);
-  else if (driven && c.down) b.alt = Math.max(0, b.alt - HELI_CLIMB * dt);
-  else if (!driven) b.alt = Math.max(0, b.alt - HELI_CLIMB * 0.8 * dt);
+  else if (driven && c.down) b.alt = Math.max(floor, b.alt - HELI_CLIMB * dt);
+  else if (!driven) b.alt = Math.max(floor, b.alt - HELI_CLIMB * 0.8 * dt);
+  if (b.alt < floor) b.alt = floor;
 
   const fx = Math.cos(b.angle), fy = Math.sin(b.angle);
   if (flying && driven) {
@@ -178,7 +185,8 @@ function stepHeli(b: Body, spec: VehicleSpec, c: Controls, dt: number, world: St
   } else {
     b.av *= Math.exp(-6 * dt);
   }
-  const drag = flying ? 0.55 : 6;
+  // Air drag sets the real top speed (accel / drag) below the spec's hard cap.
+  const drag = flying ? HELI_DRAG : 6;
   b.vx *= Math.exp(-drag * dt);
   b.vy *= Math.exp(-drag * dt);
   const sp = Math.hypot(b.vx, b.vy);

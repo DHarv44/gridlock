@@ -19,7 +19,8 @@ const S = {
 
 const car: Base = { movement: 'wheels', horn: 'horn', engine: 'engine_car', length: 4.6, width: 1.9, height: 1.45, mass: 1400, maxSpeed: 34, accel: 9, brake: 24, reverse: 9, grip: 8, turnRate: 2.5, turnIn: 0.15, hp: 350, seats: 4, shape: S.saloon };
 const heavy: Base = { ...car, horn: 'horn_air', engine: 'engine_diesel', shape: undefined, length: 7.5, width: 2.5, height: 3.2, mass: 6000, maxSpeed: 24, accel: 4.5, brake: 14, reverse: 6, grip: 9, turnRate: 1.6, turnIn: 0.25, hp: 700, seats: 2 };
-const chopper: Base = { movement: 'rotor', length: 11, width: 2.6, height: 3.2, mass: 2500, maxSpeed: 36, accel: 9, brake: 9, reverse: 10, grip: 1.2, turnRate: 1.9, hp: 650, seats: 4 };
+// Helicopters' cruising speed is accel / air drag (shared/sim/physics.ts HELI_DRAG): ~24 m/s here.
+const chopper: Base = { movement: 'rotor', length: 11, width: 2.6, height: 3.2, mass: 2500, maxSpeed: 36, accel: 11, brake: 9, reverse: 10, grip: 1.2, turnRate: 1.9, hp: 650, seats: 4 };
 
 export const VEHICLES: VehicleSpec[] = [
   { ...car, horn: 'horn_small', id: 'compact', name: 'Bolt Compact', length: 3.7, width: 1.7, height: 1.45, mass: 1000, maxSpeed: 30, accel: 8, price: 6000, colors: 'bright', roles: ['traffic', 'parked'], shape: S.bubble, model: M.compact() },
@@ -71,7 +72,7 @@ export const VEHICLES: VehicleSpec[] = [
   { ...chopper, id: 'heli_police', name: 'Police Chopper', maxSpeed: 38, hp: 700, price: 0, colors: [1], roles: ['police_air'], siren: true, model: M.heli('white') },
   { ...chopper, id: 'heli_news', name: 'News Chopper', price: 0, colors: [0, 7], roles: ['helipad'], model: M.heli('red') },
   { ...chopper, id: 'heli_civil', name: 'Sky Lark', length: 9, width: 2.2, maxSpeed: 34, hp: 500, price: 220000, colors: 'bright', roles: ['helipad'], model: M.heli('white') },
-  { ...chopper, id: 'gunship', name: 'Gunship', length: 13, width: 3, maxSpeed: 42, accel: 11, turnRate: 2.1, hp: 1800, seats: 2, armored: true, weapons: ['heli_gun', 'heli_rockets'], price: 0, colors: [19, 3], roles: ['military_air'], model: M.attackHeli() },
+  { ...chopper, id: 'gunship', name: 'Gunship', length: 13, width: 3, maxSpeed: 42, accel: 13, turnRate: 2.1, hp: 1800, seats: 2, armored: true, weapons: ['heli_gun', 'heli_rockets'], price: 0, colors: [19, 3], roles: ['military_air'], model: M.attackHeli() },
 
   // Added later: appended so existing type indices (saved garages) keep their meaning.
   { ...car, engine: 'engine_sport', id: 'roadster', name: 'Spyder', turnIn: 0.4, length: 4.2, width: 1.85, height: 1.15, mass: 1150, maxSpeed: 44, accel: 13.5, brake: 28, grip: 9.5, turnRate: 2.8, hp: 260, seats: 2, openTop: true, price: 48000, colors: 'bright', roles: ['traffic', 'parked'], shape: S.roadster, model: M.roadster(),

@@ -4,6 +4,7 @@ import { PLAYER_ARCHETYPE, RULES, UNARMED, WEAPONS, weaponIndex } from '../../..
 import { BTN, EDGE_BUTTONS, type InputMsg, Mode } from '../../../shared/protocol';
 import { SPRINT, stepVehicle } from '../../../shared/sim/physics';
 import { wallCrash } from '../combat/damage';
+import { leaveOnRoof } from './lifts';
 import { onAttacked } from '../ai/reactions';
 import { tickWeapon, tryFire } from '../combat/fire';
 import type { Ped, Player, Vehicle } from '../entities';
@@ -102,7 +103,16 @@ function nearestVehicle(w: World, p: Ped): Vehicle | null {
 function toggleVehicle(w: World, pl: Player, p: Ped): void {
   if (p.vehicle) {
     const v = w.vehicles.get(p.vehicle);
-    if (v && v.spec.movement === 'rotor' && v.body.alt > 3) return;
+    if (v && v.spec.movement === 'rotor') {
+      const floor = w.statics.floorAt(v.body.x, v.body.y);
+      if (v.body.alt > floor + 1) return; // still in the air
+      if (floor > 0) { // set down on a roof
+        const err = leaveOnRoof(w, p, v);
+        if (err) w.notify('info', err, pl);
+        else if (v.seats[0] === 0) { v.ctl.throttle = 0; v.ctl.steer = 0; }
+        return;
+      }
+    }
     if (v && Math.hypot(v.body.vx, v.body.vy) > 9) return;
     unseatPed(w, p, true);
     if (v && v.seats[0] === 0) { v.ctl.throttle = 0; v.ctl.steer = 0; }
