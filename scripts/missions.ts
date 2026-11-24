@@ -29,6 +29,8 @@ for (const kind of ['hit', 'torch', 'steal', 'courier', 'frenzy']) {
   for (let tries = 0; tries < 60 && !got; tries++) {
     const booth = room.missions.booths[tries % room.missions.booths.length];
     pl.boothCd.clear();
+    // Earlier jobs kill gang members, which can leave a gang unwilling to call; that's not under test here.
+    pl.respect[booth.gang] = Math.max(pl.respect[booth.gang] ?? 0, 0);
     teleport(booth.x, booth.y);
     tick(1);
     const err = room.missions.answer(pl, booth.id);
