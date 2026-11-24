@@ -6,6 +6,13 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 5229
+    },
+    {
+      "name": "chatterbox",
+      "runtimeExecutable": "T:/Dev/chatterbox/.venv/Scripts/python.exe",
+      "runtimeArgs": ["T:/Dev/chatterbox/launch.py", "tts", "7860"],
+      "port": 7860,
+      "url": "http://127.0.0.1:7860"
     }
   ]
 }

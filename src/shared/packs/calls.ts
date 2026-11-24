@@ -37,7 +37,7 @@ export const GANG_CALLERS: Record<string, string[]> = { v22: ['nico', 'lupe'], d
 export const CALLS: Record<string, Partial<Record<CallSituation, Turn[][]>>> = {
   benny: {
     intro: [[
-      "Hey, there you are! Benny Lutz. You don't know me, but I make it my business to know everybody who gets off that bus, and you, pal, look like somebody who needs money.",
+      "Hey, there you are! Benny Lutz. You don't know me, but word travels fast around here, and the word is you're new, you're broke, and you can drive. That about right, pal?",
       { you: "How'd you get this number?" },
       "Pal, I got everybody's number. Listen, nobody in this town is gonna call your cell until they trust you. Till then, you hear a payphone ringing out on the street, don't walk past it. Might be for you.",
       { you: "And what's in it for you?" },
