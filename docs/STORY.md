@@ -2,7 +2,8 @@
 
 The bigger story behind the jobs (milestone H in docs/PLAN.md). Written so every call, text and
 scripted job can come from it. The engine never names these people: they're pack content
-(packs/calls.ts holds the cast and their lines; the voiced clips live in src/client/voice/).
+(content/characters/ holds the cast, their conversations, recordings and reference clips;
+content/README.md has the format and content/SCRIPTS.md every line, readable).
 
 ## The city and the squeeze
 Bayhaven is a port town that's been running down for twenty years. Three crews split what's left:

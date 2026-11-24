@@ -1,0 +1,101 @@
+{
+  "id": "declan",
+  "name": "Declan",
+  "fullName": "Declan Rourke",
+  "crew": "d9",
+  "boss": true,
+  "role": "Runs Local 9",
+  "about": "Old-school Irish-American union boss. Deep, slow, few words; never raises his voice, threatens by understating. A Boston-Irish edge, not a brogue.",
+  "voice": { "model": "model/declan.wav", "exaggeration": 0.4, "cfg": 0.55 },
+  "calls": {
+    "intro": [
+      [
+        {
+          "say": ["So you're the one Benny keeps going on about.", "My name's Declan Rourke.", "I run Local Nine.", "I don't usually call people I haven't met."],
+          "tone": "flat, weighing you up"
+        },
+        { "you": "why_call_me" },
+        {
+          "say": [
+            "Because I need somebody nobody knows yet.",
+            "You work for the Local, you work hard, you keep your mouth shut, and you never, ever talk to cops.",
+            "We understand each other?"
+          ],
+          "tone": "slow, laying down the law; heaviest on \"never, ever\""
+        },
+        { "you": "dont_talk" },
+        { "say": ["Good.", "Keep it that way, kid.", "Now listen."], "tone": "faint approval, then business" },
+        { "you": "listening" }
+      ]
+    ],
+    "hit": [
+      [
+        {
+          "say": ["There's a fella holding court on my street.", "Shaking hands.", "Making promises he can't keep.", "He won't be alone, so don't expect him to be."],
+          "tone": "contained contempt, each sentence its own beat"
+        },
+        { "you": "when_i_find_him" },
+        { "say": ["You end it.", "That's all."], "tone": "very calm, final" }
+      ]
+    ],
+    "torch": [
+      [
+        { "say": ["They left something they care about parked where I can see it.", "That was careless.", "Burn it."], "tone": "cold, almost amused" },
+        { "you": "tell_them" },
+        { "say": ["The fire tells them."], "tone": "low, flat" }
+      ]
+    ],
+    "steal": [
+      [
+        { "say": ["I need a rig for a job.", "I need it in one piece, and I need it today."], "tone": "plain, no colour" },
+        { "you": "whats_the_job" },
+        { "say": ["That's not your end.", "Your end is the truck."], "tone": "patient, a closed door" }
+      ]
+    ],
+    "courier": [
+      [
+        {
+          "say": ["A package.", "You pick it up, you drop it off, you don't look inside.", "Simple work.", "Most people still find a way to get it wrong."],
+          "tone": "bored; weary about people"
+        },
+        { "you": "not_most_people" },
+        { "say": ["We'll see."], "tone": "unconvinced" }
+      ]
+    ],
+    "frenzy": [
+      [
+        {
+          "say": ["They're walking around my neighbourhood like they own it.", "I've been patient.", "I'm finished being patient.", "Drop as many of them as you can, and do it quick."],
+          "tone": "slow-burning anger kept down"
+        },
+        { "you": "how_many" },
+        { "say": ["I'll tell you when."], "tone": "cold" }
+      ]
+    ],
+    "pass": [
+      [
+        { "say": ["Good.", "You got paid.", "And you did that well.", "The brothers noticed."], "tone": "brief, then rare quiet praise" },
+        { "you": "call_me_again" }
+      ]
+    ],
+    "fail": [
+      [
+        { "say": ["That was a disappointment.", "I don't like disappointments.", "I'm told I don't handle them well."], "tone": "very quiet; the menace is the calm" },
+        { "you": "wont_happen_again" },
+        { "say": ["No.", "It won't."], "tone": "flat, double meaning" }
+      ]
+    ],
+    "busy": [
+      [
+        { "say": ["You're working.", "Good.", "Finish it.", "Then we talk."], "tone": "patient, unhurried" },
+        { "you": "wont_be_long" }
+      ]
+    ],
+    "nothing": [
+      [
+        { "say": ["Nothing today, kid.", "I'll call you."], "tone": "curt" },
+        { "you": "be_around" }
+      ]
+    ]
+  }
+}

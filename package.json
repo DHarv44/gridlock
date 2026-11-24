@@ -13,7 +13,9 @@
     "start": "tsx src/server/main.ts",
     "play": "vite build && tsx src/server/main.ts",
     "typecheck": "tsc --noEmit",
-    "smoke": "tsx scripts/smoke.ts"
+    "smoke": "tsx scripts/smoke.ts",
+    "voices": "tsx scripts/voices.ts",
+    "scripts": "tsx scripts/scripts-md.ts"
   },
   "dependencies": {
     "@fontsource/bebas-neue": "^5.3.0",

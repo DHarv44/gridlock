@@ -1,0 +1,9 @@
+{
+  "id": "price",
+  "name": "Price",
+  "fullName": "Harlan Price",
+  "role": "The developer",
+  "about": "Smooth, warm, British, charming; never says what he means. No lines yet (story jobs).",
+  "voice": { "model": "model/price.wav", "exaggeration": 0.5, "cfg": 0.5 },
+  "calls": {}
+}

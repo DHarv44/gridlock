@@ -1,0 +1,62 @@
+{
+  "id": "benny",
+  "name": "Benny",
+  "fullName": "Benny Lutz",
+  "role": "Fence at the Ironworks chop shop",
+  "welcome": true,
+  "about": "Fast, friendly, a salesman who's always half-pitching. Plain American.",
+  "voice": { "model": "model/benny_lutz_2.wav", "exaggeration": 0.6, "cfg": 0.45 },
+  "calls": {
+    "intro": [
+      [
+        {
+          "say": [
+            "Hey, there you are!",
+            "Benny Lutz here.",
+            "",
+            "You don't know me, but word travels fast around here you know",
+            "And the word is you're new, you're broke, and you can drive.",
+            "",
+            "That about right?"
+          ],
+          "tone": "big warm hello, grinning; rattling off what he knows"
+        },
+        { "you": "how_number" },
+        {
+          "male": [
+            "Buddy,",
+            "I got everybody's number.",
+            "Listen, nobody in this town is gonna call your cell until they trust you.",
+            "Till then, you hear a payphone ringing out on the street, don't walk past it.",
+            "Might be for you."
+          ],
+          "female": [
+            "Lady,",
+            "I got everybody's number.",
+            "Listen, nobody in this town is gonna call your cell until they trust you.",
+            "Till then, you hear a payphone ringing out on the street, don't walk past it.",
+            "Might be for you."
+          ],
+          "tone": "breezy brush-off, then leaning in with a tip"
+        },
+        { "you": "whats_in_it" },
+        {
+          "say": [
+            "For me???",
+            "",
+            "I'm a people person.",
+            "",
+            "And hey,",
+            "anything nice you happen to drive off with,",
+            "you bring it to me...",
+            "",
+            "Stop by my shop, and we both do alright.",
+            "",
+            "See you around"
+          ],
+          "tone": "mock-innocent, then cheerfully honest; signs off warm"
+        }
+      ]
+    ]
+  }
+}

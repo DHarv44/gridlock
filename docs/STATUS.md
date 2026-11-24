@@ -75,10 +75,15 @@
   Your character talks back: eight player voices (packs/calls.ts PLAYER_VOICES, references made the
   same way), picked with a sample in the character creator and saved on the character (`voice`);
   your turns are voiced in it, clean (not down the line).
-  2026-11-24: every call rewritten as a natural conversation (caller and you, one unsplit turn per
-  bubble, ≤300 chars, no explaining the game). The old clips were removed; the new ones (83 caller
-  turns + 51 of yours × 8 voices = 499) wait on new reference voices the user is recording. Until
-  then calls are silent bubbles (only the creator samples are voiced).
+  2026-11-24: every call rewritten as a natural conversation (caller and you, line breaks kept and
+  shown, no explaining the game); the three crews are three communities (Varrio 22 Chicano, Local 9
+  Irish-American union, Argo 7 Greek-American shipping family). Content moved to content/ (see
+  content/README.md): one JSON per character in content/characters/<folder>/ with voice/
+  (recordings) and model/ (Chatterbox reference clips), the player's lines in content/player/,
+  the radio in content/radio/. packs/calls.ts only loads it; the welcome call comes from the
+  character marked "welcome". `npm run voices` masters recordings into src/client/voice/,
+  `npm run scripts` writes content/SCRIPTS.md. The user records the lines (Benny's are in); the
+  rest are silent bubbles until recorded (or filled by scripts/voice-calls.ts).
 - Company (2026-11-23): waypoints go to the server and show, in each player's colour, to everyone in
   the same vehicle; players riding inside a car have their names over it; a passed job's pay is split
   with the players riding with you or within RULES.shareRange; you can bail out of a moving vehicle

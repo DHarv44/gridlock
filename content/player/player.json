@@ -1,0 +1,73 @@
+{
+  "about": "The new arrival: cool, a bit guarded, quick with a dry comeback, never impressed. Every line here is said in the voice picked for your character; a conversation points at a line by its key.",
+  "default": "steady",
+  "voices": [
+    { "id": "steady", "name": "Steady", "who": "man", "about": "even, grounded, unflappable", "model": "model/pv_steady.wav", "exaggeration": 0.45, "cfg": 0.5 },
+    { "id": "rough", "name": "Rough", "who": "man", "about": "gravelly, street-hard", "model": "model/pv_rough.wav", "exaggeration": 0.5, "cfg": 0.5 },
+    { "id": "london", "name": "London", "who": "man", "about": "British, dry, laconic", "model": "model/pv_london.wav", "exaggeration": 0.45, "cfg": 0.5 },
+    { "id": "warm", "name": "Warm", "who": "man", "about": "easy-going, friendly", "model": "model/pv_warm.wav", "exaggeration": 0.5, "cfg": 0.5 },
+    { "id": "bright", "name": "Bright", "who": "woman", "about": "upbeat, quick, confident", "model": "model/pv_bright.wav", "exaggeration": 0.55, "cfg": 0.5 },
+    { "id": "smoky", "name": "Smoky", "who": "woman", "about": "low, husky, unhurried", "model": "model/pv_smoky.wav", "exaggeration": 0.4, "cfg": 0.5 },
+    { "id": "crisp", "name": "Crisp", "who": "woman", "about": "British, clipped, sharp", "model": "model/pv_crisp.wav", "exaggeration": 0.45, "cfg": 0.5 },
+    { "id": "easy", "name": "Easy", "who": "woman", "about": "relaxed, casual", "model": "model/pv_easy.wav", "exaggeration": 0.5, "cfg": 0.5 }
+  ],
+  "lines": {
+    "sample": { "say": ["Yeah, I can do that.", "What's it pay?"], "tone": "casual confidence, straight to the money (the character creator's demo)" },
+
+    "how_number": { "say": ["How'd you get this number?"], "tone": "wary, a little thrown" },
+    "whats_in_it": { "say": ["And what's in it for you?"], "tone": "dry, half-smiling" },
+
+    "good_for_you": { "say": ["Good for you.", "Benny said you had work."], "tone": "unimpressed, flat" },
+    "lets_hear_it": { "say": ["Then let's hear it."], "tone": "cool, ready" },
+    "is_she": { "say": ["Is she?"], "tone": "deadpan, poking him" },
+    "gone_or_burning": { "say": ["You want it gone, or you want it burning?"], "tone": "businesslike" },
+    "if_scratched": { "say": ["And if she comes back with a scratch?"], "tone": "teasing" },
+    "whats_in_package": { "say": ["What's in it?"], "tone": "curious, innocent" },
+    "being_nice": { "say": ["You were being nice?"], "tone": "dry, sceptical" },
+    "told_you_drive": { "say": ["Told you I could drive."], "tone": "a little smug" },
+    "went_sideways": { "say": ["It went sideways.", "The next one won't."], "tone": "flat, owning it" },
+    "five_minutes": { "say": ["Give me five minutes."], "tone": "distracted, hurried" },
+    "dont_take_long": { "say": ["Don't take too long."], "tone": "casual" },
+
+    "ever_agree": { "say": ["You two ever agree on anything?"], "tone": "amused" },
+    "just_the_car": { "say": ["Just the car.", "Got it."], "tone": "trying not to laugh" },
+    "drive_gently": { "say": ["I always drive gently."], "tone": "innocent, not convincing" },
+    "not_be_late": { "say": ["Then I'd better not be late."], "tone": "easy" },
+    "didnt_know_cared": { "say": ["Didn't know you cared."], "tone": "teasing, warm" },
+    "say_it_himself": { "say": ["Tell him he can say it himself next time."], "tone": "grinning" },
+    "it_wont": { "say": ["It won't."], "tone": "quiet, chastened" },
+
+    "why_call_me": { "say": ["So why call me?"], "tone": "guarded" },
+    "dont_talk": { "say": ["I don't talk to anybody."], "tone": "steady, meeting his stare" },
+    "listening": { "say": ["I'm listening."], "tone": "calm" },
+    "when_i_find_him": { "say": ["And when I find him?"], "tone": "quiet" },
+    "tell_them": { "say": ["Anything you want me to tell them?"], "tone": "serious" },
+    "whats_the_job": { "say": ["What's the job?"], "tone": "curious" },
+    "not_most_people": { "say": ["I'm not most people."], "tone": "confident" },
+    "how_many": { "say": ["How many is enough?"], "tone": "matter-of-fact" },
+    "call_me_again": { "say": ["Call me when you need me again."], "tone": "even, professional" },
+    "wont_happen_again": { "say": ["It won't happen again."], "tone": "earnest, a little nervous" },
+    "wont_be_long": { "say": ["Won't be long."], "tone": "brisk" },
+    "be_around": { "say": ["I'll be around."], "tone": "easy" },
+
+    "go_touch_him": { "say": ["Go touch him?"], "tone": "deadpan, beating him to it" },
+    "too_happy": { "say": ["You're way too happy about this."], "tone": "amused" },
+    "stop_asking": { "say": ["Maybe stop asking Declan things."], "tone": "dry" },
+    "sales_pitch": { "say": ["Great sales pitch, Danny."], "tone": "sarcastic" },
+    "telling_count": { "say": ["Who are you telling your count to, Danny?"], "tone": "suspicious, quiet" },
+    "vote_confidence": { "say": ["Thanks for the vote of confidence."], "tone": "dry" },
+    "thanks_danny": { "say": ["Thanks, Danny."], "tone": "flat sarcasm" },
+
+    "usually": { "say": ["Usually?"], "tone": "picking up on it" },
+    "can_manage": { "say": ["I can manage."], "tone": "calm, sure" },
+    "go_ahead": { "say": ["Go ahead."], "tone": "attentive" },
+    "almost_sorry": { "say": ["You sound almost sorry about it."], "tone": "quiet, curious" },
+    "anything_else": { "say": ["Anything else I should know?"], "tone": "professional" },
+    "how_gently": { "say": ["How gently?"], "tone": "half joking" },
+    "what_happened": { "say": ["What happened to them?"], "tone": "uneasy" },
+    "want_to_talk": { "say": ["And if they want to talk now?"], "tone": "testing her" },
+    "what_told_him": { "say": ["What did you tell him?"], "tone": "curious, a little flattered" },
+    "call_back": { "say": ["I'll call you back."], "tone": "hurried" },
+    "be_waiting": { "say": ["I'll be waiting."], "tone": "easy" }
+  }
+}

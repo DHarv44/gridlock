@@ -4,7 +4,7 @@
 // on the other side and play in your character's voice, clean. One bubble at a time; a call that
 // comes in during another waits its turn.
 import * as THREE from 'three';
-import { CALLERS, CALLS, type CallSituation, DEFAULT_VOICE, FACTIONS, GANG_CALLERS, genderOf, lineId, youLineId } from '../../shared/packs';
+import { CALLERS, CALLS, type CallSituation, DEFAULT_VOICE, FACTIONS, GANG_CALLERS, genderOf, youLineId } from '../../shared/packs';
 import type { S2C } from '../../shared/protocol';
 import type { Line } from '../audio/phoneVoice';
 import type { Sound } from '../audio/sound';
@@ -51,15 +51,14 @@ export class Talk {
       const situation = s as CallSituation;
       const turns = CALLS[who]?.[situation]?.[x];
       if (!turns) continue;
-      turns.forEach((t, k) => {
-        const id = lineId(who, situation, x, k);
-        if (typeof t === 'string') steps.push({ who, text: t, id });
-        else if ('you' in t) steps.push({ who: '', text: t.you, id: youLineId(this.voice, id) });
+      for (const t of turns) {
+        if (t.by === 'you') steps.push({ who: '', text: t.text, id: youLineId(this.voice, t.key) });
+        else if (typeof t.text === 'string') steps.push({ who, text: t.text, id: t.clip });
         else {
           const g = genderOf(this.voice);
-          steps.push({ who, text: t[g], id: `${id}_${g}` });
+          steps.push({ who, text: t.text[g], id: `${t.clip}_${g}` });
         }
-      });
+      }
     }
     if (!steps.length) return;
     this.queue.push({ via: m.via, steps });

@@ -1,12 +1,15 @@
-// Writes the voice job for every voiced call line in packs/calls.ts and starts it (workbench voice
-// tools, T:/Dev/workbench/voice): Chatterbox renders three takes a line in the caller's reference
-// voice, faster-whisper listens back, and the best take of each is mastered to
-// src/client/voice/<line id>.ogg. Takes are kept in art/out/voice/work (gitignored), so re-running
-// after editing a line only renders what changed. `npx tsx scripts/voice-calls.ts [--wait]`
+// Fills in the voiced lines nobody has recorded yet with Chatterbox (workbench voice tools,
+// T:/Dev/workbench/voice): three takes a line in the speaker's reference clip (their model/ folder),
+// faster-whisper listens back, and the best take of each is mastered to src/client/voice/<clip>.ogg.
+// A line with a recording in content/ (see scripts/voices.ts) is skipped: recordings win. Takes are
+// kept in art/out/voice/work (gitignored), so re-running after editing a line only renders what
+// changed. Never run it while the Chatterbox page is open (the GPU can't hold both).
+// `npx tsx scripts/voice-calls.ts [--wait]`
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { CALLERS, CALLS, type CallSituation, lineId, PLAYER_VOICES, type Turn, VOICE_SAMPLE, youLineId } from '../src/shared/packs';
+import { CALLERS, CALLS, PLAYER_LINES, PLAYER_VOICES, type Voice, youLineId } from '../src/shared/packs';
+import { recordings } from './voices';
 
 const root = resolve(import.meta.dirname, '..');
 const out = join(root, 'src/client/voice');
@@ -14,30 +17,24 @@ const work = join(root, 'art/out/voice/work');
 const jobPath = join(root, 'art/out/voice/calls.job.json');
 mkdirSync(work, { recursive: true });
 
+const recorded = new Set(recordings().map((r) => r.clip));
 const lines: { id: string; text: string; ref: string; ex: number; cfg: number; takes: number }[] = [];
+const add = (id: string, text: string, v: Voice, takes: number) => {
+  if (!recorded.has(id)) lines.push({ id, text, ref: join(root, v.model).replaceAll('\\', '/'), ex: v.ex, cfg: v.cfg, takes });
+};
+
 for (const [who, situations] of Object.entries(CALLS)) {
-  const caller = CALLERS.find((c) => c.id === who);
-  if (!caller) throw new Error(`calls for unknown caller ${who}`);
-  for (const [situation, exchanges] of Object.entries(situations) as [CallSituation, Turn[][]][]) {
-    exchanges.forEach((turns, x) => turns.forEach((t, k) => {
-      const line = (id: string, text: string) => lines.push({ id, text, ref: caller.voice.ref, ex: caller.voice.ex, cfg: caller.voice.cfg, takes: 3 });
-      const id = lineId(who, situation, x, k);
-      if (typeof t === 'string') line(id, t);
-      else if ('male' in t) { line(`${id}_male`, t.male); line(`${id}_female`, t.female); }
-    }));
-  }
-}
-// Your side, in every voice a character can have: your turns in the exchanges and the creator's
-// sample.
-for (const pv of PLAYER_VOICES) {
-  const say = (key: string, text: string) => lines.push({ id: youLineId(pv.id, key), text, ref: pv.voice.ref, ex: pv.voice.ex, cfg: pv.voice.cfg, takes: 3 });
-  for (const [who, situations] of Object.entries(CALLS)) {
-    for (const [situation, exchanges] of Object.entries(situations) as [CallSituation, Turn[][]][]) {
-      exchanges.forEach((turns, x) => turns.forEach((t, k) => { if (typeof t !== 'string' && 'you' in t) say(lineId(who, situation, x, k), t.you); }));
+  const caller = CALLERS.find((c) => c.id === who)!;
+  for (const exchanges of Object.values(situations)) {
+    for (const t of exchanges!.flat()) {
+      if (t.by !== 'caller') continue;
+      if (typeof t.text === 'string') add(t.clip, t.text, caller.voice, 3);
+      else { add(`${t.clip}_male`, t.text.male, caller.voice, 3); add(`${t.clip}_female`, t.text.female, caller.voice, 3); }
     }
   }
-  say('sample', VOICE_SAMPLE);
 }
+// Your lines, in every voice a character can have. They're short and plain: two takes each.
+for (const pv of PLAYER_VOICES) for (const [key, l] of Object.entries(PLAYER_LINES)) add(youLineId(pv.id, key), l.text, pv.voice, 2);
 
 // A line whose words changed since its takes were made gets fresh takes.
 const heardPath = join(work, 'heard.json');
@@ -52,7 +49,8 @@ if (existsSync(heardPath)) {
 }
 
 writeFileSync(jobPath, JSON.stringify({ out_dir: out.replaceAll('\\', '/'), work: work.replaceAll('\\', '/'), format: 'ogg', max_wer: 0.12, lines }, null, 1));
-console.log(`${lines.length} lines -> ${jobPath}`);
+console.log(`${lines.length} lines to render (${recorded.size} recorded) -> ${jobPath}`);
+if (process.argv.includes('--dry')) process.exit(0);
 const py = 'C:/Python38/python.exe', job = 'T:/Dev/workbench/voice/job.py';
 if (process.argv.includes('--wait')) {
   const r = spawnSync(py, [job, jobPath], { stdio: 'inherit' });

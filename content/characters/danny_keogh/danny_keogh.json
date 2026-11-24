@@ -1,0 +1,95 @@
+{
+  "id": "danny",
+  "name": "Danny",
+  "fullName": "Danny Keogh",
+  "crew": "d9",
+  "role": "Local 9, Declan's number two",
+  "about": "A South Boston motor-mouth: wired, talks too fast and too much, laughs at his own jokes. Nervous energy underneath (he's the leak).",
+  "voice": { "model": "model/danny.wav", "exaggeration": 0.75, "cfg": 0.35 },
+  "calls": {
+    "hit": [
+      [
+        {
+          "say": [
+            "Hey, hey, it's Danny!",
+            "Okay, so there's this guy, right?",
+            "Big shot.",
+            "Thinks he's untouchable, walks around like his feet don't even touch the ground.",
+            "You know what I'm gonna say?"
+          ],
+          "tone": "excited, words tumbling; setting up a joke"
+        },
+        { "you": "go_touch_him" },
+        {
+          "say": ["Go touch him!", "Ha!", "See, you get it!", "Declan never laughs at that one.", "Not once.", "Wicked tough crowd, that guy."],
+          "tone": "thrilled, then a little sorry for himself"
+        }
+      ]
+    ],
+    "torch": [
+      [
+        {
+          "say": ["Danny again!", "You like fire?", "Everybody likes fire.", "There's a car out there just sitting all by itself, all lonely.", "Make it a bonfire, kid!"],
+          "tone": "giddy, rising to a whoop"
+        },
+        { "you": "too_happy" },
+        { "say": ["Hey, it's the little things, you know?", "Bring marshmallows!"], "tone": "cheerful, shrugging" }
+      ]
+    ],
+    "steal": [
+      [
+        {
+          "say": [
+            "Okay, so, Declan wants a truck.",
+            "A big one.",
+            "Don't ask me what for.",
+            "I asked him what for, and he just looked at me, like, for a really long time.",
+            "I don't ask anymore."
+          ],
+          "tone": "gossipy; a nervous laugh at the end"
+        },
+        { "you": "stop_asking" },
+        { "say": ["That's what my ma says!", "Go get the truck."], "tone": "delighted" }
+      ]
+    ],
+    "courier": [
+      [
+        {
+          "say": ["Delivery job!", "You ever been a mailman?", "It's like that.", "Except the mail shoots back.", "And the dogs have guns.", "Okay, it's mostly the guns part."],
+          "tone": "a joke that gets away from him"
+        },
+        { "you": "sales_pitch" },
+        { "say": ["I'm wasted here, honestly.", "Go, go, go!"], "tone": "mock-wounded, then hyper" }
+      ]
+    ],
+    "frenzy": [
+      [
+        {
+          "say": ["Turf war, kid!", "Declan says thin them out, so thin them out!", "I'm keeping count, by the way.", "Not for any reason.", "I just like counting."],
+          "tone": "hyped, then too quick on \"not for any reason\""
+        },
+        { "you": "telling_count" },
+        { "say": ["What?", "Nobody!", "Who would I tell?", "Go!"], "tone": "panicky, laughing it off" }
+      ]
+    ],
+    "pass": [
+      [
+        {
+          "say": ["You did it!", "I knew it!", "I had money on you!", "Well, half.", "Half my money.", "Okay, it was twenty bucks, but still!"],
+          "tone": "thrilled, then sheepish"
+        },
+        { "you": "vote_confidence" }
+      ]
+    ],
+    "fail": [
+      [
+        {
+          "say": ["Oof.", "Oof.", "Declan's gonna be wicked mad.", "Not at me, though!", "At you!", "Which, honestly, better you than me."],
+          "tone": "wincing, then relieved"
+        },
+        { "you": "thanks_danny" },
+        { "say": ["Anytime!"], "tone": "missing the sarcasm completely" }
+      ]
+    ]
+  }
+}

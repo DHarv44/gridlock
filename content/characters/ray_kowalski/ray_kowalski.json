@@ -1,0 +1,9 @@
+{
+  "id": "kowalski",
+  "name": "Kowalski",
+  "fullName": "Det. Ray Kowalski",
+  "role": "Bayhaven PD, on Price's payroll",
+  "about": "Tired, sarcastic, matter-of-fact about the things he does. No lines yet (story jobs).",
+  "voice": { "model": "model/kowalski.wav", "exaggeration": 0.5, "cfg": 0.5 },
+  "calls": {}
+}

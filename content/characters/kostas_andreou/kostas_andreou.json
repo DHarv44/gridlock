@@ -1,0 +1,9 @@
+{
+  "id": "andreou",
+  "name": "Mr. Andreou",
+  "fullName": "Kostas Andreou",
+  "role": "Argo 7, the old man",
+  "about": "Old, unhurried, courteous; grandfatherly warmth, absolute authority. Greek comes out when he's moved. Calls only when it matters. No lines yet (story jobs).",
+  "voice": { "model": "model/andreou.wav", "exaggeration": 0.5, "cfg": 0.5 },
+  "calls": {}
+}

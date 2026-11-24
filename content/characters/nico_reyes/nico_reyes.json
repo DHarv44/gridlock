@@ -1,0 +1,170 @@
+{
+  "id": "nico",
+  "name": "Nico",
+  "fullName": "Nico Reyes",
+  "crew": "v22",
+  "boss": true,
+  "role": "Runs Varrio 22",
+  "about": "Young, cocky, quick. Chicano street talk; the Spanish comes out faster the more excited he gets. Calls you \"homie\", never \"ese\" or \"vato\".",
+  "voice": { "model": "model/nico.wav", "exaggeration": 0.65, "cfg": 0.45 },
+  "glossary": {
+    "qué onda": "what's up",
+    "puro Varrio": "all Varrio, nothing but",
+    "órale": "alright, right on",
+    "simón": "yeah",
+    "jale": "a job, work",
+    "vato": "guy",
+    "chale": "nah, come on",
+    "me entiendes?": "you understand me?",
+    "ranfla": "a car, a ride",
+    "ándale": "go on, hurry up",
+    "ay": "oh, ugh",
+    "la neta": "for real, the truth",
+    "la jura": "the cops",
+    "feria": "money"
+  },
+  "calls": {
+    "intro": [
+      [
+        {
+          "say": [
+            "Qué onda.",
+            "So you're the one Benny keeps talking about.",
+            "I'm Nico, Varrio Twenty-Two.",
+            "The Pits, Ashgrove, San Isidro, all of that is puro Varrio, homie, and everybody out there knows it."
+          ],
+          "tone": "laid-back greeting, then chest out"
+        },
+        { "you": "good_for_you" },
+        {
+          "say": [
+            "Órale, straight to business.",
+            "I like that.",
+            "Simón, I got a jale for you, and if you don't mess it up, there's a lot more where that came from."
+          ],
+          "tone": "amused; promise and warning in one breath"
+        },
+        { "you": "lets_hear_it" }
+      ]
+    ],
+    "hit": [
+      [
+        {
+          "say": [
+            "Okay, check it.",
+            "There's this vato from the other side who's been running his mouth all week, saying we went soft, saying my sister's the one really running things.",
+            "Out loud, on the street, in front of everybody.",
+            "I want that mouth shut, homie.",
+            "For good."
+          ],
+          "tone": "wound up and personal; \"For good.\" hard and flat"
+        },
+        { "you": "is_she" },
+        {
+          "say": ["Is she what?", "Chale, just go handle it.", "And don't say nothing to Lupe about this, me entiendes?"],
+          "tone": "caught out, flustered, hurrying you off"
+        }
+      ]
+    ],
+    "torch": [
+      [
+        {
+          "say": [
+            "You know what those fools love more than their own mothers?",
+            "Their ranfla.",
+            "They wax it every Sunday and park it right out in the open, like they're daring somebody.",
+            "So I'm daring somebody."
+          ],
+          "tone": "mischievous, building a story"
+        },
+        { "you": "gone_or_burning" },
+        {
+          "say": ["Burning, homie!", "I want to see the smoke from my window, and I want them crying about it all week.", "Ándale."],
+          "tone": "gleeful, almost giggling"
+        }
+      ]
+    ],
+    "steal": [
+      [
+        {
+          "say": [
+            "Ay, there's a car out there I been dreaming about.",
+            "Like, actual dreams, homie.",
+            "Some fool's driving it around like it's nothing, and that's a crime, la neta.",
+            "Go get her, and bring her back without one single scratch."
+          ],
+          "tone": "dreamy car guy; firm on \"one single scratch\""
+        },
+        { "you": "if_scratched" },
+        {
+          "say": ["Then you and me gonna have a real long talk, and you not gonna like it.", "Go."],
+          "tone": "mock-menacing, half joking"
+        }
+      ]
+    ],
+    "courier": [
+      [
+        {
+          "say": [
+            "Got a package that needs to be somewhere else, like, yesterday.",
+            "Don't open it, don't stop for nothing, and watch out for la jura.",
+            "Pick it up, drop it off, that's it."
+          ],
+          "tone": "rapid-fire, impatient"
+        },
+        { "you": "whats_in_package" },
+        { "say": ["See, that's you asking questions already.", "Just drive, homie."], "tone": "exasperated, a little amused" }
+      ]
+    ],
+    "frenzy": [
+      [
+        {
+          "say": ["They're on our corners again, homie.", "Our corners!", "Posted up in the varrio like they pay rent there.", "I'm done being nice about it."],
+          "tone": "indignant, fired up"
+        },
+        { "you": "being_nice" },
+        {
+          "say": ["Ha!", "Okay, okay, you got me.", "But now I'm really not.", "Go remind them whose streets these are.", "Puro Varrio!"],
+          "tone": "laughs at himself, then rallies"
+        }
+      ]
+    ],
+    "pass": [
+      [
+        {
+          "say": ["Órale!", "That's what I'm talking about!", "The whole varrio's talking about you right now, homie.", "That feria's yours.", "You earned every cent."],
+          "tone": "delighted, buzzing"
+        },
+        { "you": "told_you_drive" }
+      ]
+    ],
+    "fail": [
+      [
+        {
+          "say": ["Are you serious right now?", "I stood up in front of everybody and said you were solid.", "You know how that makes me look, homie?"],
+          "tone": "disbelief turning to hurt"
+        },
+        { "you": "went_sideways" },
+        { "say": ["Yeah.", "It better not."], "tone": "sulky, cooling off" }
+      ]
+    ],
+    "busy": [
+      [
+        {
+          "say": ["Qué onda?", "You're on something already?", "Fine.", "Finish it and hit me back.", "I'm not gonna wait forever."],
+          "tone": "put out, impatient"
+        },
+        { "you": "five_minutes" }
+      ]
+    ],
+    "nothing": [
+      [
+        {
+          "say": ["Nah, it's dead right now.", "Everybody's laying low with la jura all over the place.", "I'll hit you up when something pops off."],
+          "tone": "easy, relaxed"
+        },
+        { "you": "dont_take_long" }
+      ]
+    ]
+  }
+}

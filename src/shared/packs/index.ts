@@ -9,7 +9,7 @@ import { DISTRICTS, ZONES } from './zones';
 
 export { CRIMES, type CrimeKind, FELONIES, RULES, SERVICE_CALLS, WANTED } from './rules';
 export { MARK_NAMES, MISSIONS, MODES, RESPECT } from './missions';
-export { CALLERS, CALLS, type Caller, type CallSituation, cleanVoice, DEFAULT_VOICE, GANG_CALLERS, genderOf, lineId, PLAYER_VOICES, type Turn, VOICE_SAMPLE, youLineId } from './calls';
+export { CALLERS, CALLS, type Caller, type CallSituation, cleanVoice, DEFAULT_VOICE, GANG_CALLERS, genderOf, PLAYER_LINES, PLAYER_VOICES, type Turn, type Voice, VOICE_SAMPLE, WELCOME_CALLER, youLineId } from './calls';
 export { PALETTE, PALETTE_NAMES, paletteFor } from './palette';
 export { RADIO, type RadioStation } from './radio';
 export { ARMOR_MODEL } from './weaponModels';

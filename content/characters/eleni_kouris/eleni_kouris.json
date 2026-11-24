@@ -1,0 +1,137 @@
+{
+  "id": "eleni",
+  "name": "Eleni",
+  "fullName": "Eleni Kouris",
+  "crew": "oro7",
+  "boss": true,
+  "role": "Argo 7, the old man's niece and his voice",
+  "about": "Polished and controlled, never raises her voice; dry amusement and a little warmth for the useful, menace underneath. Polite full sentences that flow. Family first.",
+  "voice": { "model": "model/eleni.wav", "exaggeration": 0.65, "cfg": 0.35 },
+  "glossary": { "yiayia": "grandmother" },
+  "calls": {
+    "intro": [
+      [
+        {
+          "say": [
+            "Hello.",
+            "My name is Eleni Kouris, and I speak for Argo Seven, and for my uncle, Mr. Andreou.",
+            "Benny tells me you're new in town, and looking for work.",
+            "Benny is usually right about these things."
+          ],
+          "tone": "gracious, poised, a smile in the voice"
+        },
+        { "you": "usually" },
+        {
+          "say": [
+            "Mm.",
+            "Usually.",
+            "We're a family business.",
+            "We pay well, and we always pay on time.",
+            "All we ask in return is the same courtesy from you.",
+            "Do you think you can manage that?"
+          ],
+          "tone": "amused, then warm with a soft edge"
+        },
+        { "you": "can_manage" },
+        { "say": ["Good.", "Then let's start with something simple.", "I'd like to see how you handle simple."], "tone": "lightly teasing" },
+        { "you": "go_ahead" }
+      ]
+    ],
+    "hit": [
+      [
+        {
+          "say": [
+            "There's a man who owes my family a great deal more than money now.",
+            "I gave him every chance, I really did.",
+            "I'd like you to make sure he doesn't need any more of them."
+          ],
+          "tone": "regretful, almost tender; chilling at the end"
+        },
+        { "you": "almost_sorry" },
+        { "say": ["I'm always a little sorry.", "It never seems to stop me.", "Please, be thorough."], "tone": "wry, then soft and cold" }
+      ]
+    ],
+    "torch": [
+      [
+        {
+          "say": ["A rival of ours is terribly attached to his car.", "It isn't healthy.", "I think you should help him let it go, and fire is always the quickest way."],
+          "tone": "dry, mock-sympathetic"
+        },
+        { "you": "anything_else" },
+        { "say": ["Only that I like you better anonymous, so keep your face out of it, would you?"], "tone": "light, a warning inside" }
+      ]
+    ],
+    "steal": [
+      [
+        {
+          "say": [
+            "My uncle has taken a liking to a certain car.",
+            "He's an old man, and he doesn't ask for much, so when he does, we see that he gets it.",
+            "Would you collect it for him?",
+            "Gently, please."
+          ],
+          "tone": "fond of the old man; polite with weight behind it"
+        },
+        { "you": "how_gently" },
+        { "say": ["Like it belonged to my yiayia.", "You never met her.", "Be grateful, and drive very gently."], "tone": "deadpan, a fond shiver" }
+      ]
+    ],
+    "courier": [
+      [
+        {
+          "say": [
+            "There's a parcel waiting for you, and I'm afraid the clock is already running.",
+            "It should have been moved an hour ago, by someone who no longer works for us."
+          ],
+          "tone": "apologetic-polite, cold at the end"
+        },
+        { "you": "what_happened" },
+        { "say": ["They were late.", "Don't keep us waiting."], "tone": "pleasant, which is what makes it frightening" }
+      ]
+    ],
+    "frenzy": [
+      [
+        {
+          "say": [
+            "Honestly, I'd much rather we talked it out.",
+            "I offered.",
+            "They laughed.",
+            "So now their people are standing on our ground as if they own it, and I'd like you to make their numbers smaller."
+          ],
+          "tone": "a sigh, reasonable; offence growing"
+        },
+        { "you": "want_to_talk" },
+        { "say": ["Then they should have said so earlier.", "Please, remove them."], "tone": "very polite, very cold" }
+      ]
+    ],
+    "pass": [
+      [
+        {
+          "say": ["Very efficient.", "I like that.", "The money's already with you, and my uncle asked me your name, which, I should tell you, he almost never does."],
+          "tone": "pleased, impressed despite herself"
+        },
+        { "you": "what_told_him" },
+        { "say": ["That you're worth remembering."], "tone": "soft, sincere" }
+      ]
+    ],
+    "fail": [
+      [
+        { "say": ["Well.", "That was expensive, for you as much as for us.", "We expected better than that."], "tone": "a pause on \"Well.\"; quietly threatening" },
+        { "you": "wont_happen_again" },
+        { "say": ["I believe you.", "Please don't make me start wondering why."], "tone": "kind, then soft and dangerous" }
+      ]
+    ],
+    "busy": [
+      [
+        { "say": ["Ah, you're busy.", "Another time, then.", "Do finish what you're doing."], "tone": "light, gracious" },
+        { "you": "call_back" }
+      ]
+    ],
+    "nothing": [
+      [
+        { "say": ["I'm sorry, there's nothing for you just now.", "The ships come in when they come in.", "We'll be in touch."], "tone": "polite, a hint of foreboding" },
+        { "you": "be_waiting" }
+      ]
+    ]
+  }
+}

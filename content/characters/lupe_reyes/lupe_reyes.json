@@ -1,0 +1,101 @@
+{
+  "id": "lupe",
+  "name": "Lupe",
+  "fullName": "Lupe Reyes",
+  "crew": "v22",
+  "role": "Varrio 22, Nico's sister, the mechanic",
+  "about": "Dry, careful, the brains. Level voice, humour so dry it barely shows; a little Spanish slips out. Cleans up her brother's messes.",
+  "voice": { "model": "model/lupe.wav", "exaggeration": 0.45, "cfg": 0.5 },
+  "glossary": {
+    "mira": "look",
+    "por favor": "please",
+    "abuela": "grandma",
+    "ay": "oh, ugh",
+    "basura": "garbage",
+    "eso": "that's it, exactly",
+    "ándale": "go on, hurry up",
+    "gracias": "thanks",
+    "cuídate": "take care",
+    "bueno": "good, fine"
+  },
+  "calls": {
+    "hit": [
+      [
+        {
+          "say": [
+            "It's Lupe.",
+            "Nico wants somebody gone, and for once I actually agree with my brother.",
+            "I'd do it quick and quiet, but he wants it loud, so mira, do whatever gets it done."
+          ],
+          "tone": "cool, practical; exasperated at her brother"
+        },
+        { "you": "ever_agree" },
+        { "say": ["Twice.", "This, and that you're worth the money.", "Don't make me regret the second one."], "tone": "deadpan joke, then a quiet warning" }
+      ]
+    ],
+    "torch": [
+      [
+        {
+          "say": [
+            "It's Lupe.",
+            "There's a car I need you to set on fire.",
+            "Just the car, por favor.",
+            "The last time somebody did this for us, they took half the block with it, and I had to explain that to my abuela."
+          ],
+          "tone": "matter-of-fact, then weary at the memory"
+        },
+        { "you": "just_the_car" }
+      ]
+    ],
+    "steal": [
+      [
+        {
+          "say": ["It's Lupe.", "I need a car for parts, and parts are worth nothing to me if they show up bent.", "So drive it like it's yours.", "Gently.", "Because it's not."],
+          "tone": "businesslike; last line bone dry"
+        },
+        { "you": "drive_gently" },
+        { "say": ["Ay, I've seen you drive.", "Just bring it back in one piece."], "tone": "long-suffering, a hint of a smile" }
+      ]
+    ],
+    "courier": [
+      [
+        {
+          "say": ["It's Lupe.", "There's a package going to a drop, and it's only worth something if it gets there on time.", "If it's late, it's basura, and so is the money."],
+          "tone": "patient, schoolteacher-firm"
+        },
+        { "you": "not_be_late" },
+        { "say": ["Eso.", "That's the idea."], "tone": "dry approval" }
+      ]
+    ],
+    "frenzy": [
+      [
+        {
+          "say": ["It's Lupe.", "We tried talking to them.", "Twice.", "They laughed in our faces, so now we're done talking.", "Thin them out, and then come home in one piece, okay?"],
+          "tone": "tired, decided; the end almost caring"
+        },
+        { "you": "didnt_know_cared" },
+        { "say": ["I care about my investments.", "Ándale, go."], "tone": "covering it, too quickly" }
+      ]
+    ],
+    "pass": [
+      [
+        {
+          "say": ["Clean work.", "Nico won't say it to your face, so I'll say it for him.", "Gracias.", "Really."],
+          "tone": "understated, genuine warmth at the end"
+        },
+        { "you": "say_it_himself" },
+        { "say": ["He'd rather die.", "Cuídate."], "tone": "dry little laugh, then soft" }
+      ]
+    ],
+    "fail": [
+      [
+        {
+          "say": ["That cost us money, and it cost us respect, and I'm the one who has to fix both.", "Don't let it happen twice."],
+          "tone": "cold, controlled disappointment"
+        },
+        { "you": "it_wont" },
+        { "say": ["Bueno."], "tone": "clipped, hanging up" }
+      ]
+    ]
+  }
+}
