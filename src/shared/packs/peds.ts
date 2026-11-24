@@ -17,10 +17,10 @@ export const FACTIONS: FactionSpec[] = [
   // `tags` are what they write: initials, the number, the number in Roman numerals.
   { id: 'v22', name: 'Varrio 22', color: '#2bb34a', hostile: ['d9', 'oro7'], gang: true, carColor: 18,
     brand: { symbol: 'skull', accent: '#f2f2ee' }, tags: ['V22', '22', 'XXII'] },
-  { id: 'd9', name: 'Diablos 9', color: '#c62a22', hostile: ['v22', 'oro7'], gang: true, carColor: 5,
-    brand: { symbol: 'pitchfork', accent: '#16171a' }, tags: ['D9', '9', 'IX'] },
-  { id: 'oro7', name: 'Oro 7', color: '#e3b30c', hostile: ['v22', 'd9'], gang: true, carColor: 11,
-    brand: { symbol: 'dollar', accent: '#16171a' }, tags: ['O7', '7', 'VII'] },
+  { id: 'd9', name: 'Local 9', color: '#c62a22', hostile: ['v22', 'oro7'], gang: true, carColor: 5,
+    brand: { symbol: 'hook', accent: '#16171a' }, tags: ['L9', '9', 'IX'] },
+  { id: 'oro7', name: 'Argo 7', color: '#e3b30c', hostile: ['v22', 'd9'], gang: true, carColor: 11,
+    brand: { symbol: 'dollar', accent: '#16171a' }, tags: ['A7', '7', 'VII'] },
   { id: 'street', name: 'Street Trade', color: '#e04e8c', hostile: [] },
 ];
 
@@ -47,10 +47,10 @@ export const PEDS: PedArchetype[] = [
   { ...base, id: 'v22_soldier', name: 'Varrio 22 soldier', behaviour: 'gang', faction: 'v22', courage: 0.85, accuracy: 0.45, hp: 110, cash: [20, 160],
     loadout: [{ weapon: 'pistol', chance: 0.6, ammo: 45 }, { weapon: 'smg', chance: 0.3, ammo: 96 }, { weapon: 'bat', chance: 0.3, ammo: 0 }, { weapon: 'machete', chance: 0.15, ammo: 0 }, { weapon: 'molotov', chance: 0.06, ammo: 2 }],
     look: { skin: SKIN, top: ['#2bb34a'], bottom: ['#16171a'], hat: ['#2bb34a'], hatChance: 0.9 } },
-  { ...base, id: 'd9_soldier', name: 'Diablos 9 soldier', behaviour: 'gang', faction: 'd9', courage: 0.9, accuracy: 0.4, hp: 120, cash: [20, 140],
+  { ...base, id: 'd9_soldier', name: 'Local 9 soldier', behaviour: 'gang', faction: 'd9', courage: 0.9, accuracy: 0.4, hp: 120, cash: [20, 140],
     loadout: [{ weapon: 'pistol', chance: 0.5, ammo: 45 }, { weapon: 'shotgun', chance: 0.25, ammo: 24 }, { weapon: 'sawnoff', chance: 0.2, ammo: 20 }, { weapon: 'bat', chance: 0.4, ammo: 0 }],
     look: { skin: SKIN, top: ['#c62a22'], bottom: ['#16171a'], hat: ['#16171a'], hatChance: 0.85 } },
-  { ...base, id: 'oro7_soldier', name: 'Oro 7 soldier', behaviour: 'gang', faction: 'oro7', courage: 0.8, accuracy: 0.5, hp: 110, cash: [40, 220],
+  { ...base, id: 'oro7_soldier', name: 'Argo 7 soldier', behaviour: 'gang', faction: 'oro7', courage: 0.8, accuracy: 0.5, hp: 110, cash: [40, 220],
     loadout: [{ weapon: 'pistol', chance: 0.6, ammo: 45 }, { weapon: 'smg', chance: 0.4, ammo: 96 }, { weapon: 'rifle', chance: 0.12, ammo: 90 }, { weapon: 'grenade', chance: 0.05, ammo: 2 }],
     look: { skin: SKIN, top: ['#e3b30c'], bottom: ['#e8e2d0'], hat: ['#e3b30c'], hatChance: 0.8 } },
   { ...base, id: 'dealer', name: 'Dealer', behaviour: 'dealer', faction: 'street', courage: 0.75, accuracy: 0.45, cash: [200, 900],

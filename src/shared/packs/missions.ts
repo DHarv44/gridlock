@@ -25,7 +25,7 @@ export const MISSIONS: MissionSpec[] = [
     brief: 'Need a {vehicle} for a job. One is parked in {place}. Bring it in one piece. ${reward}.',
     reward: [2000, 3200], respect: 12, rivalRespect: 0, time: 300, distance: [300, 700], target: { vehicle: 'semi' } },
   { id: 'oro7_limo', kind: 'steal', giver: 'oro7', title: 'Executive Transport',
-    brief: "El jefe wants a {vehicle}. There's one in {place}. Deliver it clean. ${reward}.",
+    brief: "The old man wants a {vehicle}. There's one in {place}. Deliver it clean. ${reward}.",
     reward: [3000, 4500], respect: 12, rivalRespect: 0, time: 300, distance: [300, 700], target: { vehicle: 'limo' } },
   { id: 'd9_cop_car', kind: 'torch', giver: 'd9', title: 'Pig Roast',
     brief: 'A cop cruiser is parked up in {place}. Make it a bonfire. ${reward}.',

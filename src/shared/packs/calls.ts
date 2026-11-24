@@ -5,7 +5,8 @@
 // All of it is voiced: the clip is src/client/voice/<line id>.ogg (yours in your character's
 // voice), made by `npx tsx scripts/voice-calls.ts`. Lines never mention a job's details (those are
 // on the job panel), never explain the game, and never assume whether you're a man or a woman.
-// An introduction ends on you, because the job's brief follows it in the same call.
+// Every crew talks like who they are (docs/STORY.md "The cast"). An introduction ends on you,
+// because the job's brief follows it in the same call.
 
 /** A turn in an exchange: the caller's line, or your reply. */
 export type Turn = string | { you: string };
@@ -23,15 +24,14 @@ export const CALLERS: Caller[] = [
   { id: 'benny', name: 'Benny', voice: { ref: 'benny', ex: 0.6, cfg: 0.45 } },
   { id: 'nico', name: 'Nico', voice: { ref: 'nico', ex: 0.65, cfg: 0.45 } },
   { id: 'lupe', name: 'Lupe', voice: { ref: 'lupe', ex: 0.45, cfg: 0.5 } },
-  { id: 'sal', name: 'Sal', voice: { ref: 'sal', ex: 0.4, cfg: 0.55 } },
-  { id: 'tito', name: 'Tito', voice: { ref: 'tito', ex: 0.75, cfg: 0.35 } },
-  // Reference from Kokoro's most expressive voice; enough exaggeration that "cold" doesn't go flat,
-  // and a lower cfg so her sentences run on naturally.
-  { id: 'vega', name: 'Ines Vega', voice: { ref: 'vega', ex: 0.65, cfg: 0.35 } },
+  { id: 'declan', name: 'Declan', voice: { ref: 'declan', ex: 0.4, cfg: 0.55 } },
+  { id: 'danny', name: 'Danny', voice: { ref: 'danny', ex: 0.75, cfg: 0.35 } },
+  // Enough exaggeration that "cold" doesn't go flat, and a lower cfg so her sentences run on.
+  { id: 'eleni', name: 'Eleni', voice: { ref: 'eleni', ex: 0.65, cfg: 0.35 } },
 ];
 
 /** Who picks up a gang's phone: the boss first, then whoever else takes its calls. */
-export const GANG_CALLERS: Record<string, string[]> = { v22: ['nico', 'lupe'], d9: ['sal', 'tito'], oro7: ['vega'] };
+export const GANG_CALLERS: Record<string, string[]> = { v22: ['nico', 'lupe'], d9: ['declan', 'danny'], oro7: ['eleni'] };
 
 /** Each caller's exchanges by situation (one is picked at random each time). */
 export const CALLS: Record<string, Partial<Record<CallSituation, Turn[][]>>> = {
@@ -44,115 +44,122 @@ export const CALLS: Record<string, Partial<Record<CallSituation, Turn[][]>>> = {
       "Me? I'm a people person. Also, anything nice you happen to drive off with, you bring it by my shop, and we both do alright. Welcome to Bayhaven, pal.",
     ]],
   },
+
+  // Varrio 22: a Chicano street crew. Nico talks fast and loud and switches into Spanish when he's
+  // excited; "homie" for you, never "ese" or "vato" (you might be a woman).
   nico: {
     intro: [[
-      "Yo, this the new driver? Benny won't shut up about you. I'm Nico, Varrio Twenty-Two. Ashgrove, the Pits, all of that up there is ours, and everybody who lives there knows it.",
+      "Qué onda. So you're the one Benny keeps talking about. I'm Nico, Varrio Twenty-Two. The Pits, Ashgrove, San Isidro, all of that is puro Varrio, homie, and everybody out there knows it.",
       { you: 'Good for you. Benny said you had work.' },
-      "Straight to business. I like that. Yeah, I got work, and if you don't screw this one up, I got a lot more after it.",
+      "Órale, straight to business. I like that. Simón, I got a jale for you, and if you don't mess it up, there's a lot more where that came from.",
       { you: "Then let's hear it." },
     ]],
     hit: [[
-      "Alright, listen. One of theirs has been running his mouth all week, saying we're soft, saying my sister's the one who really runs the crew. Out loud, on the street, where people can hear. I need that mouth shut. For good.",
-      { you: 'Does she?' },
-      "Does she what? Just go do it. And don't tell Lupe we had this conversation.",
+      "Okay, check it. There's this vato from the other side who's been running his mouth all week, saying we went soft, saying my sister's the one really running things. Out loud, on the street, in front of everybody. I want that mouth shut, homie. For good.",
+      { you: 'Is she?' },
+      "Is she what? Chale, just go handle it. And don't say nothing to Lupe about this, me entiendes?",
     ]],
     torch: [[
-      "You know what they love more than their own mothers? That car. They wash it every Sunday and park it right out in the open, like they're daring somebody. So I'm daring somebody.",
+      "You know what those fools love more than their own mothers? Their ranfla. They wax it every Sunday and park it right out in the open, like they're daring somebody. So I'm daring somebody.",
       { you: 'You want it gone, or you want it burning?' },
-      "Burning. Big. I want to see the smoke from my window, and I want them crying about it all week.",
+      "Burning, homie! I want to see the smoke from my window, and I want them crying about it all week. Ándale.",
     ]],
     steal: [[
-      "Okay, there's a car out there I've been dreaming about. Like, actual dreams. Somebody else is driving it, which, honestly, is a crime. Go get her, and bring her back without one single scratch.",
+      "Ay, there's a car out there I been dreaming about. Like, actual dreams, homie. Some fool's driving it around like it's nothing, and that's a crime, la neta. Go get her, and bring her back without one single scratch.",
       { you: 'And if she comes back with a scratch?' },
-      "Then you and me are gonna have a real long talk, and you are not gonna enjoy it. Go.",
+      "Then you and me gonna have a real long talk, and you not gonna like it. Go.",
     ]],
     courier: [[
-      "Got a package that needs to be somewhere else, like, yesterday. Don't open it, don't stop for snacks, don't get creative. Pick it up, drop it off, done.",
+      "Got a package that needs to be somewhere else, like, yesterday. Don't open it, don't stop for nothing, and watch out for la jura. Pick it up, drop it off, that's it.",
       { you: "What's in it?" },
-      "See, that's you getting creative already. Drive.",
+      "See, that's you asking questions already. Just drive, homie.",
     ]],
     frenzy: [[
-      "They're on our corners again. Our corners! Standing around like they pay rent there. I'm done being polite about it.",
-      { you: 'You were being polite?' },
-      "Ha! Okay, fair. But now I'm really not. Go remind them whose streets these are.",
+      "They're on our corners again, homie. Our corners! Posted up in the varrio like they pay rent there. I'm done being nice about it.",
+      { you: 'You were being nice?' },
+      "Ha! Okay, okay, you got me. But now I'm really not. Go remind them whose streets these are. Puro Varrio!",
     ]],
     pass: [[
-      "Yes! That's what I'm talking about! The whole crew's talking about you right now. Money's yours. You earned every cent of it.",
+      "Órale! That's what I'm talking about! The whole varrio's talking about you right now, homie. That feria's yours. You earned every cent.",
       { you: 'Told you I could drive.' },
     ]],
     fail: [[
-      "Are you serious right now? I stood up in front of everybody and said you were good. You know how that makes me look?",
-      { you: 'It went sideways. The next one won\'t.' },
+      "Are you serious right now? I stood up in front of everybody and said you were solid. You know how that makes me look, homie?",
+      { you: "It went sideways. The next one won't." },
       'Yeah. It better not.',
     ]],
     busy: [[
-      "Yo, you're on something already? Fine. Finish it and call me back. I'm not gonna wait forever.",
+      "Qué onda? You're on something already? Fine. Finish it and hit me back. I'm not gonna wait forever.",
       { you: 'Give me five minutes.' },
     ]],
     nothing: [[
-      "Nah, it's quiet right now. Everybody's lying low. I'll call you when something pops off.",
+      "Nah, it's dead right now. Everybody's laying low with la jura all over the place. I'll hit you up when something pops off.",
       { you: "Don't take too long." },
     ]],
   },
+  // Lupe: the mechanic and the brains. Measured, dry, a little Spanish when it slips out.
   lupe: {
     hit: [[
-      "It's Lupe. Nico wants somebody dead, and for once I actually agree with him. I'd rather it was quick and quiet, but he wants it loud, so do whatever gets it done.",
+      "It's Lupe. Nico wants somebody gone, and for once I actually agree with my brother. I'd do it quick and quiet, but he wants it loud, so mira, do whatever gets it done.",
       { you: 'You two ever agree on anything?' },
       "Twice. This, and that you're worth the money. Don't make me regret the second one.",
     ]],
     torch: [[
-      "It's Lupe. There's a car I need you to set on fire. Just the car, please. The last time somebody did this for us, they took half a block with it, and I had to explain that to my grandmother.",
+      "It's Lupe. There's a car I need you to set on fire. Just the car, por favor. The last time somebody did this for us, they took half the block with it, and I had to explain that to my abuela.",
       { you: 'Just the car. Got it.' },
     ]],
     steal: [[
-      "It's Lupe. I need a car for parts, and parts are worth nothing if they show up bent. So drive it like it's yours. Gently. Because it isn't.",
+      "It's Lupe. I need a car for parts, and parts are worth nothing to me if they show up bent. So drive it like it's yours. Gently. Because it's not.",
       { you: 'I always drive gently.' },
-      "I've seen you drive. Just bring it back in one piece.",
+      "Ay, I've seen you drive. Just bring it back in one piece.",
     ]],
     courier: [[
-      "It's Lupe. There's a package going to a drop, and it's only worth anything if it gets there on time. If it's late, it's garbage, and so is the money.",
+      "It's Lupe. There's a package going to a drop, and it's only worth something if it gets there on time. If it's late, it's basura, and so is the money.",
       { you: "Then I'd better not be late." },
-      "That's the idea.",
+      "Eso. That's the idea.",
     ]],
     frenzy: [[
-      "It's Lupe. We tried talking to them. We tried twice. They laughed at us, so now we're done talking. Thin them out, and then come home in one piece, okay?",
+      "It's Lupe. We tried talking to them. Twice. They laughed in our faces, so now we're done talking. Thin them out, and then come home in one piece, okay?",
       { you: "Didn't know you cared." },
-      'I care about my investments. Go.',
+      'I care about my investments. Ándale, go.',
     ]],
     pass: [[
-      "Clean work. Nico won't say it to your face, so I'll say it for him. Thank you. Really.",
+      "Clean work. Nico won't say it to your face, so I'll say it for him. Gracias. Really.",
       { you: 'Tell him he can say it himself next time.' },
-      "He'd rather die. Talk soon.",
+      "He'd rather die. Cuídate.",
     ]],
     fail: [[
-      "That cost us money, and it cost us face, and I'm the one who has to fix both. Don't let it happen twice.",
+      "That cost us money, and it cost us respect, and I'm the one who has to fix both. Don't let it happen twice.",
       { you: "It won't." },
-      'Good.',
+      'Bueno.',
     ]],
   },
-  sal: {
+
+  // Local 9: Irish-American union muscle out of the foundries and the haulage yards. Declan is the
+  // old-school boss: few words, never raises his voice, "the Local", "the brothers", "kid".
+  declan: {
     intro: [[
-      "So you're the one Benny keeps talking about. My name is Sal. I run Diablos Nine. I don't usually call people I haven't met.",
+      "So you're the one Benny keeps going on about. My name's Declan Rourke. I run Local Nine. I don't usually call people I haven't met.",
       { you: 'So why call me?' },
-      "Because I need somebody nobody knows yet. You work for me, you work hard, you keep your mouth shut, and you never, ever talk to cops. We understand each other?",
+      "Because I need somebody nobody knows yet. You work for the Local, you work hard, you keep your mouth shut, and you never, ever talk to cops. We understand each other?",
       { you: "I don't talk to anybody." },
-      'Good. Keep it that way. Now listen.',
+      'Good. Keep it that way, kid. Now listen.',
       { you: "I'm listening." },
     ]],
     hit: [[
-      "There's a man holding court on my street. Shaking hands. Making promises he can't keep. He won't be alone, so don't expect him to be.",
+      "There's a fella holding court on my street. Shaking hands. Making promises he can't keep. He won't be alone, so don't expect him to be.",
       { you: 'And when I find him?' },
       "You end it. That's all.",
     ]],
     torch: [[
-      'They left something they love parked where I can see it. That was careless. Burn it.',
+      'They left something they care about parked where I can see it. That was careless. Burn it.',
       { you: 'Anything you want me to tell them?' },
       'The fire tells them.',
     ]],
     steal: [[
-      'I need a vehicle for a job. I need it in one piece, and I need it today.',
+      'I need a rig for a job. I need it in one piece, and I need it today.',
       { you: "What's the job?" },
-      "That's not your part. Your part is the vehicle.",
+      "That's not your end. Your end is the truck.",
     ]],
     courier: [[
       "A package. You pick it up, you drop it off, you don't look inside. Simple work. Most people still find a way to get it wrong.",
@@ -160,12 +167,12 @@ export const CALLS: Record<string, Partial<Record<CallSituation, Turn[][]>>> = {
       "We'll see.",
     ]],
     frenzy: [[
-      "They're walking around my neighbourhood like they own it. I've been patient. I'm finished being patient. Drop as many of them as you can, and do it quickly.",
+      "They're walking around my neighbourhood like they own it. I've been patient. I'm finished being patient. Drop as many of them as you can, and do it quick.",
       { you: 'How many is enough?' },
       "I'll tell you when.",
     ]],
     pass: [[
-      "Good. You're paid. And you did that well.",
+      'Good. You got paid. And you did that well. The brothers noticed.',
       { you: 'Call me when you need me again.' },
     ]],
     fail: [[
@@ -178,34 +185,35 @@ export const CALLS: Record<string, Partial<Record<CallSituation, Turn[][]>>> = {
       { you: "Won't be long." },
     ]],
     nothing: [[
-      "Nothing today. I'll call you.",
+      "Nothing today, kid. I'll call you.",
       { you: "I'll be around." },
     ]],
   },
-  tito: {
+  // Danny Keogh, Declan's number two: a Southie motor-mouth who laughs at his own jokes. He's the leak.
+  danny: {
     hit: [[
-      "Hey, hey, it's Tito! Okay, so there's this guy, right? Big shot. Thinks he's untouchable, walks around like his feet don't even touch the ground. You know what I'm gonna say?",
+      "Hey, hey, it's Danny! Okay, so there's this guy, right? Big shot. Thinks he's untouchable, walks around like his feet don't even touch the ground. You know what I'm gonna say?",
       { you: 'Go touch him?' },
-      "Go touch him! Ha! See, you get it! Sal never laughs at that one.",
+      "Go touch him! Ha! See, you get it! Declan never laughs at that one. Not once. Wicked tough crowd, that guy.",
     ]],
     torch: [[
-      "Tito again! You like fire? Everybody likes fire. There's a car out there just sitting all by itself, all lonely. Make it a bonfire, baby!",
+      "Danny again! You like fire? Everybody likes fire. There's a car out there just sitting all by itself, all lonely. Make it a bonfire, kid!",
       { you: "You're way too happy about this." },
       "Hey, it's the little things, you know? Bring marshmallows!",
     ]],
     steal: [[
-      "Okay, so, Sal wants wheels. Big ones. Don't ask me what for. I asked him what for, and he just looked at me, like, for a really long time. I don't ask anymore.",
-      { you: 'Maybe stop asking Sal things.' },
-      "That's what my mother says! Go get the car.",
+      "Okay, so, Declan wants a truck. A big one. Don't ask me what for. I asked him what for, and he just looked at me, like, for a really long time. I don't ask anymore.",
+      { you: 'Maybe stop asking Declan things.' },
+      "That's what my ma says! Go get the truck.",
     ]],
     courier: [[
       "Delivery job! You ever been a mailman? It's like that. Except the mail shoots back. And the dogs have guns. Okay, it's mostly the guns part.",
-      { you: 'Great sales pitch, Tito.' },
+      { you: 'Great sales pitch, Danny.' },
       "I'm wasted here, honestly. Go, go, go!",
     ]],
     frenzy: [[
-      "Turf war, baby! Sal says thin them out, so thin them out! I'm keeping count, by the way. Not for any reason. I just like counting.",
-      { you: 'Who are you telling your count to, Tito?' },
+      "Turf war, kid! Declan says thin them out, so thin them out! I'm keeping count, by the way. Not for any reason. I just like counting.",
+      { you: 'Who are you telling your count to, Danny?' },
       'What? Nobody! Who would I tell? Go!',
     ]],
     pass: [[
@@ -213,24 +221,26 @@ export const CALLS: Record<string, Partial<Record<CallSituation, Turn[][]>>> = {
       { you: 'Thanks for the vote of confidence.' },
     ]],
     fail: [[
-      "Oof. Oof. Sal's gonna be mad. Not at me, though! At you! Which, honestly, better you than me.",
-      { you: 'Thanks, Tito.' },
+      "Oof. Oof. Declan's gonna be wicked mad. Not at me, though! At you! Which, honestly, better you than me.",
+      { you: 'Thanks, Danny.' },
       'Anytime!',
     ]],
   },
-  vega: {
-    // Calm and controlled, but there's someone in there: dry amusement, a little warmth for people
-    // who are useful, and the menace underneath it. Full sentences that run on; never clipped.
+
+  // Argo 7: a Greek-American shipping family that smuggles through its own docks. Eleni Kouris is
+  // the old man's niece and his voice: polished, polite full sentences, family first, menace
+  // underneath. Never clipped.
+  eleni: {
     intro: [[
-      "Hello. My name is Ines Vega, and I speak for Oro Seven. Benny tells me you're new in town, and that you're looking for work. Benny is usually right about these things.",
+      "Hello. My name is Eleni Kouris, and I speak for Argo Seven, and for my uncle, Mr. Andreou. Benny tells me you're new in town, and looking for work. Benny is usually right about these things.",
       { you: 'Usually?' },
-      "Mm. Usually. We pay well, and we always pay on time. All we ask in return is the same courtesy from you. Do you think you can manage that?",
+      "Mm. Usually. We're a family business. We pay well, and we always pay on time. All we ask in return is the same courtesy from you. Do you think you can manage that?",
       { you: 'I can manage.' },
       "Good. Then let's start with something simple. I'd like to see how you handle simple.",
       { you: 'Go ahead.' },
     ]],
     hit: [[
-      "There's a man who owes us a great deal more than money now. I gave him every chance, I really did. I'd like you to make sure he doesn't need any more of them.",
+      "There's a man who owes my family a great deal more than money now. I gave him every chance, I really did. I'd like you to make sure he doesn't need any more of them.",
       { you: 'You sound almost sorry about it.' },
       "I'm always a little sorry. It never seems to stop me. Please, be thorough.",
     ]],
@@ -240,9 +250,9 @@ export const CALLS: Record<string, Partial<Record<CallSituation, Turn[][]>>> = {
       'Only that I like you better anonymous, so keep your face out of it, would you?',
     ]],
     steal: [[
-      "El Jefe has taken a liking to a certain car. He's an old man, and he doesn't ask for much, so when he does, we see that he gets it. Would you collect it for him? Gently, please.",
+      "My uncle has taken a liking to a certain car. He's an old man, and he doesn't ask for much, so when he does, we see that he gets it. Would you collect it for him? Gently, please.",
       { you: 'How gently?' },
-      "As if it belonged to your grandmother. A grandmother you're very afraid of.",
+      "Like it belonged to my yiayia. You never met her. Be grateful, and drive very gently.",
     ]],
     courier: [[
       "There's a parcel waiting for you, and I'm afraid the clock is already running. It should have been moved an hour ago, by someone who no longer works for us.",
@@ -255,7 +265,7 @@ export const CALLS: Record<string, Partial<Record<CallSituation, Turn[][]>>> = {
       'Then they should have said so earlier. Please, remove them.',
     ]],
     pass: [[
-      "Very efficient. I like that. The money's already with you, and El Jefe asked me your name, which, I should tell you, he almost never does.",
+      "Very efficient. I like that. The money's already with you, and my uncle asked me your name, which, I should tell you, he almost never does.",
       { you: 'What did you tell him?' },
       "That you're worth remembering.",
     ]],
@@ -269,7 +279,7 @@ export const CALLS: Record<string, Partial<Record<CallSituation, Turn[][]>>> = {
       { you: "I'll call you back." },
     ]],
     nothing: [[
-      "I'm sorry, there's nothing for you just now. Enjoy the quiet while it lasts. We'll be in touch.",
+      "I'm sorry, there's nothing for you just now. The ships come in when they come in. We'll be in touch.",
       { you: "I'll be waiting." },
     ]],
   },

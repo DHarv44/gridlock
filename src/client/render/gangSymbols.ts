@@ -65,6 +65,24 @@ const pitchfork: Draw = (ctx, s, color, _accent, outlineOnly) => {
   paint(ctx, s, color, outlineOnly);
 };
 
+/** Cargo hook: a T-handle, a short shaft and the curved, pointed hook, as one outline. */
+const hook: Draw = (ctx, s, color, _accent, outlineOnly) => {
+  const w = 0.055 * s, cx = 0.15 * s, cy = 0.2 * s, ri = cx - w, ro = cx + w, tip = 0.15 * s;
+  ctx.beginPath();
+  ctx.moveTo(-0.25 * s, -0.42 * s);
+  ctx.lineTo(0.25 * s, -0.42 * s);
+  ctx.lineTo(0.25 * s, -0.28 * s);
+  ctx.lineTo(w, -0.28 * s);
+  ctx.lineTo(w, cy);
+  ctx.arc(cx, cy, ri, Math.PI, -0.35, true);
+  ctx.lineTo(cx + Math.cos(-0.8) * tip, cy + Math.sin(-0.8) * tip);
+  ctx.arc(cx, cy, ro, -0.35, Math.PI, false);
+  ctx.lineTo(-w, -0.28 * s);
+  ctx.lineTo(-0.25 * s, -0.28 * s);
+  ctx.closePath();
+  paint(ctx, s, color, outlineOnly);
+};
+
 /** Dollar sign: a fat S with the bar through it. */
 const dollar: Draw = (ctx, s, color, _accent, outlineOnly) => {
   ctx.save();
@@ -78,7 +96,7 @@ const dollar: Draw = (ctx, s, color, _accent, outlineOnly) => {
   ctx.restore();
 };
 
-const SYMBOLS: Record<string, Draw> = { skull, pitchfork, dollar };
+const SYMBOLS: Record<string, Draw> = { skull, pitchfork, hook, dollar };
 
 /** Draws a symbol kind with the current strokeStyle as its outline; unknown kinds draw a ringed
  *  dot so a pack typo shows up. */

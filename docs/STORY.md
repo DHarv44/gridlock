@@ -7,12 +7,19 @@ scripted job can come from it. The engine never names these people: they're pack
 ## The city and the squeeze
 Bayhaven is a port town that's been running down for twenty years. Three crews split what's left:
 
-- **Varrio 22** (green, skull): The Pits and Ashgrove, the projects up north-west. Car people: boosting,
-  street racing, chop work. Young, loud, loyal to each other and nobody else.
-- **Diablos 9** (red, pitchfork): Foundry Lane and Tannery Flats, the industrial east. Muscle: haulage,
-  protection, anything heavy. They hate cops more than they hate each other.
-- **Oro 7** (gold, dollar): Saltmarsh Docks and San Isidro. The money: smuggling through the docks,
-  laundering through the businesses. Quiet, organised, patient.
+Each crew is a different community and talks like it.
+
+- **Varrio 22** (green, skull): a Chicano street crew. The Pits and Ashgrove, the two projects, and
+  San Isidro, the barrio. Car people: boosting, street racing, chop work. Young, loud,
+  loyal to each other and nobody else. Their English switches into Spanish (órale, simón, la neta,
+  la jura, ranfla, jale, feria, homie).
+- **Local 9** (red, cargo hook): Irish-American union muscle, a haulage and teamsters' local gone
+  crooked. Foundry Lane and Tannery Flats, the industrial east: haulage, protection, anything heavy.
+  They hate cops more than they hate each other. Working-class Boston Irish talk (the Local, the
+  brothers, kid, fella, wicked).
+- **Argo 7** (gold, dollar): a Greek-American shipping family. Saltmarsh Docks and Delancey behind it.
+  The money: smuggling through their own docks, laundering through the family's businesses. Quiet,
+  organised, patient, family first.
 
 The squeeze: **Harlan Price**, a developer with a clean face and a lot of borrowed money, wants the
 whole waterfront for a marina project. He can't buy out three crews, so he's going to make them
@@ -25,12 +32,12 @@ are written to be read aloud: plain words, the person's rhythm in the punctuatio
 | Who | Side | Voice (reference) | How they talk |
 |---|---|---|---|
 | **Benny Lutz** | fence at the Ironworks chop shop | `benny` (am_puck) | Fast, friendly, a salesman; calls everyone "pal". The first friendly voice. |
-| **Nico Reyes** | Varrio 22, runs the crew | `nico` (am_liam) | Young, cocky, quick. Big plans, short fuse, funny when he's winning. |
-| **Lupe Reyes** | Varrio 22, Nico's sister, the mechanic | `lupe` (ef_dora) | Dry, careful, the brains. Cleans up Nico's messes. |
-| **Sal Moreno** | Diablos 9, the boss | `sal` (am_onyx, -2 st) | Deep, slow, few words. Threatens by understating. |
-| **Tito Vargas** | Diablos 9, Sal's lieutenant | `tito` (am_echo, +1 st) | Wired, talks too much, laughs at his own jokes. Selling Sal out. |
-| **Ines Vega** | Oro 7, the boss's right hand | `vega` (af_heart) | Calm and controlled, never raises her voice; dry amusement and a little warmth for the useful, menace underneath. Polite full sentences. |
-| **Don Aurelio** | Oro 7, El Jefe | `aurelio` (em_santa, -2 st) | Old, unhurried, courteous. Calls only when it matters. |
+| **Nico Reyes** | Varrio 22, runs the crew | `nico` (am_liam) | Young, cocky, quick, Chicano street talk that slides into Spanish when he's excited. Big plans, short fuse, funny when he's winning. |
+| **Lupe Reyes** | Varrio 22, Nico's sister, the mechanic | `lupe` (ef_dora) | Dry, careful, the brains; a little Spanish slips out. Cleans up Nico's messes. |
+| **Declan Rourke** | Local 9, the boss | `declan` (am_onyx, -2 st) | Old-school Irish-American union boss. Deep, slow, few words. Threatens by understating. |
+| **Danny Keogh** | Local 9, Declan's number two | `danny` (am_echo, +1 st) | Southie motor-mouth: wired, talks too much, laughs at his own jokes. Selling Declan out. |
+| **Eleni Kouris** | Argo 7, the old man's niece and voice | `eleni` (af_heart) | Polished and controlled, never raises her voice; dry amusement and a little warmth for the useful, menace underneath. Polite full sentences, family first. |
+| **Kostas Andreou** | Argo 7, the old man | `andreou` (em_santa, -2 st) | Old, unhurried, courteous; Greek comes out when he's moved. Calls only when it matters. |
 | **Det. Ray Kowalski** | Bayhaven PD, on Price's payroll | `kowalski` (am_michael, -1 st) | Tired, sarcastic, matter-of-fact about the things he does. |
 | **Harlan Price** | the developer | `price` (bm_fable) | Smooth, warm, British, never says what he means. |
 
@@ -45,7 +52,7 @@ payphones. Do enough for a crew and they give you their number (the cell phone t
 **Act 2: Turf.** The crews start giving you real work, and the work starts going wrong in ways that
 aren't accidents: a stash hit that someone tipped off, a car job that turns out to be a sting, a
 shipment that's lighter than it should be. Kowalski calls with "favours": do a job for him and your
-heat goes away. Vega is the first to notice the pattern. Tito is the leak in Diablos 9.
+heat goes away. Eleni is the first to notice the pattern. Danny is the leak in Local 9.
 
 **Act 3: The waterfront.** Price makes his move: a war between the crews, with Kowalski's people
 cleaning up. Whichever crew you've stood with longest calls you in for the last job: take Price's

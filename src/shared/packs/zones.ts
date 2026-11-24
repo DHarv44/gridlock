@@ -120,8 +120,8 @@ export const ZONES: ZoneSpec[] = [
 
 // The city's districts. Each block takes the zone of its nearest district (x, y are 0..1).
 // A district with a `gang` is that gang's turf: its members hang out there and tag the walls.
-// Turf is the rough side of town: Varrio 22 runs both housing projects, Diablos 9 the
-// industrial east, Oro 7 the barrio and the docks it smuggles through.
+// Turf is the rough side of town: Varrio 22 runs both housing projects and the barrio, Local 9
+// the industrial east, Argo 7 the docks it smuggles through and Delancey behind them.
 export const DISTRICTS: DistrictSpec[] = [
   { name: 'Crown Center', zone: 'downtown', x: 0.5, y: 0.42 },
   { name: 'Exchange Row', zone: 'downtown', x: 0.58, y: 0.36 },
@@ -143,9 +143,9 @@ export const DISTRICTS: DistrictSpec[] = [
   { name: 'Saltmarsh Docks', zone: 'docks', x: 0.88, y: 0.82, gang: 'oro7' },
   { name: 'The Pits', zone: 'projects', x: 0.24, y: 0.76, gang: 'v22' },
   { name: 'Ashgrove', zone: 'projects', x: 0.38, y: 0.86, gang: 'v22' },
-  { name: 'San Isidro', zone: 'barrio', x: 0.58, y: 0.8, gang: 'oro7' },
+  { name: 'San Isidro', zone: 'barrio', x: 0.58, y: 0.8, gang: 'v22' },
   { name: 'Cobalt Bay', zone: 'suburbs', x: 0.1, y: 0.88 },
   { name: 'Riverside', zone: 'residential', x: 0.5, y: 0.68 },
-  { name: 'Delancey', zone: 'residential', x: 0.72, y: 0.84 },
+  { name: 'Delancey', zone: 'residential', x: 0.72, y: 0.84, gang: 'oro7' },
   { name: 'Shoreline Park', zone: 'park', x: 0.1, y: 0.66, weight: 0.7 },
 ];
