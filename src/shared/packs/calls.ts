@@ -46,13 +46,19 @@ That about right?...
 
 ${you}?`;
 
+const bennyNumber = (you: string) => `${you},
+I got everybody's number.
+Listen, nobody in this town is gonna call your cell until they trust you.
+Till then, you hear a payphone ringing out on the street, don't walk past it.
+Might be for you.`;
+
 /** Each caller's exchanges by situation (one is picked at random each time). */
 export const CALLS: Record<string, Partial<Record<CallSituation, Turn[][]>>> = {
   benny: {
     intro: [[
       { male: bennyHello('Pal'), female: bennyHello('Hun') },
       { you: "How'd you get this number?" },
-      "Pal, I got everybody's number. Listen, nobody in this town is gonna call your cell until they trust you. Till then, you hear a payphone ringing out on the street, don't walk past it. Might be for you.",
+      { male: bennyNumber('Buddy'), female: bennyNumber('Lady') },
       { you: "And what's in it for you?" },
       "Me? I'm a people person. Also, anything nice you happen to drive off with, you bring it by my shop, and we both do alright. Welcome to Bayhaven, pal.",
     ]],
