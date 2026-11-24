@@ -53,8 +53,11 @@ deal apart, and Kowalski with it. The crew that wins holds the waterfront and it
 to you; the others don't forget. (Siding with Price is possible. He's very generous. Right up to the end.)
 
 ## Calls (H1, first pass)
-A call is a short exchange: the caller's lines are voiced, your replies are text only (everyone
-plays their own character). What a line says out loud never depends on the job's details (the
+A call is a short, natural conversation between the caller and you: one turn per bubble, never
+split up, 300 characters at most, and all of it voiced (your turns in the voice you picked for your
+character). Nobody explains the game: they talk the way they would, and the job panel and map carry
+the rest. A boss's first call runs straight from their introduction into the job. Lines never
+assume whether you're a man or a woman. What a line says out loud never depends on the job's details (the
 place, the payout): those are on the job panel and the map route. The caller sounds like a payphone
 (narrow, analogue, a little hiss) or a cell (wider, a digital edge) by how the call came in, done
 live in the browser from one clean recording.

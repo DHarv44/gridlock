@@ -1,19 +1,14 @@
 // Phone conversations (packs/calls.ts) as comic speech bubbles beside your character. The caller's
 // bubble has the jagged lightning tail comics give a voice coming down a phone line, and their line
-// plays through a payphone's or a cell's sound (audio/phoneVoice.ts); your replies get a plain tail
-// on the other side and aren't voiced. One bubble at a time; a call that comes in during another
-// waits its turn.
+// plays through a payphone's or a cell's sound (audio/phoneVoice.ts); your turns get a plain tail
+// on the other side and play in your character's voice, clean. One bubble at a time; a call that
+// comes in during another waits its turn.
 import * as THREE from 'three';
-import { CALLERS, CALLS, type CallSituation, DEFAULT_VOICE, FACTIONS, GANG_CALLERS, lineId, REPLIES, youLineId } from '../../shared/packs';
+import { CALLERS, CALLS, type CallSituation, DEFAULT_VOICE, FACTIONS, GANG_CALLERS, lineId, youLineId } from '../../shared/packs';
 import type { S2C } from '../../shared/protocol';
 import type { Line } from '../audio/phoneVoice';
 import type { Sound } from '../audio/sound';
 import { clipOf } from '../audio/voiceClips';
-
-/** Which list of your lines back follows a situation (none after an introduction). */
-const REPLY_FOR: Partial<Record<CallSituation, keyof typeof REPLIES>> = {
-  hit: 'brief', torch: 'brief', steal: 'brief', courier: 'brief', frenzy: 'brief', pass: 'pass', fail: 'fail', busy: 'busy', nothing: 'nothing',
-};
 
 /** One bubble: a voiced line (`id` names its clip): the caller's, or yours (`who` empty). */
 interface Step { who: string; text: string; id?: string }
@@ -57,12 +52,6 @@ export class Talk {
       turns.forEach((t, k) => steps.push(typeof t === 'string'
         ? { who, text: t, id: lineId(who, situation, x, k) }
         : { who: '', text: t.you, id: youLineId(this.voice, lineId(who, situation, x, k)) }));
-      // And you answer back (unless the exchange already ended on you).
-      const list = REPLY_FOR[situation];
-      if (list && typeof turns[turns.length - 1] === 'string') {
-        const i = Math.floor(Math.random() * REPLIES[list].length);
-        steps.push({ who: '', text: REPLIES[list][i], id: youLineId(this.voice, `reply_${list}_${i}`) });
-      }
     }
     if (!steps.length) return;
     this.queue.push({ via: m.via, steps });

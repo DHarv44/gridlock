@@ -74,8 +74,11 @@
   phone no longer takes the controls (P / LB answers, Backspace declines). Protocol 14.
   Your character talks back: eight player voices (packs/calls.ts PLAYER_VOICES, references made the
   same way), picked with a sample in the character creator and saved on the character (`voice`);
-  your replies and a line back after each brief / result (REPLIES) are voiced in it, clean (not down
-  the line). 181 lines in all (~3 MB).
+  your turns are voiced in it, clean (not down the line).
+  2026-11-24: every call rewritten as a natural conversation (caller and you, one unsplit turn per
+  bubble, ≤300 chars, no explaining the game). The old clips were removed; the new ones (83 caller
+  turns + 51 of yours × 8 voices = 499) wait on new reference voices the user is recording. Until
+  then calls are silent bubbles (only the creator samples are voiced).
 - Company (2026-11-23): waypoints go to the server and show, in each player's colour, to everyone in
   the same vehicle; players riding inside a car have their names over it; a passed job's pay is split
   with the players riding with you or within RULES.shareRange; you can bail out of a moving vehicle
