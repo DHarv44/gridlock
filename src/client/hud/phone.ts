@@ -37,6 +37,8 @@ export class Phone {
   ring: () => void = () => {};
   /** A text arrived while the phone was away. */
   onText: (from: string) => void = () => {};
+  /** Any text arriving: the chirp. */
+  textTone: () => void = () => {};
 
   constructor(parent: HTMLElement) {
     this.root.className = 'phone';
@@ -68,6 +70,7 @@ export class Phone {
     if (m.t === 'text') {
       this.texts.unshift({ from: m.from, body: m.body, read: false, at: this.clock });
       if (this.texts.length > 40) this.texts.pop();
+      this.textTone();
       if (this.isOpen && this.screen === 'messages') this.draw(); else this.onText(m.from);
       return true;
     }

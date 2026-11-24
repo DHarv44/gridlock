@@ -17,8 +17,9 @@ const check = (ok: boolean, what: string) => { console.log(`${ok ? 'ok  ' : 'FAI
 
 const room = new Room('HELI', RULES.citySeed);
 room.stop();
-const pl = room.join('Pilot', { send: () => {}, close: () => {} });
-if (typeof pl === 'string') throw new Error(pl);
+const joined = room.join('Pilot', { send: () => {}, close: () => {} });
+if (typeof joined === 'string') throw new Error(joined);
+const pl = joined;
 room.stop();
 const w = room.world;
 const me = w.peds.get(pl.pid)!;

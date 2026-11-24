@@ -3,6 +3,7 @@
 // The siren is one looping voice that follows the nearest siren; engines are in engines.ts.
 import { FLOOR_H, groundOf } from '../../shared/world/levels';
 import { ENGINES, EngineVoice, TRAFFIC } from './engines';
+import { playTune } from './handset';
 
 /** Every voice the game plays: its recording, gain, pitch wobble (random ± fraction) and the least
  *  time between two plays (rapid-fire weapons would otherwise stack dozens of copies). */
@@ -32,10 +33,9 @@ const VOICES: Record<string, { file: string; gain: number; vary?: number; gap?: 
   horn_bus: { file: 'horn_bus', gain: 0.4, vary: 0.02 },
   horn_icecream: { file: 'horn_icecream', gain: 0.3, gap: 4.5 },
   cash: { file: 'cash', gain: 0.22 },
-  /** Payphones ringing for you (silent until the CC0 recording is fetched and prepared). */
+  /** Payphones ringing for you (silent until the CC0 recording is fetched and prepared). Your cell
+   *  phone's ringtone and text chirp are synthesised (audio/handset.ts, `tune`). */
   phone_ring: { file: 'phone_ring', gain: 0.4 },
-  /** Your cell phone ringing: the same bell, quieter and pitched up like a handset. */
-  cell_ring: { file: 'phone_ring', gain: 0.22, rate: 1.4 },
 };
 const SIREN_GAIN = 0.3;
 /** Most sounds playing at once; past this, new ones are dropped. */
@@ -144,6 +144,13 @@ export class Sound {
     this.playing++;
     src.onended = () => { this.playing--; src.disconnect(); gain.disconnect(); };
     src.start(t);
+  }
+
+  /** Plays one of the cell phone's synthesised tunes (audio/handset.ts): 'ringtone' or 'text'. */
+  tune(name: string): void {
+    const ctx = this.ensure();
+    if (!ctx || !this.master || this.muted || this.volume <= 0) return;
+    playTune(ctx, this.master, name);
   }
 
   /** A new engine voice for `name`, or null when it can't play (no sound yet, muted, unknown). */

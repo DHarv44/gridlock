@@ -109,7 +109,8 @@ export class Game {
     this.offscreen = new OffscreenPlayers(this.hud.root);
     this.phone = new Phone(this.hud.root);
     this.phone.send = (msg) => conn.send(msg);
-    this.phone.ring = () => this.sound.play('cell_ring');
+    this.phone.ring = () => this.sound.tune('ringtone');
+    this.phone.textTone = () => this.sound.tune('text');
     this.phone.onText = (from) => this.hud.notify(`New message from ${from}`, 'info');
     this.interact = new Interact(city, this.pane);
     this.hud.onChat = (text) => conn.send({ t: 'chat', text });
