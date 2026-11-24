@@ -1,22 +1,19 @@
 // Radio: lists each station's tracks with their lengths (the broadcast schedule in
-// shared/radioSchedule.ts is built from them) and serves the files with range requests. A station's folder comes from radio.local.json (station id → absolute folder, for a
-// local music library, not committed) or else radio/<station id>/ in the project. Folders are read
-// on each request, so dropping a new song in is enough.
-import { createReadStream, existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+// shared/radioSchedule.ts is built from them) and serves the files with range requests. A station's
+// folder is content/radio/<station id>/ in the project. Folders are read on each request, so
+// dropping a new song in is enough.
+import { createReadStream, readdirSync, readFileSync, statSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { basename, extname, join, resolve } from 'node:path';
 import { RADIO } from '../shared/packs';
 import type { RadioListing, RadioTrack, StationList } from '../shared/radioSchedule';
 import { audioDuration } from './audioDuration';
 
-const ROOT = resolve(process.cwd(), 'radio');
-const LOCAL = resolve(process.cwd(), 'radio.local.json');
+const ROOT = resolve(process.cwd(), 'content/radio');
 const TYPES: Record<string, string> = { '.m4a': 'audio/mp4', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav' };
 
 function folders(): Record<string, string> {
-  let local: Record<string, string> = {};
-  try { if (existsSync(LOCAL)) local = JSON.parse(readFileSync(LOCAL, 'utf8')) as Record<string, string>; } catch { /* ignore */ }
-  return Object.fromEntries(RADIO.map((s) => [s.id, typeof local[s.id] === 'string' ? local[s.id] : join(ROOT, s.id)]));
+  return Object.fromEntries(RADIO.map((s) => [s.id, join(ROOT, s.id)]));
 }
 
 function tracks(dir: string): string[] {
@@ -47,8 +44,7 @@ function listed(dir: string, prefix: string): RadioTrack[] {
   });
 }
 
-/** Song names: radio/<station>/tracks.json in the project (file → { title, artist }), so they
- *  apply whether the audio comes from there or from a local library folder. */
+/** Song names: content/radio/<station>/tracks.json (file → { title, artist }). */
 function names(station: string): Record<string, { title?: string; artist?: string }> {
   try { return JSON.parse(readFileSync(join(ROOT, station, 'tracks.json'), 'utf8')) as Record<string, { title?: string; artist?: string }>; } catch { return {}; }
 }

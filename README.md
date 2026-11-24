@@ -27,11 +27,9 @@ never restarts anything (you join whatever is on air). A station plays every aud
 (.m4a, .mp3, .wav; lengths are read from the files) in its folder, with commercial breaks
 between songs (one random spot from the folder's `commercials/` subfolder after a song now and
 after 1 to 3 songs, never the same spot twice running; a station with no commercials plays songs
-back to back). Song titles and artists come from `radio/<station id>/tracks.json` (file name →
-`{ title, artist }`); a song without an entry shows its file name. The station folder is: `radio/<station id>/` in the project, or a local
-library folder named in `radio.local.json` (not committed), e.g.
-`{ "weather": "D:/Music/weather" }`. Folders are read live, so new songs just show up.
-Deployed servers only have what is in `radio/` (or a mounted volume).
+back to back). Song titles and artists come from `content/radio/<station id>/tracks.json` (file
+name → `{ title, artist }`); a song without an entry shows its file name. The station folder is
+`content/radio/<station id>/` in the project. Folders are read live, so new songs just show up.
 
 **Characters:** up to 5 per browser, kept in that browser's local storage: name, look, cash,
 cars, felony record, respect. You bring your character when you join; the server checks the
