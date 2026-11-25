@@ -112,7 +112,12 @@ export class Cell {
       return null;
     }
     if (PEOPLE_CONTACTS.includes(g)) {
-      if (accept) talk(w, pl, 'cell', [[g, 'hello'], [g, 'nudge']]);
+      // You picked up, so no "call me back": he sends you to the payphone that's ringing for you.
+      if (accept) {
+        const booth = this.missions.ringingBooth(pl);
+        talk(w, pl, 'cell', [[g, 'hello'], [g, booth && has(g, 'tip') ? 'tip' : 'nudge']]);
+        if (booth) textTo(pl, nameOf(g), `Payphone in ${placeName(w, booth.x, booth.y)}. It's ringing for you.`);
+      }
       return null;
     }
     if (!accept) return null;

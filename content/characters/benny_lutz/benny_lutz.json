@@ -19,7 +19,7 @@
             "You don't know me, but word travels fast around here you know",
             "And the word is you're new, you're broke, and you can drive.",
             "",
-            "That about right?"
+            "Sound about right?"
           ],
           "tone": "big warm hello, grinning; rattling off what he knows"
         },
@@ -28,14 +28,14 @@
           "male": [
             "Buddy,",
             "I got everybody's number.",
-            "Listen, nobody in this town is gonna call your cell until they trust you.",
+            "Listen, ain't nobody in this town gonna call your cell until they trust you.",
             "Till then, you hear a payphone ringing out on the street, don't walk past it.",
             "Might be for you."
           ],
           "female": [
             "Lady,",
             "I got everybody's number.",
-            "Listen, nobody in this town is gonna call your cell until they trust you.",
+            "Listen, ain't nobody in this town gonna call your cell until they trust you.",
             "Till then, you hear a payphone ringing out on the street, don't walk past it.",
             "Might be for you."
           ],
@@ -123,6 +123,11 @@
       [{ "clip": "another_job2", "say": ["You want another job?", "Call me back.", "We got a real nice one for you."], "tone": "selling it" }],
       [{ "clip": "where_you_at", "say": ["Hey, where you at?", "Call me back.", "Got something you might like."], "tone": "casual, a little impatient" }],
       [{ "clip": "ghostin_me", "say": ["You ghostin' me?", "Boss needs something taken care of.", "Call me back."], "tone": "needling, then business" }]
+    ],
+    "tip": [
+      [{ "clip": "all_you_need_to_know", "say": ["Ain't gonna discuss the details with you here.", "Hit the payphones and you'll know all you need to know."], "tone": "cagey, matter-of-fact" }],
+      [{ "clip": "ears", "say": ["You know the feds got ears on us, right?", "Ring you on the payphone."], "tone": "low, a little paranoid" }],
+      [{ "clip": "fill_ya_in", "say": ["Can't discuss the details here.", "Find you a nice payphone somewhere and we'll fill you in."], "tone": "easy, careful" }]
     ],
     "answer": [
       [{ "clip": "crack_a_lackin", "say": ["Yo, what's crack-a-lackin', homie?"], "tone": "friendly" }],

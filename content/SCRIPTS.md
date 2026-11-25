@@ -24,7 +24,7 @@ Benny Lutz here.
 You don't know me, but word travels fast around here you know
 And the word is you're new, you're broke, and you can drive.
 
-That about right?
+Sound about right?
 ```
 **You** `how_number` — *wary, a little thrown*
 ```
@@ -34,7 +34,7 @@ How'd you get this number?
 ```
 Buddy,
 I got everybody's number.
-Listen, nobody in this town is gonna call your cell until they trust you.
+Listen, ain't nobody in this town gonna call your cell until they trust you.
 Till then, you hear a payphone ringing out on the street, don't walk past it.
 Might be for you.
 ```
@@ -42,7 +42,7 @@ Might be for you.
 ```
 Lady,
 I got everybody's number.
-Listen, nobody in this town is gonna call your cell until they trust you.
+Listen, ain't nobody in this town gonna call your cell until they trust you.
 Till then, you hear a payphone ringing out on the street, don't walk past it.
 Might be for you.
 ```
