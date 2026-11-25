@@ -29,7 +29,9 @@ const a = join('Ana'), b = join('Bo');
 room.stop();
 const w = room.world;
 const pa = w.peds.get(a.pid)!, pb = w.peds.get(b.pid)!;
-const talks = (name: string) => inbox.get(name)!.filter((m) => m.t === 'talk') as unknown as { via: string; parts: [string, string, number][] }[];
+/** Calls played to a player: `parts` the callers' (your own lines left out), `all` everything said. */
+const talks = (name: string) => (inbox.get(name)!.filter((m) => m.t === 'talk') as unknown as { via: string; parts: [string, string, number][] }[])
+  .map((m) => ({ ...m, all: m.parts, parts: m.parts.filter(([who]) => who !== 'you') }));
 let seq = 1;
 const tick = (n = 1, btnA = 0) => { for (let i = 0; i < n; i++) { a.queue.push([seq++, 0, 0, 0, 0, 0, btnA, -1]); pa.hp = Math.max(pa.hp, 1); room.tick(); } };
 
@@ -48,6 +50,7 @@ check(answerBooth() === null, 'payphone answered');
 const first = talks('Ana').at(-1)!;
 const kind = MISSIONS[a.mission!.spec].kind;
 check(first.via === 'payphone' && first.parts[0][0] === 'nico' && first.parts[0][1] === 'intro' && first.parts[1]?.[1] === kind, `first call: Nico's intro then the ${kind} brief, on a payphone line`);
+check(first.all[0][0] === 'you' && first.all[0][1] === 'payphone', 'you pick up the payphone first');
 room.missions.drop(a);
 answerBooth();
 const second = talks('Ana').at(-1)!;

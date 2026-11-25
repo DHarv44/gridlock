@@ -11,8 +11,11 @@ content/
     voice/<clip>.m4a           your recordings of their lines (npm run voices)
     model/                     reference clips for Chatterbox
   player/
-    player.json                the player's voices and every line the player says, by key
-    voice/<voice>/<key>.m4a    recordings of the player's lines, one folder per player voice
+    player.json                the player's two voices (male, female), every line the player says
+                               by key, and "says": the lines the player opens or closes a call
+                               with (pickup, payphone, ask, on_it), one picked at random
+    voice/<voice>/**/<key>.m4a recordings of the player's lines: voice/male/, voice/female/
+                               (any subfolders, only the file name counts)
     model/                     the player voices' reference clips
   voice-models/                spare reference clips not given to anyone yet
   SCRIPTS.md                   every conversation, readable (generated: npm run scripts)

@@ -7,6 +7,7 @@ data-smoke/
 radio.local.json
 # Raw takes next to the recordings (the .m4a files are the ones lines use).
 content/characters/*/voice/**/*.wav
+content/player/voice/**/*.wav
 # Rendered voice takes and auditions (only finished pieces go into content/radio/).
 voice/out/
 

@@ -4,13 +4,18 @@
 // edit the JSON and run this again. `npm run scripts`
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { CALLERS, CALLS, type CallSituation, PLAYER_LINES, PLAYER_VOICES, youLineId } from '../src/shared/packs';
+import { CALLERS, CALLS, type CallSituation, PLAYER_LINES, PLAYER_SAYS, PLAYER_VOICES, type PlayerSituation, youLineId } from '../src/shared/packs';
 import { recordings } from './voices';
 
 const root = resolve(import.meta.dirname, '..');
 const SITUATIONS: [CallSituation, string][] = [
   ['intro', 'First call'], ['hit', 'Hit'], ['torch', 'Torch'], ['steal', 'Steal'], ['courier', 'Courier'],
   ['frenzy', 'Turf war'], ['pass', 'Job done'], ['fail', 'Job blown'], ['busy', 'Busy (already on a job)'], ['nothing', 'Nothing on'],
+  ['hello', 'Opening a call to you'], ['answer', 'Picking up when you ring'], ['refuse', 'Picking up, won\'t deal with you'],
+  ['tip', 'Sending you to a payphone'], ['nudge', 'There\'s another job'], ['voicemail', 'Voicemail'],
+];
+const SAYS: [PlayerSituation, string][] = [
+  ['pickup', 'Answering your cell'], ['payphone', 'Picking up a ringing payphone'], ['ask', 'Ringing someone for work'], ['on_it', 'Sent to a payphone'],
 ];
 const recorded = new Set(recordings().map((r) => r.clip));
 const box = (text: string) => ['```', text, '```'].join('\n');
@@ -59,10 +64,16 @@ for (const c of CALLERS) {
 out.push('---', '', '## You: the player', '', 'Every line here is said in the voice picked for your character. The clip is `you_<voice>_<key>`.', '',
   '| Voice | Reference | Exaggeration | CFG/Pace | Character |', '|---|---|---|---|---|',
   ...PLAYER_VOICES.map((v) => `| ${v.name} (${v.who}) | \`${v.voice.model.split('/').pop()}\` | ${v.voice.ex} | ${v.voice.cfg} | ${v.about} |`), '');
-for (const [key, l] of Object.entries(PLAYER_LINES)) {
+const mine = (key: string) => {
+  const l = PLAYER_LINES[key];
   const have = PLAYER_VOICES.filter((v) => recorded.has(youLineId(v.id, key))).map((v) => v.name);
   out.push(`**\`${key}\`**${have.length ? ` ✓ recorded: ${have.join(', ')}` : ''} — *${l.tone}*`, box(l.text));
-}
+};
+const opening = new Set(Object.values(PLAYER_SAYS).flat());
+out.push('### On your own (one picked at random each time)', '');
+for (const [s, title] of SAYS) { out.push(`#### ${title}`); for (const key of PLAYER_SAYS[s]) mine(key); out.push(''); }
+out.push('### In conversations', '');
+for (const key of Object.keys(PLAYER_LINES)) if (!opening.has(key)) mine(key);
 out.push('');
 
 const dst = join(root, 'content/SCRIPTS.md');

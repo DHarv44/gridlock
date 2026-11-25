@@ -26,9 +26,11 @@ And the word is you're new, you're broke, and you can drive.
 
 Sound about right?
 ```
-**You** `how_number` — *wary, a little thrown*
+**You** `how_number` — *sizing him up, then wary, a little thrown*
 ```
-How'd you get this number?
+Benny, huh?
+Yeah, that sounds about right.
+How'd you get this number???
 ```
 **Benny** `benny_intro_0_1_male` ✓ recorded (male character) — *breezy brush-off, then leaning in with a tip*
 ```
@@ -46,7 +48,7 @@ Listen, ain't nobody in this town gonna call your cell until they trust you.
 Till then, you hear a payphone ringing out on the street, don't walk past it.
 Might be for you.
 ```
-**You** `whats_in_it` — *dry, half-smiling*
+**You** `whats_in_it_for_you` — *dry, half-smiling*
 ```
 And what's in it for you?
 ```
@@ -102,6 +104,118 @@ But I guess that's why he's the boss, huh?
 Look, no more fuck-ups.
 
 Alright????
+```
+
+### Opening a call to you (1)
+**Benny** `benny_crack_a_lackin` ✓ recorded — *friendly*
+```
+Yo, what's crack-a-lackin', homie?
+```
+
+### Opening a call to you (2)
+**Benny** `benny_playa` ✓ recorded — *friendly*
+```
+What's up, playa?
+```
+
+### Picking up when you ring (1)
+**Benny** `benny_crack_a_lackin` ✓ recorded — *friendly*
+```
+Yo, what's crack-a-lackin', homie?
+```
+
+### Picking up when you ring (2)
+**Benny** `benny_listenin` ✓ recorded — *friendly*
+```
+I'm listenin'.
+```
+
+### Picking up when you ring (3)
+**Benny** `benny_playa` ✓ recorded — *friendly*
+```
+What's up, playa?
+```
+
+### Picking up when you ring (4)
+**Benny** `benny_whats_up` ✓ recorded — *friendly*
+```
+Benny here.
+What's up?
+```
+
+### Picking up, won't deal with you
+**Benny** `benny_fuck_off` ✓ recorded — *disbelief, then done with you*
+```
+Shit, you sure got some balls, don't you?
+
+Calling me after all the shit that went down...
+
+Fuck off!
+```
+
+### Sending you to a payphone (1)
+**Benny** `benny_all_you_need_to_know` ✓ recorded — *cagey, matter-of-fact*
+```
+Ain't gonna discuss the details with you here.
+Hit the payphones and you'll know all you need to know.
+```
+
+### Sending you to a payphone (2)
+**Benny** `benny_ears` ✓ recorded — *low, a little paranoid*
+```
+You know the feds got ears on us, right?
+Ring you on the payphone.
+```
+
+### Sending you to a payphone (3)
+**Benny** `benny_fill_ya_in` ✓ recorded — *easy, careful*
+```
+Can't discuss the details here.
+Find you a nice payphone somewhere and we'll fill you in.
+```
+
+### There's another job (1)
+**Benny** `benny_another_job1` ✓ recorded — *easy, offhand*
+```
+Call me back if you want another job.
+```
+
+### There's another job (2)
+**Benny** `benny_another_job2` ✓ recorded — *selling it*
+```
+You want another job?
+Call me back.
+We got a real nice one for you.
+```
+
+### Voicemail (1)
+**Benny** `benny_another_job1` ✓ recorded — *easy, offhand*
+```
+Call me back if you want another job.
+```
+
+### Voicemail (2)
+**Benny** `benny_another_job2` ✓ recorded — *selling it*
+```
+You want another job?
+Call me back.
+We got a real nice one for you.
+```
+
+### Voicemail (3)
+**Benny** `benny_where_you_at` ✓ recorded — *casual, a little impatient*
+```
+Hey, where you at?
+Call me back.
+Got something you might like.
+```
+
+### Voicemail (4)
+**Benny** `benny_ghostin_me` ✓ recorded — *needling, then business*
+```
+You ghostin' me?
+Boss needs something taken care of.
+Call me back.
 ```
 
 ---
@@ -992,25 +1106,93 @@ Every line here is said in the voice picked for your character. The clip is `you
 
 | Voice | Reference | Exaggeration | CFG/Pace | Character |
 |---|---|---|---|---|
-| Steady (man) | `pv_steady.wav` | 0.45 | 0.5 | even, grounded, unflappable |
-| Rough (man) | `pv_rough.wav` | 0.5 | 0.5 | gravelly, street-hard |
-| London (man) | `pv_london.wav` | 0.45 | 0.5 | British, dry, laconic |
-| Warm (man) | `pv_warm.wav` | 0.5 | 0.5 | easy-going, friendly |
-| Bright (woman) | `pv_bright.wav` | 0.55 | 0.5 | upbeat, quick, confident |
-| Smoky (woman) | `pv_smoky.wav` | 0.4 | 0.5 | low, husky, unhurried |
-| Crisp (woman) | `pv_crisp.wav` | 0.45 | 0.5 | British, clipped, sharp |
-| Easy (woman) | `pv_easy.wav` | 0.5 | 0.5 | relaxed, casual |
+| Male (man) | `pv_male.wav` | 0.45 | 0.5 | even, grounded, unflappable |
+| Female (woman) | `pv_female.wav` | 0.4 | 0.5 | low, husky, unhurried |
+
+### On your own (one picked at random each time)
+
+#### Answering your cell
+**`pickup_yeah`** — *answering the cell, flat*
+```
+Yeah?
+```
+**`pickup_talk`** — *answering the cell, easy*
+```
+Talk to me.
+```
+**`pickup_go_ahead`** — *answering the cell, half-busy*
+```
+Yeah, go ahead.
+```
+**`pickup_hello`** — *answering the cell, neutral*
+```
+Hello?
+```
+
+#### Picking up a ringing payphone
+**`booth_who`** — *picking up a ringing payphone, wary*
+```
+Hello?
+Who is this?
+```
+**`booth_looking`** — *picking up a ringing payphone, cool*
+```
+Yeah?
+You looking for me?
+```
+**`booth_driver`** — *picking up a ringing payphone, dry*
+```
+Somebody call for a driver?
+```
+
+#### Ringing someone for work
+**`ask_anything`** — *ringing for work, casual*
+```
+Hey, it's me.
+Got anything for me?
+```
+**`ask_free`** — *ringing for work, businesslike*
+```
+It's me.
+I'm free, if you've got work.
+```
+**`ask_work_going`** — *ringing for work, easy*
+```
+Hey.
+You got any work going?
+```
+**`ask_again`** — *ringing for work, a little impatient*
+```
+It's me again.
+What've you got?
+```
+
+#### Sent to a payphone
+**`on_it_find_one`** — *told to find a payphone, easy*
+```
+Alright.
+I'll find one.
+```
+**`on_it_way`** — *told to find a payphone, brisk*
+```
+Got it.
+On my way.
+```
+
+### In conversations
 
 **`sample`** — *casual confidence, straight to the money (the character creator's demo)*
 ```
 Yeah, I can do that.
 What's it pay?
 ```
-**`how_number`** — *wary, a little thrown*
+**`how_number`** — *sizing him up, then wary, a little thrown*
 ```
-How'd you get this number?
+Benny, huh?
+Yeah, that sounds about right.
+How'd you get this number???
 ```
-**`whats_in_it`** — *dry, half-smiling*
+**`whats_in_it_for_you`** ✓ recorded: Male — *dry, half-smiling*
 ```
 And what's in it for you?
 ```

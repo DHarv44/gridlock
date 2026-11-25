@@ -7,7 +7,7 @@
 // blown jobs) and point you at a payphone that's ringing for you. The mentor also rings with a
 // nudge when you've been idle and no crew has your number; miss it and they leave a voicemail.
 // What callers say is voiced (missions/talk.ts, packs/calls.ts).
-import { CALLERS, CALLS, type CallSituation, GANGS, MENTOR_CALLER, PEOPLE_CONTACTS, RESPECT, WELCOME_CALLER } from '../../../shared/packs';
+import { CALLERS, CALLS, type CallSituation, GANGS, MENTOR_CALLER, PEOPLE_CONTACTS, RESPECT, WELCOME_CALLER, YOU } from '../../../shared/packs';
 import { Mode, type S2C } from '../../../shared/protocol';
 import type { Player } from '../entities';
 import type { World } from '../world';
@@ -107,7 +107,7 @@ export class Cell {
     c.next = w.time + callGap(w);
     pl.send({ t: 'call', gang: g, state: 'end' } satisfies S2C);
     if (g === WELCOME_CALLER && !pl.met.has(g)) {
-      if (accept) talk(w, pl, 'cell', [[g, 'intro']]);
+      if (accept) talk(w, pl, 'cell', [[YOU, 'pickup'], [g, 'intro']]);
       else c.introAt = w.time + 60;
       return null;
     }
@@ -115,14 +115,15 @@ export class Cell {
       // You picked up, so no "call me back": he sends you to the payphone that's ringing for you.
       if (accept) {
         const booth = this.missions.ringingBooth(pl);
-        talk(w, pl, 'cell', [[g, 'hello'], [g, booth && has(g, 'tip') ? 'tip' : 'nudge']]);
+        const tip = !!booth && has(g, 'tip');
+        talk(w, pl, 'cell', [[YOU, 'pickup'], [g, 'hello'], [g, tip ? 'tip' : 'nudge'], ...(tip ? [[YOU, 'on_it'] as Part] : [])]);
         if (booth) textTo(pl, nameOf(g), `Payphone in ${placeName(w, booth.x, booth.y)}. It's ringing for you.`);
       }
       return null;
     }
     if (!accept) return null;
-    if (pl.mission) { this.say(pl, g, 'busy'); return null; }
-    this.missions.offer(pl, g, RESPECT.cellPay);
+    if (pl.mission) { this.say(pl, g, 'busy', [YOU, 'pickup']); return null; }
+    this.missions.offer(pl, g, RESPECT.cellPay, [[YOU, 'pickup']]);
     return null;
   }
 
@@ -133,11 +134,12 @@ export class Cell {
     if (this.people(pl).includes(gang)) { this.ringPerson(pl, gang); return null; }
     if (!this.contacts(pl).includes(gang)) return "You don't have that number.";
     pl.send({ t: 'call', gang, state: 'end' } satisfies S2C);
-    if (pl.mission) { this.say(pl, gang, 'busy'); return null; }
-    if ((c.dialCd[gang] ?? 0) > w.time) { this.say(pl, gang, 'nothing'); return null; }
+    // You ask for work; they give you a job, or say you're busy, or that there's nothing.
+    if (pl.mission) { this.say(pl, gang, 'busy', [YOU, 'ask']); return null; }
+    if ((c.dialCd[gang] ?? 0) > w.time) { this.say(pl, gang, 'nothing', [YOU, 'ask']); return null; }
     c.dialCd[gang] = w.time + RESPECT.cellDialCooldown;
     c.next = Math.max(c.next, w.time + callGap(w));
-    this.missions.offer(pl, gang, RESPECT.cellPay);
+    this.missions.offer(pl, gang, RESPECT.cellPay, [[YOU, 'ask']]);
     return null;
   }
 
@@ -147,17 +149,18 @@ export class Cell {
   private ringPerson(pl: Player, who: string): void {
     pl.send({ t: 'call', gang: who, state: 'end' } satisfies S2C);
     if (this.missions.fedUp(pl) && has(who, 'refuse')) { talk(this.w, pl, 'cell', [[who, 'refuse']]); return; }
-    const parts: Part[] = [[who, 'answer']];
+    const parts: Part[] = [[who, 'answer'], [YOU, 'ask']];
     const booth = this.missions.ringingBooth(pl);
     if (pl.mission) parts.push([who, 'busy']);
-    else if (booth) parts.push([who, 'tip']);
+    else if (booth) parts.push([who, 'tip'], [YOU, 'on_it']);
     else parts.push([who, 'nothing']);
     talk(this.w, pl, 'cell', parts);
     if (booth) textTo(pl, nameOf(who), `Payphone in ${placeName(this.w, booth.x, booth.y)}. It's ringing for you.`);
   }
 
-  private say(pl: Player, gang: string, situation: 'busy' | 'nothing'): void {
+  /** `lead`: what you said first (picking up, or asking for work). */
+  private say(pl: Player, gang: string, situation: 'busy' | 'nothing', lead: Part): void {
     const who = gangCaller(this.w, pl, gang, situation);
-    if (who) talk(this.w, pl, 'cell', [[who, situation]]);
+    if (who) talk(this.w, pl, 'cell', [lead, [who, situation]]);
   }
 }

@@ -41,7 +41,7 @@
           ],
           "tone": "breezy brush-off, then leaning in with a tip"
         },
-        { "you": "whats_in_it" },
+        { "you": "whats_in_it_for_you" },
         {
           "say": [
             "For me???",

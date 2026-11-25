@@ -109,7 +109,7 @@ loner.cell.nudgeAt = 0;
 ticks(2);
 k = msgs.length;
 room.cell.answer(loner, true);
-check(said(k).map(([, s]) => s).join() === 'hello,tip', 'answered: a greeting, then he sends you to a payphone');
+check(said(k).map(([, s]) => s).join() === 'pickup,hello,tip,on_it', 'answered: you pick up, his greeting, he sends you to a payphone, you\'re on it');
 
 // Business income reaching the bank at midnight comes with a text from the bank.
 const biz = w.city.properties.find((p) => PROPERTIES[p.spec].kind === 'business' && PROPERTIES[p.spec].income > 0)!;

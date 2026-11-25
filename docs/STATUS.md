@@ -72,9 +72,11 @@
   who speaks (missions/talk.ts; `met` saved with the character), the client plays them as comic
   bubbles beside you (hud/talk.ts) down a payphone or cell line (audio/phoneVoice.ts). A ringing
   phone no longer takes the controls (P / LB answers, Backspace declines). Protocol 14.
-  Your character talks back: eight player voices (packs/calls.ts PLAYER_VOICES, references made the
-  same way), picked with a sample in the character creator and saved on the character (`voice`);
-  your turns are voiced in it, clean (not down the line).
+  Your character talks back: two player voices, male and female (packs/calls.ts PLAYER_VOICES),
+  picked with a sample in the character creator and saved on the character (`voice`); your turns
+  are voiced in it, clean (not down the line). 2026-11-25: you also speak on your own in calls the
+  server puts together (player.json "says", `[YOU, situation]` parts): picking up your cell or a
+  payphone, asking for work when you ring someone, "on my way" after a payphone tip.
   2026-11-24: every call rewritten as a natural conversation (caller and you, line breaks kept and
   shown, no explaining the game); the three crews are three communities (Varrio 22 Chicano, Local 9
   Irish-American union, Argo 7 Greek-American shipping family). Content moved to content/ (see

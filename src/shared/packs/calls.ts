@@ -34,9 +34,14 @@ interface CharacterFile {
   voice: VoiceFile;
   calls: Partial<Record<CallSituation, TurnFile[][]>>;
 }
+/** What you say on your own in a call the server puts together: `pickup` answering your cell,
+ *  `payphone` picking up a ringing payphone, `ask` asking for work when you ring someone, `on_it`
+ *  after being sent to a payphone. */
+export type PlayerSituation = 'pickup' | 'payphone' | 'ask' | 'on_it';
 interface PlayerFile {
   about: string; default: string;
   voices: ({ id: string; name: string; who: 'man' | 'woman'; about: string } & VoiceFile)[];
+  says: Record<PlayerSituation, string[]>;
   lines: Record<string, { say: string[]; tone?: string }>;
 }
 
@@ -71,6 +76,15 @@ const text = (lines: string[]) => lines.join('\n');
 /** Your lines by key (player.json). */
 export const PLAYER_LINES: Record<string, { text: string; tone: string }> = Object.fromEntries(
   Object.entries(PLAYER.lines).map(([k, l]) => [k, { text: text(l.say), tone: l.tone ?? '' }]));
+
+/** You, as a speaker in a call's parts (`[YOU, situation, n]`: the n-th of your `says` lines). */
+export const YOU = 'you';
+
+/** Your lines by situation, as keys of PLAYER_LINES. */
+export const PLAYER_SAYS: Record<PlayerSituation, string[]> = PLAYER.says;
+for (const [s, keys] of Object.entries(PLAYER_SAYS)) {
+  for (const k of keys) if (!PLAYER_LINES[k]) throw new Error(`player.json: says.${s} points at "${k}", which isn't in its lines`);
+}
 
 export const CALLERS: Caller[] = CAST.map(([folder, c]) => {
   const dir = `content/characters/${folder}`;

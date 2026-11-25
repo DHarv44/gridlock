@@ -4,7 +4,7 @@
 // on the other side and play in your character's voice, clean. One bubble at a time; a call that
 // comes in during another waits its turn.
 import * as THREE from 'three';
-import { CALLERS, CALLS, type CallSituation, DEFAULT_VOICE, FACTIONS, GANG_CALLERS, genderOf, youLineId } from '../../shared/packs';
+import { CALLERS, CALLS, type CallSituation, DEFAULT_VOICE, FACTIONS, GANG_CALLERS, genderOf, PLAYER_LINES, PLAYER_SAYS, type PlayerSituation, YOU, youLineId } from '../../shared/packs';
 import type { S2C } from '../../shared/protocol';
 import type { Line } from '../audio/phoneVoice';
 import type { Sound } from '../audio/sound';
@@ -48,6 +48,12 @@ export class Talk {
   play(m: TalkMsg): void {
     const steps: Step[] = [];
     for (const [who, s, x] of m.parts) {
+      // A line of yours on its own (picking up, asking for work).
+      if (who === YOU) {
+        const key = PLAYER_SAYS[s as PlayerSituation]?.[x];
+        if (key) steps.push({ who: '', text: PLAYER_LINES[key].text, id: youLineId(this.voice, key) });
+        continue;
+      }
       const situation = s as CallSituation;
       const turns = CALLS[who]?.[situation]?.[x];
       if (!turns) continue;

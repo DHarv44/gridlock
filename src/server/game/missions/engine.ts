@@ -1,6 +1,6 @@
 // Missions: payphone offers, kill-frenzy crates, gang respect, per-player job progress.
 import { dist } from '../../../shared/math';
-import { CALLS, faction, GANGS, MENTOR_CALLER, MISSIONS, RESPECT, RULES, weaponIndex } from '../../../shared/packs';
+import { CALLS, faction, GANGS, MENTOR_CALLER, MISSIONS, RESPECT, RULES, weaponIndex, YOU } from '../../../shared/packs';
 import { type MissionInfo, Mode, PK, type S2C } from '../../../shared/protocol';
 import { type Booth, type CrateSpot, gangSpots } from '../../../shared/world/gangSpots';
 import type { MissionState, Pickup, Ped, Player } from '../entities';
@@ -62,23 +62,25 @@ export class Missions {
     const { i } = pool[Math.floor(w.rng.next() * pool.length)];
     const rivals = faction(booth.gang).hostile.filter((f) => GANGS.includes(f));
     pl.boothCd.set(boothId, w.time + RESPECT.phoneCooldown);
-    this.begin(pl, i, booth.gang, rivals[Math.floor(w.rng.next() * rivals.length)] ?? '', booth, 1, 'payphone');
+    this.begin(pl, i, booth.gang, rivals[Math.floor(w.rng.next() * rivals.length)] ?? '', booth, 1, 'payphone', [[YOU, 'payphone']]);
     return null;
   }
 
-  /** A gang gives the player a job over the phone (missions/cell.ts), from where they stand. */
-  offer(pl: Player, gang: string, payMul: number): void {
+  /** A gang gives the player a job over the phone (missions/cell.ts), from where they stand.
+   *  `lead`: what's said before the brief (you picking up, or asking for work). */
+  offer(pl: Player, gang: string, payMul: number, lead: Part[] = []): void {
     const w = this.w;
     const p = w.peds.get(pl.pid);
     if (!p || pl.mission) return;
     const pool = MISSIONS.map((m, i) => ({ m, i })).filter(({ m }) => m.giver === gang || m.giver === 'gang');
     const { i } = pool[Math.floor(w.rng.next() * pool.length)];
     const rivals = faction(gang).hostile.filter((f) => GANGS.includes(f));
-    this.begin(pl, i, gang, rivals[Math.floor(w.rng.next() * rivals.length)] ?? '', w.pedPos(p), payMul, 'cell');
+    this.begin(pl, i, gang, rivals[Math.floor(w.rng.next() * rivals.length)] ?? '', w.pedPos(p), payMul, 'cell', lead);
   }
 
-  /** `via`: how the job was given, if by phone: the giver's voice briefs you down that line. */
-  private begin(pl: Player, specIndex: number, giver: string, rival: string, from: { x: number; y: number }, payMul = 1, via?: 'payphone' | 'cell'): void {
+  /** `via`: how the job was given, if by phone: the giver's voice briefs you down that line
+   *  (after `lead`). */
+  private begin(pl: Player, specIndex: number, giver: string, rival: string, from: { x: number; y: number }, payMul = 1, via?: 'payphone' | 'cell', lead: Part[] = []): void {
     const w = this.w;
     const spec = MISSIONS[specIndex];
     const r = (spec.reward[0] + w.rng.next() * (spec.reward[1] - spec.reward[0])) * payMul;
@@ -96,7 +98,7 @@ export class Missions {
     }
     pl.mission = st;
     this.send(pl, true);
-    if (via && GANGS.includes(giver)) briefCall(w, pl, giver, spec.kind, via);
+    if (via && GANGS.includes(giver)) briefCall(w, pl, giver, spec.kind, via, lead);
   }
 
   private info(st: MissionState): MissionInfo {
@@ -159,7 +161,7 @@ export class Missions {
       const who = mentor ?? gangCaller(w, pl, st.giver, s);
       const parts: Part[] = mentor ? [[mentor, 'hello'], [mentor, s]] : who ? [[who, s]] : [];
       if (mentor && !this.fedUp(pl) && this.ringingBooth(pl)) parts.push([mentor, 'nudge']);
-      if (parts.length) talk(w, pl, 'cell', parts);
+      if (parts.length) talk(w, pl, 'cell', [[YOU, 'pickup'], ...parts]);
     }
   }
 

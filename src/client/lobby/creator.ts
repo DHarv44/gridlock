@@ -146,20 +146,18 @@ export class Creator {
   private voiceRow(): HTMLElement {
     const box = el('div', 'look-part');
     box.appendChild(el('small', 'look-label', 'Voice'));
-    for (const who of ['man', 'woman'] as const) {
-      const row = el('div', 'segmented voices');
-      for (const v of PLAYER_VOICES.filter((p) => p.who === who)) {
-        const on = this.draft.voice === v.id;
-        const b = el('button', `seg${on ? ' on' : ''}`, `${v.name} ▸`);
-        b.title = `Hear ${v.name}`;
-        b.addEventListener('click', () => {
-          playSample(v.id);
-          if (!on) this.apply({ ...this.draft, voice: v.id });
-        });
-        row.appendChild(b);
-      }
-      box.appendChild(row);
+    const row = el('div', 'segmented voices');
+    for (const v of PLAYER_VOICES) {
+      const on = this.draft.voice === v.id;
+      const b = el('button', `seg${on ? ' on' : ''}`, `${v.name} ▸`);
+      b.title = `Hear ${v.name}`;
+      b.addEventListener('click', () => {
+        playSample(v.id);
+        if (!on) this.apply({ ...this.draft, voice: v.id });
+      });
+      row.appendChild(b);
     }
+    box.appendChild(row);
     return box;
   }
 

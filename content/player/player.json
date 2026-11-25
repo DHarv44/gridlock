@@ -1,21 +1,38 @@
 {
-  "about": "The new arrival: cool, a bit guarded, quick with a dry comeback, never impressed. Every line here is said in the voice picked for your character; a conversation points at a line by its key.",
-  "default": "steady",
+  "about": "The new arrival: cool, a bit guarded, quick with a dry comeback, never impressed. Every line here is said in the voice picked for your character; a conversation points at a line by its key, and \"says\" lists the lines you open or close a call with (one picked at random each time).",
+  "default": "male",
   "voices": [
-    { "id": "steady", "name": "Steady", "who": "man", "about": "even, grounded, unflappable", "model": "model/pv_steady.wav", "exaggeration": 0.45, "cfg": 0.5 },
-    { "id": "rough", "name": "Rough", "who": "man", "about": "gravelly, street-hard", "model": "model/pv_rough.wav", "exaggeration": 0.5, "cfg": 0.5 },
-    { "id": "london", "name": "London", "who": "man", "about": "British, dry, laconic", "model": "model/pv_london.wav", "exaggeration": 0.45, "cfg": 0.5 },
-    { "id": "warm", "name": "Warm", "who": "man", "about": "easy-going, friendly", "model": "model/pv_warm.wav", "exaggeration": 0.5, "cfg": 0.5 },
-    { "id": "bright", "name": "Bright", "who": "woman", "about": "upbeat, quick, confident", "model": "model/pv_bright.wav", "exaggeration": 0.55, "cfg": 0.5 },
-    { "id": "smoky", "name": "Smoky", "who": "woman", "about": "low, husky, unhurried", "model": "model/pv_smoky.wav", "exaggeration": 0.4, "cfg": 0.5 },
-    { "id": "crisp", "name": "Crisp", "who": "woman", "about": "British, clipped, sharp", "model": "model/pv_crisp.wav", "exaggeration": 0.45, "cfg": 0.5 },
-    { "id": "easy", "name": "Easy", "who": "woman", "about": "relaxed, casual", "model": "model/pv_easy.wav", "exaggeration": 0.5, "cfg": 0.5 }
+    { "id": "male", "name": "Male", "who": "man", "about": "even, grounded, unflappable", "model": "model/pv_male.wav", "exaggeration": 0.45, "cfg": 0.5 },
+    { "id": "female", "name": "Female", "who": "woman", "about": "low, husky, unhurried", "model": "model/pv_female.wav", "exaggeration": 0.4, "cfg": 0.5 }
   ],
+  "says": {
+    "pickup": ["pickup_yeah", "pickup_talk", "pickup_go_ahead", "pickup_hello"],
+    "payphone": ["booth_who", "booth_looking", "booth_driver"],
+    "ask": ["ask_anything", "ask_free", "ask_work_going", "ask_again"],
+    "on_it": ["on_it_find_one", "on_it_way"]
+  },
   "lines": {
     "sample": { "say": ["Yeah, I can do that.", "What's it pay?"], "tone": "casual confidence, straight to the money (the character creator's demo)" },
 
-    "how_number": { "say": ["How'd you get this number?"], "tone": "wary, a little thrown" },
-    "whats_in_it": { "say": ["And what's in it for you?"], "tone": "dry, half-smiling" },
+    "pickup_yeah": { "say": ["Yeah?"], "tone": "answering the cell, flat" },
+    "pickup_talk": { "say": ["Talk to me."], "tone": "answering the cell, easy" },
+    "pickup_go_ahead": { "say": ["Yeah, go ahead."], "tone": "answering the cell, half-busy" },
+    "pickup_hello": { "say": ["Hello?"], "tone": "answering the cell, neutral" },
+
+    "booth_who": { "say": ["Hello?", "Who is this?"], "tone": "picking up a ringing payphone, wary" },
+    "booth_looking": { "say": ["Yeah?", "You looking for me?"], "tone": "picking up a ringing payphone, cool" },
+    "booth_driver": { "say": ["Somebody call for a driver?"], "tone": "picking up a ringing payphone, dry" },
+
+    "ask_anything": { "say": ["Hey, it's me.", "Got anything for me?"], "tone": "ringing for work, casual" },
+    "ask_free": { "say": ["It's me.", "I'm free, if you've got work."], "tone": "ringing for work, businesslike" },
+    "ask_work_going": { "say": ["Hey.", "You got any work going?"], "tone": "ringing for work, easy" },
+    "ask_again": { "say": ["It's me again.", "What've you got?"], "tone": "ringing for work, a little impatient" },
+
+    "on_it_find_one": { "say": ["Alright.", "I'll find one."], "tone": "told to find a payphone, easy" },
+    "on_it_way": { "say": ["Got it.", "On my way."], "tone": "told to find a payphone, brisk" },
+
+    "how_number": { "say": ["Benny, huh?", "Yeah, that sounds about right.", "How'd you get this number???"], "tone": "sizing him up, then wary, a little thrown" },
+    "whats_in_it_for_you": { "say": ["And what's in it for you?"], "tone": "dry, half-smiling" },
 
     "good_for_you": { "say": ["Good for you.", "Benny said you had work."], "tone": "unimpressed, flat" },
     "lets_hear_it": { "say": ["Then let's hear it."], "tone": "cool, ready" },

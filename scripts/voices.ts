@@ -5,7 +5,7 @@
 //   content/characters/<folder>/voice/**/<name>.m4a   the turn's "clip" name (do_better.m4a), or its
 //                                                   numbered clip (benny_intro_0_1_male.m4a); any
 //                                                   subfolders, only the file name counts
-//   content/player/voice/<voice>/<key>.m4a         e.g. player/voice/steady/how_number.m4a
+//   content/player/voice/<voice>/**/<key>.m4a      e.g. player/voice/male/intro/how_number.m4a
 // (.m4a, .mp3, .wav, .ogg or .flac). Only recordings a line uses and that are newer than their clip
 // are converted; the rest (spare takes) are listed and left alone. `npm run voices`
 import { spawnSync } from 'node:child_process';
@@ -52,7 +52,7 @@ export function recordings(spare: string[] = []): { src: string; clip: string }[
   };
   for (const c of CALLERS) for (const f of audioDeep(join(root, c.dir, 'voice'))) add(f, namedClip(c.id, basename(f, extname(f))));
   const mine = join(root, 'content/player/voice');
-  for (const v of dirs(mine)) for (const f of audio(join(mine, v))) add(join(mine, v, f), youLineId(v, basename(f, extname(f))));
+  for (const v of dirs(mine)) for (const f of audioDeep(join(mine, v))) add(f, youLineId(v, basename(f, extname(f))));
   return out;
 }
 
