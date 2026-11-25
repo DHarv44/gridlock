@@ -1,10 +1,10 @@
 // A voice down a phone line, done live from one clean recording (src/client/voice/*.ogg):
 // - payphone: an old analogue line. Narrow band (about 300 Hz to 3 kHz) with the honk of a carbon
 //   earpiece, a touch of saturation, and a hiss bed with the odd crackle under it.
-// - cell: a digital call. A little wider, no hiss, but the codec's grain (quantised) and now and
-//   then a few tens of milliseconds dropping out.
+// - cell: clean, as recorded (no filter).
 
-/** How a line is heard: down a payphone's or a cell's line, or `local`: you, speaking (clean). */
+/** How a line is heard: down a payphone's line (filtered), a cell's (clean), or `local`: you,
+ *  speaking (clean). */
 export type Line = 'payphone' | 'cell' | 'local';
 
 /** Plays `buf` down a phone line into `out`; resolves when it's finished. */
@@ -27,9 +27,9 @@ export function playOnLine(ctx: AudioContext, out: AudioNode, buf: AudioBuffer, 
     return lp;
   };
 
-  if (line === 'local') {
+  if (line !== 'payphone') {
     src.connect(bus);
-  } else if (line === 'payphone') {
+  } else {
     const narrow = band(320, 3000);
     const honk = keep(ctx.createBiquadFilter()); honk.type = 'peaking'; honk.frequency.value = 1700; honk.Q.value = 1.1; honk.gain.value = 5;
     const sat = keep(ctx.createWaveShaper()); sat.curve = softClip(2.2); sat.oversample = '2x';
@@ -43,23 +43,6 @@ export function playOnLine(ctx: AudioContext, out: AudioNode, buf: AudioBuffer, 
     const ng = keep(ctx.createGain()); ng.gain.value = 0.016;
     noise.connect(nf).connect(ng).connect(bus);
     noise.start(t0 - 0.05);
-  } else {
-    const clean = band(240, 3800);
-    // The codec: part of the signal quantised to a few bits, mixed under the clean band.
-    const grain = keep(ctx.createWaveShaper()); grain.curve = quantise(5);
-    const gg = keep(ctx.createGain()); gg.gain.value = 0.35;
-    const cg = keep(ctx.createGain()); cg.gain.value = 0.75;
-    clean.connect(grain).connect(gg).connect(bus);
-    clean.connect(cg).connect(bus);
-    // Dropouts: one or two short gaps in a longer line.
-    const gaps = dur > 2.5 ? 1 + Math.floor(Math.random() * 2) : Math.random() < 0.4 ? 1 : 0;
-    for (let i = 0; i < gaps; i++) {
-      const at = t0 + 0.4 + Math.random() * Math.max(0.2, dur - 0.8), len = 0.04 + Math.random() * 0.05;
-      bus.gain.setValueAtTime(gain, at);
-      bus.gain.linearRampToValueAtTime(0.02 * gain, at + 0.008);
-      bus.gain.setValueAtTime(0.02 * gain, at + len);
-      bus.gain.linearRampToValueAtTime(gain, at + len + 0.01);
-    }
   }
   src.start(t0);
   return new Promise((done) => {
@@ -73,11 +56,6 @@ function softClip(drive: number): Float32Array<ArrayBuffer> {
   return c;
 }
 
-function quantise(bits: number): Float32Array<ArrayBuffer> {
-  const n = 4096, steps = 2 ** bits, c = new Float32Array(n);
-  for (let i = 0; i < n; i++) { const x = (i / (n - 1)) * 2 - 1; c[i] = Math.round(x * steps / 2) / (steps / 2); }
-  return c;
-}
 
 /** Hiss with sparse crackles (made once per length bucket, then reused). */
 const noiseCache = new Map<number, AudioBuffer>();
