@@ -43,7 +43,13 @@ function wanted(): Set<string> {
 export function recordings(spare: string[] = []): { src: string; clip: string }[] {
   const use = wanted();
   const out: { src: string; clip: string }[] = [];
-  const add = (src: string, clip: string) => (use.has(clip) ? out.push({ src, clip }) : spare.push(src.slice(root.length + 1)));
+  const add = (src: string, clip: string) => {
+    if (!use.has(clip)) { spare.push(src.slice(root.length + 1)); return; }
+    // The same clip in two formats (a .wav left next to its .m4a): the .wav gives way.
+    const had = out.findIndex((r) => r.clip === clip);
+    if (had < 0) out.push({ src, clip });
+    else if (extname(out[had].src).toLowerCase() === '.wav') out[had] = { src, clip };
+  };
   for (const c of CALLERS) for (const f of audioDeep(join(root, c.dir, 'voice'))) add(f, namedClip(c.id, basename(f, extname(f))));
   const mine = join(root, 'content/player/voice');
   for (const v of dirs(mine)) for (const f of audio(join(mine, v))) add(join(mine, v, f), youLineId(v, basename(f, extname(f))));
