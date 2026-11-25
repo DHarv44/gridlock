@@ -5,6 +5,8 @@ data/
 data-smoke/
 # The old local music library paths: no longer read (the radio plays content/radio/).
 radio.local.json
+# Raw takes next to the recordings (the .m4a files are the ones lines use).
+content/characters/*/voice/*.wav
 # Rendered voice takes and auditions (only finished pieces go into content/radio/).
 voice/out/
 

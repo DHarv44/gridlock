@@ -90,6 +90,20 @@ Shit happens.
 But if you want more work, you better get your shit together.
 ```
 
+### Job blown (3)
+**Benny** `benny_shit_show` ✓ recorded — *exasperated, then grudging; leaning hard on the last word*
+```
+After that little shit show you just put on, I don't know why the boss keeps you around.
+
+Must be something about you that I ain't seein'...
+
+But I guess that's why he's the boss, huh?
+
+Look, no more fuck-ups.
+
+Alright????
+```
+
 ---
 
 ## Nico Reyes: Runs Varrio 22

@@ -90,6 +90,23 @@
           ],
           "tone": "blunt, then easy-going; a real warning at the end"
         }
+      ],
+      [
+        {
+          "clip": "shit_show",
+          "say": [
+            "After that little shit show you just put on, I don't know why the boss keeps you around.",
+            "",
+            "Must be something about you that I ain't seein'...",
+            "",
+            "But I guess that's why he's the boss, huh?",
+            "",
+            "Look, no more fuck-ups.",
+            "",
+            "Alright????"
+          ],
+          "tone": "exasperated, then grudging; leaning hard on the last word"
+        }
       ]
     ]
   }
