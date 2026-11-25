@@ -29,6 +29,8 @@ content/
   "crew": "v22",                 the gang they speak for (leave out if none)
   "boss": true,                  the gang's boss makes its first call
   "welcome": true,               rings a newcomer's cell (one character)
+  "mentor": true,                rings about a job's result for a crew that doesn't have your
+                                 number yet, when they have lines for it (one character)
   "about": "How they talk",
   "voice": { "model": "model/benny.wav", "exaggeration": 0.6, "cfg": 0.45 },
   "glossary": { "órale": "alright" },   foreign words in their lines, for whoever records them
@@ -40,14 +42,16 @@ content/
 ```
 
 A turn is one of:
-- `{ "say": ["line", "line", "", "line"], "tone": "..." }`: the caller speaks. Each string is a line;
+- `{ "say": ["line", "line", "", "line"], "tone": "...", "clip": "do_better" }`: the caller speaks.
+  `clip` (optional) names the recording: `voice/do_better.m4a`. Each string is a line;
   `""` is a blank line. The breaks are how it's read and how the bubble shows it.
 - `{ "male": [...], "female": [...], "tone": "..." }`: a version for each, picked by the player
   character's voice.
 - `{ "you": "key" }`: the player answers with that line from player.json.
 
-A caller turn's clip is `<id>_<situation>_<exchange>_<n>`, counting only the caller's turns from 0
-(`benny_intro_0_1`); a male/female turn adds `_male` / `_female`. The player's clips are
+A caller turn's clip is its `clip` name, or else `<id>_<situation>_<exchange>_<n>`, counting only
+the caller's turns from 0 (`benny_intro_0_1`); a male/female turn adds `_male` / `_female`.
+Recordings no line uses (spare takes) are left alone. The player's clips are
 `you_<voice>_<key>`. Name recordings after their clip; `npm run voices` masters them into the game.
 Lines nobody has recorded can be filled in with Chatterbox: `npx tsx scripts/voice-calls.ts`
 (never while the Chatterbox page is open).

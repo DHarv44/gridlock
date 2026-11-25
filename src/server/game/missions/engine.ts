@@ -1,6 +1,6 @@
 // Missions: payphone offers, kill-frenzy crates, gang respect, per-player job progress.
 import { dist } from '../../../shared/math';
-import { faction, GANGS, MISSIONS, RESPECT, RULES, weaponIndex } from '../../../shared/packs';
+import { CALLS, faction, GANGS, MENTOR_CALLER, MISSIONS, RESPECT, RULES, weaponIndex } from '../../../shared/packs';
 import { type MissionInfo, Mode, PK, type S2C } from '../../../shared/protocol';
 import { type Booth, type CrateSpot, gangSpots } from '../../../shared/world/gangSpots';
 import type { MissionState, Pickup, Ped, Player } from '../entities';
@@ -128,10 +128,13 @@ export class Missions {
       if (st.giver) this.adjust(pl, st.giver, -Math.ceil(spec.respect / 3));
     }
     pl.send({ t: 'mission', m: null, result: passed ? 'passed' : 'failed' } satisfies S2C);
-    // The gang rings to say so (they have your number now, one way or another).
+    // Somebody rings to say so: the gang, or, while it doesn't trust you with its number yet, the
+    // mentor (packs MENTOR_CALLER) if they have something to say about it.
     if (GANGS.includes(st.giver)) {
-      const who = gangCaller(w, pl, st.giver, passed ? 'pass' : 'fail');
-      if (who) talk(w, pl, 'cell', [[who, passed ? 'pass' : 'fail']]);
+      const s = passed ? 'pass' : 'fail';
+      const stranger = this.respectOf(pl, st.giver) < RESPECT.cellAt;
+      const who = stranger && MENTOR_CALLER && CALLS[MENTOR_CALLER]?.[s]?.length ? MENTOR_CALLER : gangCaller(w, pl, st.giver, s);
+      if (who) talk(w, pl, 'cell', [[who, s]]);
     }
   }
 

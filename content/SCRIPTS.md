@@ -65,6 +65,31 @@ Stop by my shop, and we both do alright.
 See you around
 ```
 
+### Job blown (1)
+**Benny** `benny_do_better` ✓ recorded — *rueful chuckle; shrugging it off, then a friendly nudge*
+```
+Well, that didn't go as planned, did it?
+
+No biggie.
+
+Boss man won't be too happy, ehhh...
+
+But what ya gonna do?
+
+Just make sure you do better on the next one.
+```
+
+### Job blown (2)
+**Benny** `benny_shit_together` ✓ recorded — *blunt, then easy-going; a real warning at the end*
+```
+Look, you really fucked that one up.
+
+But hey, no problem...
+Shit happens.
+
+But if you want more work, you better get your shit together.
+```
+
 ---
 
 ## Nico Reyes: Runs Varrio 22

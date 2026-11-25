@@ -20,11 +20,11 @@ export type CallSituation = 'intro' | 'hit' | 'torch' | 'steal' | 'courier' | 'f
 
 /** A turn as written: the caller's lines (or a version for a male and a female character), or
  *  the key of your line in player.json. A line's breaks are how it's read and shown. */
-interface TurnFile { say?: string[]; male?: string[]; female?: string[]; you?: string; tone?: string }
+interface TurnFile { say?: string[]; male?: string[]; female?: string[]; you?: string; tone?: string; clip?: string }
 interface VoiceFile { model: string; exaggeration: number; cfg: number }
 interface CharacterFile {
   id: string; name: string; fullName: string; role: string; about: string;
-  crew?: string; boss?: boolean; welcome?: boolean;
+  crew?: string; boss?: boolean; welcome?: boolean; mentor?: boolean;
   voice: VoiceFile;
   calls: Partial<Record<CallSituation, TurnFile[][]>>;
 }
@@ -71,8 +71,13 @@ export const CALLERS: Caller[] = CAST.map(([folder, c]) => {
   return { id: c.id, name: c.name, fullName: c.fullName, role: c.role, about: c.about, crew: c.crew, dir, voice: voiceOf(dir, c.voice) };
 });
 
+/** A recording's clip id from the name a character's file gives it: their id in front, so names
+ *  only have to be unique per character (`do_better` → `benny_do_better`). */
+export const namedClip = (caller: string, name: string): string => (name.startsWith(`${caller}_`) ? name : `${caller}_${name}`);
+
 /** Each caller's exchanges by situation (one is picked at random each time). A caller line's clip
- *  is `<caller>_<situation>_<exchange>_<n>`, n counting only the caller's turns. */
+ *  is the turn's own `clip` name, or else `<caller>_<situation>_<exchange>_<n>`, n counting only
+ *  the caller's turns. */
 export const CALLS: Record<string, Partial<Record<CallSituation, Turn[][]>>> = Object.fromEntries(CAST.map(([folder, c]) => [c.id,
   Object.fromEntries(Object.entries(c.calls).map(([situation, exchanges]) => [situation, exchanges!.map((turns, x) => {
     let n = 0;
@@ -82,7 +87,8 @@ export const CALLS: Record<string, Partial<Record<CallSituation, Turn[][]>>> = O
         if (!mine) throw new Error(`${folder}: ${situation} points at your line "${t.you}", which player.json doesn't have`);
         return { by: 'you', key: t.you, text: mine.text, tone: mine.tone };
       }
-      const clip = `${c.id}_${situation}_${x}_${n++}`;
+      const clip = t.clip ? namedClip(c.id, t.clip) : `${c.id}_${situation}_${x}_${n}`;
+      n++;
       if (t.male && t.female) return { by: 'caller', text: { male: text(t.male), female: text(t.female) }, clip, tone: t.tone ?? '' };
       if (!t.say) throw new Error(`${folder}: a ${situation} turn has no "say", "male"/"female" or "you"`);
       return { by: 'caller', text: text(t.say), clip, tone: t.tone ?? '' };
@@ -97,6 +103,10 @@ for (const [, c] of [...CAST].sort(([, a], [, b]) => Number(!!b.boss) - Number(!
 
 /** Who rings a newcomer's cell to welcome them to town (the character marked "welcome"). */
 export const WELCOME_CALLER: string | undefined = CAST.find(([, c]) => c.welcome)?.[1].id;
+
+/** Who rings you about a job for a crew that doesn't trust you with its number yet (the
+ *  character marked "mentor"), when they have something to say about it. */
+export const MENTOR_CALLER: string | undefined = CAST.find(([, c]) => c.mentor)?.[1].id;
 
 /** The voices a player's character can have (picked in the character creator). */
 export const PLAYER_VOICES: { id: string; name: string; who: 'man' | 'woman'; about: string; voice: Voice }[] =

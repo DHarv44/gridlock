@@ -4,6 +4,7 @@
   "fullName": "Benny Lutz",
   "role": "Fence at the Ironworks chop shop",
   "welcome": true,
+  "mentor": true,
   "about": "Fast, friendly, a salesman who's always half-pitching. Plain American.",
   "voice": { "model": "model/benny_lutz_2.wav", "exaggeration": 0.6, "cfg": 0.45 },
   "calls": {
@@ -55,6 +56,39 @@
             "See you around"
           ],
           "tone": "mock-innocent, then cheerfully honest; signs off warm"
+        }
+      ]
+    ],
+    "fail": [
+      [
+        {
+          "clip": "do_better",
+          "say": [
+            "Well, that didn't go as planned, did it?",
+            "",
+            "No biggie.",
+            "",
+            "Boss man won't be too happy, ehhh...",
+            "",
+            "But what ya gonna do?",
+            "",
+            "Just make sure you do better on the next one."
+          ],
+          "tone": "rueful chuckle; shrugging it off, then a friendly nudge"
+        }
+      ],
+      [
+        {
+          "clip": "shit_together",
+          "say": [
+            "Look, you really fucked that one up.",
+            "",
+            "But hey, no problem...",
+            "Shit happens.",
+            "",
+            "But if you want more work, you better get your shit together."
+          ],
+          "tone": "blunt, then easy-going; a real warning at the end"
         }
       ]
     ]
