@@ -18,10 +18,11 @@ import player from '../../../content/player/player.json';
 
 /** `answer`: they pick up when you ring them; `refuse`: they pick up and won't deal with you (too
  *  many blown jobs); `nudge`: there's work if you want it (said after their job-result call, on
- *  its own when you've been idle, or left as a voicemail); `tip`: after picking up, there's a
- *  payphone ringing for you. */
+ *  its own when you've been idle); `tip`: after picking up, there's a payphone ringing for you;
+ *  `hello`: how they open a call they make to you; `voicemail`: the message they leave when you
+ *  miss it (falls back to a nudge). */
 export type CallSituation = 'intro' | 'hit' | 'torch' | 'steal' | 'courier' | 'frenzy' | 'pass' | 'fail' | 'busy' | 'nothing'
-  | 'answer' | 'refuse' | 'nudge' | 'tip';
+  | 'answer' | 'refuse' | 'nudge' | 'tip' | 'hello' | 'voicemail';
 
 /** A turn as written: the caller's lines (or a version for a male and a female character), or
  *  the key of your line in player.json. A line's breaks are how it's read and shown. */

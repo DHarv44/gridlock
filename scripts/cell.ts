@@ -103,7 +103,13 @@ k = msgs.length;
 ticks(2);
 check(loner.cell.ringing === mentor, 'with no crew numbers, the mentor rings when you are idle');
 ticks(30 * (RESPECT.cellRing + 1));
-check(since(k).some((m) => m.t === 'voicemail' && (m as unknown as { parts: [string, string][] }).parts[0][1] === 'nudge'), 'missed, he leaves the nudge as a voicemail');
+check(since(k).some((m) => m.t === 'voicemail' && (m as unknown as { parts: [string, string][] }).parts[0][1] === 'voicemail'), 'missed, he leaves a voicemail');
+// Answered, he opens with a greeting and then says there's work.
+loner.cell.nudgeAt = 0;
+ticks(2);
+k = msgs.length;
+room.cell.answer(loner, true);
+check(said(k).map(([, s]) => s).join() === 'hello,nudge', 'answered: a greeting, then the nudge');
 
 // Business income reaching the bank at midnight comes with a text from the bank.
 const biz = w.city.properties.find((p) => PROPERTIES[p.spec].kind === 'business' && PROPERTIES[p.spec].income > 0)!;

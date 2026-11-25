@@ -157,7 +157,7 @@ export class Missions {
       const stranger = this.respectOf(pl, st.giver) < RESPECT.cellAt;
       const mentor = stranger && MENTOR_CALLER && CALLS[MENTOR_CALLER]?.[s]?.length ? MENTOR_CALLER : null;
       const who = mentor ?? gangCaller(w, pl, st.giver, s);
-      const parts: Part[] = who ? [[who, s]] : [];
+      const parts: Part[] = mentor ? [[mentor, 'hello'], [mentor, s]] : who ? [[who, s]] : [];
       if (mentor && !this.fedUp(pl) && this.ringingBooth(pl)) parts.push([mentor, 'nudge']);
       if (parts.length) talk(w, pl, 'cell', parts);
     }

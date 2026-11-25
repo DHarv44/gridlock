@@ -83,12 +83,12 @@ export class Cell {
     }
   }
 
-  /** A call nobody picked up: a person with a nudge leaves it as a voicemail; others leave the
-   *  missed call. The welcome caller tries again. */
+  /** A call nobody picked up: a person leaves a voicemail (their `voicemail` lines, or else a
+   *  nudge); others leave the missed call. The welcome caller tries again. */
   private missed(pl: Player, who: string): void {
     pl.send({ t: 'call', gang: who, state: 'missed' } satisfies S2C);
     if (who === WELCOME_CALLER && !pl.met.has(who)) { pl.cell.introAt = this.w.time + 60; textTo(pl, nameOf(who), 'Missed call.'); return; }
-    const parts = PEOPLE_CONTACTS.includes(who) ? pickParts(this.w, pl, [[who, 'nudge']]) : [];
+    const parts = PEOPLE_CONTACTS.includes(who) ? pickParts(this.w, pl, [[who, has(who, 'voicemail') ? 'voicemail' : 'nudge']]) : [];
     if (parts.length) pl.send({ t: 'voicemail', from: who, parts } satisfies S2C);
     else textTo(pl, nameOf(who), 'Missed call.');
   }
@@ -112,7 +112,7 @@ export class Cell {
       return null;
     }
     if (PEOPLE_CONTACTS.includes(g)) {
-      if (accept) talk(w, pl, 'cell', [[g, 'nudge']]);
+      if (accept) talk(w, pl, 'cell', [[g, 'hello'], [g, 'nudge']]);
       return null;
     }
     if (!accept) return null;

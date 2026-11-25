@@ -114,6 +114,16 @@
       [{ "clip": "another_job1", "say": ["Call me back if you want another job."], "tone": "easy, offhand" }],
       [{ "clip": "another_job2", "say": ["You want another job?", "Call me back.", "We got a real nice one for you."], "tone": "selling it" }]
     ],
+    "hello": [
+      [{ "clip": "crack_a_lackin", "say": ["Yo, what's crack-a-lackin', homie?"], "tone": "friendly" }],
+      [{ "clip": "playa", "say": ["What's up, playa?"], "tone": "friendly" }]
+    ],
+    "voicemail": [
+      [{ "clip": "another_job1", "say": ["Call me back if you want another job."], "tone": "easy, offhand" }],
+      [{ "clip": "another_job2", "say": ["You want another job?", "Call me back.", "We got a real nice one for you."], "tone": "selling it" }],
+      [{ "clip": "where_you_at", "say": ["Hey, where you at?", "Call me back.", "Got something you might like."], "tone": "casual, a little impatient" }],
+      [{ "clip": "ghostin_me", "say": ["You ghostin' me?", "Boss needs something taken care of.", "Call me back."], "tone": "needling, then business" }]
+    ],
     "answer": [
       [{ "clip": "crack_a_lackin", "say": ["Yo, what's crack-a-lackin', homie?"], "tone": "friendly" }],
       [{ "clip": "listenin", "say": ["I'm listenin'."], "tone": "friendly" }],
