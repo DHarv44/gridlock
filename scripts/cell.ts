@@ -5,7 +5,7 @@
 export {};
 process.env.GRIDLOCK_DATA = 'data-smoke/cell';
 const { Room } = await import('../src/server/room');
-const { GANGS, MISSIONS, PROPERTIES, RESPECT } = await import('../src/shared/packs');
+const { GANGS, MENTOR_CALLER, MISSIONS, PROPERTIES, RESPECT } = await import('../src/shared/packs');
 
 let failures = 0;
 const check = (ok: boolean, what: string) => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${what}`); if (!ok) failures++; };
@@ -80,6 +80,30 @@ check(room.cell.dial(pl, g3) !== null, "a gang that doesn't trust you can't be r
 room.missions.offer(pl, g2, 10);
 check((pl.mission?.reward ?? 0) >= 10_000, 'phone work pays the cell multiplier');
 room.missions.drop(pl);
+
+// The mentor (Benny): his number came with his welcome; ring him and he picks up and tips you off
+// about a ringing payphone; blow too many jobs and he won't deal with you.
+const mentor = MENTOR_CALLER!;
+check(since(0).some((m) => m.t === 'people' && (m as unknown as { ids: string[] }).ids.includes(mentor)), "the mentor's number is in your contacts after his welcome");
+k = msgs.length;
+check(room.cell.dial(pl, mentor) === null, 'you can ring the mentor');
+check(said(k).some(([, s]) => s === 'answer') && texts(k).some((t) => t.body.startsWith('Payphone in')), 'he picks up and points you at a ringing payphone');
+pl.blownRun = RESPECT.mentorFedUpAfter;
+k = msgs.length;
+room.cell.dial(pl, mentor);
+check(said(k).some(([, s]) => s === 'refuse') && !said(k).some(([, s]) => s === 'answer'), 'after too many blown jobs he tells you where to go');
+pl.blownRun = 0;
+// A crewless player gets his nudge when idle; miss it and it's a voicemail.
+const loner = room.join('Loner', { send: (d) => msgs.push(JSON.parse(d)), close: () => {} }, {
+  id: 'cell02', name: 'Loner', look: {} as never, created: 1, lastPlayed: 1, cash: 0, bank: 0, garage: [], felonies: {}, deaths: 0, respect: {}, met: [mentor],
+});
+if (typeof loner === 'string') throw new Error(loner);
+loner.cell.nudgeAt = 0;
+k = msgs.length;
+ticks(2);
+check(loner.cell.ringing === mentor, 'with no crew numbers, the mentor rings when you are idle');
+ticks(30 * (RESPECT.cellRing + 1));
+check(since(k).some((m) => m.t === 'voicemail' && (m as unknown as { parts: [string, string][] }).parts[0][1] === 'nudge'), 'missed, he leaves the nudge as a voicemail');
 
 // Business income reaching the bank at midnight comes with a text from the bank.
 const biz = w.city.properties.find((p) => PROPERTIES[p.spec].kind === 'business' && PROPERTIES[p.spec].income > 0)!;

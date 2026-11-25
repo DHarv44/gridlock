@@ -7,7 +7,7 @@ import type { S2C } from '../../../shared/protocol';
 import type { Player } from '../entities';
 import type { World } from '../world';
 
-type Part = [string, CallSituation];
+export type Part = [string, CallSituation];
 
 /** Who at a gang speaks for this situation: the boss until they've introduced themselves, then
  *  anyone at the gang with lines for it. */
@@ -20,9 +20,9 @@ export function gangCaller(w: World, pl: Player, gang: string, situation: CallSi
   return able.length ? able[Math.floor(w.rng.next() * able.length)] : null;
 }
 
-/** Plays an exchange (or several in a row) to a player; parts with no lines are skipped. A caller's
+/** Picks which of their exchanges each part plays; parts with no lines are dropped. A caller's
  *  `intro` marks them met. */
-export function talk(w: World, pl: Player, via: 'payphone' | 'cell', parts: Part[]): void {
+export function pickParts(w: World, pl: Player, parts: Part[]): [string, string, number][] {
   const out: [string, string, number][] = [];
   for (const [who, situation] of parts) {
     const options = CALLS[who]?.[situation];
@@ -30,6 +30,12 @@ export function talk(w: World, pl: Player, via: 'payphone' | 'cell', parts: Part
     out.push([who, situation, Math.floor(w.rng.next() * options.length)]);
     if (situation === 'intro') pl.met.add(who);
   }
+  return out;
+}
+
+/** Plays an exchange (or several in a row) to a player. */
+export function talk(w: World, pl: Player, via: 'payphone' | 'cell', parts: Part[]): void {
+  const out = pickParts(w, pl, parts);
   if (out.length) pl.send({ t: 'talk', via, parts: out } satisfies S2C);
 }
 

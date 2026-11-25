@@ -174,9 +174,12 @@ export interface Player {
   waypoint?: [number, number] | null;
   mission: MissionState | null;
   boothCd: Map<number, number>;   // booth id -> world time it may ring again
+  /** Jobs blown in a row (a pass resets it): the mentor stops dealing with you past a point. */
+  blownRun: number;
   /** Cell phone (missions/cell.ts): when the next call comes, who's ringing and until when, each
-   *  contact's wait before it has work again, and the gangs whose number you've been texted. */
-  cell: { next: number; ringing: string; ringEnds: number; dialCd: Record<string, number>; known: Set<string>; introAt: number };
+   *  contact's wait before it has work again, the gangs whose number you've been texted, when the
+   *  welcome call comes, when the mentor next nudges, and the people list last sent. */
+  cell: { next: number; ringing: string; ringEnds: number; dialCd: Record<string, number>; known: Set<string>; introAt: number; nudgeAt: number; people: string };
   frags: number;                  // player kills this round
   earned: number;                 // cash earned this round
   itTime: number;                 // seconds spent "it" this round (tag)

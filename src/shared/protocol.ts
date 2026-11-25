@@ -4,7 +4,7 @@ import type { CharacterProgress, CharacterSave, CharLook } from './packs/charact
 export const TICK_HZ = 30;
 export const SNAP_EVERY = 2;             // snapshots at 15 Hz
 export const INTERP_DELAY_MS = 120;
-export const PROTOCOL_VERSION = 14;
+export const PROTOCOL_VERSION = 15;
 /** Every Nth snapshot carries every entity in full (others list unchanged ones in `k`). */
 export const FULL_SNAP_EVERY = 30;
 
@@ -129,6 +129,10 @@ export type S2C =
   /** A spoken exchange on the phone (packs/calls.ts): each part is [caller, situation, exchange
    *  index], played in order; `via` sets how it sounds (a payphone's line, or a cell's). */
   | { t: 'talk'; via: 'payphone' | 'cell'; parts: [string, string, number][] }
+  /** People (packs/calls.ts PEOPLE_CONTACTS) whose number you have. */
+  | { t: 'people'; ids: string[] }
+  /** A message left on your phone when you missed someone's call: parts as in `talk`. */
+  | { t: 'voicemail'; from: string; parts: [string, string, number][] }
   /** Vault doors standing open (interior indexes; world/interiors.ts). */
   | { t: 'gates'; open: number[] }
   /** The character's progress, for the browser to save (sent every few seconds and after buys). */

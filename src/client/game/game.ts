@@ -117,6 +117,7 @@ export class Game {
     this.phone.ring = () => this.sound.tune('ringtone');
     this.phone.textTone = () => this.sound.tune('text');
     this.phone.onText = (from) => this.hud.notify(`New message from ${from}`, 'info');
+    this.phone.playVoicemail = (parts) => this.talk.play({ t: 'talk', via: 'cell', parts });
     this.interact = new Interact(city, this.pane);
     this.hud.onChat = (text) => conn.send({ t: 'chat', text });
     this.input.onUi = (a) => this.ui(a);

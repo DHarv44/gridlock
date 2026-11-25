@@ -2,15 +2,18 @@
 // (RESPECT.cellAt) it texts you its number. From then on its people call you with work every few
 // minutes while you're free (answer, decline, or miss it), and you can ring them to ask. Work by
 // phone pays a little better (RESPECT.cellPay). Texts also carry news, like business income.
-// A new arrival's phone rings soon after they get to town: the pack's welcome caller.
+// A new arrival's phone rings soon after they get to town: the pack's welcome caller, whose number
+// you keep (PEOPLE_CONTACTS). Ring them and they pick up (or tell you where to go after too many
+// blown jobs) and point you at a payphone that's ringing for you. The mentor also rings with a
+// nudge when you've been idle and no crew has your number; miss it and they leave a voicemail.
 // What callers say is voiced (missions/talk.ts, packs/calls.ts).
-import { CALLERS, GANGS, RESPECT, WELCOME_CALLER } from '../../../shared/packs';
+import { CALLERS, CALLS, type CallSituation, GANGS, MENTOR_CALLER, PEOPLE_CONTACTS, RESPECT, WELCOME_CALLER } from '../../../shared/packs';
 import { Mode, type S2C } from '../../../shared/protocol';
 import type { Player } from '../entities';
 import type { World } from '../world';
 import type { Missions } from './engine';
-import { factionName } from './helpers';
-import { gangCaller, talk } from './talk';
+import { factionName, placeName } from './helpers';
+import { gangCaller, type Part, pickParts, talk } from './talk';
 
 /** How long after arriving a newcomer gets the friendly first call (from whoever the pack marks
  *  as the welcome caller, if anyone). */
@@ -22,8 +25,10 @@ export function textTo(pl: Player, from: string, body: string): void {
 }
 
 export function newCell(w: World, respect: Record<string, number>): Player['cell'] {
-  return { next: w.time + callGap(w), ringing: '', ringEnds: 0, dialCd: {}, known: new Set(GANGS.filter((g) => (respect[g] ?? 0) >= RESPECT.cellAt)), introAt: w.time + WELCOME_AFTER };
+  return { next: w.time + callGap(w), ringing: '', ringEnds: 0, dialCd: {}, known: new Set(GANGS.filter((g) => (respect[g] ?? 0) >= RESPECT.cellAt)), introAt: w.time + WELCOME_AFTER, nudgeAt: w.time + RESPECT.mentorNudgeAfter, people: '' };
 }
+
+const has = (who: string, s: CallSituation) => !!CALLS[who]?.[s]?.length;
 
 const callGap = (w: World) => RESPECT.cellCallEvery[0] + w.rng.next() * (RESPECT.cellCallEvery[1] - RESPECT.cellCallEvery[0]);
 /** A caller's name as the phone shows it: a gang, or a person from packs/calls.ts. */
@@ -35,6 +40,11 @@ export class Cell {
   /** Gangs whose number you have. */
   contacts(pl: Player): string[] {
     return GANGS.filter((g) => (pl.respect[g] ?? 0) >= RESPECT.cellAt);
+  }
+
+  /** People whose number you have: the contacts you've talked to. */
+  people(pl: Player): string[] {
+    return PEOPLE_CONTACTS.filter((id) => pl.met.has(id));
   }
 
   update(): void {
@@ -49,21 +59,38 @@ export class Cell {
         textTo(pl, factionName(g), `It's the ${factionName(g)}. You've been useful. Keep this number, we'll call when there's work.`);
       }
       for (const g of [...c.known]) if (!contacts.includes(g)) c.known.delete(g);
+      const people = this.people(pl);
+      if (people.join() !== c.people) { c.people = people.join(); pl.send({ t: 'people', ids: people } satisfies S2C); }
       if (c.ringing) {
         if (w.time < c.ringEnds) continue;
-        pl.send({ t: 'call', gang: c.ringing, state: 'missed' } satisfies S2C);
-        textTo(pl, nameOf(c.ringing), 'Missed call.');
-        if (c.ringing === WELCOME_CALLER) c.introAt = w.time + 60; // they try again
+        this.missed(pl, c.ringing);
         c.ringing = '';
         c.next = w.time + callGap(w);
         continue;
       }
       const free = !pl.mission && pl.mode !== Mode.Dead && pl.mode !== Mode.Busted;
-      if (!free) { c.next = Math.max(c.next, w.time + 30); continue; }
+      if (!free) { c.next = Math.max(c.next, w.time + 30); c.nudgeAt = Math.max(c.nudgeAt, w.time + RESPECT.mentorNudgeAfter); continue; }
       if (WELCOME_CALLER && !pl.met.has(WELCOME_CALLER) && w.time >= c.introAt) { this.ring(pl, WELCOME_CALLER); continue; }
+      // No crew has your number yet: the mentor rings now and then to say there's work.
+      const m = MENTOR_CALLER;
+      if (m && !contacts.length && pl.met.has(m) && w.time >= c.nudgeAt && has(m, 'nudge') && !this.missions.fedUp(pl) && this.missions.ringingBooth(pl)) {
+        c.nudgeAt = w.time + RESPECT.mentorNudgeAfter;
+        this.ring(pl, m);
+        continue;
+      }
       if (w.time < c.next || !contacts.length) continue;
       this.ring(pl, contacts[Math.floor(w.rng.next() * contacts.length)]);
     }
+  }
+
+  /** A call nobody picked up: a person with a nudge leaves it as a voicemail; others leave the
+   *  missed call. The welcome caller tries again. */
+  private missed(pl: Player, who: string): void {
+    pl.send({ t: 'call', gang: who, state: 'missed' } satisfies S2C);
+    if (who === WELCOME_CALLER && !pl.met.has(who)) { pl.cell.introAt = this.w.time + 60; textTo(pl, nameOf(who), 'Missed call.'); return; }
+    const parts = PEOPLE_CONTACTS.includes(who) ? pickParts(this.w, pl, [[who, 'nudge']]) : [];
+    if (parts.length) pl.send({ t: 'voicemail', from: who, parts } satisfies S2C);
+    else textTo(pl, nameOf(who), 'Missed call.');
   }
 
   private ring(pl: Player, who: string): void {
@@ -79,9 +106,13 @@ export class Cell {
     c.ringing = '';
     c.next = w.time + callGap(w);
     pl.send({ t: 'call', gang: g, state: 'end' } satisfies S2C);
-    if (g === WELCOME_CALLER) {
+    if (g === WELCOME_CALLER && !pl.met.has(g)) {
       if (accept) talk(w, pl, 'cell', [[g, 'intro']]);
       else c.introAt = w.time + 60;
+      return null;
+    }
+    if (PEOPLE_CONTACTS.includes(g)) {
+      if (accept) talk(w, pl, 'cell', [[g, 'nudge']]);
       return null;
     }
     if (!accept) return null;
@@ -93,8 +124,9 @@ export class Cell {
   /** The player rings a contact to ask for work. */
   dial(pl: Player, gang: string): string | null {
     const w = this.w, c = pl.cell;
-    if (!this.contacts(pl).includes(gang)) return "You don't have that number.";
     if (pl.mode === Mode.Dead || pl.mode === Mode.Busted) return 'Not now.';
+    if (this.people(pl).includes(gang)) { this.ringPerson(pl, gang); return null; }
+    if (!this.contacts(pl).includes(gang)) return "You don't have that number.";
     pl.send({ t: 'call', gang, state: 'end' } satisfies S2C);
     if (pl.mission) { this.say(pl, gang, 'busy'); return null; }
     if ((c.dialCd[gang] ?? 0) > w.time) { this.say(pl, gang, 'nothing'); return null; }
@@ -102,6 +134,21 @@ export class Cell {
     c.next = Math.max(c.next, w.time + callGap(w));
     this.missions.offer(pl, gang, RESPECT.cellPay);
     return null;
+  }
+
+  /** You ring a person: they pick up, or brush you off if you've blown too many jobs; then they
+   *  point you at a payphone that's ringing for you (voiced if they have a `tip`, and a text with
+   *  where it is), or say you're busy, or that there's nothing. */
+  private ringPerson(pl: Player, who: string): void {
+    pl.send({ t: 'call', gang: who, state: 'end' } satisfies S2C);
+    if (this.missions.fedUp(pl) && has(who, 'refuse')) { talk(this.w, pl, 'cell', [[who, 'refuse']]); return; }
+    const parts: Part[] = [[who, 'answer']];
+    const booth = this.missions.ringingBooth(pl);
+    if (pl.mission) parts.push([who, 'busy']);
+    else if (booth) parts.push([who, 'tip']);
+    else parts.push([who, 'nothing']);
+    talk(this.w, pl, 'cell', parts);
+    if (booth) textTo(pl, nameOf(who), `Payphone in ${placeName(this.w, booth.x, booth.y)}. It's ringing for you.`);
   }
 
   private say(pl: Player, gang: string, situation: 'busy' | 'nothing'): void {

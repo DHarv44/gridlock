@@ -1,17 +1,21 @@
-// Your cell phone: slides up at the bottom right like a handset (P / LB). Home has Contacts (gangs
-// whose number you have: call to ask for work), Messages (texts) and Bank. A gang calling pops it up
+// Your cell phone: slides up at the bottom right like a handset (P / LB). Home has Contacts (people
+// and gangs whose number you have: call to ask for work), Messages (texts), Voicemail (messages
+// left on missed calls, played as a call) and Bank. A gang calling pops it up
 // with Answer / Decline. Arrows + Enter work it, Backspace goes back, P / Esc puts it away; WASD
 // still walks you while it's out. The server decides everything (missions/cell.ts).
 import { CALLERS, FACTIONS, GANG_CALLERS, GANGS, RESPECT } from '../../shared/packs';
 import type { S2C, YouState } from '../../shared/protocol';
 import type { NavCmd } from '../game/input';
 
-type Screen = 'home' | 'contacts' | 'messages' | 'read' | 'bank' | 'ring' | 'talk';
+type Screen = 'home' | 'contacts' | 'messages' | 'read' | 'voicemail' | 'bank' | 'ring' | 'talk';
 interface Text { from: string; body: string; read: boolean; at: string }
+type Parts = [string, string, number][];
+interface Voicemail { from: string; parts: Parts; heard: boolean; at: string }
 
 const APPS: { id: Screen; label: string; glyph: string }[] = [
   { id: 'contacts', label: 'Contacts', glyph: '☎' },
   { id: 'messages', label: 'Messages', glyph: '✉' },
+  { id: 'voicemail', label: 'Voicemail', glyph: '◉' },
   { id: 'bank', label: 'Bank', glyph: '$' },
 ];
 /** A caller as the phone shows them: a gang, a person (packs/calls.ts), in their gang's colour. */
@@ -28,6 +32,9 @@ export class Phone {
   private screen: Screen = 'home';
   private sel = 0;
   private texts: Text[] = [];
+  private voicemails: Voicemail[] = [];
+  /** People whose number you have (the server's list). */
+  private people: string[] = [];
   private reading = 0;
   private ringing = '';
   private talk = { gang: '', text: '', until: 0 };
@@ -41,6 +48,8 @@ export class Phone {
   onText: (from: string) => void = () => {};
   /** Any text arriving: the chirp. */
   textTone: () => void = () => {};
+  /** Plays a voicemail (hud/talk.ts, down a cell line). */
+  playVoicemail: (parts: Parts) => void = () => {};
 
   constructor(parent: HTMLElement) {
     this.root.className = 'phone';
@@ -90,6 +99,14 @@ export class Phone {
       if (this.isOpen && this.screen === 'messages') this.draw(); else this.onText(m.from);
       return true;
     }
+    if (m.t === 'people') { this.people = m.ids; if (this.isOpen && this.screen === 'contacts') this.draw(); return true; }
+    if (m.t === 'voicemail') {
+      this.voicemails.unshift({ from: m.from, parts: m.parts, heard: false, at: this.clock });
+      if (this.voicemails.length > 20) this.voicemails.pop();
+      this.textTone();
+      if (this.isOpen && this.screen === 'voicemail') this.draw(); else this.onText(`${gangName(m.from)} (voicemail)`);
+      return true;
+    }
     if (m.t !== 'call') return false;
     if (m.state === 'ring') { this.ringing = m.gang; this.ringT = 0; this.open('ring'); }
     else if (m.state === 'missed') { this.ringing = ''; if (this.screen === 'ring') this.close(); }
@@ -124,7 +141,7 @@ export class Phone {
 
   private contacts(): string[] {
     const rs = this.you?.rs ?? [];
-    return GANGS.filter((_, i) => (rs[i] ?? 0) >= RESPECT.cellAt);
+    return [...this.people, ...GANGS.filter((_, i) => (rs[i] ?? 0) >= RESPECT.cellAt)];
   }
 
   private go(s: Screen): void {
@@ -139,6 +156,7 @@ export class Phone {
       case 'home': return APPS.length;
       case 'contacts': return this.contacts().length;
       case 'messages': return this.texts.length;
+      case 'voicemail': return this.voicemails.length;
       case 'ring': return 2;
       default: return 0;
     }
@@ -165,6 +183,11 @@ export class Phone {
       case 'home': this.go(APPS[this.sel].id); break;
       case 'contacts': { const g = this.contacts()[this.sel]; if (g) { this.send({ t: 'dial', gang: g }); this.talk = { gang: g, text: 'Calling…', until: performance.now() + 8000 }; this.go('talk'); } break; }
       case 'messages': if (this.texts.length) { this.reading = this.sel; this.go('read'); } break;
+      case 'voicemail': {
+        const v = this.voicemails[this.sel];
+        if (v) { v.heard = true; this.playVoicemail(v.parts); this.draw(); }
+        break;
+      }
       case 'ring': if (this.sel === 0) this.answer(); else this.decline(); break;
       default: this.back();
     }
@@ -214,11 +237,14 @@ export class Phone {
     const box = this.screenEl;
     box.innerHTML = '';
     if (s === 'home') {
-      const unread = this.texts.filter((t) => !t.read).length;
+      const badge: Partial<Record<Screen, number>> = {
+        messages: this.texts.filter((t) => !t.read).length, voicemail: this.voicemails.filter((v) => !v.heard).length,
+      };
       box.innerHTML = `<div class="ph-brand">Bayhaven Mobile</div><div class="ph-apps"></div>`;
       const apps = box.querySelector('.ph-apps')!;
       APPS.forEach((a, i) => {
-        const b = row(i, `<span class="ph-icon">${a.glyph}${a.id === 'messages' && unread ? `<b class="ph-badge">${unread}</b>` : ''}</span><span>${a.label}</span>`, () => this.choose());
+        const n = badge[a.id] ?? 0;
+        const b = row(i, `<span class="ph-icon">${a.glyph}${n ? `<b class="ph-badge">${n}</b>` : ''}</span><span>${a.label}</span>`, () => this.choose());
         b.classList.add('ph-app');
         apps.appendChild(b);
       });
@@ -231,6 +257,10 @@ export class Phone {
       box.innerHTML = head('Messages');
       if (!this.texts.length) box.insertAdjacentHTML('beforeend', '<p class="ph-empty">No messages.</p>');
       this.texts.forEach((t, i) => box.appendChild(row(i, `<span class="ph-from${t.read ? '' : ' new'}">${esc(t.from)}<small>${esc(t.at)}</small></span><span class="ph-preview">${esc(t.body)}</span>`, () => this.choose())));
+    } else if (s === 'voicemail') {
+      box.innerHTML = head('Voicemail');
+      if (!this.voicemails.length) box.insertAdjacentHTML('beforeend', '<p class="ph-empty">No voicemail.</p>');
+      this.voicemails.forEach((v, i) => box.appendChild(row(i, `<span class="ph-from${v.heard ? '' : ' new'}">${esc(gangName(v.from))}<small>${esc(v.at)}</small></span><em>Play</em>`, () => this.choose())));
     } else if (s === 'read') {
       const t = this.texts[this.reading];
       box.innerHTML = `${head(t.from)}<div class="ph-bubble">${esc(t.body)}</div><div class="ph-hint-time">${esc(t.at)}</div>`;

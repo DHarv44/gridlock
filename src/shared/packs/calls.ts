@@ -16,7 +16,12 @@ import nico from '../../../content/characters/nico_reyes/nico_reyes.json';
 import kowalski from '../../../content/characters/ray_kowalski/ray_kowalski.json';
 import player from '../../../content/player/player.json';
 
-export type CallSituation = 'intro' | 'hit' | 'torch' | 'steal' | 'courier' | 'frenzy' | 'pass' | 'fail' | 'busy' | 'nothing';
+/** `answer`: they pick up when you ring them; `refuse`: they pick up and won't deal with you (too
+ *  many blown jobs); `nudge`: there's work if you want it (said after their job-result call, on
+ *  its own when you've been idle, or left as a voicemail); `tip`: after picking up, there's a
+ *  payphone ringing for you. */
+export type CallSituation = 'intro' | 'hit' | 'torch' | 'steal' | 'courier' | 'frenzy' | 'pass' | 'fail' | 'busy' | 'nothing'
+  | 'answer' | 'refuse' | 'nudge' | 'tip';
 
 /** A turn as written: the caller's lines (or a version for a male and a female character), or
  *  the key of your line in player.json. A line's breaks are how it's read and shown. */
@@ -24,7 +29,7 @@ interface TurnFile { say?: string[]; male?: string[]; female?: string[]; you?: s
 interface VoiceFile { model: string; exaggeration: number; cfg: number }
 interface CharacterFile {
   id: string; name: string; fullName: string; role: string; about: string;
-  crew?: string; boss?: boolean; welcome?: boolean; mentor?: boolean;
+  crew?: string; boss?: boolean; welcome?: boolean; mentor?: boolean; contact?: boolean;
   voice: VoiceFile;
   calls: Partial<Record<CallSituation, TurnFile[][]>>;
 }
@@ -107,6 +112,9 @@ export const WELCOME_CALLER: string | undefined = CAST.find(([, c]) => c.welcome
 /** Who rings you about a job for a crew that doesn't trust you with its number yet (the
  *  character marked "mentor"), when they have something to say about it. */
 export const MENTOR_CALLER: string | undefined = CAST.find(([, c]) => c.mentor)?.[1].id;
+
+/** People (not gangs) whose number you get once you've talked to them (marked "contact"). */
+export const PEOPLE_CONTACTS: string[] = CAST.filter(([, c]) => c.contact).map(([, c]) => c.id);
 
 /** The voices a player's character can have (picked in the character creator). */
 export const PLAYER_VOICES: { id: string; name: string; who: 'man' | 'woman'; about: string; voice: Voice }[] =

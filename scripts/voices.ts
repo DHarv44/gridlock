@@ -2,8 +2,9 @@
 // silence at both ends trimmed, every clip brought to the same loudness, Opus at 40 kb/s, the same
 // mastering the Chatterbox pipeline uses (scripts/voice-calls.ts). A recording is named after its
 // clip:
-//   content/characters/<folder>/voice/<name>.m4a   the turn's "clip" name (do_better.m4a), or its
-//                                                   numbered clip (benny_intro_0_1_male.m4a)
+//   content/characters/<folder>/voice/**/<name>.m4a   the turn's "clip" name (do_better.m4a), or its
+//                                                   numbered clip (benny_intro_0_1_male.m4a); any
+//                                                   subfolders, only the file name counts
 //   content/player/voice/<voice>/<key>.m4a         e.g. player/voice/steady/how_number.m4a
 // (.m4a, .mp3, .wav, .ogg or .flac). Only recordings a line uses and that are newer than their clip
 // are converted; the rest (spare takes) are listed and left alone. `npm run voices`
@@ -21,6 +22,9 @@ const MASTER = 'silenceremove=start_periods=1:start_threshold=-45dB:start_silenc
 
 const dirs = (d: string) => (existsSync(d) ? readdirSync(d).filter((f) => statSync(join(d, f)).isDirectory()) : []);
 const audio = (d: string) => (existsSync(d) ? readdirSync(d).filter((f) => AUDIO.has(extname(f).toLowerCase())) : []);
+/** Audio files in a folder and its subfolders (folders are only for keeping things tidy: a
+ *  recording is matched by its file name). */
+const audioDeep = (d: string): string[] => [...audio(d).map((f) => join(d, f)), ...dirs(d).flatMap((s) => audioDeep(join(d, s)))];
 
 /** Every clip a line plays. */
 function wanted(): Set<string> {
@@ -40,10 +44,7 @@ export function recordings(spare: string[] = []): { src: string; clip: string }[
   const use = wanted();
   const out: { src: string; clip: string }[] = [];
   const add = (src: string, clip: string) => (use.has(clip) ? out.push({ src, clip }) : spare.push(src.slice(root.length + 1)));
-  for (const c of CALLERS) {
-    const dir = join(root, c.dir, 'voice');
-    for (const f of audio(dir)) add(join(dir, f), namedClip(c.id, basename(f, extname(f))));
-  }
+  for (const c of CALLERS) for (const f of audioDeep(join(root, c.dir, 'voice'))) add(f, namedClip(c.id, basename(f, extname(f))));
   const mine = join(root, 'content/player/voice');
   for (const v of dirs(mine)) for (const f of audio(join(mine, v))) add(join(mine, v, f), youLineId(v, basename(f, extname(f))));
   return out;

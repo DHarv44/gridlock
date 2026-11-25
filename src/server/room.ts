@@ -116,7 +116,7 @@ export class Room {
       respawnT: 0, garage: [...prof.garage].filter((v) => v < VEHICLES.length), owned: [...prof.owned].filter((id) => this.econ.owners.get(id) === key),
       garageCar: 0, ping: 0, send: (m) => conn.send(JSON.stringify(m)), sendRaw: (s) => conn.send(s),
       spawnCdT: 0, bustT: 0, lastPlace: -1, gunCrimeT: -9, seenCheckT: 0, sent: new Map(), snapCount: 0,
-      respect: { ...(prof.respect ?? {}) }, met: new Set(prof.met ?? []), mission: null, boothCd: new Map(), cell: newCell(w, prof.respect ?? {}), frags: 0, earned: 0, itTime: 0,
+      respect: { ...(prof.respect ?? {}) }, met: new Set(prof.met ?? []), mission: null, boothCd: new Map(), blownRun: 0, cell: newCell(w, prof.respect ?? {}), frags: 0, earned: 0, itTime: 0,
       ...(character ? { character: { id: character.id }, look: character.look } : {}),
     };
     // Characters pick up where they left off (any room: it's the same city); others at the hospital.

@@ -8,7 +8,7 @@ import { giveWeapon } from '../factory';
 import type { World } from '../world';
 import { factionName, fill, markName, release } from './helpers';
 import { KINDS, objectivePoint } from './kinds';
-import { briefCall, gangCaller, talk } from './talk';
+import { briefCall, gangCaller, type Part, talk } from './talk';
 
 const clampR = (v: number) => Math.max(RESPECT.min, Math.min(RESPECT.max, v));
 
@@ -26,6 +26,26 @@ export class Missions {
 
   respectOf(pl: Player, gang: string): number {
     return pl.respect[gang] ?? 0;
+  }
+
+  /** The nearest payphone ringing for this player (a gang that will work with them, off its
+   *  cooldown), or null; none while they're on a job. */
+  ringingBooth(pl: Player): Booth | null {
+    const p = this.w.peds.get(pl.pid);
+    if (!p || pl.mission) return null;
+    const at = this.w.pedPos(p);
+    let best: Booth | null = null, bd = Infinity;
+    for (const b of this.booths) {
+      if (this.respectOf(pl, b.gang) < RESPECT.noWorkBelow || (pl.boothCd.get(b.id) ?? 0) > this.w.time) continue;
+      const d = dist(at.x, at.y, b.x, b.y);
+      if (d < bd) { bd = d; best = b; }
+    }
+    return best;
+  }
+
+  /** The mentor has had enough of this player's blown jobs. */
+  fedUp(pl: Player): boolean {
+    return pl.blownRun >= RESPECT.mentorFedUpAfter;
   }
 
   /** A player answers a payphone. Returns an error to show, or null when a job started. */
@@ -128,13 +148,18 @@ export class Missions {
       if (st.giver) this.adjust(pl, st.giver, -Math.ceil(spec.respect / 3));
     }
     pl.send({ t: 'mission', m: null, result: passed ? 'passed' : 'failed' } satisfies S2C);
+    pl.blownRun = passed ? 0 : pl.blownRun + 1;
     // Somebody rings to say so: the gang, or, while it doesn't trust you with its number yet, the
-    // mentor (packs MENTOR_CALLER) if they have something to say about it.
+    // mentor (packs MENTOR_CALLER) if they have something to say about it, ending on a nudge
+    // about the next job when a payphone is waiting for you.
     if (GANGS.includes(st.giver)) {
       const s = passed ? 'pass' : 'fail';
       const stranger = this.respectOf(pl, st.giver) < RESPECT.cellAt;
-      const who = stranger && MENTOR_CALLER && CALLS[MENTOR_CALLER]?.[s]?.length ? MENTOR_CALLER : gangCaller(w, pl, st.giver, s);
-      if (who) talk(w, pl, 'cell', [[who, s]]);
+      const mentor = stranger && MENTOR_CALLER && CALLS[MENTOR_CALLER]?.[s]?.length ? MENTOR_CALLER : null;
+      const who = mentor ?? gangCaller(w, pl, st.giver, s);
+      const parts: Part[] = who ? [[who, s]] : [];
+      if (mentor && !this.fedUp(pl) && this.ringingBooth(pl)) parts.push([mentor, 'nudge']);
+      if (parts.length) talk(w, pl, 'cell', parts);
     }
   }
 

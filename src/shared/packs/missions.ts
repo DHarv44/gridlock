@@ -69,4 +69,8 @@ export const RESPECT = {
   cellRing: 20,              // seconds a call rings before it's missed
   cellPay: 1.25,             // jobs by phone pay this much more than payphone work
   cellDialCooldown: 90,      // seconds before the same contact has work for you again
+  // The mentor (packs/calls.ts MENTOR_CALLER): rings with a nudge after this long free while no
+  // crew has your number, and stops dealing with you after this many blown jobs in a row.
+  mentorNudgeAfter: 240,
+  mentorFedUpAfter: 3,
 };
