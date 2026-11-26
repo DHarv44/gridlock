@@ -11,10 +11,8 @@ export type NavCmd = 'up' | 'down' | 'left' | 'right' | 'ok' | 'back' | 'zoomIn'
 const EDGE_BTN: Partial<Record<Action, number>> = { prevWeapon: BTN.prev, nextWeapon: BTN.next, horn: BTN.horn };
 const KIND = new Map(ACTIONS.map((a) => [a.id, a.kind]));
 const PAD_IDS = new Set<string>(PAD_ACTIONS.map((d) => d.id));
-/** Where the crosshair starts when you press Aim: this far out (px) the way you face. */
-const AIM_START = 140;
-/** The crosshair stays this far (px) inside the edges of the screen. */
-const AIM_EDGE = 12;
+/** With the mouse this close (px) to your character, aiming doesn't turn you. */
+const AIM_DEAD = 6;
 const NAV: [number, NavCmd][] = [[PAD.up, 'up'], [PAD.down, 'down'], [PAD.left, 'left'], [PAD.right, 'right'], [PAD.a, 'ok'], [PAD.b, 'back'], [PAD.rb, 'zoomIn'], [PAD.lb, 'zoomOut']];
 
 export class Input {
@@ -35,26 +33,29 @@ export class Input {
   capture: ((code: string) => void) | null = null;
   onUi: (a: UiAction) => void = () => {};
 
-  /** Mouse aim: while Aim is held, mouse motion moves the crosshair freely about the screen; this is
-   *  where it is relative to your character (px), and you face toward it. */
-  private aimX = 0;
-  private aimY = 0;
+  /** Mouse aim: while Aim is held, the crosshair is where the mouse is on screen, and you face from
+   *  your character (`anchorX/Y`, kept by the HUD each frame) toward it. */
+  mouseX = 0;
+  mouseY = 0;
+  private mouseSeen = false;
+  anchorX = 0;
+  anchorY = 0;
   private aiming = false;
   /** Current facing, kept by Steering so a new aim starts where you already face. */
   facingHint = 0;
 
-  constructor(private canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement) {
     window.addEventListener('keydown', (e) => this.key(e, e.code, true));
     window.addEventListener('keyup', (e) => this.key(e, e.code, false));
     window.addEventListener('blur', () => this.release());
     window.addEventListener('mousemove', (e) => {
-      if (!this.aiming) return;
-      // Anywhere on screen (your character is about the middle): kept inside the edges.
-      const hw = window.innerWidth / 2 - AIM_EDGE, hh = window.innerHeight / 2 - AIM_EDGE;
-      this.aimX = Math.max(-hw, Math.min(hw, this.aimX + e.movementX));
-      this.aimY = Math.max(-hh, Math.min(hh, this.aimY + e.movementY));
+      this.mouseX = e.clientX;
+      this.mouseY = e.clientY;
+      this.mouseSeen = true;
+      // Moving the mouse is back on keyboard and mouse (the crosshair shows again).
+      if (e.movementX || e.movementY) this.pad.active = false;
     });
-    // No cursor over the game: the pointer's position never matters.
+    // No pointer over the game: aiming shows the crosshair where the mouse is.
     canvas.style.cursor = 'none';
     window.addEventListener('mousedown', (e) => {
       if (this.capture) { e.preventDefault(); this.takeCapture(`Mouse${e.button}`); return; }
@@ -203,30 +204,28 @@ export class Input {
   /** Aim held (with the mouse): the crosshair shows and the camera closes in. */
   get scoped(): boolean { return this.aiming && this.enabled; }
 
-  /** Where the crosshair is relative to your character on screen (px) while Aim is held. */
+  /** Whether the mouse is in use for the game: it has moved and the controller isn't in hand. */
+  get mouseActive(): boolean { return this.mouseSeen && !this.pad.active; }
+
+  /** Where the crosshair goes on screen: the mouse (or, before the mouse has moved at all, a little
+   *  way out the way you face). */
   crosshair(): { x: number; y: number } {
-    return { x: this.aimX, y: this.aimY };
+    if (this.mouseSeen) return { x: this.mouseX, y: this.mouseY };
+    return { x: this.anchorX + Math.cos(this.facingHint) * 140, y: this.anchorY + Math.sin(this.facingHint) * 140 };
   }
 
-  /** Facing chosen with the mouse while Aim is held, or null. */
+  /** Facing chosen with the mouse while Aim is held (from your character toward it), or null. */
   mouseAim(): number | null {
-    if (!this.aiming || !this.enabled || Math.hypot(this.aimX, this.aimY) < 6) return null;
-    return Math.atan2(this.aimY, this.aimX);
+    if (!this.aiming || !this.enabled || !this.mouseSeen) return null;
+    const dx = this.mouseX - this.anchorX, dy = this.mouseY - this.anchorY;
+    return Math.hypot(dx, dy) < AIM_DEAD ? null : Math.atan2(dy, dx);
   }
 
   private startAim(): void {
-    if (this.aiming) return;
     this.aiming = true;
-    // Start from the way you already face, so pressing Aim doesn't spin you.
-    this.aimX = Math.cos(this.facingHint) * AIM_START;
-    this.aimY = Math.sin(this.facingHint) * AIM_START;
-    // Pointer lock keeps the mouse from leaving the window while you turn (not always allowed).
-    try { void (this.canvas.requestPointerLock() as unknown as Promise<void> | undefined)?.catch?.(() => {}); } catch { /* unsupported */ }
   }
 
   private stopAim(): void {
-    if (!this.aiming) return;
     this.aiming = false;
-    if (document.pointerLockElement === this.canvas) document.exitPointerLock();
   }
 }

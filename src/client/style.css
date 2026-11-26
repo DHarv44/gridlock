@@ -129,9 +129,10 @@ button:disabled { opacity: 0.4; cursor: default; }
 /* Phone conversations (hud/talk.ts): comic speech bubbles beside your character, whose head is at
    the root's origin. The caller's bubble sits up and to the right with a lightning tail (a voice
    down a phone line); yours up and to the left with a plain tail. Lettered in bold capitals. */
-/* Aim held: a crosshair where you're aiming (hud/crosshair.ts). */
+/* The crosshair at the mouse (hud/crosshair.ts): faint, strong while Aim is held. */
 .crosshair { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; z-index: 5; opacity: 0; transition: opacity 0.12s; }
-.crosshair.on { opacity: 1; }
+.crosshair.on { opacity: 0.55; }
+.crosshair.on.aiming { opacity: 1; }
 .crosshair i { position: absolute; background: #f4f1e8; box-shadow: 0 0 0 1px rgba(0,0,0,0.65); }
 .crosshair i:nth-child(1), .crosshair i:nth-child(2) { width: 2px; height: 10px; left: -1px; }
 .crosshair i:nth-child(1) { top: -16px; }
