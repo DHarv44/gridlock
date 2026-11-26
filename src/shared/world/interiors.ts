@@ -48,7 +48,7 @@ export interface Interior {
 const T = 0.3, GAP = 1.6, WALL_H = 2.8;
 /** Largest room per layout (across the frontage, then in depth); smaller buildings use all they have. */
 const SIZE: Partial<Record<InteriorLayout, [number, number]>> = {
-  shop: [16, 13], kiosk: [16, 8], diner: [18, 14], club: [22, 18], warehouse: [28, 22], tower: [22, 18], apartments: [18, 15],
+  shop: [16, 13], kiosk: [16, 8], diner: [18, 14], club: [22, 18], saloon: [20, 16], warehouse: [28, 22], tower: [22, 18], apartments: [18, 15],
 };
 
 /** The local frame: `a` across the frontage, `d` in from the front wall. */

@@ -10,6 +10,7 @@ installUniverse(await loadUniverse('redrock'));
 const { Room } = await import('../src/server/room');
 const { FIXTURES, MISSIONS, RULES, UNIVERSE, VEHICLES, pedIndex, vehicleIndex } = await import('../src/shared/packs');
 const { fixtureRect } = await import('../src/shared/world/fixtures');
+const { waitForTrain } = await import('../src/server/game/ai/crossings');
 const { faceTalk } = await import('../src/server/game/systems/faceTalk');
 const { stepVehicle } = await import('../src/shared/sim/physics');
 const { onLegs } = await import('../src/shared/sim/kinds');
@@ -58,7 +59,24 @@ check(rides.every((v) => !materialOf(v).explodes && !materialOf(v).smokes && (v.
 const fx = (id: string) => city.fixtures.filter((f) => FIXTURES[f.spec].id === id).length;
 check(fx('church') >= 2 && fx('gallows') >= 1 && fx('barn') > 10 && fx('corral') > 5 && fx('saguaro') > 100,
   `the territory has its landmarks and outbuildings (${['church', 'gallows', 'water_tower', 'barn', 'corral', 'windmill', 'saguaro', 'depot'].map((id) => `${id} ${fx(id)}`).join(', ')})`);
+const saloons = city.interiors.filter((i) => i.layout === 'saloon');
+check(saloons.length > 0 && saloons.every((s) => s.props.some((p) => p.kind === 'bar') && s.props.some((p) => p.kind === 'table')),
+  `saloons are bar-rooms inside (${saloons.length}: ${saloons[0]?.props.filter((p) => p.kind === 'table').length ?? 0} card tables, ${saloons.some((s) => s.props.some((p) => p.kind === 'piano')) ? 'a piano' : 'no piano'})`);
 check(!!city.railway && fx('depot') >= 1 && city.railway.stations.length >= 2, `a railroad runs through, ${city.railway?.stations.length ?? 0} stations, ${fx('depot')} depots`);
+// Level crossings: a rider coming up to the track waits while a train is near it.
+if (city.railway?.crossings.length) {
+  const rw = city.railway, a = rw.crossings[0], h = rw.axis === 'h';
+  const at = (along: number, across: number) => (h ? [along, rw.pos + across] : [rw.pos + across, along]) as [number, number];
+  const [rx, ry] = at(a, 8);
+  const rider = spawnVehicle(w, vehicleIndex('quarter_horse'), rx, ry, h ? -Math.PI / 2 : Math.PI);
+  const [tx, ty] = at(a + 20, 0);
+  const loco = spawnVehicle(w, vehicleIndex('locomotive'), tx, ty, h ? 0 : Math.PI / 2);
+  const waits = waitForTrain(w, rider);
+  const [fx, fy] = at(a + 300, 0);
+  loco.body.x = fx; loco.body.y = fy;
+  check(waits && !waitForTrain(w, rider), 'a rider at a crossing waits for the train, then goes');
+  removeVehicle(w, rider); removeVehicle(w, loco);
+}
 const corral = city.fixtures.find((f) => FIXTURES[f.spec].id === 'corral');
 if (corral) {
   const r = fixtureRect(corral);

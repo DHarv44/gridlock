@@ -255,6 +255,39 @@
    "siren": false,
    "openTop": true,
    "armored": false
+  },
+  "cattle": {
+   "name": "Longhorn",
+   "length": 2.3,
+   "width": 0.85,
+   "height": 1.45,
+   "movement": "legs",
+   "paint": "#8a4a24",
+   "siren": false,
+   "openTop": true,
+   "armored": false
+  },
+  "locomotive": {
+   "name": "Locomotive",
+   "length": 14.6,
+   "width": 2.9,
+   "height": 4.4,
+   "movement": "rail",
+   "paint": "#1c1a18",
+   "siren": false,
+   "openTop": false,
+   "armored": true
+  },
+  "coach": {
+   "name": "Passenger Coach",
+   "length": 14.6,
+   "width": 2.9,
+   "height": 4,
+   "movement": "rail",
+   "paint": "#b8902e",
+   "siren": false,
+   "openTop": false,
+   "armored": true
   }
  },
  "weapons": {

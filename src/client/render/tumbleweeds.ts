@@ -20,8 +20,8 @@ export class Tumbleweeds {
     this.open = ZONES.some((z) => z.wild?.brush);
     if (!this.open) return;
     const geo = new THREE.IcosahedronGeometry(1, 1);
-    const mat = new THREE.MeshLambertMaterial({ color: '#a08a5a', flatShading: true, wireframe: false, transparent: true, opacity: 0.92 });
-    const wire = new THREE.MeshBasicMaterial({ color: '#6a5a3a', wireframe: true });
+    const mat = new THREE.MeshLambertMaterial({ color: '#cbb07a', flatShading: true, transparent: true, opacity: 0.9 });
+    const wire = new THREE.MeshBasicMaterial({ color: '#7a6440', wireframe: true });
     for (let k = 0; k < COUNT; k++) {
       const mesh = new THREE.Mesh(geo, mat);
       mesh.add(new THREE.Mesh(geo, wire));
@@ -51,7 +51,7 @@ export class Tumbleweeds {
         if (Math.random() > dt * 0.4) continue;
         const x = view.x0 - 3, y = view.y0 + Math.random() * h;
         if (!this.isOpen(x + 6, y)) continue;
-        Object.assign(g, { x, y, v: SPEED[0] + Math.random() * (SPEED[1] - SPEED[0]), r: 0.35 + Math.random() * 0.4, spin: 0, hop: Math.random() * 6, alive: true });
+        Object.assign(g, { x, y, v: SPEED[0] + Math.random() * (SPEED[1] - SPEED[0]), r: 0.5 + Math.random() * 0.4, spin: 0, hop: Math.random() * 6, alive: true });
         g.mesh.scale.setScalar(g.r);
         g.mesh.visible = true;
       }

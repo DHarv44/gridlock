@@ -146,6 +146,9 @@ film's names, characters, story, map or look).
    (VehicleSpec.grazes, systems/graze.ts: Longhorn cattle graze the range and scatter at gunfire),
    and the railroad (world.railway at grade down a Front Street; RailSpec.ends puts a locomotive
    at each end of a train). WorldSpec.pedScale: Redrock draws people at 1.1x, the size they ride at,
-   true to its real-size horses (Bayhaven keeps 1.55x for its cars).
+   true to its real-size horses (Bayhaven keeps 1.55x for its cars). Level crossings: a computer-
+   driven rider or wagon holds short of the track while a train is within 70 m of the crossing
+   (ai/crossings.ts). Blender models for the locomotive and coach (art/rail.py) and the Longhorn
+   (art/cow.py: the horse body with a cow's proportions as spec overrides, plus horns).
    Not yet: voices for its cast and your lines (they show in bubbles), era
    sounds (a bell, hooves, whinnies); the gatling gun doesn't traverse (trailer parts don't animate).

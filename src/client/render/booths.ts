@@ -82,8 +82,20 @@ export class Booths {
         // A job post: a timber post with a notice board, the gang's flag and a bell that swings when
         // there's work for you.
         part(box, wood, 0.3, 0, 0, 0.18, 2.8, 0.18);                      // post
-        part(box, wood, 0.18, 1.0, 0, 0.08, 1.0, 1.1);                    // board
-        for (const z of [-0.28, 0.12]) part(box, posters[(Math.round(b.x + b.y + z * 10) % posters.length + posters.length) % posters.length], 0.12, 1.2 + z * 0.4, z, 0.02, 0.45, 0.32); // wanted bills
+        // The notice board leans back like a lectern, so its WANTED bills face up to the street.
+        const board = new THREE.Group();
+        board.position.set(0.22, 0.9, 0);
+        board.rotation.z = -0.85;
+        g.add(board);
+        const onBoard = (mat: THREE.Material, x: number, y: number, z: number, sx: number, sy: number, sz: number) => {
+          const m = new THREE.Mesh(box, mat);
+          m.position.set(x, y, z);
+          m.scale.set(sx, sy, sz);
+          m.castShadow = true;
+          board.add(m);
+        };
+        onBoard(wood, 0, 0, 0, 0.08, 1.0, 1.1);
+        for (const z of [-0.26, 0.26]) onBoard(posters[(Math.round(b.x + b.y + z * 10) % posters.length + posters.length) % posters.length], -0.05, 0.22, z, 0.02, 0.62, 0.44); // wanted bills
         part(box, wood, 0.1, 2.6, 0, 0.7, 0.08, 0.08);                    // arm
         part(box, new THREE.MeshLambertMaterial({ color }), 0.32, 2.2, 0.35, 0.03, 0.5, 0.6); // gang flag
         const bell = part(box, brass, -0.15, 2.25, 0, 0.22, 0.3, 0.22);   // the bell

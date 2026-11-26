@@ -9,6 +9,7 @@ import { unseatPed } from '../factory';
 import type { World } from '../world';
 import { BEHAVIOURS } from './behaviours';
 import { streetGoal } from './doors';
+import { waitForTrain } from './crossings';
 import { cruise, driveTo } from './driving';
 import { soldierHostile } from './soldiers';
 import { armBest, arrest, attack, extinguish, flee, returnToVehicle, revive, setTask, standAt, wander } from './tasks';
@@ -94,6 +95,8 @@ function vehicleTask(w: World, p: Ped, dt: number): void {
       cruise(w, v, p, dt, ai.panicT > 0);
     }
   }
+  // A train at the crossing ahead: wait for it (ai/crossings.ts).
+  if (waitForTrain(w, v)) { v.ctl.throttle = 0; v.ctl.sprint = false; v.ctl.handbrake = true; }
 }
 
 /** Everyone gets out; each crew member picks a job against the target. */
