@@ -14,7 +14,9 @@ const HELI_DRAG = 0.45;
 /** Handbrake: share of the tyres' grip left to pull a slide back in line, friction of the locked
  *  wheels (share of the brakes), how fast steering spins the car (share of its turn rate), and how
  *  much of the engine's pull a power slide gets. */
-const HANDBRAKE_GRIP = 0.12, HANDBRAKE_FRICTION = 0.32, HANDBRAKE_SPIN = 1.6, HANDBRAKE_POWER = 0.5;
+const HANDBRAKE_GRIP = 0.12, HANDBRAKE_FRICTION = 0.9, HANDBRAKE_SPIN = 2.0, HANDBRAKE_POWER = 0.5;
+/** How much less the locked wheels scrub off while you steer (share of the brakes at full lock). */
+const HANDBRAKE_SLEW = 0.5;
 /** How near the middle of a roof a helicopter's centre must be to set down on it (metres in from
  *  the edge it may hang over). */
 const HELI_PAD = 0.8;
@@ -155,10 +157,13 @@ function stepHandbrake(b: Body, spec: VehicleSpec, c: Controls, dt: number, worl
   b.vy = fy * vf + fx * vl;
   // Locked tyres scrubbing along the road, whichever way it's sliding.
   const speed = Math.hypot(b.vx, b.vy);
-  const friction = spec.brake * (HANDBRAKE_FRICTION + (c.throttle < 0 ? -c.throttle * 0.5 : 0)) * dt;
+  // Straight on, it slams the car to a stop; steering, the car slews round on the locked wheels and
+  // scrubs off less, so it can swing right round.
+  const lock = HANDBRAKE_FRICTION - HANDBRAKE_SLEW * Math.abs(c.steer);
+  const friction = spec.brake * (lock + (c.throttle < 0 ? -c.throttle * 0.5 : 0)) * dt;
   const k = speed > 0 ? Math.max(0, speed - friction) / speed : 0;
   b.vx *= k; b.vy *= k;
-  const targetAv = c.steer * spec.turnRate * HANDBRAKE_SPIN * clamp(speed / 3.5, 0, 1);
+  const targetAv = c.steer * spec.turnRate * HANDBRAKE_SPIN * clamp(speed / 2, 0, 1);
   b.av += (targetAv - b.av) * Math.min(1, 10 * dt);
   b.angle += b.av * dt;
   b.x += b.vx * dt;

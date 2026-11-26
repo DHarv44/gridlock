@@ -15,7 +15,7 @@ import type { Effects } from './effects';
  *  doesn't. */
 const MARK_LOAD = 30, SMOKE_LOAD = 38, FULL_LOAD = 50;
 /** Braking as hard as the car can counts as this much load (so only slamming the brakes marks). */
-const BRAKE_LOAD = 34;
+const BRAKE_LOAD = 46;
 /** A sideways slide (the handbrake) counts this much per m/s of slip: a couple of m/s marks. */
 const SLIP_LOAD = 11;
 /** Below this speed (m/s) nothing marks. */

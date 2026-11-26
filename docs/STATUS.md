@@ -100,7 +100,7 @@
   one sinks). Rocking hull and a foam wake. `npx tsx scripts/boats.ts`.
 - Handbrake and tyres (2026-11-26): the handbrake (Space; controls store v11) locks the
   rear wheels (shared/sim/physics.ts stepHandbrake, cars and bikes): the car keeps sliding the way
-  it was going while steering spins it round, so a handbrake 180 works (~0.8 s, then drive off the
+  it was going while steering spins it round, so a handbrake 180 works (~0.7 s, then drive off the
   way you came). Tyre marks and smoke (render/skids.ts) come from sideways slip, slamming the
   brakes or a very fast sharp turn, never an ordinary corner; a looping tyre squeal follows the
   hardest slide (audio/sound.ts `tyres`; ASSETS.md `skid`, a CC0 Chrysler cornering squeal).

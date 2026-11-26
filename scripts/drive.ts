@@ -55,11 +55,12 @@ for (const speed of [12, 20, 28]) {
   for (let i = 0; i < 60; i++) stepVehicle(b, spec, ctl({ throttle: 1 }), DT, open, true);
   check(spun && along(b, SOUTH) > 4, `handbrake 180 from ${speed} m/s: round in ${t.toFixed(1)} s, ${wide.toFixed(1)} m sideways, then drives off south at ${along(b, SOUTH).toFixed(1)} m/s`);
 }
-// Steering straight with the handbrake: it just slides to a stop, no spin.
+// Straight on the handbrake: it locks up and stops hard (no spin), squealing all the way.
 {
   const b = at(NORTH, 20);
-  for (let i = 0; i < 90; i++) stepVehicle(b, spec, ctl({ handbrake: true }), DT, open, true);
-  check(Math.abs(angleDiff(b.angle, NORTH)) < 2 * DEG && Math.hypot(b.vx, b.vy) < 2, 'handbrake straight: slides to a stop, no spin');
+  let t = 0;
+  while (t < 3 && Math.hypot(b.vx, b.vy) > 0.5) { stepVehicle(b, spec, ctl({ handbrake: true }), DT, open, true); t += DT; }
+  check(Math.abs(angleDiff(b.angle, NORTH)) < 2 * DEG && t < 1.3, `handbrake straight from 20 m/s: stops hard in ${t.toFixed(2)} s, no spin`);
 }
 // Without the handbrake a car corners on its tyres as before: full lock doesn't spin it round.
 {
@@ -86,6 +87,8 @@ function run(b: Body, c: (i: number) => Controls, frames: number): { marks: numb
 }
 let r = run(at(NORTH, 20), () => ctl({ steer: 1, handbrake: true }), 30);
 check(r.marks > 6 && r.smoke > 0 && r.squeal > 0.3, `a handbrake slide marks the road (${r.marks}), smokes (${r.smoke}) and squeals (${r.squeal.toFixed(2)})`);
+r = run(at(NORTH, 20), () => ctl({ handbrake: true }), 20);
+check(r.marks > 0 && r.squeal > 0.2, `the handbrake straight on marks the road (${r.marks}) and squeals (${r.squeal.toFixed(2)})`);
 r = run(at(NORTH, 25), () => ctl({ throttle: -1 }), 30);
 check(r.marks > 0, `slamming the brakes marks the road (${r.marks})`);
 r = run(at(NORTH, 20), () => ctl(), 60);
