@@ -66,7 +66,9 @@ export class Lobby {
 
   /** The room under `code` for a page running `universe`: running, reopened from its save, or new. */
   private getRoom(code: string, create: boolean, universe: string, mode?: string): RoomHost | { error: string; universe?: string } {
-    const existing = this.rooms.get(code);
+    let existing = this.rooms.get(code);
+    // A room whose thread died isn't kept: this join opens it afresh (from its save, if it has one).
+    if (existing && 'failed' in existing && existing.failed) { this.rooms.delete(code); existing = undefined; }
     const where = existing?.universe ?? savedUniverse(code) ?? (create ? universe : null);
     if (!where) return { error: `No room called ${code}.` };
     if (where !== universe) return { error: `${code} is a game in ${this.nameOf(where)}.`, universe: where };

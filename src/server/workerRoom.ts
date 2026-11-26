@@ -37,15 +37,31 @@ export class WorkerRoom implements RoomHost {
   constructor(init: WorkerRoomInit) {
     this.code = init.code;
     this.universe = init.universe;
-    this.worker = new Worker(new URL('./roomWorker.ts', import.meta.url), { workerData: init });
+    // A plain .mjs entry with no inherited flags: it loads TypeScript itself (roomWorker.mjs).
+    this.worker = new Worker(new URL('./roomWorker.mjs', import.meta.url), { workerData: init, execArgv: [] });
     this.worker.on('message', (m: FromWorker) => this.receive(m));
-    this.worker.on('error', (err) => {
-      console.error(`[room ${this.code}] worker failed:`, err);
-      for (const [cid, done] of this.pending) { done({ error: 'The game could not start.' }); this.pending.delete(cid); }
-      for (const c of this.conns.values()) c.close();
-      this.conns.clear();
-      this.size = 0;
-    });
+    this.worker.on('error', (err) => this.fail(err));
+    this.worker.on('exit', (code) => { if (code !== 0 && !this.failed && !this.closing) this.fail(new Error(`room thread exited (${code})`)); });
+  }
+
+  /** Set when the room's thread died: the lobby drops the room and opens a fresh one next time. */
+  failed: string | null = null;
+
+  /** The thread died: whoever is waiting to join is told why (the lobby sends it as the reject
+   *  reason, so it reaches the player rather than a bare "Disconnected"); players already in are
+   *  dropped. */
+  private fail(err: unknown): void {
+    const why = err instanceof Error ? err.message : String(err);
+    console.error(`[room ${this.code}] worker failed:`, err);
+    this.failed = why;
+    for (const [cid, done] of this.pending) {
+      this.conns.delete(cid);
+      done({ error: `The game could not start (${why.slice(0, 160)}).` });
+    }
+    this.pending.clear();
+    for (const c of this.conns.values()) c.close();
+    this.conns.clear();
+    this.size = 0;
   }
 
   names(): string[] { return this.list; }
@@ -64,7 +80,11 @@ export class WorkerRoom implements RoomHost {
     this.post({ t: 'leave', cid: seat as number });
   }
 
+  /** Shutting down on purpose (its thread's exit then isn't a failure). */
+  private closing = false;
+
   close(): void {
+    this.closing = true;
     this.post({ t: 'close' });
     // It saves and answers 'closed'; if it's stuck, it goes anyway.
     setTimeout(() => void this.worker.terminate(), 5000).unref();

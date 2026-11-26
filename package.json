@@ -5,7 +5,7 @@
   "type": "module",
   "description": "GRIDLOCK: top-down multiplayer crime sandbox (up to 6 players).",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "dev": "node scripts/dev.mjs",
