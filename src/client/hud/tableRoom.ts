@@ -32,6 +32,7 @@ export class TableRoom {
   private keyed = new Map<string, () => void>();
   private felt = '';
   private side = '';
+  private top = '';
   private focus = '';
   private auto = true;
   private busy = false;
@@ -48,14 +49,15 @@ export class TableRoom {
     this.fade.className = 'screen-fade';
     this.root.className = 'garage showroom tableroom';
     this.root.hidden = true;
-    this.root.innerHTML = '<div class="garage-box"><div class="tr-view"><div class="tr-felt"></div><div class="tr-float"></div><button class="tr-histbtn" type="button">History</button><div class="tr-log"></div></div><div class="garage-side tr-side"></div></div>';
+    // The table fills the box; the title and money run along its top, every control along its foot.
+    this.root.innerHTML = '<div class="garage-box tr-box"><div class="tr-top"></div><div class="tr-view"><div class="tr-felt"></div><div class="tr-float"></div><button class="tr-histbtn" type="button">History</button><div class="tr-log"></div></div><div class="tr-controls tr-side"></div></div>';
     // One listener for every button: each carries the index of what it does in this drawing.
     this.root.addEventListener('click', (e) => {
       if ((e.target as HTMLElement).closest('.tr-histbtn')) { this.history = !this.history; this.refresh(); return; }
       const el = (e.target as HTMLElement).closest<HTMLElement>('[data-a]');
       if (!el || (el as HTMLButtonElement).disabled) return;
-      // A click on the side moves the pick there (back to resting on the main move if it was that).
-      if (el.closest('.tr-side')) { this.focus = el.dataset.k ?? ''; this.auto = this.focus === 'primary'; }
+      // A click on a control moves the pick there (back to resting on the main move if it was that).
+      if (el.closest('.tr-side, .tr-top')) { this.focus = el.dataset.k ?? ''; this.auto = this.focus === 'primary'; }
       this.acts[Number(el.dataset.a)]?.();
       this.refresh();
     });
@@ -78,7 +80,7 @@ export class TableRoom {
   open(visit: TableVisit): void {
     if (this.visit) return;
     this.visit = visit;
-    this.felt = this.side = this.focus = '';
+    this.felt = this.side = this.top = this.focus = '';
     this.auto = true;
     this.cash = null;
     this.leaveArmed = 0;
@@ -130,18 +132,25 @@ export class TableRoom {
       if (b.key && !b.off) this.keyed.set(b.key, b.act);
       return `<button class="${cls}${b.on ? ' on' : ''}${b.tone ? ` tone-${b.tone}` : ''}" data-k="${esc(key)}" ${a(b.act)}${b.off ? ' disabled' : ''}><span>${esc(b.text)}</span>${b.sub ? `<em>${esc(b.sub)}</em>` : ''}${b.price ? `<b>${esc(b.price)}</b>` : ''}</button>`;
     };
+    // A slider with − and + either side of it (a step each) and its value boxed beside it.
     const slider = (sl: TSlider) => {
       this.sliders.push(sl);
-      return `<div class="tr-slider"><input type="range" min="${sl.min}" max="${sl.max}" step="${sl.step}" value="${sl.value}" data-in="${this.sliders.length - 1}"><b class="tr-sv">${esc(sl.label(sl.value))}</b></div>`;
+      const k = this.sliders.length - 1;
+      const nudge = (d: number) => a(() => sl.set(Math.max(sl.min, Math.min(sl.max, sl.value + d * sl.step))));
+      return `<div class="tr-slider"><b class="tr-sv">${esc(sl.label(sl.value))}</b><button class="tr-step" ${nudge(-1)}>−</button><input type="range" min="${sl.min}" max="${sl.max}" step="${sl.step}" value="${sl.value}" data-in="${k}"><button class="tr-step" ${nudge(1)}>+</button></div>`;
     };
-    const groups = s.groups.map((g) => `<div class="tr-group"><div class="tr-gname">${esc(g.name)}</div>${g.slider ? slider(g.slider) : ''}${g.btns.length ? `<div class="tr-btns${g.chips ? ' chips' : ''}">${g.btns.map((b, i) => btn(b, 'tr-btn', `${g.name}/${i}`)).join('')}</div>` : ''}</div>`).join('');
+    const group = (g: TableScreen['groups'][number]) => `<div class="tr-group${g.size ? ' size' : ''}"><div class="tr-gname">${esc(g.name)}</div>${g.btns.length ? `<div class="tr-btns${g.chips ? ' chips' : ''}">${g.btns.map((b, i) => btn(b, 'tr-btn', `${g.name}/${i}`)).join('')}</div>` : ''}${g.slider ? slider(g.slider) : ''}</div>`;
     const armed = performance.now() < this.leaveArmed && s.leaveWarn;
-    // (The action bar's moves aren't picked for you: Enter mustn't fold or double a hand by accident.)
-    const foot = s.bar ? `<div class="tr-bar">${s.bar.map((b, i) => btn(b, 'tr-act', `bar/${i}`)).join('')}</div>` : s.primary ? btn(s.primary, 'primary gs-buy', 'primary') : '';
-    const side = `<h2>${esc(s.title)}</h2><p class="garage-sub">${esc(s.sub)}</p><div class="gs-cash">${esc(s.money)}</div><div class="tr-groups">${groups}</div>
-      <div class="garage-actions">${foot}${btn({ text: armed ? `${s.leaveWarn}. Again to leave` : 'Leave the table', act: () => this.tryLeave(s.leaveWarn) }, `out${armed ? ' armed' : ''}`, 'leave')}</div>`;
+    // The foot: the other choices on the left; the moves, big, and the bet sizing beside them on the
+    // right. (The action bar's moves aren't picked for you: Enter mustn't fold a hand by accident.)
+    const moves = s.bar ? s.bar.map((b, i) => btn(b, 'tr-act', `bar/${i}`)).join('') : s.primary ? btn(s.primary, `tr-act tone-${s.primary.tone ?? 'go'}`, 'primary') : '';
+    const side = `<div class="tr-aux">${s.groups.filter((g) => !g.size).map(group).join('')}</div>
+      <div class="tr-main"><div class="tr-bar">${moves}</div>${s.groups.filter((g) => g.size).map(group).join('')}</div>`;
+    const top = `<div class="tr-title"><h2>${esc(s.title)}</h2><span>${esc(s.sub)}</span></div><div class="tr-money">${esc(s.money)}</div>
+      ${btn({ text: armed ? `${s.leaveWarn}. Again to leave` : 'Leave table', act: () => this.tryLeave(s.leaveWarn) }, `tr-leave${armed ? ' armed' : ''}`, 'leave')}`;
     if (s.felt !== this.felt) { this.felt = s.felt; this.root.querySelector('.tr-felt')!.innerHTML = s.felt; }
     if (side !== this.side && !this.dragging) { this.side = side; this.root.querySelector('.tr-side')!.innerHTML = side; }
+    if (top !== this.top) { this.top = top; this.root.querySelector('.tr-top')!.innerHTML = top; }
     // The hand history: the last few lines over the table's foot, or all of it opened up.
     const lines = this.history ? s.log : s.log.slice(-3);
     const log = lines.map((l) => `<div>${esc(l)}</div>`).join('');
@@ -181,7 +190,7 @@ export class TableRoom {
 
   /** The buttons you can move between (the side's), the main move picked first. */
   private choices(): HTMLButtonElement[] {
-    return [...this.root.querySelectorAll<HTMLButtonElement>('.tr-side [data-a]:not([disabled])')];
+    return [...this.root.querySelectorAll<HTMLButtonElement>('.tr-side [data-a]:not([disabled]), .tr-top [data-a]:not([disabled])')];
   }
 
   private mark(): void {
@@ -191,7 +200,7 @@ export class TableRoom {
     const main = list.find((b) => b.dataset.k === 'primary')?.dataset.k;
     if (this.auto) this.focus = main ?? '';
     else if (!list.some((b) => b.dataset.k === this.focus)) this.focus = main ?? list[0]?.dataset.k ?? '';
-    for (const b of this.root.querySelectorAll<HTMLElement>('.tr-side [data-a]')) b.classList.toggle('kf', b.dataset.k === this.focus);
+    for (const b of this.root.querySelectorAll<HTMLElement>('.tr-side [data-a], .tr-top [data-a]')) b.classList.toggle('kf', b.dataset.k === this.focus);
   }
 
   private onKey(e: KeyboardEvent): void {

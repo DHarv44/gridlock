@@ -18,8 +18,9 @@ export type { TableSend };
 export interface TBtn { text: string; sub?: string; price?: string; on?: boolean; off?: boolean; act: () => void; key?: string; tone?: 'fold' | 'call' | 'raise' | 'go' }
 /** A slider (a bet size, a buy-in): `label` shows the value beside it; `set` takes the new one. */
 export interface TSlider { min: number; max: number; step: number; value: number; label: (v: number) => string; set: (v: number) => void }
-/** A set of buttons under a heading; `chips`: small ones in a row (bet sizes, ranks, cards). */
-export interface TGroup { name: string; btns: TBtn[]; chips?: boolean; slider?: TSlider }
+/** A set of buttons under a heading; `chips`: small ones in a row (bet sizes, ranks, cards);
+ *  `size`: the bet sizing (presets, a slider), drawn beside the action buttons. */
+export interface TGroup { name: string; btns: TBtn[]; chips?: boolean; slider?: TSlider; size?: boolean }
 export interface TableScreen {
   title: string; sub: string; money: string; felt: string; groups: TGroup[];
   /** The main move (one big button), or the action bar (several side by side). */
@@ -84,7 +85,7 @@ export function joinScreen(spot: TableSpot, you: YouState, met: (key: string) =>
     const want = tableUi.buyIn;
     return {
       ...base,
-      groups: [{ name: `Buy-in · ${$(lo)} to ${$(hi)}`, btns: [], slider: { min: lo, max: Math.max(lo, top), step: Math.max(1, Math.round(lo / 10)), value: want, label: (v) => $(v), set: (v) => { tableUi.buyIn = v; } } }],
+      groups: [{ name: `Buy-in · ${$(lo)} to ${$(hi)}`, btns: [], size: true, slider: { min: lo, max: Math.max(lo, top), step: Math.max(1, Math.round(lo / 10)), value: want, label: (v) => $(v), set: (v) => { tableUi.buyIn = v; } } }],
       primary: { text: 'Sit down', price: $(want), off: can < want, act: () => send({ op: 'sit', table: spot.id, n: tableUi.buyIn }), key: 'Enter' },
     };
   }

@@ -72,11 +72,12 @@ export function pokerScreen(i: ScreenIn): TableScreen {
       const cur = me.bet + p.toCall;
       const sized = (f: number) => Math.max(p.minTo, Math.min(p.maxTo, Math.round(cur + f * (p.pot + p.toCall))));
       const presets: [string, number][] = [['Min', p.minTo], ['½ pot', sized(0.5)], ['¾ pot', sized(0.75)], ['Pot', sized(1)], ['All in', p.maxTo]];
+      // Presets over the slider, beside the action buttons (as online tables lay it out).
       groups.push({
-        name: p.toCall ? 'Raise to' : 'Bet', btns: [], chips: true,
+        name: p.toCall ? 'Raise to' : 'Bet', size: true, chips: true,
+        btns: presets.filter(([, x], k) => presets.findIndex(([, y]) => y === x) === k).map(([t, x]) => ({ text: t, on: tableUi.raiseTo === x, act: () => { tableUi.raiseTo = x; } })),
         slider: { min: p.minTo, max: p.maxTo, step: Math.max(1, p.big), value: tableUi.raiseTo, label: (x) => $(x), set: (x) => { tableUi.raiseTo = Math.round(x); } },
       });
-      groups.push({ name: 'Size', chips: true, btns: presets.filter(([, x], k) => presets.findIndex(([, y]) => y === x) === k).map(([t, x]) => ({ text: t, on: tableUi.raiseTo === x, act: () => { tableUi.raiseTo = x; } })) });
     }
     const allIn = p.toCall >= v.chips;
     bar = [
