@@ -8,6 +8,7 @@ import { installTerrain } from '../../shared/world/terrain';
 import { RailwayView } from '../render/railway';
 import { joinScreen, tableScreen, type TableSend } from '../hud/cardTable';
 import { TableRoom } from '../hud/tableRoom';
+import { autoAct } from '../hud/pokerTable';
 import { knownVenues } from '../hud/cardMarks';
 import { type CardVenue, cardVenues } from '../../shared/world/tables';
 import { Radio } from '../audio/radio';
@@ -260,7 +261,7 @@ export class Game {
       case 'menu':
         if (this.garage.isOpen) { this.garage.leave(); return; }
         if (this.shop.isOpen) { this.shop.leave(); return; }
-        if (this.tables.isOpen) { this.tables.leave(); return; }
+        if (this.tables.isOpen) { this.tables.back(); return; }
         if (this.phone.isOpen) { this.phone.close(); return; }
         if (this.bigMap.isOpen) { this.bigMap.close(); return; }
         if (this.pane.isOpen) this.pane.close();
@@ -307,6 +308,8 @@ export class Game {
         this.tableView = m.v;
         if (m.v) this.tableSeated = true;
         else if (this.tableSeated && this.tables.isOpen) this.tables.leave(false); // thrown out, or shot
+        // Poker: what you ticked to do when it came round to you (hud/pokerTable.ts).
+        if (m.v) autoAct(m.v, (msg) => this.conn.send({ t: 'table', ...msg }));
         this.tables.refresh();
         break;
       case 'friends':

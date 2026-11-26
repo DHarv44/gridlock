@@ -9,9 +9,10 @@ import type { Rng } from '../rng';
 export type CrapsKind = 'pass' | 'dont' | 'come' | 'dontcome' | 'place' | 'hard' | 'field' | 'any7' | 'anycraps' | 'yo' | 'aces' | 'twelve' | 'acedeuce';
 /** `n`: the number a line or come bet is on (unset till it has one), or the place / hardway number. */
 export interface CrapsBet { kind: CrapsKind; n?: number; amount: number; odds: number }
-export interface Craps { point: number; bets: CrapsBet[]; last: [number, number] | null; said: string }
+/** `history`: the last rolls' totals, newest first. */
+export interface Craps { point: number; bets: CrapsBet[]; last: [number, number] | null; said: string; history: number[] }
 
-export const newCraps = (): Craps => ({ point: 0, bets: [], last: null, said: 'Coming out. Bets on the pass line.' });
+export const newCraps = (): Craps => ({ point: 0, bets: [], last: null, said: 'Coming out. Bets on the pass line.', history: [] });
 
 const POINTS = [4, 5, 6, 8, 9, 10];
 /** One-roll bets: what they win on and what they pay (to 1). */
@@ -78,6 +79,7 @@ export function crapsRoll(g: Craps, rng: Rng): { back: number; won: number; lost
 export function crapsSettle(g: Craps, a: number, b: number): { back: number; won: number; lost: number } {
   const s = a + b, hard = a === b, comeOut = !g.point;
   g.last = [a, b];
+  g.history = [s, ...(g.history ?? [])].slice(0, 16);
   let back = 0, won = 0, lost = 0;
   const keep: CrapsBet[] = [];
   const winBet = (bet: CrapsBet, winnings: number, stays = false) => { won += winnings; back += winnings + (stays ? 0 : bet.amount); if (stays) keep.push(bet); };

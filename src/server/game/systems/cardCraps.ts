@@ -61,5 +61,5 @@ export function crapsOp(g: Craps, m: { op: string; n?: number; m?: number; s?: s
 }
 
 export const crapsView = (g: Craps): NonNullable<TableView['craps']> => ({
-  point: g.point, last: g.last, said: g.said, bets: g.bets.map((b) => [b.kind, b.n ?? 0, b.amount, b.odds]),
+  point: g.point, last: g.last, said: g.said, bets: g.bets.map((b) => [b.kind, b.n ?? 0, b.amount, b.odds]), history: g.history,
 });

@@ -3,7 +3,7 @@
 // hardways and one-roll bets), every part clickable to bet your chip, your chips on their spots;
 // and the side's buttons for the same bets, odds and taking bets down. Games: shared/games/craps.ts.
 import type { TableView, YouState } from '../../shared/protocol';
-import type { TBtn, TGroup } from './cardTable';
+import { cashLine, chipGroup, chipOf, type ScreenIn, type TableScreen, type TBtn, type TGroup } from './cardTable';
 import { type Act, esc, money as $, type TableSend } from './tableFelt';
 
 type View = NonNullable<TableView['craps']>;
@@ -19,7 +19,7 @@ const chipsOf = (bets: Bet[], f: (b: Bet) => boolean) => bets.filter(f);
 const stack = (bs: Bet[], tag = '') => bs.map(([, , amt, odds]) => `<span class="cchip">${tag}${$(amt)}${odds ? `<em>+${$(odds)}</em>` : ''}</span>`).join('');
 const die = (n: number) => `<span class="tdie">${Array.from({ length: 9 }, (_, i) => `<i class="${PIPS[n - 1].includes(i) ? 'on' : ''}"></i>`).join('')}</span>`;
 
-export function crapsFelt(c: View, a: Act, bet: number, send: TableSend): string {
+function crapsFelt(c: View, a: Act, bet: number, send: TableSend): string {
   const b = c.bets;
   const put = (s: string, m?: number) => a(() => send({ op: 'bet', n: bet, s, ...(m !== undefined ? { m } : {}) }));
   const line = (kind: 'pass' | 'dont') => (c.point ? a(() => { const t = b.find(([k, n]) => k === kind && n); if (t) send({ op: 'odds', s: kind, n: bet * (kind === 'dont' ? 2 : 1), m: t[1] }); }) : put(kind));
@@ -30,7 +30,8 @@ export function crapsFelt(c: View, a: Act, bet: number, send: TableSend): string
   const props = PROPS.map(([k, label, pays]) => `<button class="cprop${k === 'any7' || k === 'anycraps' ? ' wide' : ''}" ${put(k)}><span>${label}</span><em>${pays}</em>${stack(chipsOf(b, ([kk]) => kk === k))}</button>`).join('');
   const roll = c.last ? `${die(c.last[0])}${die(c.last[1])}` : '';
   return `<div class="felt crapsfelt">
-    <div class="ctop"><div class="cdice">${roll}</div><div class="tsaid">${esc(c.said)}</div>${c.point ? '' : '<i class="cpuck">OFF</i>'}</div>
+    <div class="ctop"><div class="cdice">${roll}</div><div class="tsaid">${esc(c.said)}</div>
+      <div class="dhist">${c.history.slice(1, 12).map((s) => `<span class="dh${s === 7 ? ' seven' : ''}">${s}</span>`).join('')}</div>${c.point ? '' : '<i class="cpuck">OFF</i>'}</div>
     <div class="clayout"><div class="cmain">
       <div class="cnums"><button class="cdc" ${put('dontcome')}>DON'T<br>COME<br>BAR ⚅⚅${stack(chipsOf(b, ([k, n]) => k === 'dontcome' && !n))}</button>${numbers}</div>
       <button class="cband come" ${put('come')}>COME${stack(chipsOf(b, ([k, n]) => k === 'come' && !n))}</button>
@@ -41,7 +42,16 @@ export function crapsFelt(c: View, a: Act, bet: number, send: TableSend): string
     <div class="felt-note">Click the layout to bet ${$(bet)}${c.point ? ' · the line takes odds' : ''}</div></div>`;
 }
 
-export function crapsGroups(c: View, you: YouState, bet: number, send: TableSend): { groups: TGroup[]; primary: TBtn } {
+export function crapsScreen(i: ScreenIn): TableScreen {
+  const { v, you, send, a } = i;
+  const c = v.craps!;
+  const [lo, hi] = v.stakes;
+  const bet = chipOf(lo, hi);
+  const g = crapsGroups(c, you, bet, send);
+  return { title: i.title, sub: i.sub, money: cashLine(you), cash: you.cash, log: v.log, felt: crapsFelt(c, a, bet, send), groups: [chipGroup(lo, hi), ...g.groups], primary: g.primary };
+}
+
+function crapsGroups(c: View, you: YouState, bet: number, send: TableSend): { groups: TGroup[]; primary: TBtn } {
   const can = you.cash + you.bank;
   const b = c.bets;
   const on = (s: string, text: string, sub?: string, m?: number): TBtn => ({ text, ...(sub ? { sub } : {}), off: can < bet, act: () => send({ op: 'bet', n: bet, s, ...(m !== undefined ? { m } : {}) }) });
@@ -67,5 +77,5 @@ export function crapsGroups(c: View, you: YouState, bet: number, send: TableSend
   ];
   if (down.length) groups.push({ name: 'Take down', btns: down });
   const onTable = b.reduce((s, [, , amt, o]) => s + amt + o, 0);
-  return { groups, primary: { text: 'Roll the dice', ...(onTable ? { price: `${$(onTable)} down` } : {}), off: !b.length, act: () => send({ op: 'roll' }) } };
+  return { groups, primary: { text: 'Roll the dice', ...(onTable ? { price: `${$(onTable)} down` } : {}), off: !b.length, act: () => send({ op: 'roll' }), key: 'Space', tone: 'go' } };
 }

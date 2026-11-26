@@ -4,7 +4,7 @@ import type { CharacterProgress, CharacterSave, CharLook } from './packs/charact
 export const TICK_HZ = 30;
 export const SNAP_EVERY = 2;             // snapshots at 15 Hz
 export const INTERP_DELAY_MS = 120;
-export const PROTOCOL_VERSION = 24;
+export const PROTOCOL_VERSION = 25;
 /** Every Nth snapshot carries every entity in full (others list unchanged ones in `k`). */
 export const FULL_SNAP_EVERY = 30;
 
@@ -42,8 +42,9 @@ export type C2S =
   | { t: 'waypoint'; at: [number, number] | null } // your map waypoint (shared with whoever rides with you)
   /** At a card or casino table (world/tables.ts, server systems/cardTables.ts): `sit` (table id,
    *  n: your buy-in at poker), `leave`, or a play: `op` the move, `n`/`m` amounts or choices, `k`
-   *  card indexes, `s` a name (a bet, a cheat). */
-  | { t: 'table'; op: string; table?: number; n?: number; m?: number; k?: number[]; s?: string }
+   *  card indexes, `s` a name (a bet, a cheat); `bets`: several at once (roulette: [kind, number,
+   *  amount] each, all on one spin). */
+  | { t: 'table'; op: string; table?: number; n?: number; m?: number; k?: number[]; s?: string; bets?: [string, number, number][] }
   | { t: 'ping'; ts: number };
 
 /** How a spoken exchange reaches you: down a payphone's line, a cell's, or face to face. */
@@ -182,17 +183,30 @@ export interface TableView {
   poker?: {
     street: string; board: number[]; pot: number; toCall: number; minTo: number; maxTo: number; yourTurn: boolean;
     you: number; dealer: number; acting: number;
-    seats: { name: string; stack: number; bet: number; folded: boolean; allIn: boolean; out: boolean; cards: number[]; drew?: number }[];
+    /** `last`: what each last did ("Raise to 400", "Fold", "SB"). */
+    seats: { name: string; stack: number; bet: number; folded: boolean; allIn: boolean; out: boolean; cards: number[]; drew?: number; last?: string }[];
     /** Between hands: you can rebuy (you're out of chips) or the next deal is coming. */
     between: boolean;
+    /** The main pot, then side pots; the big blind (or the smallest bet); the last showdown. */
+    pots: number[];
+    big: number;
+    result: { seat: number; won: number; hand: string }[] | null;
+    /** The one to act thinking it over (or the next deal coming): [seconds left, of]. */
+    clock: [number, number] | null;
+    /** Between hands: how far you may top up your chips to (the table's biggest buy-in). */
+    topTo: number;
   };
   bj?: { hands: { cards: number[]; bet: number; total: number }[]; active: number; dealer: number[]; dealerTotal: number; phase: string; outcome: string[] };
-  roulette?: { last: number; history: number[] };
-  dice?: { variant: string; point: number; main: number; bet: number; side: string; last: [number, number] | null; said: string };
-  /** Craps (shared/games/craps.ts): the point (0 off), your bets [kind, number, amount, odds]. */
-  craps?: { point: number; bets: [string, number, number, number][]; last: [number, number] | null; said: string };
+  /** Roulette: the last number, the ones before it, and the last spin's bets [kind, number,
+   *  amount, back] (back: what each paid, stake included; 0 lost). */
+  roulette?: { last: number; history: number[]; bets: [string, number, number, number][] };
+  dice?: { variant: string; point: number; main: number; bet: number; side: string; last: [number, number] | null; said: string; history: number[] };
+  /** Craps (shared/games/craps.ts): the point (0 off), your bets [kind, number, amount, odds],
+   *  the last rolls (newest first). */
+  craps?: { point: number; bets: [string, number, number, number][]; last: [number, number] | null; said: string; history: number[] };
   slots?: { reels: number[] | null; won: number };
-  faro?: { turn: [number, number] | null; bets: [number, number][]; left: number; said: string };
+  /** Faro: `dealt` per rank (deuce .. ace), what the casekeeper's counted out of the box. */
+  faro?: { turn: [number, number] | null; bets: [number, number][]; left: number; said: string; dealt: number[] };
   /** Cheating (RULES.cardCheats), when you could right now: which moves, and the cards you've
    *  peeked at (seat index → cards). */
   cheats?: string[];
