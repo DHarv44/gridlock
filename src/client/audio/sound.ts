@@ -39,6 +39,9 @@ const VOICES: Record<string, { file: string; gain: number; vary?: number; gap?: 
   phone_ring: { file: 'phone_ring', gain: 0.4 },
 };
 const SIREN_GAIN = 0.3;
+/** Tyres squealing in a slide: one loop that follows the hardest slide nearby (silent until the
+ *  CC0 recording `skid` is fetched and prepared, ASSETS.md). */
+const SKID_GAIN = 0.32;
 /** Most sounds playing at once; past this, new ones are dropped. */
 const MAX_VOICES = 28;
 
@@ -104,7 +107,7 @@ export class Sound {
       this.master.gain.value = this.muted ? 0 : this.volume * 0.6;
       const comp = ctx.createDynamicsCompressor();
       this.master.connect(comp).connect(ctx.destination);
-      const names = new Set([...Object.values(VOICES).map((v) => v.file), 'siren', ...Object.keys(ENGINES)]);
+      const names = new Set([...Object.values(VOICES).map((v) => v.file), 'siren', 'skid', ...Object.keys(ENGINES)]);
       for (const name of names) {
         const url = urlOf(name);
         if (!url) continue;
@@ -202,6 +205,35 @@ export class Sound {
       const d = Math.hypot(t.x - this.listenerX, t.y - this.listenerY);
       const near = Math.max(0, 1 - d / TRAFFIC.range);
       v.set(t.speed, t.throttle, TRAFFIC.gain * near * near);
+    }
+  }
+
+  private skidSrc: AudioBufferSourceNode | null = null;
+  private skidGain: GainNode | null = null;
+
+  /** Call every frame with the hardest slide nearby (k 0..1, render/skids.ts): one looping squeal,
+   *  louder and a little higher the harder it slides, fading out as the tyres grip again. */
+  tyres(k: number, x: number, y: number): void {
+    const ctx = this.ctx;
+    const buf = this.buffers.get('skid');
+    if (!ctx || !this.master || !buf) return;
+    const want = k > 0 && !this.muted ? SKID_GAIN * (0.4 + 0.6 * k) * this.falloff(x, y) : 0;
+    if (want > 0 && !this.skidSrc) {
+      this.skidSrc = ctx.createBufferSource();
+      this.skidSrc.buffer = buf;
+      this.skidSrc.loop = true;
+      this.skidGain = ctx.createGain();
+      this.skidGain.gain.value = 0;
+      this.skidSrc.connect(this.skidGain).connect(this.master);
+      this.skidSrc.start(ctx.currentTime, Math.random() * buf.duration);
+    }
+    if (!this.skidSrc || !this.skidGain) return;
+    this.skidSrc.playbackRate.setTargetAtTime(0.92 + 0.16 * k, ctx.currentTime, 0.08);
+    this.skidGain.gain.setTargetAtTime(want, ctx.currentTime, want > 0 ? 0.04 : 0.12);
+    if (want === 0 && this.skidGain.gain.value < 0.003) {
+      this.skidSrc.stop();
+      this.skidSrc.disconnect(); this.skidGain.disconnect();
+      this.skidSrc = null; this.skidGain = null;
     }
   }
 

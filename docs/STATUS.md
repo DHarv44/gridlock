@@ -93,9 +93,14 @@
 - Driving modes (2026-11-26): classic (unchanged: gas, brake, steer) or, for keyboard and mouse
   only, point to drive (client/game/pointDrive.ts, cars and tanks; helicopters and the controller
   always drive classic): W/A/S/D (8-way) point where to go and the car steers there; pointing
-  behind brakes and swings round, never backing up by itself; reverse is Aim held (right mouse),
-  pointing where the back goes, and the mouse drive-by falls back to auto-aim. Pause menu or V to
-  switch; saved in the browser.
+  behind turns round as tight as the speed allows (brake straight, then a handbrake turn), never
+  backing up by itself. Reverse is its own button (right mouse by default, sharing Aim's, when the
+  drive-by falls back to auto-aim; rebind it and right mouse aims again): held, it backs up
+  pointing where the back goes, or, moving and pointing back the way you came, it's an e-brake
+  spin that whips round and drives off. Pause menu or V to switch; saved in the browser.
+  Tyre marks and smoke (render/skids.ts) come from tyre load (turn rate x speed, hard braking),
+  since the physics has no sideways slide; a looping tyre squeal follows the hardest slide
+  (audio/sound.ts `tyres`, silent until the `skid` recording is added).
   `npx tsx scripts/drive.ts`. Also: twin-stick aiming in vehicles (right stick: drive-by, heli
   guns, turret) and a shared car radio (protocol 16).
 - Company (2026-11-23): waypoints go to the server and show, in each player's colour, to everyone in

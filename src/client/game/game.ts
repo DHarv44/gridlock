@@ -208,7 +208,7 @@ export class Game {
       }
       case 'driveMode': {
         const m = this.input.toggleDriveMode();
-        this.hud.notify(m === 'point' ? 'Driving: point to drive (hold Aim to reverse)' : 'Driving: classic', 'info');
+        this.hud.notify(m === 'point' ? 'Driving: point to drive' : 'Driving: classic', 'info');
         break;
       }
       case 'scoreOn': this.hud.showScore(true, this.players, this.code); break;
@@ -335,6 +335,8 @@ export class Game {
     this.interiors.putGlows(this.fx.glow, night);
     this.view.carTags = this.carTags();
     this.view.sync(this.store, dt, own, this.tags(), night, vr);
+    const sq = this.view.skids.squeal;
+    this.sound.tyres(sq.k, sq.x, sq.y);
     this.fx.update(dt);
     this.water.update(dt);
     this.jobs.update(dt, this.you, disp, this.fx.glow, night, this.store.serverNow(), this.players.find((p) => p.id === this.myId), this.sound);

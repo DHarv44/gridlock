@@ -9,6 +9,7 @@ import type { Effects } from './effects';
 import { animatePed, HIP_H, makePed, type PedView, ridePed, setPedWeapon } from './pedMesh';
 import { lampMaterial, makeVehicle, showDamage, sirenMats, type VehicleView } from './vehicleMesh';
 import { decodeDamage } from './vehicleDamage';
+import { Skids } from './skids';
 
 export interface OwnState { pid: number; vid: number; x: number; y: number; angle: number; alt: number; driving: boolean; vx: number; vy: number; trailer?: number }
 export interface PlayerTag { name: string; color: string; look?: CharLook }
@@ -81,12 +82,16 @@ export class WorldView {
     this.carLabels.delete(id);
   }
 
+  /** Tyre marks and smoke; `skids.squeal` is the hardest slide this frame, for the tyre sound. */
+  readonly skids = new Skids();
+
   constructor(private scene: THREE.Scene, private fx: Effects, private lamps: { x: number; y: number }[]) {}
 
   sync(store: EntityStore, dt: number, own: OwnState | null, tags: Map<number, PlayerTag>, night: number, view: { x0: number; y0: number; x1: number; y1: number }): void {
     this.time += dt;
     this.store = store;
     this.myF = own ? floorOf(own.x) : 0;
+    this.skids.begin();
     const seen = new Set<number>();
     // Vehicles first, so riders (peds sent with a vehicle and a seat) find the bike they sit on.
     for (const e of store.all.values()) if (e.kind === EK.Veh) { seen.add(e.id); this.vehicle(e, dt, own, night); }
@@ -252,17 +257,8 @@ export class WorldView {
     }
     if (flags & VF.burning) { this.fx.fire(x, y, spec.width); if (night > 0.1) this.fx.glow.put(x, y, 0.1, 10, 1, 0, 1, 0.5, 0.15, 0.35 * night); }
     if (wreck && Math.random() < dt * 3) this.fx.smoke(x, y, 1.5, 1);
-    // Tyre marks when sliding.
-    if (spec.movement === 'wheels' && alt < 0.2) {
-      const vx = mine ? own!.vx : e.vx, vy = mine ? own!.vy : e.vy;
-      const lat = Math.abs(-vx * s + vy * c);
-      if (lat > 4.5 && Math.random() < dt * 30) {
-        const bx = x - c * spec.length * 0.33, by = y - s * spec.length * 0.33;
-        const ox = -s * (spec.width / 2 - 0.25), oy = c * (spec.width / 2 - 0.25);
-        this.fx.skid(bx + ox, by + oy, a);
-        this.fx.skid(bx - ox, by - oy, a);
-      }
-    }
+    // Tyre marks and smoke when sliding.
+    this.skids.update(this.fx, e.id, spec, x, y, a, mine ? own!.vx : e.vx, mine ? own!.vy : e.vy, alt, dt);
   }
 
   private projectile(e: ViewEntity): void {

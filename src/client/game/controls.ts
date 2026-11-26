@@ -5,7 +5,7 @@
 
 export type Action =
   | 'footUp' | 'footDown' | 'footLeft' | 'footRight' | 'jump' | 'sprint'
-  | 'gas' | 'brake' | 'steerLeft' | 'steerRight' | 'handbrake' | 'horn'
+  | 'gas' | 'brake' | 'steerLeft' | 'steerRight' | 'handbrake' | 'horn' | 'reverse'
   | 'heliForward' | 'heliBack' | 'heliLeft' | 'heliRight' | 'climb' | 'descend'
   | 'turretLeft' | 'turretRight'
   | 'fire' | 'aim' | 'prevWeapon' | 'nextWeapon'
@@ -34,6 +34,7 @@ export const ACTIONS: ActionDef[] = [
   A('handbrake', 'Handbrake', 'held', 'car', 'Car', ['Space']),
   A('horn', 'Horn / siren', 'edge', 'car', 'Car', ['KeyH']),
   A('driveMode', 'Driving mode: classic / point to drive', 'ui', 'car', 'Car', ['KeyV']),
+  A('reverse', 'Reverse / e-brake spin (point to drive)', 'held', 'car', 'Car', ['Mouse2']),
   A('heliForward', 'Fly forward', 'held', 'air', 'Helicopter', ['KeyW', 'ArrowUp']),
   A('heliBack', 'Fly back', 'held', 'air', 'Helicopter', ['KeyS', 'ArrowDown']),
   A('heliLeft', 'Turn left', 'held', 'air', 'Helicopter', ['KeyA', 'ArrowLeft']),
@@ -56,6 +57,12 @@ export const ACTIONS: ActionDef[] = [
 
 /** The order groups are shown in (keyboard and controller tabs). */
 export const CONTROL_GROUPS = ['On foot', 'Car', 'Helicopter', 'Tank', 'Weapons', 'General'];
+
+/** Actions that may share a key even though they apply at once: Reverse sits on Aim's button by
+ *  default (point to drive then uses it to reverse, and the drive-by auto-aims); give Reverse its
+ *  own key and the button aims again. */
+const SHARED = [['reverse', 'aim']];
+const mayShare = (a: Action, b: Action) => SHARED.some(([x, y]) => (a === x && b === y) || (a === y && b === x));
 
 /** Do two contexts ever apply at once? (A tank is driven with the car controls.) */
 export function overlaps(a: Context, b: Context): boolean {
@@ -116,7 +123,7 @@ export class Bindings {
     if (code) {
       const ctx = ACTIONS.find((d) => d.id === a)!.context;
       for (const def of ACTIONS) {
-        if (def.id === a || !overlaps(def.context, ctx)) continue;
+        if (def.id === a || !overlaps(def.context, ctx) || mayShare(def.id, a)) continue;
         this.map.set(def.id, this.slots(def.id).map((k) => (k === code ? '' : k)));
       }
     }

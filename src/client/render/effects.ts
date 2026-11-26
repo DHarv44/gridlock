@@ -16,7 +16,7 @@ export class Effects {
   private flashes: { light: THREE.PointLight; t: number; max: number; i: number }[] = [];
 
   constructor(scene: THREE.Scene, private lights: THREE.PointLight[]) {
-    this.decals = new ParticleLayer(scene, 600, false, 1);
+    this.decals = new ParticleLayer(scene, 2400, false, 1);
     this.glow = new ParticleLayer(scene, 900, true, 2);
     this.beams = new ParticleLayer(scene, 500, true, 2, beamTexture());
     this.alpha = new ParticleLayer(scene, 900, false, 3);
@@ -112,8 +112,21 @@ export class Effects {
     if (Math.random() < 0.2) this.smoke(x, y, 2.5, 1);
   }
 
-  skid(x: number, y: number, angle: number): void {
-    this.decals.spawn({ x, y, z: 0.025, size: 0.28, stretch: 2.4, rot: angle, max: 14, r: 0.05, g: 0.05, b: 0.05, a: 0.5 });
+  /** A stretch of tyre mark on the road from one wheel position to the next: laid end to end they
+   *  make an unbroken black streak that fades after a while. `k` (0..1) is how hard it slid. */
+  skid(x0: number, y0: number, x1: number, y1: number, k: number): void {
+    const len = Math.hypot(x1 - x0, y1 - y0);
+    if (len < 0.02) return;
+    const w = 0.3;
+    this.decals.spawn({ x: (x0 + x1) / 2, y: (y0 + y1) / 2, z: 0.025, size: w, stretch: (len + w * 0.6) / w, rot: Math.atan2(y1 - y0, x1 - x0),
+      max: 22, r: 0.04, g: 0.04, b: 0.04, a: 0.35 + 0.3 * k });
+  }
+
+  /** Pale tyre smoke billowing off a sliding wheel; `k` (0..1) is how hard it slid. */
+  tyreSmoke(x: number, y: number, k: number): void {
+    const c = rnd(0.78, 0.88);
+    this.alpha.spawn({ x: x + rnd(-0.3, 0.3), y: y + rnd(-0.3, 0.3), z: 0.35, vx: rnd(-0.8, 0.8), vy: rnd(-0.8, 0.8), vz: rnd(0.4, 1.1),
+      size: rnd(0.6, 1.0), grow: 2.6, max: rnd(0.9, 1.6), r: c, g: c, b: c, a: 0.18 + 0.22 * k, drag: 1.4 });
   }
 
   muzzle(x: number, y: number): void {

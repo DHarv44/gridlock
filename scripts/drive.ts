@@ -10,6 +10,8 @@ import { VEHICLES, vehicleIndex } from '../src/shared/packs';
 import { Mode, type YouState } from '../src/shared/protocol';
 import { type Body, type Controls, stepVehicle } from '../src/shared/sim/physics';
 import type { StaticWorld } from '../src/shared/world/collision';
+import type { Effects } from '../src/client/render/effects';
+import { Skids } from '../src/client/render/skids';
 
 let failures = 0;
 const check = (ok: boolean, what: string) => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${what}`); if (!ok) failures++; };
@@ -25,6 +27,7 @@ function fake(keys: string[], mode: DriveMode, pad: Partial<Input['pad']> = {}):
     axis: (neg: string, pos: string) => (keys.includes(pos) ? 1 : 0) - (keys.includes(neg) ? 1 : 0),
     mouseAim: () => null,
     driveMode: () => mode,
+    bindings: { keys: (a: string) => (a === 'aim' || a === 'reverse' ? ['Mouse2'] : []) },
   } as unknown as Input;
 }
 
@@ -53,8 +56,8 @@ o = out(fake(['brake', 'steerLeft'], 'classic'));
 check(o.throttle === -1 && o.steer === -1, 'classic: S brakes / reverses, A steers left');
 o = out(fake([], 'classic', { rt: 0.6, lt: 0.2, lx: -0.4 }));
 check(Math.abs(o.throttle - 0.4) < 1e-9 && Math.abs(o.steer + 0.4) < 1e-9, 'classic: pad RT - LT, left stick steers');
-o = out(fake(['aim', 'gas'], 'classic'));
-check(o.throttle === 1, 'classic: Aim held changes nothing about driving');
+o = out(fake(['aim', 'reverse', 'gas'], 'classic'));
+check(o.throttle === 1 && !o.handbrake, 'classic: right mouse (Aim / Reverse) changes nothing about driving');
 
 // Point to drive: pointing east from facing north, the car turns east and drives that way.
 let b = drive(at(NORTH), fake(['steerRight'], 'point'), 4);
@@ -87,12 +90,56 @@ for (const id of ['compact', 'sedan', 'sports', 'humvee_gun', 'bus', 'ambulance'
   check(fits && r.t < 3, `point: ${id} turns round from ${(spec.maxSpeed * 0.8).toFixed(0)} m/s in ${r.t.toFixed(1)} s, ${r.wide.toFixed(1)} m wide (${r.over.toFixed(1)} m braking past the turn)`);
 }
 car = sedan; spec = VEHICLES[car];
-// Reverse, Aim held: pointing south while facing north backs straight down the screen.
-b = drive(at(NORTH), fake(['aim', 'brake'], 'point'), 3);
-check(b.y > 3 && Math.abs(angleDiff(b.angle, NORTH)) < 10 * DEG, 'point: Aim + S backs straight down, still facing north');
+// Reverse held from a standstill: pointing south while facing north backs straight down the screen.
+b = drive(at(NORTH), fake(['reverse', 'brake'], 'point'), 3);
+check(b.y > 3 && Math.abs(angleDiff(b.angle, NORTH)) < 10 * DEG, 'point: Reverse + S backs straight down, still facing north');
 // Reverse and point east: the back of the car swings round to the east.
-b = drive(at(NORTH), fake(['aim', 'steerRight'], 'point'), 5);
-check(Math.abs(angleDiff(b.angle + Math.PI, EAST)) < 15 * DEG, `point: Aim + D backs round until the rear points east (heading ${(b.angle / DEG).toFixed(0)}°)`);
+b = drive(at(NORTH), fake(['reverse', 'steerRight'], 'point'), 5);
+check(Math.abs(angleDiff(b.angle + Math.PI, EAST)) < 15 * DEG, `point: Reverse + D backs round until the rear points east (heading ${(b.angle / DEG).toFixed(0)}°)`);
+// E-brake spin: Reverse + the way you came, at speed: whips round on the handbrake and drives off,
+// leaving tyre marks and smoke (render/skids.ts, counted with a stand-in for the effects).
+let marks = 0, smoke = 0;
+const fx = { skid: () => { marks++; }, tyreSmoke: () => { smoke++; } } as unknown as Effects;
+for (const speed of [10, 20, 30]) {
+  const sb = at(NORTH, speed), ss = new Steering(), sk = new Skids();
+  let t = 0, wide = 0, hand = 0, back = false;
+  marks = 0; smoke = 0;
+  while (t < 4 && !(Math.abs(angleDiff(sb.angle, SOUTH)) < 15 * DEG && sb.vy > 3)) {
+    const you = { mode: Mode.Driver, vt: car, body: [sb.x, sb.y, sb.angle, sb.vx, sb.vy, sb.av, 0, sb.angle] } as unknown as YouState;
+    const so = ss.step(fake(['reverse', 'brake'], 'point'), you, sb.angle, DT, sb, () => null);
+    if (so.handbrake) hand++;
+    // After the spin it should drive on forwards, not back up.
+    if (Math.abs(angleDiff(sb.angle, SOUTH)) < 25 * DEG && so.throttle < 0) back = true;
+    const c = ctl(); c.throttle = so.throttle; c.steer = so.steer; c.handbrake = !!so.handbrake;
+    stepVehicle(sb, spec, c, DT, open, true);
+    sk.update(fx, 1, spec, sb.x, sb.y, sb.angle, sb.vx, sb.vy, 0, DT);
+    t += DT; wide = Math.max(wide, Math.abs(sb.x));
+  }
+  check(t < 4 && hand > 0 && !back, `point: e-brake spin from ${speed} m/s, round in ${t.toFixed(1)} s, ${wide.toFixed(1)} m wide, then drives on`);
+  check(marks > 6 && (speed < 15 || smoke > 0), `  it leaves tyre marks (${marks} stretches) ${speed < 15 ? '' : `and smoke (${smoke} puffs)`}`);
+}
+// Driving straight leaves no marks.
+{
+  const sb = at(NORTH, 20), sk = new Skids();
+  marks = 0;
+  for (let i = 0; i < 60; i++) { stepVehicle(sb, spec, ctl(), DT, open, true); sk.update(fx, 1, spec, sb.x, sb.y, sb.angle, sb.vx, sb.vy, 0, DT); }
+  check(marks === 0, 'straight driving leaves no tyre marks');
+  // A gentle bend at town speed, or an ordinary slow-down, doesn't either.
+  const gb = at(NORTH, 12), gk = new Skids(), gc = ctl();
+  gc.steer = 0.25;
+  marks = 0;
+  for (let i = 0; i < 60; i++) { gc.throttle = i < 40 ? 0.3 : -0.4; stepVehicle(gb, spec, gc, DT, open, true); gk.update(fx, 2, spec, gb.x, gb.y, gb.angle, gb.vx, gb.vy, 0, DT); }
+  check(marks === 0, 'a gentle bend or easy braking leaves no tyre marks');
+  // Slamming the brakes does.
+  const hb = at(NORTH, 25), hk = new Skids(), hc = ctl();
+  hc.throttle = -1;
+  marks = 0;
+  for (let i = 0; i < 30; i++) { stepVehicle(hb, spec, hc, DT, open, true); hk.update(fx, 3, spec, hb.x, hb.y, hb.angle, hb.vx, hb.vy, 0, DT); }
+  check(marks > 0, 'slamming the brakes leaves tyre marks');
+}
+// Slow, Reverse + the way you came just backs up (no spin).
+o = out(fake(['reverse', 'brake'], 'point'));
+check(o.throttle < 0 && !o.handbrake, 'point: from a standstill Reverse backs up, no spin');
 // Keyboard and mouse only: the controller's stick and triggers don't point or reverse.
 o = out(fake([], 'point', { lx: 1, lt: 1 }));
 check(o.throttle === 0 && o.steer === 0, 'point: the controller plays no part (keyboard and mouse only)');
