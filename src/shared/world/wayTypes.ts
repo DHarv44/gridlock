@@ -1,33 +1,42 @@
-// Raised and sunken ways (highways, and later railways): their shapes and sizes. A way runs along
-// one road line of the grid (an avenue), on its own strip off the map (world/levels.ts: strip
-// WAY0 + index), so it never touches the street below except through its ramps. Drawing lifts it
-// back over its avenue at the height its profile gives. Sizes in metres.
+// Highways (and an elevated railway): their shapes and sizes. A highway runs along its own corridor
+// on the ground, fenced in, and only climbs where it has to: over the main cross streets that pass
+// under it (the side streets end at its fence), the river and the other highway; rarely it's sunk
+// in a trench instead. It lives on its own strip off the map (world/levels.ts: strip WAY0 + index),
+// so it never touches the street except through its ramps, which run at ground level beside it
+// from the cross streets. Drawing puts it back over its corridor at the height its profile gives.
+// Sizes in metres.
 import { LANE_W } from './cityTypes';
 
 export { MAX_WAYS, WAY0 } from './levels';
 
-/** Deck surface height over the street (5 m clear under a 0.5 m deck). */
+/** Deck surface height where it bridges a street (5 m clear under a 0.5 m deck). */
 export const DECK_H = 5.5;
 /** Half the deck's width: two lanes each way, a median barrier and shoulders. */
 export const DECK_HALF = 2 * LANE_W + 1.3;
-/** A ramp lane, barriers included, alongside the deck (a 0.1 m gap from its edge). */
-export const RAMP_W = 4.6;
-/** Ramp lane centre, out from the avenue's centre line. */
+/** A ramp, barriers included, alongside the deck (a 0.1 m gap from its edge): a full lane with a
+ *  shoulder each side. */
+export const RAMP_W = 7.4;
+/** Ramp lane centre, out from the corridor's centre line. */
 export const RAMP_LAT = DECK_HALF + 0.1 + RAMP_W / 2;
-/** Curb to curb of an avenue a highway runs over: its lanes under the deck, the ramp lanes outside. */
+/** A highway's corridor, fence to fence: the deck, and the ramps outside it. */
 export const AVENUE_W = 2 * (DECK_HALF + 0.1 + RAMP_W);
-/** Ramp grade (rise per metre) and the length that takes it up to the deck. */
-export const GRADE = 0.075;
-export const RAMP_LEN = DECK_H / GRADE;
-/** Where along a ramp (from its foot) you pass between street and deck: past 3.8 m up, nothing on
- *  the street can reach you any more. */
-export const SWITCH_S = 3.8 / GRADE;
-/** How much of a ramp sits on the street (walled in): up to 4.6 m, after that it's overhead. */
-export const CLEAR_S = 4.6 / GRADE;
+/** How steeply the highway climbs to bridge a street, and the run that takes it up. */
+export const HUMP_GRADE = 0.06;
+export const HUMP = DECK_H / HUMP_GRADE;
+/** The deck stays up this far past a bridged street's kerbs. */
+export const HUMP_PAD = 2;
+/** A ramp's foot: this far from the cross street's kerb. */
+export const FOOT_GAP = 4;
+/** A ramp's lane from its foot to where it meets the deck's: past the bridge's climb, so it joins
+ *  (or leaves) the highway where that's on the ground too. */
+export const RAMP_LEN = HUMP + HUMP_PAD + 2;
+/** Where along a ramp (from its foot) you pass between street and highway, and how far it's
+ *  walled in on the street's side. */
+export const SWITCH_S = 10;
+export const CLEAR_S = 16;
 /** The lane beside the deck where a ramp merges in (or an exit peels off). */
 export const MERGE = 30;
-/** Steepest grade where the way itself dives into a trench or climbs over another way (a city cut:
- *  steep, the blocks are short). */
+/** Steepest grade where the way dives into its trench (a city cut: steep, the blocks are short). */
 export const MAIN_GRADE = 0.12;
 /** A trench's road surface below the street (4.3 m clear under the bridges' 0.5 m slabs). */
 export const TRENCH_D = 4.8;
@@ -63,8 +72,8 @@ export interface Way {
   /** Along-axis extent of its deck. */
   a0: number;
   a1: number;
-  /** Height along the axis: [along, z] points, piecewise linear (DECK_H where raised, -DECK_H in a
-   *  trench, higher where it climbs over another way). */
+  /** Height along the axis: [along, z] points, piecewise linear (0 on the ground, DECK_H over a
+   *  street it bridges, higher over another way, -TRENCH_D in a trench). */
   profile: [number, number][];
   /** Along-axis stretches in a trench or crossing ground level (the avenue isn't there). */
   sunk: [number, number][];

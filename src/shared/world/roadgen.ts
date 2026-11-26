@@ -177,8 +177,17 @@ export function genGraph(L: RoadLayout): { nodes: RoadNode[]; segs: Segment[]; b
   const open = (z: number) => z < 0 || isWild(z);
   const wildPair = (za: number, zb: number) => (isWild(za) || isWild(zb)) && open(za) && open(zb);
 
-  // A highway's corridor (world/waygen.ts) is a line with no street along it: the cross streets
-  // pass under the highway, and there's no avenue.
+  // A highway's corridor (world/waygen.ts) is a line with no street along it. The streets its plan
+  // lets through pass under it (or over its trench); the rest end at its fence.
+  const passes = (corridor: RoadLine, k: number) => !corridor.plan || corridor.plan.cross.includes(k);
+  const end = (i: number, j: number, x: number, y: number, v: boolean): RoadNode => {
+    const n: RoadNode = { id: nodes.length, i, j, x, y, segs: [], lights: false, wv: v ? xs[i].width : 0, wh: v ? 0 : ys[j].width, end: true };
+    nodes.push(n);
+    return n;
+  };
+  /** A street's node at (i, j), or its dead end short of the corridor there (toward `from`). */
+  const hEnd = (i: number, j: number, from: 1 | -1) => (xs[i].highway && !passes(xs[i], j) ? end(i, j, xs[i].pos + from * (xs[i].width / 2), ys[j].pos, false) : node(i, j));
+  const vEnd = (i: number, j: number, from: 1 | -1) => (ys[j].highway && !passes(ys[j], i) ? end(i, j, xs[i].pos, ys[j].pos + from * (ys[j].width / 2), true) : node(i, j));
   for (let j = 0; j <= ny; j++) {
     if (ys[j].highway) continue;
     for (let i = 0; i < nx; i++) {
@@ -186,7 +195,7 @@ export function genGraph(L: RoadLayout): { nodes: RoadNode[]; segs: Segment[]; b
       if (above === below && above >= 0) continue;
       const trail = wildPair(zoneAt(i, j - 1), zoneAt(i, j));
       if (trail && !ys[j].arterial) continue;
-      add('h', node(i, j), node(i + 1, j), ys[j], false, trail);
+      add('h', hEnd(i, j, 1), hEnd(i + 1, j, -1), ys[j], false, trail);
     }
   }
   for (let i = 0; i <= nx; i++) {
@@ -203,7 +212,7 @@ export function genGraph(L: RoadLayout): { nodes: RoadNode[]; segs: Segment[]; b
       if (left === right && left >= 0) continue;
       const trail = wildPair(zoneAt(i - 1, j), zoneAt(i, j));
       if (trail && !xs[i].arterial) continue;
-      add('v', node(i, j), node(i, j + 1), xs[i], false, trail);
+      add('v', vEnd(i, j, 1), vEnd(i, j + 1, -1), xs[i], false, trail);
     }
   }
   for (const n of nodes) {

@@ -1,13 +1,16 @@
-// Highways (world/waygen.ts): decks drawn over their avenues at the height their profile gives, with
-// lane markings, jersey barriers, girder faces, columns on pier caps; ramps (a solid embankment
-// while low, a slab once overhead) merging alongside; trenches with retaining walls and the cross
-// streets' bridge parapets. All static, built once.
+// Highways (world/waygen.ts): the road along its corridor at the height its profile gives (on the
+// ground; on an embankment, then a bridge on columns where it climbs over a street), with lane
+// markings, jersey barriers and girder faces; ramps at ground level beside it merging in; the
+// corridor's fences; trenches with retaining walls and the cross streets' bridge parapets. All
+// static, built once.
 import * as THREE from 'three';
 import { LANE_W, type City } from '../../shared/world/cityTypes';
-import { CLEAR_S, DECK_H, DECK_HALF, MERGE, profileZ, type Ramp, RAMP_LEN, RAMP_W, WALL_H, WALL_T, type Way, wayPoint } from '../../shared/world/wayTypes';
-import { columnStations, trenchOpen } from '../../shared/world/ways';
+import { DECK_HALF, FOOT_GAP, MERGE, profileZ, type Ramp, RAMP_LEN, RAMP_W, WALL_H, WALL_T, type Way, wayPoint } from '../../shared/world/wayTypes';
+import { columnStations, corridorFences, trenchOpen } from '../../shared/world/ways';
 
 const STEP = 3;
+/** Road surfaces sit this far over the ground they run on (no flicker where they're level with it). */
+const LIFT = 0.04;
 const CONCRETE = '#a19d95';
 const GIRDER = '#8a867f';
 const DECK_TILE = 24;
@@ -113,13 +116,15 @@ export class Highways {
       { l: -LANE_W, color: '#e8e6df', dash: true }, { l: LANE_W, color: '#e8e6df', dash: true },
       { l: -2 * LANE_W, color: '#e8e6df' }, { l: 2 * LANE_W, color: '#e8e6df' },
     ], aniso);
-    const rampTex = markingsTexture(RAMP_W, RAMP_TILE, [{ l: -1.8, color: '#e8e6df' }, { l: 1.8, color: '#e8e6df' }], aniso);
+    // A ramp: its lane between edge lines, a narrow shoulder on the highway's side and a wide one out.
+    const rampTex = markingsTexture(RAMP_W, RAMP_TILE, [{ l: -RAMP_W / 2 + 1.4, color: '#e8e6df' }, { l: -RAMP_W / 2 + 1.4 + 3.7, color: '#e8e6df' }], aniso);
     const deck = new Mesher(), ramps = new Mesher(), walls = new Mesher(), girders = new Mesher();
     const cols: THREE.Matrix4[] = [], caps: THREE.Matrix4[] = [];
     for (const w of city.ways) {
       if (w.kind !== 'highway') continue; // a railway's viaduct is render/railway.ts
       this.deck(w, deck, walls, girders);
-      for (const r of w.ramps) this.ramp(w, r, ramps, walls, girders);
+      for (const r of w.ramps) this.ramp(w, r, ramps, walls);
+      this.fences(city, w, walls);
       this.trench(w, walls);
       for (const a of columnStations(city, w)) {
         const z = profileZ(w, a) - 0.9;
@@ -154,7 +159,7 @@ export class Highways {
   }
 
   private deck(w: Way, deck: Mesher, walls: Mesher, girders: Mesher): void {
-    const at = (a: number, l: number, dz = 0) => { const p = wayPoint(w, a, l); return [p.x, profileZ(w, a) + dz, p.y]; };
+    const at = (a: number, l: number, dz = 0) => { const p = wayPoint(w, a, l); return [p.x, profileZ(w, a) + LIFT + dz, p.y]; };
     const st = this.stations(w, w.a0, w.a1);
     const H = DECK_HALF;
     for (let i = 0; i + 1 < st.length; i++) {
@@ -196,40 +201,49 @@ export class Highways {
     }
   }
 
-  private ramp(w: Way, r: Ramp, slab: Mesher, walls: Mesher, girders: Mesher): void {
+  /** A ramp: on the ground from its cross street's kerb, beside the highway (which may be climbing
+   *  over that street), then over into its outer lane along the merge. */
+  private ramp(w: Way, r: Ramp, slab: Mesher, walls: Mesher): void {
     const reach = RAMP_LEN + MERGE;
     const sAt = (a: number) => (a - r.foot) * r.up;
-    const z = (a: number) => Math.min(DECK_H, Math.max(0, sAt(a)) * (DECK_H / RAMP_LEN));
     const sd = r.side;
     const inner = (a: number) => (sAt(a) <= RAMP_LEN ? r.lat - sd * (RAMP_W / 2) : sd * DECK_HALF);
     // The outer edge: the ramp lane's, closing in on the deck's edge along the merge.
     const o0 = Math.abs(r.lat) + RAMP_W / 2, o1 = DECK_HALF + 0.3;
     const outer = (a: number) => { const k = Math.min(1, Math.max(0, (sAt(a) - RAMP_LEN) / MERGE)); return sd * (o0 + (o1 - o0) * k); };
-    const P = (a: number, l: number, dz = 0) => { const p = wayPoint(w, a, l); return [p.x, z(a) + dz, p.y]; };
-    const a0 = Math.min(r.foot, r.foot + r.up * reach), a1 = Math.max(r.foot, r.foot + r.up * reach);
+    const P = (a: number, l: number) => { const p = wayPoint(w, a, l); return [p.x, LIFT, p.y]; };
+    const start = r.foot - r.up * FOOT_GAP;
+    const a0 = Math.min(start, r.foot + r.up * reach), a1 = Math.max(start, r.foot + r.up * reach);
     const st: number[] = [];
-    for (let a = a0; a < a1; a += 2) st.push(a);
-    st.push(a1, r.foot + r.up * RAMP_LEN, r.foot + r.up * CLEAR_S);
+    for (let a = a0; a < a1; a += 3) st.push(a);
+    st.push(a1, r.foot + r.up * RAMP_LEN);
     st.sort((p, q) => p - q);
     for (let i = 0; i + 1 < st.length; i++) {
       const a = st[i], b = st[i + 1];
       const ua = sAt(a) / RAMP_TILE, ub = sAt(b) / RAMP_TILE;
       const lo = (x: number) => Math.min(inner(x), outer(x)), hi = (x: number) => Math.max(inner(x), outer(x));
-      // Lane texture only up the ramp proper; the merge lane beside the deck is plain slab.
-      slab.quad([P(a, lo(a)), P(a, hi(a)), P(b, hi(b)), P(b, lo(b))], sAt(a) < RAMP_LEN ? [[0, ua], [1, ua], [1, ub], [0, ub]] : [[0.5, ua], [0.5, ua], [0.5, ub], [0.5, ub]]);
-      // Sides: a solid embankment down to the street while low, a slab edge once overhead.
-      const mid = sAt((a + b) / 2);
-      for (const e of [lo, hi]) {
-        if (mid > RAMP_LEN && e === (sd > 0 ? lo : hi)) continue; // the side joining the deck
-        const down = (x: number) => (sAt(x) <= CLEAR_S ? -z(x) : -0.8);
-        girders.quad([P(a, e(a)), P(b, e(b)), P(b, e(b), down(b)), P(a, e(a), down(a))]);
-      }
+      // The lane's markings along the ramp proper; the merge lane beside the deck is plain slab.
+      // (u runs across from the lane's inner side: flipped on the -l side so the shoulders match.)
+      const uv = (x: number) => (sAt(x) < RAMP_LEN ? (sd > 0 ? [0, 1] : [1, 0]) : [0.5, 0.5]);
+      slab.quad([P(a, lo(a)), P(a, hi(a)), P(b, hi(b)), P(b, lo(b))], [[uv(a)[0], ua], [uv(a)[1], ua], [uv(b)[1], ub], [uv(b)[0], ub]]);
     }
-    // Barriers on the ramp: the inner one up to where it meets the deck, the outer one all along.
-    const zw = (a: number) => z(a);
-    const from = r.foot, top = r.foot + r.up * RAMP_LEN, end = r.foot + r.up * reach;
-    this.wall(w, walls, from, top, () => r.lat - sd * (RAMP_W / 2 - WALL_T / 2), WALL_T, WALL_H, zw);
-    this.wall(w, walls, from, end, (a) => outer(a) - sd * (WALL_T / 2), WALL_T, WALL_H, zw);
+    // The barrier between it and the highway, from the kerb to where they meet; the merge's taper.
+    const flat = () => LIFT;
+    this.wall(w, walls, start, r.foot + r.up * RAMP_LEN, () => r.lat - sd * (RAMP_W / 2 - WALL_T / 2), WALL_T, WALL_H, flat);
+    this.wall(w, walls, r.foot + r.up * RAMP_LEN, r.foot + r.up * reach, (a) => outer(a) - sd * (WALL_T / 2), WALL_T, WALL_H, flat);
+  }
+
+  /** The corridor's fences on the street's side (world/ways.ts corridorFences): low concrete walls. */
+  private fences(city: City, w: Way, walls: Mesher): void {
+    for (const f of corridorFences(city, w)) {
+      const c = (a: number, l: number, z: number) => { const p = wayPoint(w, a, l); return [p.x, z, p.y]; };
+      const { a0, a1, l0, l1 } = f, h = 1.1;
+      walls.quad([c(a0, l0, 0), c(a1, l0, 0), c(a1, l0, h), c(a0, l0, h)]);
+      walls.quad([c(a0, l1, 0), c(a1, l1, 0), c(a1, l1, h), c(a0, l1, h)]);
+      walls.quad([c(a0, l0, 0), c(a0, l1, 0), c(a0, l1, h), c(a0, l0, h)]);
+      walls.quad([c(a1, l0, 0), c(a1, l1, 0), c(a1, l1, h), c(a1, l0, h)]);
+      walls.quad([c(a0, l0, h), c(a1, l0, h), c(a1, l1, h), c(a0, l1, h)]);
+    }
   }
 
   private trench(w: Way, walls: Mesher): void {

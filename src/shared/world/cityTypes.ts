@@ -23,8 +23,11 @@ export interface RoadLine {
   lanes: number;        // per direction
   parking: boolean;     // parking lane on each curb
   arterial: boolean;
-  /** A highway runs over this avenue (world/waygen.ts): it's widened for the ramp lanes. */
+  /** A highway runs along this line (world/waygen.ts): a fenced corridor as wide as it and its ramps. */
   highway?: boolean;
+  /** The highway's plan, from the lines alone (waygen.ts planWay): the cross lines that pass it (the
+   *  rest end at its fence), the ones with interchanges, and the ones bridging its trench. */
+  plan?: { cross: number[]; exits: number[]; trench: number[] };
 }
 
 export interface RoadNode {
@@ -37,6 +40,9 @@ export interface RoadNode {
   wh: number;           // width of the horizontal road through this node
   /** On a way's deck (its strip, world/levels.ts); x, y are still the ground point under it. */
   level?: number;
+  /** A side street's dead end at a highway's fence (roadgen.ts): i, j are the street's line and the
+   *  highway's. */
+  end?: boolean;
 }
 
 export interface Segment {

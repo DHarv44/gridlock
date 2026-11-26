@@ -39,8 +39,21 @@ if (process.env.DEBUG) {
   console.log(ln.map((n, k) => (k ? `${(n.y - ln[k - 1].y).toFixed(0)}` : '')).join(' '));
 }
 const zFoot = surfaceZ(ways, at(1).x, at(1).y), zTop = surfaceZ(ways, at(RAMP_LEN).x + w0.strip * 2560, at(RAMP_LEN).y);
-check(zFoot < 0.3 && Math.abs(zTop - DECK_H) < 0.2, `a ramp climbs from the street (${zFoot.toFixed(2)} m) to the deck (${zTop.toFixed(2)} m)`);
-check(Math.abs(profileZ(w0, (w0.a0 + w0.a1) / 2) - DECK_H) < 3 * DECK_H, 'the deck stands at its height');
+check(zFoot < 0.1 && zTop < 0.1, `a ramp runs at street level (${zFoot.toFixed(2)} m at its foot, ${zTop.toFixed(2)} m where it joins)`);
+// On the ground, but for the bridges over the streets that pass under it.
+for (const hw of ways) {
+  const run = (a: number) => a > hw.a0 && a < hw.a1;
+  let ground = 0, raised = 0;
+  for (let a = hw.a0; a < hw.a1; a += 1) { const z = profileZ(hw, a); if (Math.abs(z) < 0.01) ground++; else if (z > DECK_H - 0.01) raised++; }
+  const n = hw.a1 - hw.a0;
+  check(run((hw.a0 + hw.a1) / 2) && ground > n * 0.25 && raised > 0, `the ${hw.axis === 'h' ? 'east-west' : 'north-south'} highway is on the ground ${(100 * ground / n).toFixed(0)}% of its run, bridging streets ${(100 * raised / n).toFixed(0)}%`);
+}
+const ends = city.nodes.filter((n) => n.end).length;
+check(ends > 4, `side streets end at the highways' fences (${ends} dead ends)`);
+const passing = ways.map((hw) => city.nodes.filter((n) => n.level === undefined && !n.end && (hw.axis === 'h' ? n.j === hw.line : n.i === hw.line))
+  .filter((n) => { const a = hw.axis === 'h' ? n.x : n.y; return a > hw.a0 && a < hw.a1; }));
+check(passing.every((ns, k) => ns.every((n) => { const a = ways[k].axis === 'h' ? n.x : n.y; return profileZ(ways[k], a) > DECK_H - 0.01 || profileZ(ways[k], a) < -4; })),
+  'every street passing the highway goes under its bridge (or over its trench)');
 
 // In a room: AI traffic takes an on-ramp up onto the deck and drives along it.
 const { Room } = await import('../src/server/room');
@@ -56,11 +69,12 @@ room.stop();
 const w = room.world;
 const me = w.peds.get(pl.pid)!;
 const onr = w0.ramps.find((q) => q.travel === q.up && q.travel === 1)!;
-const start = wayPoint(w0, onr.foot - 30, 1.5 * 3.6 * onr.side);
+// A driver routed to a point on the highway (as the police chase you): down the cross street, onto
+// the on-ramp, along the highway. (East-west highway: its cross streets run north-south.)
+const foot = w.city.nodes[onr.node];
+const start = { x: foot.x - 1.8, y: foot.y - 40 };
 me.body.x = start.x; me.body.y = start.y + 30;
-// A driver routed to a point up on the deck (as the police chase you): along the avenue, up the
-// on-ramp, onto the deck.
-const car = spawnVehicle(w, vehicleIndex('sedan'), start.x, start.y, onr.travel === 1 ? 0 : Math.PI);
+const car = spawnVehicle(w, vehicleIndex('sedan'), start.x, start.y, Math.PI / 2);
 const drv = spawnPed(w, pedWith('civilian'), start.x, start.y);
 seatPed(w, drv, car, 0);
 const goal = wayPoint(w0, onr.foot + onr.up * (RAMP_LEN + 150), 1.5 * 3.6 * onr.side);
@@ -77,7 +91,7 @@ for (let i = 0; i < 30 * 30; i++) {
   if (best < 10) break;
 }
 console.log(`     routed: at ${car.body.x.toFixed(0)},${car.body.y.toFixed(0)} (${best.toFixed(0)} m from the goal at best), hp ${car.hp}`);
-check(wentUp && maxZ > DECK_H - 0.3 && best < 15, `a driver routed onto the highway goes up the on-ramp and along the deck (highest ${maxZ.toFixed(1)} m)`);
+check(wentUp && best < 15, `a driver routed onto the highway takes the on-ramp and drives along it (highest ${maxZ.toFixed(1)} m)`);
 
 // And down again: a driver on the deck routed to a street beyond the next exit takes the off-ramp.
 const off = w0.ramps.find((q) => q.travel !== q.up && q.travel === 1 && q.foot > onr.foot + 200)!;
