@@ -52,6 +52,8 @@ export interface PedView {
   deadT: number;
   hop: number;              // seconds left in a jump arc
   lookKey?: string;         // what the look was built from (players rebuild when it changes)
+  /** The held weapon's muzzle in the gun's own space (setPedWeapon), where shots leave it. */
+  muzzle?: THREE.Vector3 | null;
   /** Throwing a melee blow: seconds left of it, and which arm (fists alternate). */
   swingT?: number;
   swingSide?: number;
@@ -141,10 +143,23 @@ export function setPedWeapon(v: PedView, wi: number): void {
   if (!spec?.model || !v.gun.visible) return;
   // The ped is drawn larger than life (S), so its weapon is too.
   const hold = HOLD[spec.kind === 'melee' ? 'fist' : spec.hold] ?? HOLD.one;
-  v.gun.add(weaponModel(spec.id, spec.model));
+  const model = weaponModel(spec.id, spec.model);
+  v.gun.add(model);
   v.gun.position.set(hold.at[0] * S, hold.at[1] * S, hold.at[2] * S);
   v.gun.rotation.z = hold.pitch;
   v.gun.scale.setScalar(S);
+  // The muzzle: the model's front tip (it points along +x), where shots leave it.
+  const box = new THREE.Box3();
+  model.traverse((o) => { if ((o as THREE.Mesh).geometry) { const g = (o as THREE.Mesh).geometry; g.computeBoundingBox(); box.union(g.boundingBox!); } });
+  v.muzzle = box.isEmpty() ? null : new THREE.Vector3(box.max.x, (box.min.y + box.max.y) / 2, (box.min.z + box.max.z) / 2);
+}
+
+/** Where a ped's held weapon's muzzle is in the world right now (the scene's x, height, y), or
+ *  null when they hold nothing drawn. */
+export function muzzleOf(v: PedView): THREE.Vector3 | null {
+  if (!v.muzzle || !v.gun.visible || !v.root.visible) return null;
+  v.root.updateMatrixWorld(true);
+  return v.gun.localToWorld(v.muzzle.clone());
 }
 
 /** Hip height in the ped's own space (legs hang from here). */

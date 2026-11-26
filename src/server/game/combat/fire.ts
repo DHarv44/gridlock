@@ -210,12 +210,14 @@ function hitscan(w: World, p: Ped, x0: number, y0: number, z: number, angle: num
       }
     }
   }
-  w.emit(FX.Shot, r2(x0), r2(y0), r2(x0 + dx * t), r2(y0 + dy * t), wIndex, hitType);
+  // The shooter goes along so the tracer can leave their gun as it's drawn (the hit line itself
+  // runs from their body the way they aim).
+  w.emit(FX.Shot, r2(x0), r2(y0), r2(x0 + dx * t), r2(y0 + dy * t), wIndex, hitType, p.id);
 }
 
 function flame(w: World, p: Ped, x0: number, y0: number, aim: number, spec: WeaponSpec, wIndex: number): void {
   const range = spec.range;
-  w.emit(FX.Shot, r2(x0), r2(y0), r2(x0 + Math.cos(aim) * range), r2(y0 + Math.sin(aim) * range), wIndex, HIT.none);
+  w.emit(FX.Shot, r2(x0), r2(y0), r2(x0 + Math.cos(aim) * range), r2(y0 + Math.sin(aim) * range), wIndex, HIT.none, p.id);
   w.pedsNear(x0, y0, range, (o) => {
     if (o === p || o.dead) return;
     const ang = Math.atan2(o.body.y - y0, o.body.x - x0);

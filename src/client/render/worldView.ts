@@ -8,7 +8,7 @@ import type { EntityStore, ViewEntity } from '../net/entities';
 import { FLOOR_H, floorOf, groundOf } from '../../shared/world/levels';
 import { putCarLights } from './carLights';
 import type { Effects } from './effects';
-import { animatePed, HIP_H, makePed, type PedView, ridePed, setPedWeapon, SWING_TIME } from './pedMesh';
+import { animatePed, HIP_H, makePed, muzzleOf, type PedView, ridePed, setPedWeapon, SWING_TIME } from './pedMesh';
 import { lampMaterial, makeVehicle, showDamage, sirenMats, type VehicleView } from './vehicleMesh';
 import { decodeDamage } from './vehicleDamage';
 import { Skids } from './skids';
@@ -206,6 +206,13 @@ export class WorldView {
     s.renderOrder = 10;
     v.root.add(s);
     this.labels.set(id, s);
+  }
+
+  /** Where a ped's gun muzzle is drawn right now (game x, y and height), for shots to leave it. */
+  muzzle(pid: number): { x: number; y: number; z: number } | null {
+    const v = this.peds.get(pid);
+    const m = v ? muzzleOf(v) : null;
+    return m ? { x: m.x, y: m.z, z: m.y } : null;
   }
 
   /** A ped swung a melee weapon: their arm throws the blow. */

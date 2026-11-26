@@ -42,22 +42,24 @@ export class Effects {
     this.flashes.push({ light, t: 0, max: dur, i: intensity });
   }
 
-  shot(x0: number, y0: number, x1: number, y1: number, wi: number, hit: number): void {
+  /** `z0`: how high it leaves the gun (the tracer runs from there to the hit, at body height). */
+  shot(x0: number, y0: number, x1: number, y1: number, wi: number, hit: number, z0 = 1.2): void {
     const spec = WEAPONS[wi];
     const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy);
     const ang = Math.atan2(dy, dx);
     if (spec.kind === 'flame') {
       for (let k = 0; k < 3; k++) {
         const t = Math.random();
-        this.add.spawn({ x: x0 + dx * t * 0.3, y: y0 + dy * t * 0.3, z: 1, vx: (dx / len) * rnd(9, 14) + rnd(-1.5, 1.5), vy: (dy / len) * rnd(9, 14) + rnd(-1.5, 1.5),
+        this.add.spawn({ x: x0 + dx * t * 0.3, y: y0 + dy * t * 0.3, z: z0 - 0.2, vx: (dx / len) * rnd(9, 14) + rnd(-1.5, 1.5), vy: (dy / len) * rnd(9, 14) + rnd(-1.5, 1.5),
           size: 0.6, grow: 2.6, max: rnd(0.5, 0.8), r: 1, g: rnd(0.45, 0.7), b: 0.15, a: 0.9, drag: 1.5 });
       }
       return;
     }
     const tc = new THREE.Color(spec.tracer);
-    this.add.spawn({ x: (x0 + x1) / 2, y: (y0 + y1) / 2, z: 1.2, size: 0.09, stretch: len / 0.09, rot: ang, max: 0.06, r: tc.r, g: tc.g, b: tc.b, a: 0.9 });
-    this.add.spawn({ x: x0, y: y0, z: 1.2, size: 0.9, max: 0.05, r: 1, g: 0.8, b: 0.4, a: 1 });
-    if (Math.random() < 0.35) this.flash(x0, y0, 2, 6, 0.06);
+    this.add.spawn({ x: (x0 + x1) / 2, y: (y0 + y1) / 2, z: (z0 + 1.2) / 2, size: 0.09, stretch: len / 0.09, rot: ang, max: 0.06, r: tc.r, g: tc.g, b: tc.b, a: 0.9 });
+    // The muzzle flash, at the gun's mouth.
+    this.add.spawn({ x: x0, y: y0, z: z0, size: 0.9, max: 0.05, r: 1, g: 0.8, b: 0.4, a: 1 });
+    if (Math.random() < 0.35) this.flash(x0, y0, z0 + 0.8, 6, 0.06);
     if (hit === HIT.wall || hit === HIT.metal) {
       for (let k = 0; k < 3; k++) {
         this.add.spawn({ x: x1, y: y1, z: 1, vx: rnd(-5, 5), vy: rnd(-5, 5), size: 0.15, max: 0.2, r: 1, g: 0.85, b: 0.5, drag: 4 });

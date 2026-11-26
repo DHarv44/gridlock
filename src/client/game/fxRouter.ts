@@ -8,12 +8,15 @@ import type { Effects } from '../render/effects';
 
 /** `swing`: a ped swung a melee weapon (their arm animates); `myPid`: your own ped, whose blows
  *  landing (and blows landing on you) shake the camera a little. */
-export function routeFx(events: number[][], fx: Effects, sound: Sound, store: EntityStore, cam: ChaseCamera, swing: (pid: number) => void = () => {}, myPid = 0): void {
+export function routeFx(events: number[][], fx: Effects, sound: Sound, store: EntityStore, cam: ChaseCamera, swing: (pid: number) => void = () => {}, myPid = 0,
+  muzzle: (pid: number) => { x: number; y: number; z: number } | null = () => null): void {
   for (const e of events) {
     switch (e[0]) {
       case FX.Shot: {
-        const [, x0, y0, x1, y1, wi, hit] = e;
-        fx.shot(x0, y0, x1, y1, wi, hit);
+        // From the shooter's gun as it's drawn, when we can see it; else from where the server fired.
+        const [, x0, y0, x1, y1, wi, hit, by] = e;
+        const m = by ? muzzle(by) : null;
+        fx.shot(m?.x ?? x0, m?.y ?? y0, x1, y1, wi, hit, m?.z);
         if (WEAPONS[wi]) sound.play(WEAPONS[wi].sound, x0, y0);
         break;
       }

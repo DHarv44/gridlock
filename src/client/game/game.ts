@@ -231,7 +231,7 @@ export class Game {
         this.gameMinutes = m.gt;
         this.you = m.you;
         this.predict.reconcile(m.you, m.ack);
-        routeFx(m.fx, this.fx, this.sound, this.store, this.cam, (pid) => this.view.swing(pid), m.you.pid);
+        routeFx(m.fx, this.fx, this.sound, this.store, this.cam, (pid) => this.view.swing(pid), m.you.pid, (pid) => this.view.muzzle(pid));
         break;
       case 'players': this.players = m.list; this.jobs.players = m.list; break;
       case 'props': this.furniture.setDown(m.down); break;
