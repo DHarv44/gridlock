@@ -4,7 +4,7 @@ import type { CharacterProgress, CharacterSave, CharLook } from './packs/charact
 export const TICK_HZ = 30;
 export const SNAP_EVERY = 2;             // snapshots at 15 Hz
 export const INTERP_DELAY_MS = 120;
-export const PROTOCOL_VERSION = 16;
+export const PROTOCOL_VERSION = 17;
 /** Every Nth snapshot carries every entity in full (others list unchanged ones in `k`). */
 export const FULL_SNAP_EVERY = 30;
 
@@ -139,6 +139,9 @@ export type S2C =
   | { t: 'voicemail'; from: string; parts: [string, string, number][] }
   /** Vault doors standing open (interior indexes; world/interiors.ts). */
   | { t: 'gates'; open: number[] }
+  /** Street props knocked flat (world/breakables.ts index, and the way it fell in centiradians);
+   *  the whole list, sent when it changes and on joining. */
+  | { t: 'props'; down: [number, number][] }
   /** The character's progress, for the browser to save (sent every few seconds and after buys). */
   | { t: 'save'; id: string; p: CharacterProgress };
 

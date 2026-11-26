@@ -34,6 +34,7 @@ import { Graffiti } from '../render/graffiti';
 import { Ground } from '../render/ground';
 import { Stage } from '../render/scene';
 import type { StreetProps } from '../render/streetProps';
+import type { StreetPropsView } from '../render/breakables';
 import { Storefronts } from '../render/storefronts';
 import { addAtms } from '../render/atms';
 import { GasStations } from '../render/gasStations';
@@ -108,6 +109,8 @@ export class Game {
     this.view.dryAt = (x, y) => !this.map.isWater(x, y); // a boat on "dry ground" is under a bridge
     this.input = new Input(canvas);
     this.predict = new Predictor(statics, this.map);
+    this.furniture = meshes.furniture;
+    this.predict.furniture = meshes.furniture; // your car knocks street props over at once
     this.radar = new Minimap(this.map);
     this.jobs = new Jobs(this.stage.scene, this.hud.root, city);
     this.jobs.myId = myId;
@@ -167,6 +170,7 @@ export class Game {
 
   private buildingUniforms: { uNight: { value: number } };
   private props: StreetProps;
+  private furniture: StreetPropsView;
   private water: Water;
   private storefronts: Storefronts;
   private quality: QualityGovernor;
@@ -230,6 +234,7 @@ export class Game {
         routeFx(m.fx, this.fx, this.sound, this.store, this.cam);
         break;
       case 'players': this.players = m.list; this.jobs.players = m.list; break;
+      case 'props': this.furniture.setDown(m.down); break;
       case 'gates':
         this.statics.openGates.clear();
         for (const k of m.open) this.statics.openGates.add(k);

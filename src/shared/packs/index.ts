@@ -16,6 +16,7 @@ export { ARMOR_MODEL } from './weaponModels';
 export { INTERIOR_PLANS } from './interiorPlans';
 export { CHARACTER_LOOKS, type CharacterLast, type CharacterProgress, type CharacterSave, type CharLook, cleanLook, cleanName, DEFAULT_LOOK, LOOK_PARTS, type LookPart, MAX_CHARACTERS, NAME_PARTS, UNIVERSE_ID } from './characters';
 export { DISTRICTS, FACTIONS, PEDS, PROPERTIES, SERVICES, VEHICLES, WEAPONS, ZONES };
+export { STREET_PROPS } from './streetProps';
 export type * from './types';
 
 function indexer<T extends { id: string }>(list: T[], kind: string) {

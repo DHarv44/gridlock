@@ -9,13 +9,17 @@ import { type GraffitiSpot, graffitiSpots } from './buildingSpots';
 import { ownInstance } from './hideable';
 import { Batch, byTile, lambert, UNIT } from './instancing';
 import { StreetProps } from './streetProps';
+import { StreetPropsView } from './breakables';
+import { Breakables } from '../../shared/world/breakables';
 
-export interface LampSpot { x: number; y: number }
+/** A street lamp's head (`off` once the post is knocked down). */
+export interface LampSpot { x: number; y: number; off?: boolean }
 
 export class CityMeshes {
   readonly uniforms: BuildingUniforms;
   readonly lamps: LampSpot[];
   readonly props: StreetProps;
+  readonly furniture: StreetPropsView;
   /** Surfaces on gang turf that can carry graffiti, with the gang that owns them. */
   readonly graffitiSpots: (GraffitiSpot & { gang: string })[] = [];
 
@@ -56,7 +60,9 @@ export class CityMeshes {
     obs.build(scene);
     this.trees(scene, city, rng);
     this.props = new StreetProps(scene, city, rng);
-    this.lamps = this.props.lamps;
+    // Lamp posts, hydrants, bins and boxes: knockable (shared/world/breakables.ts).
+    this.furniture = new StreetPropsView(scene, new Breakables(city));
+    this.lamps = this.furniture.lamps;
   }
 
   /** One instanced mesh per map tile so off-screen blocks are culled (also from the shadow pass). */

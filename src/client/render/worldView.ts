@@ -86,7 +86,7 @@ export class WorldView {
   /** Tyre marks and smoke; `skids.squeal` is the hardest slide this frame, for the tyre sound. */
   readonly skids = new Skids();
 
-  constructor(private scene: THREE.Scene, private fx: Effects, private lamps: { x: number; y: number }[]) {}
+  constructor(private scene: THREE.Scene, private fx: Effects, private lamps: { x: number; y: number; off?: boolean }[]) {}
 
   sync(store: EntityStore, dt: number, own: OwnState | null, tags: Map<number, PlayerTag>, night: number, view: { x0: number; y0: number; x1: number; y1: number }): void {
     this.time += dt;
@@ -333,7 +333,7 @@ export class WorldView {
 
   private lampGlows(night: number, v: { x0: number; y0: number; x1: number; y1: number }): void {
     for (const l of this.lamps) {
-      if (l.x < v.x0 || l.x > v.x1 || l.y < v.y0 || l.y > v.y1) continue;
+      if (l.off || l.x < v.x0 || l.x > v.x1 || l.y < v.y0 || l.y > v.y1) continue;
       this.fx.glow.put(l.x, l.y, 0.06, 18, 1, 0, 1, 0.78, 0.45, 0.28 * night);
       this.fx.glow.put(l.x, l.y, 6.6, 1.2, 1, 0, 1, 0.9, 0.7, 0.9 * night);
     }

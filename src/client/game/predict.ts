@@ -3,6 +3,8 @@ import { PEDS, PLAYER_ARCHETYPE, VEHICLES } from '../../shared/packs';
 import { BTN, type InputMsg, Mode, type YouState } from '../../shared/protocol';
 import { type Body, type Controls, copyBody, DT, emptyControls, newBody, PED_RADIUS, SPRINT, stepFoot, stepTrailer, stepVehicle } from '../../shared/sim/physics';
 import { blockBy, type Obb } from '../../shared/sim/dynamic';
+import { flies, floats } from '../../shared/sim/kinds';
+import type { StreetPropsView } from '../render/breakables';
 import type { CityMap } from '../../shared/world/city';
 import type { StaticWorld } from '../../shared/world/collision';
 
@@ -26,6 +28,9 @@ export class Predictor {
   /** Other vehicles where they're drawn (set by the game each tick): the predicted car or ped stops
    *  at them instead of running into them until the server pulls it back out. */
   obstacles: Obb[] = [];
+  /** Street props (render/breakables.ts): your car knocks them over at once, or stops at them when
+   *  too slow, the same way the server does. */
+  furniture: StreetPropsView | null = null;
 
   private onRoad: (x: number, y: number) => boolean;
 
@@ -46,6 +51,10 @@ export class Predictor {
       const spec = VEHICLES[this.vtype];
       stepVehicle(b, spec, c, DT, this.world, true, this.onRoad);
       blockBy(b, { hl: spec.length / 2, hw: spec.width / 2 }, this.obstacles);
+      const f = this.furniture;
+      if (f && !floats(spec) && !(flies(spec) && b.alt > 1)) {
+        f.props.meet(b, spec.length / 2, spec.width / 2, (i) => f.standing(i), (i, a) => f.knock(i, a));
+      }
       // A rig's trailer is predicted with the cab, so it answers the steering without lag.
       this.trailer = spec.trailer ? stepTrailer(b, spec, this.trailer, DT) : b.angle;
     } else {

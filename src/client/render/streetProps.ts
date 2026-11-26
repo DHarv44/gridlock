@@ -1,4 +1,5 @@
-// Street furniture: lamp posts, live traffic signals, hydrants, bins, benches, bus shelters, mailboxes.
+// Street furniture that stays put: live traffic signals, benches, bus shelters, the plaza fountain.
+// Lamp posts, hydrants, bins and boxes can be knocked over: render/breakables.ts.
 import * as THREE from 'three';
 import type { Rng } from '../../shared/rng';
 import { type City, LANE_W, type RoadNode } from '../../shared/world/cityTypes';
@@ -11,38 +12,17 @@ interface Signal { node: RoadNode; axis: 'h' | 'v'; x: number; y: number }
 const SIG_COLORS = [new THREE.Color('#ff2a1f'), new THREE.Color('#ffb21f'), new THREE.Color('#2bff6a')];
 
 export class StreetProps {
-  readonly lamps: { x: number; y: number }[] = [];
   readonly signals: Signal[] = [];
   private signalMesh: THREE.InstancedMesh | null = null;
 
   constructor(scene: THREE.Scene, private city: City, rng: Rng) {
     const box = new Batch(UNIT.box(), lambert());
     const cyl = new Batch(UNIT.cyl(8), lambert());
-    this.lampPosts(box, cyl);
     this.trafficSignals(scene, box, cyl);
-    this.sidewalkClutter(box, cyl, rng);
+    this.sidewalkClutter(box, rng);
     this.parkFurniture(box, rng);
     box.build(scene);
     cyl.build(scene);
-  }
-
-  private lampPosts(box: Batch, cyl: Batch): void {
-    for (const s of this.city.segs) {
-      if (s.bridge) continue;
-      const len = s.axis === 'h' ? s.x1 - s.x0 : s.y1 - s.y0;
-      const side = s.width / 2 + 0.6;
-      for (let p = 16; p < len - 10; p += 34) {
-        const flip = Math.floor(p / 34) % 2 ? 1 : -1;
-        const x = s.axis === 'h' ? s.x0 + p : s.x0 + side * flip;
-        const y = s.axis === 'h' ? s.y0 + side * flip : s.y0 + p;
-        // Arm reaches back over the road.
-        const ax = s.axis === 'v' ? -flip : 0, ay = s.axis === 'h' ? -flip : 0;
-        cyl.add(x, 0, y, 0.22, 7, 0.22, '#2d3035');
-        box.add(x + ax * 1.1, 6.8, y + ay * 1.1, ax ? 2.2 : 0.12, 0.12, ay ? 2.2 : 0.12, '#2d3035');
-        box.add(x + ax * 2.1, 6.6, y + ay * 2.1, ax ? 0.8 : 0.4, 0.2, ay ? 0.8 : 0.4, '#e8e2c8');
-        this.lamps.push({ x: x + ax * 2.1, y: y + ay * 2.1 });
-      }
-    }
   }
 
   private trafficSignals(scene: THREE.Scene, box: Batch, cyl: Batch): void {
@@ -89,34 +69,19 @@ export class StreetProps {
     return lightState(s.node, s.axis, t);
   }
 
-  private sidewalkClutter(box: Batch, cyl: Batch, rng: Rng): void {
+  private sidewalkClutter(box: Batch, rng: Rng): void {
     for (const b of this.city.blocks) {
       const z = ZONES[b.zone];
-      if (z.layout === 'park' || z.layout === 'compound') continue;
+      if (z.layout === 'park' || z.layout === 'compound' || !z.busy) continue;
       const r = b.rect;
-      const busy = !!z.busy;
       const edge = (inset: number) => {
         const side = Math.floor(rng.next() * 4), t = rng.range(0.15, 0.85);
         const x = side === 1 ? r.x1 - inset : side === 3 ? r.x0 + inset : r.x0 + (r.x1 - r.x0) * t;
         const y = side === 0 ? r.y0 + inset : side === 2 ? r.y1 - inset : r.y0 + (r.y1 - r.y0) * t;
         return { x, y, side };
       };
-      // Hydrants near the curb.
-      for (let k = 0; k < rng.int(1, 2); k++) {
-        const p = edge(0.6);
-        cyl.add(p.x, 0, p.y, 0.32, 0.65, 0.32, '#c0281e');
-        cyl.add(p.x, 0.65, p.y, 0.22, 0.14, 0.22, '#d8d2c0');
-      }
-      // Bins, newspaper boxes, mailboxes in busy districts.
-      for (let k = 0; k < (busy ? rng.int(2, 4) : rng.int(0, 1)); k++) {
-        const p = edge(0.8);
-        const kind = rng.next();
-        if (kind < 0.5) cyl.add(p.x, 0, p.y, 0.6, 0.95, 0.6, '#2f4a3a');
-        else if (kind < 0.75) box.add(p.x, 0, p.y, 0.5, 1.1, 0.5, '#2a4f9a');
-        else box.add(p.x, 0, p.y, 0.45, 1.0, 0.45, rng.pick(['#c9a227', '#b0302a', '#2a7a7a']));
-      }
       // Bus shelter on busy blocks.
-      if (busy && rng.chance(0.25)) this.shelter(box, edge(1.1), r);
+      if (rng.chance(0.25)) this.shelter(box, edge(1.1), r);
     }
   }
 

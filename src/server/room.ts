@@ -13,6 +13,7 @@ import { Robberies } from './game/systems/robbery';
 import { Vaults } from './game/systems/vaults';
 import { Rounds } from './rounds';
 import { resolveContacts } from './game/systems/contacts';
+import { StreetFurniture } from './game/systems/breakables';
 import { Dispatch } from './game/systems/dispatch';
 import { Economy } from './game/systems/economy';
 import { updateNpcPeds, updateVehicles } from './game/systems/movement';
@@ -66,6 +67,7 @@ export class Room {
     this.vaults.onChange = () => w.broadcast({ t: 'gates', open: this.vaults.open() } satisfies S2C);
     w.onExplosion = (x, y, r, by) => this.vaults.explosion(x, y, r, by);
     this.robberies = new Robberies(w, this.econ.owners, this.business);
+    this.furniture = new StreetFurniture(w);
     for (const [id, amount] of save?.safes ?? []) this.business.safes.set(id, amount);
     this.rounds = new Rounds(save?.mode ?? mode);
     for (const [id, name] of save?.owners ?? []) this.econ.owners.set(id, name);
@@ -86,6 +88,7 @@ export class Room {
   readonly business: Business;
   readonly vaults: Vaults;
   readonly robberies: Robberies;
+  readonly furniture: StreetFurniture;
   readonly rounds: Rounds;
 
   get size(): number {
@@ -131,6 +134,7 @@ export class Room {
     this.sendOwners();
     pl.send(this.rounds.modeMsg());
     pl.send({ t: 'gates', open: this.vaults.open() } satisfies S2C);
+    this.furniture.sendTo(pl);
     w.notify('info', `${name} joined`);
     this.start();
     return pl;
@@ -280,6 +284,7 @@ export class Room {
     updateVehicles(w, DT);
     w.rebuildHashes();
     resolveContacts(w);
+    this.furniture.update(DT);
     updateTrailers(w, DT);
     updateProjectiles(w, DT);
     updateFires(w, DT);
