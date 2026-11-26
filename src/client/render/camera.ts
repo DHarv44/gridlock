@@ -4,15 +4,17 @@ import * as THREE from 'three';
 // GTA2 frames ~25 x 19 m on foot at 4:3; widescreen and longer gun ranges get a bit more room.
 const FOOT_HEIGHT = 44;
 const MAX_HEIGHT = 115;
-/** Holding Aim brings the camera this much closer. */
-const SCOPE_ZOOM = 0.6;
+/** Holding Aim brings the camera this much closer, at this pace (1/s), the same in and out. */
+const SCOPE_ZOOM = 0.6, SCOPE_RATE = 9;
 
 export class ChaseCamera {
   x = 1000;
   y = 1000;
   height = FOOT_HEIGHT;
-  /** Zoom state the height has settled at (a change of Aim zooms fast until it gets there). */
-  private wasScoped = false;
+  /** The height before the aim zoom (rises with speed and altitude, slowly). */
+  private base = FOOT_HEIGHT;
+  /** The aim zoom, eased on its own: 1 not aiming, SCOPE_ZOOM aiming. */
+  private scope = 1;
   private leadX = 0;
   private leadY = 0;
   /** Shake "trauma" 0..1; the visible shake is trauma² so small hits stay subtle. */
@@ -34,11 +36,12 @@ export class ChaseCamera {
     if (dev.__camAt) { tx = dev.__camAt.x; ty = dev.__camAt.y; vx = 0; vy = 0; aimX = tx; aimY = ty; }
     const forced = dev.__camHeight;
     // GTA2: height grows with speed (about 2x at top speed), zooms out fast and creeps back in.
-    const zoom = (driving ? 1 + Math.min(1.2, Math.max(0, speed - 3) / 40) : 1) * (scoped ? SCOPE_ZOOM : 1);
-    const want = forced ?? Math.min(MAX_HEIGHT, FOOT_HEIGHT * zoom + alt * 0.9);
-    const rate = scoped !== this.wasScoped ? 8 : want > this.height ? 2.2 : 0.45;
-    if (Math.abs(want - this.height) < 0.5) this.wasScoped = scoped;
-    this.height += (want - this.height) * Math.min(1, dt * rate);
+    const zoom = driving ? 1 + Math.min(1.2, Math.max(0, speed - 3) / 40) : 1;
+    const want = Math.min(MAX_HEIGHT, FOOT_HEIGHT * zoom + alt * 0.9);
+    this.base += (want - this.base) * Math.min(1, dt * (want > this.base ? 2.2 : 0.45));
+    // Aiming closes in at its own steady pace, however the height is moving.
+    this.scope += ((scoped ? SCOPE_ZOOM : 1) - this.scope) * Math.min(1, dt * SCOPE_RATE);
+    this.height = forced ?? this.base * this.scope;
     // Big lead along travel in vehicles (capped to part of the view); on foot, toward the aim point.
     const half = this.height * Math.tan(THREE.MathUtils.degToRad(this.cam.fov / 2));
     let lx = driving ? vx * 1.1 : (aimX - tx) * 0.22;
