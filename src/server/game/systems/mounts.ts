@@ -8,6 +8,7 @@ import { newDrive, routeTo } from '../ai/driving';
 import type { DriveState, Player, TaskName, Vehicle } from '../entities';
 import type { World } from '../world';
 import { laneSpawn } from './spawnPoints';
+import { graze, grazing } from './graze';
 import { bolting, isLame, updateSpook } from './spook';
 
 /** Tasks an AI rider gallops for. */
@@ -25,6 +26,8 @@ export function updateMounts(w: World, dt: number): void {
     if (driver?.player && v.spec.comesWhenCalled) adopt(w, driver.player, v);
     if (driver && !driver.player && driver.ai) v.ctl.sprint = canGallop(v) && HURRY.has(driver.ai.task);
     if (v.calledBy && v.rearT <= 0 && !bolting(v)) lead(w, v, dt);
+    // Livestock left to itself grazes (systems/graze.ts), unless it's rearing or bolting.
+    if (grazing(v) && v.rearT <= 0 && !bolting(v)) graze(w, v, dt);
     updateSpook(w, v, dt); // rearing, bolting, limping (systems/spook.ts) override the above
     if (galloping(v.body, v.spec, v.ctl.sprint)) v.stamina = Math.max(0, v.stamina - dt);
     else v.stamina = Math.min(st.gallop, v.stamina + dt * RECOVER);

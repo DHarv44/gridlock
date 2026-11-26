@@ -4,6 +4,7 @@
 // the ground, low platforms with a shelter, and crossbucks where it crosses a street.
 import * as THREE from 'three';
 import type { City } from '../../shared/world/cityTypes';
+import { WORLD } from '../../shared/world/worldSpec';
 import { PLATFORM_HALF, railColumns, type Railway, VIADUCT_HALF } from '../../shared/world/railgen';
 import { profileZ, type Way } from '../../shared/world/wayTypes';
 import { fadeable } from './highways';
@@ -107,7 +108,9 @@ export class RailwayView {
     }
     if (r.strip) this.structure(r, way!, P, steel, concrete, roof, city, isWater, scene);
     else this.grade(r, P, concrete, roof, city);
-    for (const [m, mat] of [[bed, lam('', tex)], [concrete, lam('#9a958c')], [steel, lam('#4f5d6b')], [roof, lam('#2f3a44')]] as const) {
+    // An older era's platforms are planks under a shingled roof (WORLD.modern off).
+    const deck = WORLD.modern ? '#9a958c' : '#7a5a3a', cover = WORLD.modern ? '#2f3a44' : '#4a3a2a';
+    for (const [m, mat] of [[bed, lam('', tex)], [concrete, lam(deck)], [steel, lam('#4f5d6b')], [roof, lam(cover)]] as const) {
       if (m.pos.length) scene.add(m.mesh(mat));
     }
   }

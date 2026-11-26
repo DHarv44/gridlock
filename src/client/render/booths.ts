@@ -26,6 +26,31 @@ function signTexture(): THREE.CanvasTexture {
   return t;
 }
 
+/** A WANTED bill for a job post's board: the header, a likeness, the reward. */
+function posterTexture(reward: string): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = 96; c.height = 136;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#e6dcc0'; g.fillRect(0, 0, 96, 136);
+  g.fillStyle = 'rgba(120,90,50,0.25)'; g.fillRect(0, 0, 96, 6); g.fillRect(0, 130, 96, 6);
+  g.fillStyle = '#2a1e14';
+  g.textAlign = 'center';
+  g.font = '700 22px Rockwell, Georgia, serif';
+  g.fillText('WANTED', 48, 26);
+  g.fillStyle = '#8a7a62'; g.fillRect(24, 34, 48, 52);
+  g.fillStyle = '#3e2c1a';
+  g.beginPath(); g.arc(48, 56, 13, 0, Math.PI * 2); g.fill();
+  g.fillRect(30, 70, 36, 16);
+  g.fillStyle = '#2a1e14';
+  g.font = '700 13px Georgia, serif';
+  g.fillText('DEAD OR ALIVE', 48, 104);
+  g.font = '700 18px Rockwell, Georgia, serif';
+  g.fillText(reward, 48, 124);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
 interface Phone { booth: Booth; lamp: THREE.Mesh; handset: THREE.Mesh; on: THREE.MeshBasicMaterial; color: THREE.Color }
 
 export class Booths {
@@ -40,7 +65,7 @@ export class Booths {
     const sign = new THREE.MeshBasicMaterial({ map: signTexture() });
     const post = RULES.jobPost === 'post';
     const wood = new THREE.MeshLambertMaterial({ color: '#6b4a2e' });
-    const paper = new THREE.MeshLambertMaterial({ color: '#e6dcc0' });
+    const posters = post ? ['$500', '$250', '$1000', '$100'].map((r) => new THREE.MeshLambertMaterial({ map: posterTexture(r) })) : [];
     const brass = new THREE.MeshLambertMaterial({ color: '#b58a3a' });
     for (const b of booths) {
       const color = gangColor(b.gang);
@@ -58,7 +83,7 @@ export class Booths {
         // there's work for you.
         part(box, wood, 0.3, 0, 0, 0.18, 2.8, 0.18);                      // post
         part(box, wood, 0.18, 1.0, 0, 0.08, 1.0, 1.1);                    // board
-        for (const z of [-0.28, 0.12]) part(box, paper, 0.12, 1.2 + z * 0.4, z, 0.02, 0.45, 0.32); // notices
+        for (const z of [-0.28, 0.12]) part(box, posters[(Math.round(b.x + b.y + z * 10) % posters.length + posters.length) % posters.length], 0.12, 1.2 + z * 0.4, z, 0.02, 0.45, 0.32); // wanted bills
         part(box, wood, 0.1, 2.6, 0, 0.7, 0.08, 0.08);                    // arm
         part(box, new THREE.MeshLambertMaterial({ color }), 0.32, 2.2, 0.35, 0.03, 0.5, 0.6); // gang flag
         const bell = part(box, brass, -0.15, 2.25, 0, 0.22, 0.3, 0.22);   // the bell

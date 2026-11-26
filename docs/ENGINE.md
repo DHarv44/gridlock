@@ -134,5 +134,18 @@ film's names, characters, story, map or look).
    Client: audio/soundtrack.ts plays one at a time, never cut short; after a short quiet the next
    comes from the region you're in then (shared/soundtrack.ts nextSong: your zone's, else the
    untagged, else any; never the same twice running). Music volume; ?mute never starts it.
+   Fixtures (2026-11-26): Universe.fixtures (FixtureSpec) are things the world places at
+   generation (shared/world/fixtures.ts, City.fixtures): parts in a few shapes (box, cyl, cone,
+   gable; `spin` turns), a footprint, solid as a box, a trunk (circle) or a ring with a gate
+   (corrals), and a `site`: a street lot in place of its building, a town square, a homestead yard,
+   open country (with the rock), or beside a railway station. Drawn merged and instanced
+   (render/fixtures.ts). Redrock's: church, water tower, gallows; barn, corral, windmill, well,
+   shed, outhouse; saguaro, prickly pear, skulls; depot and the railroad's water tower. Also a
+   'saloon' interior layout (bar, back-bar, card tables, piano), WANTED bills on job posts,
+   tumbleweeds rolling on the wind (render/tumbleweeds.ts, scenery only), livestock
+   (VehicleSpec.grazes, systems/graze.ts: Longhorn cattle graze the range and scatter at gunfire),
+   and the railroad (world.railway at grade down a Front Street; RailSpec.ends puts a locomotive
+   at each end of a train). WorldSpec.pedScale: Redrock draws people at 1.1x, the size they ride at,
+   true to its real-size horses (Bayhaven keeps 1.55x for its cars).
    Not yet: voices for its cast and your lines (they show in bubbles), era
    sounds (a bell, hooves, whinnies); the gatling gun doesn't traverse (trailer parts don't animate).

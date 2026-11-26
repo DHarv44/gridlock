@@ -13,17 +13,17 @@ import type { ParticleLayer } from './particles';
 import { StairShade } from './stairShade';
 
 const MODERN_FLOOR: Record<Interior['layout'], string> = {
-  shop: '#d9d4c7', kiosk: '#d6d2c6', diner: '#e3d7c0', club: '#2b2531', warehouse: '#8f8d86', bank: '#cfc6b4', precinct: '#a9aeb3',
+  shop: '#d9d4c7', kiosk: '#d6d2c6', diner: '#e3d7c0', club: '#2b2531', saloon: '#6a4a30', warehouse: '#8f8d86', bank: '#cfc6b4', precinct: '#a9aeb3',
   tower: '#bfc3c6', apartments: '#b89a78',
 };
 const MODERN_WALL: Record<Interior['layout'], string> = {
-  shop: '#ece8df', kiosk: '#ece8df', diner: '#efe4d2', club: '#3d3346', warehouse: '#b8b5ad', bank: '#e9e2d2', precinct: '#d8dbdd',
+  shop: '#ece8df', kiosk: '#ece8df', diner: '#efe4d2', club: '#3d3346', saloon: '#7a4a2e', warehouse: '#b8b5ad', bank: '#e9e2d2', precinct: '#d8dbdd',
   tower: '#e6e8ea', apartments: '#ebe3d6',
 };
 const MODERN_PROP: Record<PropKind, string> = {
   counter: '#6e5136', shelf: '#b9bdc2', table: '#7a5a3a', booth: '#a63a3a', bar: '#4a2a1a',
   rack: '#a9773d', desk: '#5f6368', stool: '#2a2a2a', dance: '#7a3aa0', bench: '#7a5a3a', bars: '#4a4e54',
-  lift: '#8d949b', stairs: '#6d6a64', bed: '#d9d2c4',
+  lift: '#8d949b', stairs: '#6d6a64', bed: '#d9d2c4', piano: '#1e1a18',
   // Stairwells (world/stairs.ts): pale treads going up, dark ones going down, a steel rail between,
   // a bright nosing on every tread so the flights read from above.
   step: '#9c968b', stepDown: '#3a3733', rail: '#5d6166', nosing: '#f1ede4', nosingDown: '#77726a',
@@ -31,17 +31,17 @@ const MODERN_PROP: Record<PropKind, string> = {
 // An older era (WORLD.modern off): plank floors, whitewashed or board walls, wooden fittings; the
 // saloon's dance floor is boards too, the hotel's booths are wooden settles.
 const OLD_FLOOR: Record<Interior['layout'], string> = {
-  shop: '#8a6a48', kiosk: '#8a6a48', diner: '#7e5e40', club: '#6a4a30', warehouse: '#7a6448', bank: '#7a5a3e', precinct: '#7a6448',
+  shop: '#8a6a48', kiosk: '#8a6a48', diner: '#7e5e40', club: '#6a4a30', saloon: '#6a4a30', warehouse: '#7a6448', bank: '#7a5a3e', precinct: '#7a6448',
   tower: '#8a6a48', apartments: '#8a6a48',
 };
 const OLD_WALL: Record<Interior['layout'], string> = {
-  shop: '#d8ccb0', kiosk: '#d8ccb0', diner: '#d2c2a0', club: '#8a5a3a', warehouse: '#9a7a56', bank: '#cfc2a2', precinct: '#c8b898',
+  shop: '#d8ccb0', kiosk: '#d8ccb0', diner: '#d2c2a0', club: '#8a5a3a', saloon: '#8a5a3a', warehouse: '#9a7a56', bank: '#cfc2a2', precinct: '#c8b898',
   tower: '#d8ccb0', apartments: '#d8ccb0',
 };
 const OLD_PROP: Record<PropKind, string> = {
   counter: '#5a3a22', shelf: '#7a5a3a', table: '#6a4a2e', booth: '#5a3e26', bar: '#4a2a16',
   rack: '#8a6a40', desk: '#5a3e26', stool: '#3e2a1a', dance: '#9a7650', bench: '#6a4a2e', bars: '#3a3836',
-  lift: '#6a4a2e', stairs: '#6a4a2e', bed: '#cfc2a2',
+  lift: '#6a4a2e', stairs: '#6a4a2e', bed: '#cfc2a2', piano: '#2a1c14',
   step: '#9a7a56', stepDown: '#4a3624', rail: '#4a3624', nosing: '#c9a77c', nosingDown: '#6a5038',
 };
 const FLOOR = WORLD.modern ? MODERN_FLOOR : OLD_FLOOR;

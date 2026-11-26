@@ -8,7 +8,8 @@ const { installUniverse } = await import('../src/shared/packs');
 const { loadUniverse } = await import('../src/universes');
 installUniverse(await loadUniverse('redrock'));
 const { Room } = await import('../src/server/room');
-const { MISSIONS, RULES, UNIVERSE, VEHICLES, pedIndex, vehicleIndex } = await import('../src/shared/packs');
+const { FIXTURES, MISSIONS, RULES, UNIVERSE, VEHICLES, pedIndex, vehicleIndex } = await import('../src/shared/packs');
+const { fixtureRect } = await import('../src/shared/world/fixtures');
 const { faceTalk } = await import('../src/server/game/systems/faceTalk');
 const { stepVehicle } = await import('../src/shared/sim/physics');
 const { onLegs } = await import('../src/shared/sim/kinds');
@@ -48,9 +49,22 @@ check(highUp > avg, `mesas stand on the high ground (${highUp.toFixed(2)} vs ${a
 check(city.edge === 'cliffs' && !w.map.isWater(LAND0 / 2, MAP_SIZE / 2) && !!w.statics.raycast(LAND0 + 5, MAP_SIZE / 2, 2, MAP_SIZE / 2, 1),
   'the territory ends in solid cliffs, not sea');
 check(w.map.isWater((city.ponds[0].x0 + city.ponds[0].x1) / 2, (city.ponds[0].y0 + city.ponds[0].y1) / 2), 'a pond is water');
-check(VEHICLES.every((v) => onLegs(v)), 'every ride is on legs (horses and teams)');
-check(VEHICLES.every((v) => !materialOf(v).explodes && !materialOf(v).smokes && (v.gaits ? materialOf(v).bleeds : true)),
+// The railroad's cars run on rails (systems/trains.ts); everything else is an animal or a wagon.
+const rides = VEHICLES.filter((v) => v.movement !== 'rail');
+check(rides.every((v) => onLegs(v)), 'every ride off the rails is on legs (horses, teams, cattle)');
+check(rides.every((v) => !materialOf(v).explodes && !materialOf(v).smokes && (v.gaits ? materialOf(v).bleeds : true)),
   'horses and teams are flesh (they bleed; nothing smokes, burns or blows up), wagons standing alone are wood');
+// The western's additions: landmarks, outbuildings, desert growth, and a railroad with depots.
+const fx = (id: string) => city.fixtures.filter((f) => FIXTURES[f.spec].id === id).length;
+check(fx('church') >= 2 && fx('gallows') >= 1 && fx('barn') > 10 && fx('corral') > 5 && fx('saguaro') > 100,
+  `the territory has its landmarks and outbuildings (${['church', 'gallows', 'water_tower', 'barn', 'corral', 'windmill', 'saguaro', 'depot'].map((id) => `${id} ${fx(id)}`).join(', ')})`);
+check(!!city.railway && fx('depot') >= 1 && city.railway.stations.length >= 2, `a railroad runs through, ${city.railway?.stations.length ?? 0} stations, ${fx('depot')} depots`);
+const corral = city.fixtures.find((f) => FIXTURES[f.spec].id === 'corral');
+if (corral) {
+  const r = fixtureRect(corral);
+  check(!!w.statics.raycast(r.x0 - 3, (r.y0 + r.y1) / 2 + (corral.turn % 2 ? 0 : 2), r.x0 + 1, (r.y0 + r.y1) / 2 + (corral.turn % 2 ? 0 : 2), 1)
+    || !!w.statics.raycast((r.x0 + r.x1) / 2 + 2, r.y0 - 3, (r.x0 + r.x1) / 2 + 2, r.y0 + 1, 1), 'a corral\'s rails are solid');
+}
 
 // A horse on the longest straight trail: gets up to a gallop, and turns.
 const straight = city.segs.filter((s) => s.axis === 'h').sort((a, b) => (b.x1 - b.x0) - (a.x1 - a.x0))[0];
@@ -247,6 +261,7 @@ addHeat(pl, 45);
 for (let t = 0; t < 30 * 30; t++) room.tick();
 const lawRides = [...w.vehicles.values()].filter((v) => v.spec.roles.includes('police'));
 check(lawRides.length > 0 && lawRides.every((v) => onLegs(v.spec)), `deputies ride out (${lawRides.length} on horseback)`);
+if (!lawRides.length) console.log('  law:', { wanted: pl.wanted, heat: pl.heat, mode: pl.mode, vehicles: w.vehicles.size, deputies: [...w.peds.values()].filter((p) => p.spec.behaviour === 'police').length, cattle: [...w.vehicles.values()].filter((v) => v.spec.grazes).length });
 
 // The soundtrack: listed from its folder with titles; each new song from the region you're in.
 const { songs } = await import('../src/server/soundtrack');

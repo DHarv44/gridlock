@@ -4,10 +4,15 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { hash32 } from '../../shared/math';
 import { CHARACTER_LOOKS, type CharLook, HAIR, PEDS, SHOES, WEAPONS } from '../../shared/packs';
+import { WORLD } from '../../shared/world/worldSpec';
 import { weaponGlb } from './models';
 import { weaponModel } from './weaponMesh';
 
-const S = 1.55; // drawn larger than life so people read from the air
+/** How large people are drawn against life (WorldSpec.pedScale; larger than life so they read from
+ *  the air). The world is installed before any render code loads. */
+const S = WORLD.pedScale ?? 1.55;
+/** A ped model's own scale, for anything sizing a ped relative to life (riders, seats). */
+export const PED_S = S;
 
 function cbox(w: number, h: number, d: number, x: number, y: number, z: number, color: string): THREE.BufferGeometry {
   const g = new THREE.BoxGeometry(w * S, h * S, d * S).translate(x * S, y * S, z * S).toNonIndexed();

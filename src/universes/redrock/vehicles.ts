@@ -25,6 +25,52 @@ function horse(saddle: Paint = '#5a3a20'): Part[] {
   ];
 }
 
+/** A longhorn: a deep barrel on short legs, a low head with the horns spread wide. */
+function cow(): Part[] {
+  return [
+    b(-0.34, 0.26, -0.5, 0.5, 0.42, 0.84, 'body'),        // barrel
+    b(0.2, 0.36, -0.3, 0.3, 0.5, 0.8, 'body'),            // shoulders and dewlap
+    b(0.34, 0.52, -0.22, 0.22, 0.46, 0.74, 'body'),       // head, carried low
+    b(0.48, 0.52, -0.16, 0.16, 0.46, 0.58, 'dark'),       // muzzle
+    b(0.36, 0.42, -0.95, 0.95, 0.7, 0.76, '#d8ccb0'),     // horns
+    b(-0.42, -0.33, -0.06, 0.06, 0.36, 0.8, 'black'),     // tail
+    ...[0.12, -0.26].flatMap((x) => [-1, 1].map((s) => leg(x, x + 0.09, s > 0 ? 0.24 : -0.46, s > 0 ? 0.46 : -0.24, x > 0))),
+  ];
+}
+
+/** A 4-4-0 locomotive and its tender, front +x: balloon stack, brass dome, cowcatcher, red cab. */
+function locomotive(): Part[] {
+  const wheels = (x0: number, x1: number, h: number, c: Paint) => [-1, 1].map((s) => b(x0, x1, s > 0 ? 0.4 : -0.47, s > 0 ? 0.47 : -0.4, 0, h, c));
+  return [
+    b(-0.5, 0.47, -0.42, 0.42, 0.14, 0.2, 'black'),
+    ...wheels(-0.06, 0.18, 0.36, '#7a2a20'), ...wheels(0.26, 0.38, 0.2, '#7a2a20'), ...wheels(-0.48, -0.28, 0.2, 'black'),
+    b(-0.04, 0.42, -0.25, 0.25, 0.2, 0.5, '#16130f'),               // boiler
+    b(-0.04, 0.42, -0.255, 0.255, 0.33, 0.36, '#b58a3a'),           // brass boiler band
+    b(0.36, 0.43, -0.26, 0.26, 0.18, 0.52, '#2a2622'),              // smokebox
+    b(0.33, 0.41, -0.1, 0.1, 0.5, 0.78, '#16130f'), b(0.31, 0.43, -0.16, 0.16, 0.76, 0.92, '#16130f'), // balloon stack
+    b(0.12, 0.2, -0.1, 0.1, 0.5, 0.63, '#b58a3a'),                  // steam dome
+    b(0.0, 0.07, -0.08, 0.08, 0.5, 0.58, '#b58a3a'),                // sand dome
+    b(0.42, 0.47, -0.09, 0.09, 0.55, 0.68, '#b58a3a', 'headlight'), // headlamp
+    b(0.46, 0.5, -0.42, 0.42, 0.02, 0.16, '#7a2a20'),               // cowcatcher
+    b(-0.23, -0.04, -0.43, 0.43, 0.2, 0.78, '#9a2a1a'),             // cab
+    b(-0.21, -0.06, -0.44, 0.44, 0.52, 0.68, 'glass'),
+    b(-0.25, -0.02, -0.47, 0.47, 0.78, 0.83, '#16130f'),            // cab roof
+    b(-0.5, -0.25, -0.42, 0.42, 0.2, 0.55, '#3a1e14'),              // tender
+    b(-0.46, -0.29, -0.36, 0.36, 0.55, 0.63, '#1a1612'),            // coal
+  ];
+}
+
+/** A wooden passenger coach: clerestory roof, a row of windows, open platforms at the ends. */
+function coach(): Part[] {
+  return [
+    b(-0.46, 0.46, -0.48, 0.48, 0.14, 0.8, 'body'),
+    b(-0.47, 0.47, -0.5, 0.5, 0.8, 0.85, '#3a3024'), b(-0.4, 0.4, -0.24, 0.24, 0.85, 0.94, '#3a3024'),
+    b(-0.42, 0.42, -0.49, -0.47, 0.44, 0.66, 'glass'), b(-0.42, 0.42, 0.47, 0.49, 0.44, 0.66, 'glass'),
+    b(0.46, 0.5, -0.4, 0.4, 0.1, 0.15, 'dark'), b(-0.5, -0.46, -0.4, 0.4, 0.1, 0.15, 'dark'),
+    ...[0.3, -0.3].flatMap((x) => [-1, 1].map((s) => b(x - 0.08, x + 0.08, s > 0 ? 0.38 : -0.46, s > 0 ? 0.46 : -0.38, 0, 0.16, 'black'))),
+  ];
+}
+
 /** Two horses side by side in harness (the front of a wagon), in fractions of the team's size. */
 function team(): Part[] {
   const one = (y0: number, y1: number): Part[] => [
@@ -73,6 +119,10 @@ const teamBase = { movement: 'legs' as const, material: 'flesh' as const, stamin
   // A team in harness can't rear free or throw a driver off the box, but it can bolt with the wagon.
   temper: { nerve: 0.6, buck: 0, lame: 0.35 }, length: 2.8, width: 1.7, height: 1.7, mass: 1800,
   ...G(1.6, 3.5, 5.5, 10, 2.5, 4, 0.9, 0.5, 0.8), accel: 2.5, brake: 9, reverse: 0.8, grip: 9, turnRate: 1.8 };
+
+/** A railroad car: on rails, unstoppable, everything in its way crushed. */
+const rail = { movement: 'rail' as const, length: 14.6, width: 2.9, mass: 30000, maxSpeed: 13, accel: 0.8, brake: 1.0, reverse: 0, grip: 50,
+  turnRate: 0, turnIn: 0, hp: 100000, seats: 9, armored: true, crushes: true, price: 0, roles: [] as string[] };
 
 type Wagon = NonNullable<VehicleSpec['trailer']>;
 const BUCKBOARD: Wagon = { length: 3.6, width: 1.7, height: 1.2, hitch: 1.2, model: wagon('#8a6a4a') };
@@ -134,4 +184,14 @@ export const VEHICLES: VehicleSpec[] = [
   { ...mount, id: 'arabian', name: 'Arabian', ...size(2.35, 0.68, 1.58), mass: 420, temper: { nerve: 0.35, buck: 0.45, lame: 0.45 }, ...G(1.9, 4.2, 7, 16, 5.5, 5, 3.1, 1.5, 1.2), hp: 150, price: 320, stamina: { gallop: 18 }, colors: [3, 4, 1], roles: ['parked'], model: horse('#7a2a20') },
   { ...mount, id: 'indian_pony', name: 'Indian Pony', ...size(2.1, 0.66, 1.42), mass: 360, temper: { nerve: 0.6, buck: 0.35, lame: 0.4 }, ...G(1.7, 3.8, 6.2, 12.5, 5.5, 6, 3.8, 2.1, 1.3), hp: 150, price: 60, stamina: { gallop: 14 }, colors: [7, 6, 5, 4], roles: ['traffic', 'parked'], model: horse('#8a4a24') },
   { ...mount, id: 'mule', name: 'Mule', ...size(2.35, 0.7, 1.56), mass: 430, temper: { nerve: 0.92, buck: 0.35, lame: 0.3 }, ...G(1.6, 3.4, 5.2, 10.5, 3.5, 5, 2.9, 1.5, 1.2), hp: 260, price: 50, stamina: { gallop: 20 }, colors: [6, 7, 2], roles: ['traffic', 'parked'], model: horse('#4a3424') },
+
+  // Livestock: nobody rides it; it grazes the range and the homesteads, and scatters at gunfire.
+  { ...mount, id: 'cattle', name: 'Longhorn', length: 2.3, width: 0.85, height: 1.45, mass: 550, seats: 0, comesWhenCalled: false, grazes: true,
+    temper: { nerve: 0.35, buck: 0, lame: 0.4 }, ...G(1.3, 2.6, 4.5, 8.5, 2.5, 4, 2.0, 1.0, 0.8), hp: 300, price: 0, stamina: { gallop: 10 },
+    colors: [1, 2, 4, 6, 7], roles: ['parked'], model: cow() },
+
+  // The railroad (world.railway, systems/trains.ts moves them; never spawned by role): a locomotive
+  // at each end of every train, coaches between. 14.6 m long, as the rail engine spaces its cars.
+  { ...rail, id: 'locomotive', name: 'Locomotive', height: 4.4, colors: [2], model: locomotive() },
+  { ...rail, id: 'coach', name: 'Passenger Coach', height: 4.0, colors: [12, 8, 9], model: coach() },
 ];

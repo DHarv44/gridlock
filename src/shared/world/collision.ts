@@ -2,6 +2,8 @@
 // bucketed in a uniform grid. Used by server physics and client-side prediction alike.
 import type { City } from './cityTypes';
 import { LAND0, LAND1, MAP_SIZE } from './cityTypes';
+import { FIXTURES } from '../packs';
+import { fixtureRect, ringSides } from './fixtures';
 import { FLAT_PROPS } from './interiors';
 import { gangSpots } from './gangSpots';
 import { WORLD_X } from './levels';
@@ -66,6 +68,13 @@ export class StaticWorld {
     for (const t of city.trees) this.addCircle({ x: t.x, y: t.y, r: TRUNK_R, h: 7 });
     // Open country's rock: round columns, boulders (world/landforms.ts).
     for (const r of city.rocks) this.addCircle({ x: r.x, y: r.y, r: r.r, h: r.h });
+    // Fixtures (world/fixtures.ts): a footprint, a trunk, or a corral's rails with its gate open.
+    for (const f of city.fixtures) {
+      const spec = FIXTURES[f.spec], h = spec.height;
+      if (spec.solid === 'box') this.addBox({ ...fixtureRect(f), h });
+      else if (spec.solid === 'ring') for (const s of ringSides(f)) this.addBox({ ...s, h: Math.min(h, 1.6) });
+      else if (typeof spec.solid === 'number') this.addCircle({ x: f.x, y: f.y, r: spec.solid, h });
+    }
     // Highways (world/ways.ts): ramp walls and deck columns on the street, barriers on their strips.
     const ways = wayCollision(city, (x, y) => this.boatWater(x, y));
     for (const b of ways.boxes) this.addBox(b);

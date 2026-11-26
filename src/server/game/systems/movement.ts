@@ -9,6 +9,7 @@ import { tickWeapon, tryFire } from '../combat/fire';
 import type { Ped, Vehicle } from '../entities';
 import { removeVehicle } from '../factory';
 import type { World } from '../world';
+import { grazing } from './graze';
 import { bolting } from './spook';
 
 export function stepPedBody(w: World, p: Ped, dt: number, speed: number): void {
@@ -65,7 +66,7 @@ export function updateVehicles(w: World, dt: number): void {
     // A train's cars are laid along the track by systems/trains.ts, not driven.
     if (!playerDriven(w, v) && !onRails(v.spec)) {
       // A horse called by its rider (systems/mounts.ts) goes on its own.
-      const driven = (!!driver && !driver.dead && !v.wrecked) || ((v.calledBy > 0 || bolting(v)) && !v.wrecked);
+      const driven = (!!driver && !driver.dead && !v.wrecked) || ((v.calledBy > 0 || bolting(v) || grazing(v)) && !v.wrecked);
       const vx = v.body.vx, vy = v.body.vy;
       wallCrash(w, v, stepVehicle(v.body, v.spec, v.ctl, dt, w.statics, driven, undefined, wearOf(v.hp / v.spec.hp, v.id)), vx, vy);
       if (driver && v.spec.turret) v.turret = turnTurret(v.turret, driver.aim, dt, v.spec.turret);

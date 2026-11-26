@@ -1,6 +1,7 @@
 // The city map image shared by the radar and the big map: dark land, streets drawn as streets,
 // blocks in muted zone colours, buildings, and gang turf hatched in the gang's colour.
-import { FACTIONS, ZONES } from '../../shared/packs';
+import { FACTIONS, FIXTURES, ZONES } from '../../shared/packs';
+import { fixtureRect } from '../../shared/world/fixtures';
 import type { CityMap } from '../../shared/world/city';
 import { LAND0, LAND1, MAP_SIZE } from '../../shared/world/cityTypes';
 import { turfGang } from '../../shared/world/gangTurf';
@@ -48,6 +49,12 @@ export function bakeCityMap(map: CityMap, scale: number): HTMLCanvasElement {
   }
   ctx.fillStyle = 'rgba(0,0,0,0.28)';
   for (const bd of city.buildings) ctx.fillRect(bd.rect.x0, bd.rect.y0, bd.rect.x1 - bd.rect.x0, bd.rect.y1 - bd.rect.y0);
+  // Solid fixtures (a church, a barn) show as buildings do.
+  for (const f of city.fixtures) {
+    if (FIXTURES[f.spec].solid !== 'box') continue;
+    const r = fixtureRect(f);
+    ctx.fillRect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0);
+  }
   // Open country: ponds and rock formations.
   ctx.fillStyle = MAP_COLORS.water;
   for (const p of city.ponds) ctx.fillRect(p.x0, p.y0, p.x1 - p.x0, p.y1 - p.y0);

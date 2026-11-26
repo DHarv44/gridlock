@@ -31,7 +31,7 @@ export const ZONES: ZoneSpec[] = [
     wall: ['#8a6a4a', '#a07a52', '#cfc2a2', '#7a3a2a', '#6e5238'], roof: ['#5a4632', '#4a3a2a', '#6a5642'],
     trees: 0.25, parkingChance: 0, plazaChance: 0, pedDensity: 0.8,
     peds: [{ id: 'homesteader', weight: 6 }, { id: 'rancher', weight: 3 }],
-    trafficDensity: 0.25, traffic: riders, parked: [...tied, { id: 'buckboard_standing', weight: 2 }], parkedDensity: 0.4, roadDrop: 0.3, windows: 0.2,
+    trafficDensity: 0.25, traffic: riders, parked: [...tied, { id: 'buckboard_standing', weight: 2 }, { id: 'cattle', weight: 3 }], parkedDensity: 0.5, roadDrop: 0.3, windows: 0.2,
   },
   {
     id: 'prairie', name: 'Prairie', mapColor: '#8a7a4a', ground: '#c4a274', sidewalk: '#c4a274', lot: noLot, layout: 'wild',
@@ -43,7 +43,8 @@ export const ZONES: ZoneSpec[] = [
     wall: ['#888'], roof: ['#666'], trees: 0.06, parkingChance: 0, plazaChance: 0, pedDensity: 0.15,
     peds: [{ id: 'prospector', weight: 3 }, { id: 'rancher', weight: 3 }, { id: 'dry_creek_rider', weight: 0.6 }],
     trafficDensity: 0.25, traffic: [...riders, { id: 'covered_wagon', weight: 1.5 }, { id: 'stagecoach', weight: 1 }, lawRide],
-    parked: tied, parkedDensity: 0, roadDrop: 0, windows: 0,
+    // Cattle on the open range, found by the trails, grazing off from them.
+    parked: [{ id: 'cattle', weight: 1 }], parkedDensity: 0.35, roadDrop: 0, windows: 0,
   },
   {
     id: 'badlands', name: 'Badlands', mapColor: '#8a4a32', ground: '#b8785a', sidewalk: '#b8785a', lot: noLot, layout: 'wild',

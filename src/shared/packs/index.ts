@@ -8,7 +8,7 @@ import { installLooks } from './characters';
 import { installWorld } from '../world/worldSpec';
 import { DEFAULT_RESPECT, DEFAULT_RULES, type Respect, type Rules } from './defaults';
 import type {
-  Behaviour, CrimeKind, CrimeSpec, DistrictSpec, FactionSpec, GameMode, InteriorLayout, InteriorPlan, MissionSpec, PedArchetype,
+  Behaviour, CrimeKind, CrimeSpec, DistrictSpec, FactionSpec, FixtureSpec, GameMode, InteriorLayout, InteriorPlan, MissionSpec, PedArchetype,
   PropertySpec, RadioStation, RoleCrew, ServiceCall, ServiceSpec, StreetPropSpec, Universe, VehicleSpec, WantedLevel, WeaponPart, WeaponSpec, ZoneSpec,
 } from './types';
 
@@ -49,6 +49,8 @@ export const SHOES: string[] = [];
 export const ARMOR_MODEL: WeaponPart[] = [];
 /** Street furniture vehicles can knock over (world/breakables.ts places it). */
 export const STREET_PROPS: StreetPropSpec[] = [];
+/** Built and growing things the world places (world/fixtures.ts). */
+export const FIXTURES: FixtureSpec[] = [];
 /** Factions with respect, phones and missions. */
 export const GANGS: string[] = [];
 /** Archetype used for player avatars (the one whose behaviour is 'player'). */
@@ -100,6 +102,7 @@ export function installUniverse(u: Universe): void {
   refill(HAIR, u.pedColors.hair); refill(SHOES, u.pedColors.shoes);
   refill(ARMOR_MODEL, u.armorModel);
   refill(STREET_PROPS, u.streetProps);
+  refill(FIXTURES, u.fixtures ?? []);
   reindex(INDEX.weapon, WEAPONS, 'weapon'); reindex(INDEX.vehicle, VEHICLES, 'vehicle'); reindex(INDEX.ped, PEDS, 'ped');
   reindex(INDEX.zone, ZONES, 'zone'); reindex(INDEX.faction, FACTIONS, 'faction'); reindex(INDEX.service, SERVICES, 'service');
   reindex(INDEX.property, PROPERTIES, 'property');

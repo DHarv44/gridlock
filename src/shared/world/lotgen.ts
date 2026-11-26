@@ -2,7 +2,8 @@
 import { insetRect, type Rect, rectH, rectW } from '../math';
 import { ZONES, type ZoneSpec } from '../packs';
 import type { Rng } from '../rng';
-import { type Block, type Building, Dir, type Lot, type Obstacle, type ParkSpot, type Rock, SIDEWALK_W, type Tree } from './cityTypes';
+import { type Block, type Building, Dir, type Fixture, type Lot, type Obstacle, type ParkSpot, type Rock, SIDEWALK_W, type Tree } from './cityTypes';
+import { wildFixtures } from './fixtures';
 import { landforms } from './landforms';
 import type { RoadLayout } from './roadgen';
 
@@ -13,6 +14,7 @@ export interface LotOutput {
   trees: Tree[];
   obstacles: Obstacle[];
   rocks: Rock[];
+  fixtures: Fixture[];
   parking: ParkSpot[];
   ponds: Rect[];
 }
@@ -48,7 +50,14 @@ function touchingSides(r: Rect, area: Rect): Dir[] {
 }
 
 export class LotBuilder {
-  readonly out: LotOutput = { blocks: [], lots: [], buildings: [], trees: [], obstacles: [], rocks: [], parking: [], ponds: [] };
+  readonly out: LotOutput = { blocks: [], lots: [], buildings: [], trees: [], obstacles: [], rocks: [], fixtures: [], parking: [], ponds: [] };
+
+  /** A fixture's footprint on a lot (world/fixtures.ts): trees keep clear of it. */
+  keepClear(lot: number, r: Rect): void {
+    const c = this.wildClear.get(lot) ?? [];
+    c.push(r);
+    this.wildClear.set(lot, c);
+  }
 
   /** `seed`: the world's, for the height map rock stands on (world/relief.ts). */
   constructor(private rng: Rng, private seed: number) {}
@@ -102,6 +111,8 @@ export class LotBuilder {
     }
     // Buttes, mesas, outcrops and boulders: round rock, on the high ground (world/landforms.ts).
     landforms(this.rng, this.seed, area, spec, fits, clear, this.out.rocks);
+    // Cacti, skulls, lone windmills... (world/fixtures.ts).
+    wildFixtures(this.rng, block.zone, area, fits, clear, this.out.fixtures);
   }
 
   /** Open-country features trees keep clear of, by lot. */

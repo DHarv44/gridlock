@@ -75,6 +75,9 @@ export interface VehicleSpec {
   temper?: { nerve: number; buck: number; lame: number };
   /** Comes at a whistle (the Call key) to the player who last rode it. */
   comesWhenCalled?: boolean;
+  /** Livestock: left to itself it grazes, standing and ambling about near where it was found
+   *  (systems/graze.ts); spooked, it bolts like a loose horse. */
+  grazes?: boolean;
   /** A team-drawn wagon: unhitching (the Hitch key, stopped) leaves the wagon standing as
    *  `wagon` and you driving the bare `team` (vehicle ids). */
   hitch?: { team: string; wagon: string };
@@ -117,6 +120,39 @@ export interface StreetPropPart {
   shape: 'cyl' | 'box'; w: number; h: number; d?: number; y?: number; out?: number; color: string; lamp?: boolean;
   /** Traffic-light arms reach across their own road: `arm` spans the reach, `end` hangs at its tip. */
   span?: 'arm' | 'end';
+}
+
+/** A fixture part: a box-model part (fractions of the fixture's size, +x its front), in one of a
+ *  few shapes; `spin` turns about its own x axis (a windmill's wheel). */
+export interface FixturePart {
+  x: [number, number]; y: [number, number]; z: [number, number];
+  /** A colour, or 'body': the fixture's own colour (one of its `colors`, per fixture). */
+  paint: `#${string}` | 'body';
+  shape?: 'box' | 'cyl' | 'cone' | 'gable';
+  spin?: boolean;
+}
+
+/**
+ * A fixture: something built or growing that the world places (shared/world/fixtures.ts) and the
+ * renderer draws from its parts: a church, a water tower, a barn, a corral, a windmill, a cactus.
+ * `site` says where: in place of a generated building on a street lot ('lot'), on a town square
+ * ('square'), in a homestead's yard beside the house ('yard'), out in open country ('wild'), or on
+ * the street lot beside a railway station, facing the track ('station': a depot).
+ * `chance` per lot (or, 'wild', per 10,000 m²), at most `most` per town (district). `solid`: its
+ * footprint ('box'), a trunk of that radius (m), or an outline with a gate in front ('ring': a
+ * corral); none, it can be walked through.
+ */
+export interface FixtureSpec {
+  id: string;
+  site: 'lot' | 'square' | 'yard' | 'wild' | 'station';
+  zones: string[];
+  chance: number;
+  most?: number;
+  /** Footprint (m: along its front, x; across, y) and height (m). */
+  size: [number, number]; height: number;
+  solid?: 'box' | 'ring' | number;
+  colors?: string[];
+  parts: FixturePart[];
 }
 
 /** Street furniture vehicles can knock over (packs/streetProps.ts). */
@@ -327,7 +363,7 @@ export interface RobberySpec { till: number; fightBack: number }
 
 /** How an enterable place's ground floor is laid out (shared/world/interiors.ts): generated for the
  *  first five, hand-made (packs/interiorPlans.ts) for the rest. */
-export type InteriorLayout = 'shop' | 'diner' | 'club' | 'warehouse' | 'kiosk' | 'bank' | 'precinct' | 'tower' | 'apartments';
+export type InteriorLayout = 'shop' | 'diner' | 'club' | 'saloon' | 'warehouse' | 'kiosk' | 'bank' | 'precinct' | 'tower' | 'apartments';
 
 /** A hand-made ground floor, in metres: `a` across the room from its left inside corner (seen from the
  *  street), `d` in from the front wall. Rects are [a0, a1, d0, d1]. The shell (with the street door)
@@ -415,6 +451,10 @@ export interface WorldSpec {
   highways?: { count: number; sunken: number };
   /** A railway (world/railgen.ts, systems/trains.ts). */
   railway?: RailSpec;
+  /** How large people are drawn against life (default 1.55: larger than life, so they read from
+   *  the street camera next to cars). Riders are always about 1.1x, to sit a real-size saddle; a
+   *  world of real-size horses draws people on foot at the same size. Looks only, not hit boxes. */
+  pedScale?: number;
 }
 
 /** A railway along one road line. 'elevated': on a viaduct over the street (a city's L), on its own
@@ -439,6 +479,9 @@ export interface RailSpec {
   dwell: number;
   /** What a station is called on the map ("Station", "Depot"). */
   stationName: string;
+  /** A vehicle at each end of every train (locomotives), facing outward, so one always leads;
+   *  `car` makes up the rest. Without it every car is `car`. */
+  ends?: string;
 }
 
 /** What open country (zones with layout 'wild') is made of: scattered rock formations (solid,
@@ -559,6 +602,8 @@ export interface Universe {
   armorModel: WeaponPart[];
   /** Street furniture vehicles can knock over (none: bare streets). */
   streetProps: StreetPropSpec[];
+  /** Built and growing things the world places (churches, windmills, corrals, cacti...); none: [] or left out. */
+  fixtures?: FixtureSpec[];
   /** Call scripts: each character's file with its folder under `<contentDir>/characters/`, and the
    *  player's file (`<contentDir>/player/player.json`). */
   cast: [string, CharacterFile][];

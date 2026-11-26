@@ -96,6 +96,10 @@ export interface Block {
 
 export interface Tree { x: number; y: number; r: number }
 
+/** A placed fixture (world/fixtures.ts): FIXTURES index, its centre, a quarter `turn` (0: its front
+ *  faces east, 1 south, 2 west, 3 north), and its colour (for 'body' parts). */
+export interface Fixture { spec: number; x: number; y: number; turn: 0 | 1 | 2 | 3; color: string }
+
 /** Rock in open country (solid, round in plan): a butte or mesa's columns (`mesa`: sheer sides,
  *  flat top), or a lump or boulder; `v` picks one of the drawn shapes. */
 export interface Rock { x: number; y: number; r: number; h: number; color: string; mesa: boolean; v: number }
@@ -142,6 +146,8 @@ export interface City {
   obstacles: Obstacle[];
   /** Open country's rock: buttes, mesas, outcrops and boulders (world/landforms.ts). */
   rocks: Rock[];
+  /** Churches, water towers, barns, corrals, windmills, cacti... (world/fixtures.ts). */
+  fixtures: Fixture[];
   trees: Tree[];
   parking: ParkSpot[];
   services: Place[];

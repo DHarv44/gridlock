@@ -10,7 +10,7 @@ import { CORR, floorsFor, type UpperFloor, upperFloors } from './floors';
 import { type Stairwell, stairPlan, stairwell } from './stairs';
 
 export type PropKind = 'counter' | 'shelf' | 'table' | 'booth' | 'bar' | 'rack' | 'desk' | 'stool' | 'dance' | 'bench' | 'bars'
-  | 'lift' | 'stairs' | 'bed' | 'step' | 'stepDown' | 'rail' | 'nosing' | 'nosingDown';
+  | 'lift' | 'stairs' | 'bed' | 'step' | 'stepDown' | 'rail' | 'nosing' | 'nosingDown' | 'piano';
 /** Not solid: drawn on the floor only. */
 export const FLAT_PROPS = new Set<PropKind>(['dance', 'stairs', 'step', 'stepDown', 'nosing', 'nosingDown']);
 export interface Box { rect: Rect; h: number }
@@ -189,6 +189,23 @@ function build(place: Place, property: boolean, building: number, lot: Lot, layo
     if (m1 - m0 > 3) prop('dance', m0, m1, 2.6, Math.max(4, back - 2.2), 0.04);
     counter = at(ia1 - 3.5, (b0 + b1) / 2, F.inward + Math.PI / 2);
     clerk = at(ia1 - 0.9, (b0 + b1) / 2, F.inward - Math.PI / 2);
+  } else if (layout === 'saloon') {
+    // A bar-room: the bar down the right wall with the bottles behind it, card tables and chairs
+    // across the floor, a piano against the left wall.
+    const b0 = 2.0, b1 = Math.max(b0 + 3, back - 1.2);
+    prop('bar', ia1 - 2.6, ia1 - 1.8, b0, b1, 1.1);
+    prop('shelf', ia1 - 0.6, ia1 - 0.1, b0, b1, 1.9);
+    for (let a = ia0 + 1.6; a + 1.2 <= ia1 - 4.0; a += 3.0) {
+      for (let d = 2.6; d + 1.2 <= back - 0.8; d += 3.0) {
+        if (d < 4 && a + 1.2 > doorA - GAP / 2 - 0.6 && a < doorA + GAP / 2 + 0.6) continue; // keep the door clear
+        prop('table', a, a + 1.2, d, d + 1.2, 0.75);
+        prop('stool', a + 0.4, a + 0.8, d - 0.55, d - 0.15, 0.5);
+        prop('stool', a + 0.4, a + 0.8, d + 1.35, d + 1.75, 0.5);
+      }
+    }
+    if (back > 6) prop('piano', ia0 + 0.15, ia0 + 0.85, back - 2.6, back - 0.8, 1.3);
+    counter = at(ia1 - 3.5, (b0 + b1) / 2, F.inward + Math.PI / 2);
+    clerk = at(ia1 - 1.2, (b0 + b1) / 2, F.inward - Math.PI / 2);
   } else {
     // Warehouse: racks in rows, an office desk near the door.
     for (let a = ia0 + 3.4; a + 1.0 <= ia1 - 1.6; a += 3.4) {

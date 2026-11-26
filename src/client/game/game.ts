@@ -36,9 +36,11 @@ import { CityMeshes } from '../render/cityMeshes';
 import { Effects } from '../render/effects';
 import { Graffiti } from '../render/graffiti';
 import { Ground } from '../render/ground';
+import { Tumbleweeds } from '../render/tumbleweeds';
 import { Stage } from '../render/scene';
 import type { StreetProps } from '../render/streetProps';
 import type { StreetPropsView } from '../render/breakables';
+import type { FixturesView } from '../render/fixtures';
 import { Storefronts } from '../render/storefronts';
 import { addAtms } from '../render/atms';
 import { GasStations } from '../render/gasStations';
@@ -65,6 +67,7 @@ export class Game {
   private store = new EntityStore();
   private cam: ChaseCamera;
   private ground: Ground;
+  private tumbleweeds: Tumbleweeds;
   private view: WorldView;
   private fx: Effects;
   private input: Input;
@@ -111,6 +114,7 @@ export class Game {
     this.stage = new Stage(canvas);
     this.cam = new ChaseCamera(this.stage.camera);
     this.ground = new Ground(this.stage.scene, this.map, this.stage.renderer.capabilities.getMaxAnisotropy());
+    this.tumbleweeds = new Tumbleweeds(this.stage.scene, this.map);
     const meshes = new CityMeshes(this.stage.scene, city);
     this.fx = new Effects(this.stage.scene, this.stage.flash);
     this.view = new WorldView(this.stage.scene, this.fx, meshes.lamps);
@@ -118,6 +122,7 @@ export class Game {
     this.input = new Input(canvas);
     this.predict = new Predictor(statics, this.map);
     this.furniture = meshes.furniture;
+    this.fixtures = meshes.fixtures;
     this.predict.furniture = meshes.furniture; // your car knocks street props over at once
     this.radar = new Minimap(this.map);
     this.jobs = new Jobs(this.stage.scene, this.hud.root, city);
@@ -183,6 +188,7 @@ export class Game {
   private highways: Highways;
   private props: StreetProps;
   private furniture: StreetPropsView;
+  private fixtures: FixturesView;
   private water: Water;
   private storefronts: Storefronts;
   private quality: QualityGovernor;
@@ -346,6 +352,7 @@ export class Game {
     }
     const vr = this.cam.viewRect();
     this.ground.update(vr);
+    this.tumbleweeds.update(dt, vr);
     this.stage.fitShadow(Math.max(vr.x1 - vr.x0, vr.y1 - vr.y0) / 2 - 40);
     // Dev hook: window.__forceTime = minutes previews any time of day locally.
     const forced = (window as unknown as { __forceTime?: number }).__forceTime;
@@ -367,6 +374,7 @@ export class Game {
     this.sound.tyres(sq.k, sq.x, sq.y);
     this.fx.update(dt);
     this.furniture.update(dt);
+    this.fixtures.update(dt);
     this.water.update(dt);
     this.jobs.update(dt, this.you, disp, this.fx.glow, night, this.store.serverNow(), this.players.find((p) => p.id === this.myId), this.sound);
     nearestSiren(this.store, disp, this.sound);

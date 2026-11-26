@@ -10,7 +10,7 @@ import { floorOf, groundOf, isWayStrip } from '../../shared/world/levels';
 import { heightAt } from '../../shared/world/ways';
 import { putCarLights } from './carLights';
 import type { Effects } from './effects';
-import { animatePed, HIP_H, makePed, muzzleOf, type PedView, ridePed, setPedWeapon, SWING_TIME } from './pedMesh';
+import { animatePed, HIP_H, makePed, muzzleOf, PED_S, type PedView, ridePed, setPedWeapon, SWING_TIME } from './pedMesh';
 import { lampMaterial, makeVehicle, showDamage, sirenMats, type VehicleView } from './vehicleMesh';
 import { decodeDamage } from './vehicleDamage';
 import { Skids } from './skids';
@@ -20,9 +20,10 @@ export interface OwnState { pid: number; vid: number; x: number; y: number; angl
 /** `me`: your own character (drawn in your colours and look, never with a name over it). */
 export interface PlayerTag { name: string; color: string; look?: CharLook; me?: boolean }
 
-/** Riders shrink from the larger-than-life street size to about 1.1x life, to sit a real-size bike. */
-const RIDER_SCALE = 0.7;
-const SEAT_SCALE = 0.58;
+/** Riders are drawn about 1.1x life, to sit a real-size bike or saddle, and people seated in a car
+ *  0.9x, whatever size they're drawn on foot (WorldSpec.pedScale): scales on the ped model. */
+const RIDER_SCALE = 1.085 / PED_S;
+const SEAT_SCALE = 0.9 / PED_S;
 const projGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.8, 6).rotateZ(Math.PI / 2);
 const grenadeGeo = new THREE.SphereGeometry(0.16, 8, 6);
 const pickupGeo = new THREE.BoxGeometry(0.7, 0.35, 0.45);

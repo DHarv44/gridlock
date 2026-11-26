@@ -32,8 +32,10 @@ function state(w: World): State | null {
     // One sets off from each end.
     const first = t % 2 === 0;
     const tr: Train = { track: t, s: first ? rail.a0 : rail.a1, v: 0, dir: first ? 1 : -1, dwell: rail.spec.dwell * (0.4 + t * 0.3), at: first ? 0 : rail.stations.length - 1, cars: [] };
+    // Locomotives at both ends (RailSpec.ends), so one always leads; the rest are `car`.
+    const ends = rail.spec.ends ? vehicleIndex(rail.spec.ends) : type;
     for (let k = 0; k < rail.spec.cars; k++) {
-      const v = spawnVehicle(w, type, 0, 0, 0);
+      const v = spawnVehicle(w, k === 0 || k === rail.spec.cars - 1 ? ends : type, 0, 0, 0);
       v.persistent = true;
       tr.cars.push(v.id);
     }
@@ -56,7 +58,9 @@ function place(w: World, r: Railway, tr: Train): void {
     const p = trackPoint(r, tr.s + (k - (n - 1) / 2) * CAR_PITCH, tr.track);
     const b = v.body;
     b.x = p.x + r.strip * LEVEL_BAND; b.y = p.y; b.alt = 0;
-    b.angle = base + (tr.dir < 0 ? Math.PI : 0);
+    // End locomotives face outward (the trailing one runs tender-first); the rest face the way it goes.
+    const end = r.spec.ends && n > 1 && (k === 0 || k === n - 1);
+    b.angle = base + (end ? (k === 0 ? Math.PI : 0) : tr.dir < 0 ? Math.PI : 0);
     b.vx = ux * tr.dir * tr.v; b.vy = uy * tr.dir * tr.v; b.av = 0;
     v.hp = v.spec.hp; v.burning = -1; v.wrecked = false; // nothing stops a train
   });

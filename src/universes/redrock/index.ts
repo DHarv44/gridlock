@@ -28,6 +28,7 @@ import { FACTIONS, HAIR, PEDS, SHOES, SKIN } from './peds';
 import { PROPERTIES, SERVICES } from './places';
 import { CRIMES, RESPECT, ROLE_CREWS, RULES, SERVICE_CALLS, WANTED } from './rules';
 import { STREET_PROPS } from './streetProps';
+import { FIXTURES } from './fixtures';
 import { VEHICLES } from './vehicles';
 import { WEAPONS } from './weapons';
 import { DISTRICTS, ZONES } from './zones';
@@ -59,6 +60,12 @@ export const REDROCK: Universe = {
   world: {
     size: 2560, margin: 60, edge: 'cliffs', river: { at: 0.42, width: 40 },
     spacing: { near: 84, far: 150 }, arterialEvery: 3, ground: '#c4a274', modern: false,
+    // People drawn the size they ride at, true to the horses beside them.
+    pedScale: 1.1,
+    // The railroad: one track down the middle of an east-west street (a Front Street), a depot in
+    // each town it passes; a locomotive at each end of the train, two coaches between.
+    railway: { style: 'grade', axis: 'h', at: 0.55, offset: 0, stationEvery: 3, trains: 1, cars: 4, car: 'coach', ends: 'locomotive',
+      speed: 11, dwell: 14, stationName: 'Depot' },
   },
   vehicles: VEHICLES,
   weapons: WEAPONS,
@@ -98,6 +105,7 @@ export const REDROCK: Universe = {
   },
   armorModel: VEST,
   streetProps: STREET_PROPS,
+  fixtures: FIXTURES,
   cast: CAST,
   player: player as unknown as PlayerFile,
 };

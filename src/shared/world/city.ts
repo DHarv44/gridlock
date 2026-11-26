@@ -4,6 +4,7 @@ import { Rng } from '../rng';
 import { type Block, type City, LAND0, LAND1, MAP_SIZE, type ParkSpot, type RoadNode, type Segment } from './cityTypes';
 import { WORLD } from './worldSpec';
 import { LotBuilder } from './lotgen';
+import { placeFixtures } from './fixtures';
 import { interiorsOf } from './interiors';
 import { floorOf, isWayStrip, LEVEL_BAND } from './levels';
 import { PlaceBuilder } from './placegen';
@@ -52,6 +53,10 @@ export function generateCity(seed: number): City {
   });
   const places = new PlaceBuilder(rng, lo.lots, lo.blocks, lo.obstacles);
   places.build();
+  // Churches, water towers, gallows, barns, corrals... (world/fixtures.ts) before the trees, so
+  // trees keep clear of them; open country's came with its rock.
+  placeFixtures(rng, lo.lots, lo.blocks, (lot, r) => lotBuilder.keepClear(lot, r), lo.fixtures,
+    (railway?.stations ?? []).flatMap((s) => (s.exits[0] ? [s.exits[0]] : [])));
   lotBuilder.plantTrees();
   const buildings = lo.lots.filter((l) => l.building).map((l) => l.building!);
   const serviceLots = new Set(places.services.map((p) => p.lot));
@@ -67,7 +72,7 @@ export function generateCity(seed: number): City {
   const city: City = {
     seed, xs: layout.xs, ys: layout.ys, riverRow: layout.riverRow, ponds: lo.ponds, edge: WORLD.edge,
     cellZone: layout.cellZone, cellDistrict: layout.cellDistrict, cellBlock,
-    nodes, segs, blocks: lo.blocks, lots: lo.lots, buildings, obstacles: lo.obstacles, rocks: lo.rocks, trees: lo.trees,
+    nodes, segs, blocks: lo.blocks, lots: lo.lots, buildings, obstacles: lo.obstacles, rocks: lo.rocks, fixtures: lo.fixtures, trees: lo.trees,
     parking, services: places.services, properties: places.properties, bridges, interiors: [], ways,
     ...(railway ? { railway } : {}),
   };
