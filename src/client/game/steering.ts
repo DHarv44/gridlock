@@ -13,7 +13,8 @@ const TURRET_RATE = 1.5;
 export const AUTO_AIM_CONE = 16 * DEG;
 const clamp1 = (v: number) => Math.max(-1, Math.min(1, v));
 
-export interface SteerOut { mx: number; my: number; throttle: number; steer: number; aim: number }
+/** `handbrake`: point to drive pulls it for a turn round (on top of the handbrake key). */
+export interface SteerOut { mx: number; my: number; throttle: number; steer: number; aim: number; handbrake?: boolean }
 
 /** Finds an auto-aim target: returns the angle to aim at, or null. */
 export type AimAssist = (x: number, y: number, facing: number) => number | null;
@@ -61,7 +62,7 @@ export class Steering {
       this.facing = aim;
       if (mode !== Mode.Driver) return { mx: 0, my: 0, throttle: 0, steer: 0, aim };
       // Point to drive (cars and tanks, not helicopters): see pointDrive.ts.
-      if (pointDriving) return { mx: 0, my: 0, ...pointDrive(input, you, heading, tank), aim };
+      if (pointDriving) return { mx: 0, my: 0, ...pointDrive(input, you, heading, VEHICLES[you.vt].movement === 'tracks'), aim };
       // Pad: left stick steers in proportion, RT/LT are progressive gas and brake.
       return { mx: 0, my: 0, throttle: clamp1(fwd + pad.rt - pad.lt), steer: clamp1(turn + pad.lx), aim };
     }

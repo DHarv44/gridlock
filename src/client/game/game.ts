@@ -1,5 +1,5 @@
 // Client game: owns rendering, input, prediction and HUD for one connected session.
-import { type BuyKind, type InputMsg, Mode, type PlayerInfo, type Profile, type S2C, TICK_HZ, type YouState } from '../../shared/protocol';
+import { BTN, type BuyKind, type InputMsg, Mode, type PlayerInfo, type Profile, type S2C, TICK_HZ, type YouState } from '../../shared/protocol';
 import { CityMap, generateCity } from '../../shared/world/city';
 import { StaticWorld } from '../../shared/world/collision';
 import { FLOOR_H, groundOf } from '../../shared/world/levels';
@@ -280,7 +280,7 @@ export class Game {
     const msg: InputMsg = [
       ++this.seq, c.mx, c.my, c.throttle, c.steer,
       Math.round(c.aim * 1000) / 1000,
-      inp.takeButtons(),
+      inp.takeButtons() | (c.handbrake ? BTN.handbrake : 0),
       inp.takeWeaponWish(),
     ];
     this.predict.apply(msg);

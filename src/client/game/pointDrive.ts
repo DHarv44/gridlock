@@ -1,8 +1,9 @@
 // Point-to-drive, the second driving mode, for keyboard and mouse only (the controller always drives
 // classic; cars and tanks, helicopters keep the classic controls): W/A/S/D (8-way) point where you
 // want to go on screen, like walking, and the car steers itself there and drives. Pointing behind
-// you brakes and swings round in a tight arc (a tank turns on its tracks); the car never backs up
-// by itself. Reverse is held on purpose (Aim: right mouse), and then you point where the back of
+// you turns round as tight as the speed allows: a handbrake turn when fast, braking into a swing
+// when slower, a tight arc from a crawl (a tank turns on its tracks); the car never backs up by
+// itself. Reverse is held on purpose (Aim: right mouse), and then you point where the back of
 // the car goes. The handbrake is untouched. Only throttle and steer are worked out here: the
 // physics, the server and the AI are the same as in the classic mode.
 import { angleDiff } from '../../shared/math';
@@ -14,10 +15,14 @@ const DEG = Math.PI / 180;
 const STEER_GAIN = 2.5;
 /** Pointing this close to straight ahead counts as straight ahead (lets the road assist line you up). */
 const DEAD = 2 * DEG;
-/** Further off than this, the way you point is behind you: brake and swing round. */
+/** Further off than this, the way you point is behind you: turn round. */
 const BEHIND = 100 * DEG;
-/** Coming round, brake down to this speed (m/s) before swinging. */
-const SWING_SPEED = 6;
+/** Turning round faster than this (m/s): brake hard in a straight line first. */
+const STRAIGHT_SPEED = 18;
+/** Turning round faster than this (m/s): a handbrake turn. */
+const HANDBRAKE_SPEED = 9;
+/** Turning round faster than this: brake while swinging. */
+const SWING_SPEED = 5;
 /** Easing off the gas in sharp turns. */
 const SHARP = 45 * DEG;
 
@@ -30,7 +35,7 @@ function pointing(input: Input): { dir: number; push: number } | null {
   return x || y ? { dir: Math.atan2(y, x), push: 1 } : null;
 }
 
-export function pointDrive(input: Input, you: YouState, heading: number, tank: boolean): { throttle: number; steer: number } {
+export function pointDrive(input: Input, you: YouState, heading: number, tracks: boolean): { throttle: number; steer: number; handbrake?: boolean } {
   const p = pointing(input);
   const [, , , vx, vy, av] = you.body;
   const vf = vx * Math.cos(heading) + vy * Math.sin(heading);
@@ -46,9 +51,15 @@ export function pointDrive(input: Input, you: YouState, heading: number, tank: b
   // Straight back: come round the way the car is already turning.
   if (Math.abs(diff) > 170 * DEG && av) diff = Math.sign(av) * Math.abs(diff);
   if (Math.abs(diff) > BEHIND) {
-    const steer = Math.sign(diff) || 1;
-    if (tank) return { throttle: 0, steer }; // tracks turn on the spot
-    return { throttle: vf > SWING_SPEED ? -1 : p.push * 0.6, steer };
+    // Turning round, as tight as the speed allows. The physics turns the other way while the car
+    // rolls backwards (sliding round in a handbrake turn, it can), so the steer follows that.
+    const way = Math.sign(diff) || 1;
+    if (tracks) return { throttle: 0, steer: way * (vf < -0.5 ? -1 : 1) }; // on the spot
+    const steer = way * (vf < 0 ? -1 : 1);
+    if (vf > STRAIGHT_SPEED) return { throttle: -1, steer: 0 };
+    if (vf > HANDBRAKE_SPEED) return { throttle: -1, steer, handbrake: true };
+    if (vf > SWING_SPEED) return { throttle: -1, steer };
+    return { throttle: p.push * 0.5, steer };
   }
   return { throttle: p.push * (Math.abs(diff) > SHARP ? 0.7 : 1), steer: steerTo(diff) };
 }

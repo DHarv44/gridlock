@@ -28,7 +28,7 @@ function fake(keys: string[], mode: DriveMode, pad: Partial<Input['pad']> = {}):
   } as unknown as Input;
 }
 
-const car = vehicleIndex('sedan'), spec = VEHICLES[car];
+let car = vehicleIndex('sedan'), spec = VEHICLES[car];
 const ctl = (): Controls => ({ mx: 0, my: 0, throttle: 0, steer: 0, handbrake: false, sprint: false, up: false, down: false } as Controls);
 /** Drives for `secs` with the given input; returns the body. */
 function drive(b: Body, input: Input, secs: number, st = new Steering()): Body {
@@ -36,7 +36,7 @@ function drive(b: Body, input: Input, secs: number, st = new Steering()): Body {
   for (let t = 0; t < secs; t += DT) {
     const you = { mode: Mode.Driver, vt: car, body: [b.x, b.y, b.angle, b.vx, b.vy, b.av, 0, b.angle] } as unknown as YouState;
     const o = st.step(input, you, b.angle, DT, b, () => null);
-    c.throttle = o.throttle; c.steer = o.steer;
+    c.throttle = o.throttle; c.steer = o.steer; c.handbrake = !!o.handbrake;
     stepVehicle(b, spec, c, DT, open, true);
   }
   return b;
@@ -67,6 +67,26 @@ for (let i = 0; i < 8 / DT; i++) {
   minVf = Math.min(minVf, b.vx * Math.cos(b.angle) + b.vy * Math.sin(b.angle));
 }
 check(Math.abs(angleDiff(b.angle, SOUTH)) < 10 * DEG && minVf > -0.5, `point: S at speed, it turns round to the south without backing up (heading ${(b.angle / DEG).toFixed(0)}°)`);
+// Turning round from speed: how long it takes and how wide it swings, at a few speeds.
+const turnaround = (speed: number) => {
+  const tb = at(NORTH, speed), st2 = new Steering();
+  let t = 0, wide = 0, over = 0;
+  // Round = facing south (within 15°) and going that way at 4 m/s.
+  while (t < 12 && !(Math.abs(angleDiff(tb.angle, SOUTH)) < 15 * DEG && tb.vy > 4)) {
+    drive(tb, fake(['brake'], 'point'), DT, st2);
+    t += DT; wide = Math.max(wide, Math.abs(tb.x)); over = Math.min(over, tb.y);
+  }
+  return { t, wide, over: -over };
+};
+// Fast, it brakes straight and then handbrake-turns, so the turn itself fits in a road.
+const sedan = car;
+for (const id of ['compact', 'sedan', 'sports', 'humvee_gun', 'bus', 'ambulance']) {
+  car = vehicleIndex(id); spec = VEHICLES[car];
+  const r = turnaround(spec.maxSpeed * 0.8);
+  const fits = r.wide < (spec.length > 6 ? 9 : 6); // big vans, buses and trucks need more room
+  check(fits && r.t < 3, `point: ${id} turns round from ${(spec.maxSpeed * 0.8).toFixed(0)} m/s in ${r.t.toFixed(1)} s, ${r.wide.toFixed(1)} m wide (${r.over.toFixed(1)} m braking past the turn)`);
+}
+car = sedan; spec = VEHICLES[car];
 // Reverse, Aim held: pointing south while facing north backs straight down the screen.
 b = drive(at(NORTH), fake(['aim', 'brake'], 'point'), 3);
 check(b.y > 3 && Math.abs(angleDiff(b.angle, NORTH)) < 10 * DEG, 'point: Aim + S backs straight down, still facing north');
