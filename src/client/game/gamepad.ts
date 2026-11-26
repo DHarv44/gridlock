@@ -47,10 +47,12 @@ export const padAxes = (): { group: string; input: string; use: string }[] => [
   { group: 'Car', input: 'Left stick', use: 'Steer' },
   { group: 'Car', input: padButtonName(7), use: 'Accelerate' },
   { group: 'Car', input: padButtonName(6), use: 'Brake / reverse' },
+  { group: 'Car', input: 'Right stick', use: 'Aim out of the window (drive-by)' },
   { group: 'Helicopter', input: 'Left stick', use: 'Turn' },
   { group: 'Helicopter', input: padButtonName(7), use: 'Fly forward' },
   { group: 'Helicopter', input: padButtonName(6), use: 'Fly back' },
-  { group: 'Tank', input: 'Right stick', use: 'Turret' },
+  { group: 'Helicopter', input: 'Right stick', use: 'Aim the guns (around the nose)' },
+  { group: 'Tank', input: 'Right stick', use: 'Point the turret' },
 ];
 
 // Bumped when defaults change (v2: every action its own setting, grouped by context).
