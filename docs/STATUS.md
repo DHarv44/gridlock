@@ -86,13 +86,6 @@
   character marked "welcome". `npm run voices` masters recordings into src/client/voice/,
   `npm run scripts` writes content/SCRIPTS.md. The user records the lines (Benny's are in); the
   rest are silent bubbles until recorded (or filled by scripts/voice-calls.ts).
-- Aiming (2026-11-26): you face the mouse (from your character on screen toward it, hud/crosshair.ts
-  keeps where you stand); on foot W/S/A/D are forward, back and strafe from that facing (no more
-  screen-direction keys). Right click (Aim) shows a crosshair at the mouse and zooms the camera in;
-  it is also the "aiming on purpose" a hold-up needs. Twin-stick on a controller: the right stick
-  aims on foot, out of a car window, the heli guns, or points a turret, and wins over the mouse.
-  `npx tsx scripts/steering.ts`. A car's radio is shared: whoever rides in it retunes it for
-  everybody (protocol 16, room.ts 'radio').
 - Company (2026-11-23): waypoints go to the server and show, in each player's colour, to everyone in
   the same vehicle; players riding inside a car have their names over it; a passed job's pay is split
   with the players riding with you or within RULES.shareRange; you can bail out of a moving vehicle

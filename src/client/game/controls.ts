@@ -1,8 +1,7 @@
 // Player actions and their key bindings: two slots per action, each rebindable. Every action is
 // its own setting, grouped by where it applies (on foot, car, helicopter, tank, weapons, general);
-// the same key can do different jobs in different groups (Space: jump / handbrake / climb). You face
-// the mouse; on foot the movement keys go by that facing (forward, back, strafe). Holding Aim brings
-// up a crosshair and zooms in. Mouse buttons bind like keys.
+// the same key can do different jobs in different groups (Space: jump / handbrake / climb). There
+// is no cursor: holding Aim turns mouse motion into a 360° facing; mouse buttons bind like keys.
 
 export type Action =
   | 'footUp' | 'footDown' | 'footLeft' | 'footRight' | 'jump' | 'sprint'
@@ -22,10 +21,10 @@ export interface ActionDef { id: Action; label: string; kind: ActionKind; contex
 const A = (id: Action, label: string, kind: ActionKind, context: Context, group: string, keys: string[]): ActionDef => ({ id, label, kind, context, group, keys });
 
 export const ACTIONS: ActionDef[] = [
-  A('footUp', 'Forward (toward the mouse)', 'held', 'foot', 'On foot', ['KeyW', 'ArrowUp']),
-  A('footDown', 'Back', 'held', 'foot', 'On foot', ['KeyS', 'ArrowDown']),
-  A('footLeft', 'Strafe left', 'held', 'foot', 'On foot', ['KeyA', 'ArrowLeft']),
-  A('footRight', 'Strafe right', 'held', 'foot', 'On foot', ['KeyD', 'ArrowRight']),
+  A('footUp', 'Move up', 'held', 'foot', 'On foot', ['KeyW', 'ArrowUp']),
+  A('footDown', 'Move down', 'held', 'foot', 'On foot', ['KeyS', 'ArrowDown']),
+  A('footLeft', 'Move left', 'held', 'foot', 'On foot', ['KeyA', 'ArrowLeft']),
+  A('footRight', 'Move right', 'held', 'foot', 'On foot', ['KeyD', 'ArrowRight']),
   A('jump', 'Jump', 'held', 'foot', 'On foot', ['Space']),
   A('sprint', 'Sprint', 'held', 'foot', 'On foot', ['ShiftLeft']),
   A('gas', 'Accelerate', 'held', 'car', 'Car', ['KeyW', 'ArrowUp']),
@@ -43,7 +42,7 @@ export const ACTIONS: ActionDef[] = [
   A('turretLeft', 'Turret left', 'held', 'tank', 'Tank', ['Comma']),
   A('turretRight', 'Turret right', 'held', 'tank', 'Tank', ['Period']),
   A('fire', 'Fire / swing', 'held', 'any', 'Weapons', ['Mouse0', 'ControlLeft']),
-  A('aim', 'Aim (hold: crosshair, zoom in)', 'held', 'any', 'Weapons', ['Mouse2']),
+  A('aim', 'Aim (hold: the mouse turns you)', 'held', 'any', 'Weapons', ['Mouse2']),
   A('prevWeapon', 'Previous weapon', 'edge', 'any', 'Weapons', ['KeyZ']),
   A('nextWeapon', 'Next weapon', 'edge', 'any', 'Weapons', ['KeyX']),
   A('action', 'Action: get in/out, shops, property', 'ui', 'any', 'General', ['KeyE', 'KeyF']),
