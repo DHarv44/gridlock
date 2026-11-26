@@ -34,11 +34,12 @@ export class Skids {
   begin(): void { this.squeal.k = 0; }
 
   /** One car, every frame: position, heading, velocity and height above the road. */
-  update(fx: Effects, id: number, spec: VehicleSpec, x: number, y: number, a: number, vx: number, vy: number, alt: number, dt: number): void {
+  update(fx: Effects, id: number, spec: VehicleSpec, x: number, y: number, a: number, vx: number, vy: number, alt: number, dt: number, burnout = false): void {
     const speed = Math.hypot(vx, vy);
     let t = this.cars.get(id);
     if (!t) { if (this.cars.size > 400) this.cars.clear(); this.cars.set(id, t = { a, speed, load: 0, wheels: null }); }
     if (dt <= 0) return;
+    if (burnout) { this.burnout(fx, t, spec, x, y, a, dt); return; }
     // Cornering (turn rate x speed) or braking, smoothed so one jumpy frame doesn't mark.
     const slip = Math.abs(-vx * Math.sin(a) + vy * Math.cos(a));
     const raw = skids(spec) && alt < 0.2 && speed > MIN_SPEED
@@ -64,5 +65,24 @@ export class Skids {
       fx.tyreSmoke(now[0], now[1], k);
       fx.tyreSmoke(now[2], now[3], k);
     }
+  }
+
+  /** A burnout: the rear tyres spinning on the spot, full squeal, thick smoke, rubber laid down
+   *  where they sit (and in arcs as the tail swings round). */
+  private burnout(fx: Effects, t: Track, spec: VehicleSpec, x: number, y: number, a: number, dt: number): void {
+    t.load = FULL_LOAD; t.a = a; t.speed = 0;
+    this.squeal = { k: 1, x, y };
+    const c = Math.cos(a), s = Math.sin(a);
+    const bx = x - c * spec.length * 0.33, by = y - s * spec.length * 0.33;
+    const ox = -s * (spec.width / 2 - 0.25), oy = c * (spec.width / 2 - 0.25);
+    const now = [bx + ox, by + oy, bx - ox, by - oy];
+    const was = t.wheels ?? now;
+    // A short dab under each wheel (spinning in place), or the arc it swung through.
+    for (const w of [0, 2]) {
+      const moved = Math.hypot(now[w] - was[w], now[w + 1] - was[w + 1]) > 0.05;
+      if (moved || Math.random() < dt * 8) fx.skid(moved ? was[w] : now[w] - c * 0.25, moved ? was[w + 1] : now[w + 1] - s * 0.25, now[w], now[w + 1], 1);
+    }
+    t.wheels = now;
+    if (Math.random() < dt * 40) { fx.tyreSmoke(now[0], now[1], 1); fx.tyreSmoke(now[2], now[3], 1); }
   }
 }

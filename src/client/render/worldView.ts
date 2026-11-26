@@ -314,7 +314,7 @@ export class WorldView {
     if (flags & VF.burning) { this.fx.fire(x, y, spec.width); if (night > 0.1) this.fx.glow.put(x, y, 0.1, 10, 1, 0, 1, 0.5, 0.15, 0.35 * night); }
     if (charred && Math.random() < dt * 3) this.fx.smoke(x, y, 1.5, 1);
     // Tyre marks and smoke when sliding.
-    this.skids.update(this.fx, e.id, spec, x, y, a, mine ? own!.vx : e.vx, mine ? own!.vy : e.vy, alt, dt);
+    this.skids.update(this.fx, e.id, spec, x, y, a, mine ? own!.vx : e.vx, mine ? own!.vy : e.vy, alt, dt, !!(flags & VF.burnout));
   }
 
   private projectile(e: ViewEntity): void {

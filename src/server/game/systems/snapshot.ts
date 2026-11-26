@@ -2,6 +2,7 @@
 import { r2 } from '../../../shared/math';
 import { GANGS, RULES } from '../../../shared/packs';
 import { flies } from '../../../shared/sim/kinds';
+import { burningOut } from '../../../shared/sim/physics';
 import { objectivePoint } from '../missions/kinds';
 import { damageLevels } from '../combat/damage';
 import { EK, FULL_SNAP_EVERY, FX, Mode, PF, type PlayerInfo, type S2C, VF, type YouState } from '../../../shared/protocol';
@@ -37,6 +38,7 @@ function vehFlags(w: World, v: Vehicle): number {
   const fwd = v.body.vx * Math.cos(v.body.angle) + v.body.vy * Math.sin(v.body.angle);
   if (fwd < -0.5) f |= VF.reverse;
   if (v.rearT > 0) f |= VF.rearing;
+  if (v.seats[0] && burningOut(v.spec, v.ctl, Math.abs(fwd))) f |= VF.burnout;
   if (isLame(v)) f |= VF.lame;
   const hour = (w.gameMinutes / 60) % 24;
   // Lights on from dusk (5 pm, as the sky starts to go) until 7 am, whenever someone's driving.

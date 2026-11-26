@@ -49,7 +49,8 @@ export const EK = { Ped: 0, Veh: 1, Proj: 2, Pickup: 3, Fire: 4 } as const;
 
 export const PF = { dead: 1, fast: 2, aim: 4, burning: 8, down: 16, player: 32, busy: 64, jump: 128, hands: 256 } as const;
 /** `rearing` / `lame`: a mount spooked up on its hind legs, or hurt to a limp (systems/mounts.ts). */
-export const VF = { siren: 1, wreck: 2, burning: 4, brake: 8, lights: 16, driven: 32, smoke: 64, reverse: 128, rearing: 256, lame: 512 } as const;
+/** `burnout`: gas and handbrake together, wheels spinning on the spot (sim/physics.ts burningOut). */
+export const VF = { siren: 1, wreck: 2, burning: 4, brake: 8, lights: 16, driven: 32, smoke: 64, reverse: 128, rearing: 256, lame: 512, burnout: 1024 } as const;
 export const PK = { cash: 0, weapon: 1, health: 2, armor: 3, frenzy: 4 } as const;
 
 /** Hit: [8, attacker ped, victim ped, weapon index]: a melee blow landing. */

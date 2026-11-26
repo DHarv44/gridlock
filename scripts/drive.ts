@@ -10,7 +10,7 @@ import { Skids } from '../src/client/render/skids';
 import { angleDiff } from '../src/shared/math';
 import { RULES, VEHICLES, vehicleIndex } from '../src/shared/packs';
 import { Mode, type YouState } from '../src/shared/protocol';
-import { type Body, type Controls, stepVehicle, wearOf } from '../src/shared/sim/physics';
+import { type Body, burningOut, type Controls, stepVehicle, wearOf } from '../src/shared/sim/physics';
 import type { StaticWorld } from '../src/shared/world/collision';
 import { blockBy, obbVsObb } from '../src/shared/sim/dynamic';
 
@@ -154,6 +154,21 @@ check(r.marks === 0 && r.squeal === 0, 'turning a bit at town speed, easing off 
 }
 r = run(at(NORTH, 30), () => ctl({ throttle: 1, steer: 1 }), 30);
 check(r.marks > 0, `a full-lock turn at 30 m/s marks the road (${r.marks})`);
+
+// Burnout: gas and handbrake at a standstill; it stays put (steering, it spins round), and let go of
+// the handbrake, it launches.
+{
+  const spec = VEHICLES[vehicleIndex('muscle')];
+  const b = at(NORTH, 0);
+  const x0 = b.x, y0 = b.y;
+  for (let i = 0; i < 60; i++) stepVehicle(b, spec, ctl({ throttle: 1, handbrake: true }), DT, open, true);
+  check(Math.hypot(b.x - x0, b.y - y0) < 2.5 && burningOut(spec, ctl({ throttle: 1, handbrake: true }), Math.abs(b.vx * Math.cos(b.angle) + b.vy * Math.sin(b.angle))), `gas and handbrake: a burnout, the car creeps ${Math.hypot(b.x - x0, b.y - y0).toFixed(1)} m in 2 s`);
+  const a0 = b.angle;
+  for (let i = 0; i < 60; i++) stepVehicle(b, spec, ctl({ throttle: 1, handbrake: true, steer: 1 }), DT, open, true);
+  check(Math.abs(b.angle - a0) > Math.PI && Math.hypot(b.x - x0, b.y - y0) < 8, `steering through it, a donut: it swings ${(Math.abs(b.angle - a0) / DEG).toFixed(0)}° round in 2 s, staying within ${Math.hypot(b.x - x0, b.y - y0).toFixed(1)} m`);
+  for (let i = 0; i < 30; i++) stepVehicle(b, spec, ctl({ throttle: 1 }), DT, open, true);
+  check(Math.hypot(b.vx, b.vy) > 4, `let go of the handbrake: it launches (${Math.hypot(b.vx, b.vy).toFixed(1)} m/s after 1 s)`);
+}
 
 console.log(failures ? `${failures} check(s) failed` : 'all driving checks passed');
 process.exit(failures ? 1 : 0);

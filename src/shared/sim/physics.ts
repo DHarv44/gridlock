@@ -163,6 +163,7 @@ function stepHandbrake(b: Body, spec: VehicleSpec, c: Controls, dt: number, worl
   const fx = Math.cos(b.angle), fy = Math.sin(b.angle);
   let vf = b.vx * fx + b.vy * fy;
   let vl = -b.vx * fy + b.vy * fx;
+  if (burningOut(spec, c, Math.abs(vf))) return stepBurnout(b, spec, c, dt, world, vf, vl);
   vl *= Math.exp(-spec.grip * HANDBRAKE_GRIP * dt);
   if (c.throttle > 0) vf += spec.accel * c.throttle * HANDBRAKE_POWER * dt;
   b.vx = fx * vf - fy * vl;
@@ -178,6 +179,30 @@ function stepHandbrake(b: Body, spec: VehicleSpec, c: Controls, dt: number, worl
   const targetAv = c.steer * spec.turnRate * HANDBRAKE_SPIN * clamp(speed / 2, 0, 1);
   b.av += (targetAv - b.av) * Math.min(1, 10 * dt);
   b.angle += b.av * dt;
+  b.x += b.vx * dt;
+  b.y += b.vy * dt;
+  return collideStatic(b, spec, world, 0);
+}
+
+/** Gas and handbrake together at a standstill or a crawl (`speed`: forward speed; the tail swinging
+ *  round in a donut doesn't count): a burnout (cars only; a bike or a rig just brakes). The same test
+ *  tells the renderer to smoke (VF.burnout). */
+export const burningOut = (spec: VehicleSpec, c: Controls, speed: number): boolean =>
+  spec.movement === 'wheels' && !spec.minTurnRadius && c.handbrake && c.throttle > 0.5 && speed < BURNOUT_MAX;
+const BURNOUT_MAX = 5;
+
+/** A burnout: the driven wheels spin against the brakes, so the car barely creeps forward; steering
+ *  swings the tail round the front wheels (a donut). Let go of the handbrake and it launches. */
+function stepBurnout(b: Body, spec: VehicleSpec, c: Controls, dt: number, world: StaticWorld, vf: number, vl: number): number {
+  vf = approach(vf, 0.6 * c.throttle, 6 * dt);
+  // The tail swings round the front axle: the centre moves sideways with the turn.
+  const targetAv = c.steer * spec.turnRate * 1.3;
+  b.av += (targetAv - b.av) * Math.min(1, 6 * dt);
+  vl = approach(vl, -b.av * spec.length * 0.4, 20 * dt);
+  b.angle += b.av * dt;
+  const fx = Math.cos(b.angle), fy = Math.sin(b.angle);
+  b.vx = fx * vf - fy * vl;
+  b.vy = fy * vf + fx * vl;
   b.x += b.vx * dt;
   b.y += b.vy * dt;
   return collideStatic(b, spec, world, 0);
