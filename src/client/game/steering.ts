@@ -5,6 +5,7 @@
 // or gas and brake. Weapons fire the way you aim, with auto-aim onto the nearest target in a cone.
 import { VEHICLES } from '../../shared/packs';
 import { flies } from '../../shared/sim/kinds';
+import { canFireFrom, withinArc } from '../../shared/sim/firingArc';
 import { Mode, type YouState } from '../../shared/protocol';
 import type { Input } from './input';
 
@@ -43,19 +44,29 @@ export class Steering {
     // Twin-stick: the right stick (or the mouse while Aim is held) points where you aim, in screen
     // directions, wherever you're moving or facing.
     const mouse = input.mouseAim();
-    const pointed = mouse ?? (pad.rx || pad.ry ? Math.atan2(pad.ry, pad.rx) : null);
-    input.aimingNow = pointed !== null;
+    const stick = pad.rx || pad.ry ? Math.atan2(pad.ry, pad.rx) : null;
+    // In a vehicle the mouse aims all the time (where the crosshair is); on foot only with Aim held.
+    const pointed = mouse ?? stick ?? (inCar ? input.mouseDirection() : null);
+    input.aimingNow = mouse !== null || stick !== null;
+    input.fireBlocked = false;
     if (inCar) {
       this.lastHeading = heading;
-      const rate = you.vt >= 0 ? VEHICLES[you.vt].turret ?? 0 : 0;
+      const spec = you.vt >= 0 ? VEHICLES[you.vt] : null;
+      const rate = spec?.turret ?? 0;
       const tank = rate > 0; // any vehicle with a turret aims it (tanks, gun trucks)
       // A turret swings toward where you point (at its own speed, on the server) and holds that
       // angle to the hull when you let go; the turret keys turn it bit by bit.
       if (tank && pointed !== null) this.turret = pointed - heading;
       else if (tank) this.turret += input.axis('turretLeft', 'turretRight') * Math.max(TURRET_RATE, rate) * dt;
-      // Otherwise you shoot out of the window: where you point, or ahead when you don't.
+      // Otherwise you shoot out of the window: where you point, or ahead when you don't; never
+      // behind you (shared/sim/firingArc.ts: the trigger does nothing there, the crosshair says so).
       let aim = tank ? heading + this.turret : pointed ?? heading;
-      if (!tank && firing) aim = assist(from.x, from.y, aim) ?? aim;
+      if (!tank && spec && !flies(spec)) {
+        input.fireBlocked = !canFireFrom(spec, heading, aim);
+        aim = withinArc(spec, heading, aim);
+      }
+      if (!tank && firing && !input.fireBlocked) aim = assist(from.x, from.y, aim) ?? aim;
+      if (!tank && spec && !flies(spec)) aim = withinArc(spec, heading, aim);
       this.facing = aim;
       if (mode !== Mode.Driver) return { mx: 0, my: 0, throttle: 0, steer: 0, aim };
       // Pad: left stick steers in proportion, RT/LT are progressive gas and brake.

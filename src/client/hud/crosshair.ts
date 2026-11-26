@@ -28,6 +28,7 @@ export class Crosshair {
   private v = new THREE.Vector3();
   private shown = false;
   private aiming = false;
+  private blocked = false;
 
   constructor(parent: HTMLElement) {
     this.el.className = 'crosshair';
@@ -46,6 +47,8 @@ export class Crosshair {
     const show = !!at && input.enabled && (input.mouseActive || input.scoped);
     if (show !== this.shown) { this.shown = show; this.el.classList.toggle('on', show); }
     if (input.scoped !== this.aiming) { this.aiming = input.scoped; this.el.classList.toggle('aiming', this.aiming); }
+    // Riding with the mouse behind you: a shot can't be taken there.
+    if (input.fireBlocked !== this.blocked) { this.blocked = input.fireBlocked; this.el.classList.toggle('blocked', this.blocked); }
     if (!show) return;
     const p = input.crosshair();
     // Zoomed in, the spot the mouse marks sits 1 / scope times further out from you.

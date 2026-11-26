@@ -52,5 +52,24 @@ close(); punch(1); check(mark.down > 0, 'the third in a row floors them');
 const hits = Math.ceil(PEDS[civ].hp / fists.damage);
 check(hits <= 7, `a civilian goes down for good in ${hits} punches (was 12)`);
 
+// From a car the server refuses a shot behind you (even if a client sends one), and takes one out
+// of the side window.
+{
+  const { seatPed, spawnVehicle } = await import('../src/server/game/factory');
+  const { vehicleIndex, weaponIndex } = await import('../src/shared/packs');
+  const car = spawnVehicle(w, vehicleIndex('sedan'), me.body.x + 20, me.body.y, 0);
+  seatPed(w, me, car, 0);
+  me.wi = me.weapons.findIndex((h) => h.w === weaponIndex('pistol'));
+  const shoot = (aim: number) => {
+    const before = fx.length;
+    me.fireCd = 0;
+    pl.queue.push([0, 0, 0, 0, 0, aim, 1, -1]); room.tick(); fx.push(...w.fx);
+    pl.queue.push([0, 0, 0, 0, 0, aim, 0, -1]); room.tick(); fx.push(...w.fx);
+    return fx.slice(before).some((e) => e[0] === FX.Shot);
+  };
+  check(!shoot(car.body.angle + Math.PI), 'from a car, a shot behind you is refused');
+  check(shoot(car.body.angle + Math.PI / 2), 'and one out of the side window goes off');
+}
+
 console.log(failures ? `${failures} check(s) failed` : 'all melee checks passed');
 process.exit(failures ? 1 : 0);

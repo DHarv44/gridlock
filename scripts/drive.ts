@@ -8,7 +8,7 @@ import type { Input } from '../src/client/game/input';
 import type { Effects } from '../src/client/render/effects';
 import { Skids } from '../src/client/render/skids';
 import { angleDiff } from '../src/shared/math';
-import { VEHICLES, vehicleIndex } from '../src/shared/packs';
+import { RULES, VEHICLES, vehicleIndex } from '../src/shared/packs';
 import { Mode, type YouState } from '../src/shared/protocol';
 import { type Body, type Controls, stepVehicle, wearOf } from '../src/shared/sim/physics';
 import type { StaticWorld } from '../src/shared/world/collision';
@@ -21,13 +21,14 @@ const open = { resolveObb: () => null } as unknown as StaticWorld; // open groun
 const NORTH = -Math.PI / 2, SOUTH = Math.PI / 2;
 
 /** A stand-in for the real input: held actions (by id), the pad's sticks and triggers. */
-function fake(keys: string[], pad: Partial<Input['pad']> = {}): Input {
+function fake(keys: string[], pad: Partial<Input['pad']> = {}, mouseAt: number | null = null): Input {
   return {
     pad: { lx: 0, ly: 0, rx: 0, ry: 0, lt: 0, rt: 0, ...pad },
-    triggerFires: false, aimingNow: false, facingHint: 0,
+    triggerFires: false, aimingNow: false, facingHint: 0, fireBlocked: false,
     held: (a: string) => keys.includes(a),
     axis: (neg: string, pos: string) => (keys.includes(pos) ? 1 : 0) - (keys.includes(neg) ? 1 : 0),
     mouseAim: () => null,
+    mouseDirection: () => mouseAt,
   } as unknown as Input;
 }
 
@@ -45,6 +46,22 @@ o = out(fake(['brake', 'steerLeft']));
 check(o.throttle === -1 && o.steer === -1, 'S brakes / reverses, A steers left');
 o = out(fake([], { rt: 0.6, lt: 0.2, lx: -0.4 }));
 check(Math.abs(o.throttle - 0.4) < 1e-9 && Math.abs(o.steer + 0.4) < 1e-9, 'pad: RT - LT, the left stick steers');
+
+// Shooting from a car: the mouse aims without holding Aim; out of the windows, never behind you.
+{
+  const near = (a: number, b: number) => Math.abs(angleDiff(a, b)) < 1e-6;
+  const ride = (vt: number, mouseAt: number) => {
+    const input = fake(['fire'], {}, mouseAt);
+    const r = new Steering().step(input, { mode: Mode.Driver, vt, body: [0, 0, 0, 0, 0, 0, 0, 0] } as unknown as YouState, 0, DT, { x: 0, y: 0 }, () => null);
+    return { aim: r.aim, blocked: input.fireBlocked };
+  };
+  const side = ride(car, Math.PI / 2), ahead = ride(car, 0.3), back = ride(car, Math.PI);
+  check(near(side.aim, Math.PI / 2) && !side.blocked && near(ahead.aim, 0.3), 'in a car the mouse aims out of the window, no Aim needed');
+  check(back.blocked && Math.abs(back.aim) <= RULES.windowArc + 1e-6, 'pointing behind a closed car: no shot (the trigger does nothing)');
+  const bike = vehicleIndex('streetbike');
+  const over = ride(bike, 2.4);
+  check(!over.blocked && near(over.aim, 2.4) && ride(bike, Math.PI).blocked, 'riding open (a bike) you can twist round further, still not straight back');
+}
 
 // Handbrake 180: at speed, hold the handbrake and steer; it slides round to face back the way it
 // came, and let go with the gas on it drives off that way.

@@ -75,6 +75,10 @@ export const DEFAULT_RULES = {
   // of its pull and `wearSpeed` of its top speed, `wearGrip` of its grip, and pulling to one side by
   // `wearPull` of full lock.
   wearFrom: 0.7, wearPower: 0.5, wearSpeed: 0.6, wearGrip: 0.75, wearPull: 0.12,
+  // Shooting a hand weapon from a vehicle (radians either side of straight ahead): out of a car's
+  // windows you can't fire behind you (`windowArc`, ~110°); riding open (a bike, an open-top, a
+  // horse, a wagon bench) you can twist round further (`openArc`, ~150°), just not straight back.
+  windowArc: 1.92, openArc: 2.62,
   // Jobs done with company: other players riding with you, or this close when it's done, split the
   // pay evenly with you.
   shareRange: 30,

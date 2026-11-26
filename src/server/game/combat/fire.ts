@@ -2,6 +2,7 @@
 import { angleDiff, r2 } from '../../../shared/math';
 import { VEHICLES, WEAPONS, type WeaponSpec, weaponIndex } from '../../../shared/packs';
 import { flies } from '../../../shared/sim/kinds';
+import { firingArc } from '../../../shared/sim/firingArc';
 import { FX, HIT } from '../../../shared/protocol';
 import { rayAabb, rayCircle } from '../../../shared/world/collision';
 import { onNoise } from '../ai/reactions';
@@ -73,6 +74,12 @@ export function tryFire(w: World, p: Ped): void {
   if (!aw) return;
   const { spec, index, mounted } = aw;
   if (!spec.auto && prev) return;
+  // A hand weapon from a vehicle: not behind you (shared/sim/firingArc.ts; a little slack for the
+  // heading moving on since the client aimed).
+  if (!mounted && p.vehicle) {
+    const v = w.vehicles.get(p.vehicle);
+    if (v && !flies(v.spec) && Math.abs(angleDiff(v.body.angle, p.aim)) > firingArc(v.spec) + 0.1) return;
+  }
   if (!mounted && spec.clip > 0) {
     // GTA2 has no reloading: fire straight through your ammo, then move to another weapon.
     const h = p.weapons[p.wi];

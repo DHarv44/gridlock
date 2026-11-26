@@ -173,7 +173,7 @@ export class Input {
   takeButtons(): number {
     let b = this.edges;
     this.edges = 0;
-    if (this.held('fire')) b |= BTN.fire;
+    if (this.held('fire') && !this.fireBlocked) b |= BTN.fire;
     if (this.held('handbrake')) b |= BTN.handbrake;
     if (this.held('climb')) b |= BTN.up;
     if (this.held('jump')) b |= BTN.jump;
@@ -216,10 +216,20 @@ export class Input {
 
   /** Facing chosen with the mouse while Aim is held (from your character toward it), or null. */
   mouseAim(): number | null {
-    if (!this.aiming || !this.enabled || !this.mouseSeen) return null;
+    return this.aiming ? this.mouseDirection() : null;
+  }
+
+  /** The way from your character (or your vehicle) to the mouse on screen, aiming or not, while
+   *  the mouse is in use; null when it isn't or the mouse is right on you. */
+  mouseDirection(): number | null {
+    if (!this.enabled || !this.mouseActive) return null;
     const dx = this.mouseX - this.anchorX, dy = this.mouseY - this.anchorY;
     return Math.hypot(dx, dy) < AIM_DEAD ? null : Math.atan2(dy, dx);
   }
+
+  /** Set by steering: you're riding and the mouse is behind you, where you can't shoot (the trigger
+   *  does nothing, and the crosshair says so). */
+  fireBlocked = false;
 
   private startAim(): void {
     this.aiming = true;
