@@ -21,12 +21,16 @@ $('sub').textContent = `${UNIVERSE.name} · up to ${RULES.maxPlayers} players`;
 loading.textContent = `Loading ${UNIVERSE.name}…`;
 
 /** Plays in another universe: its packs load with the page, so remember it and reload. */
-function switchUniverse(id: string, note?: string): void {
+function switchUniverse(id: string, note?: string, room?: string): void {
   localStorage.setItem(UNIVERSE_KEY, id);
   if (note) sessionStorage.setItem(NOTE_KEY, note);
+  // Always a real reload: with a room code after '#' (an invite link, or back from a game) the
+  // browser would only "navigate" within the page and nothing would change. The old code goes
+  // (it's a room in the other universe), unless `room` is the one to join over there.
   const url = new URL(location.href);
-  url.searchParams.delete('u');
-  location.replace(url.toString());
+  if (url.searchParams.has('u')) url.searchParams.delete('u');
+  history.replaceState(null, '', url.pathname + url.search + (room ? `#${room}` : ''));
+  location.reload();
 }
 const NOTE_KEY = 'gridlock.lobbyNote';
 
@@ -102,8 +106,7 @@ function start(create: boolean, room: string, resume = false): void {
       busy = false; conn.close(); off();
       // The room is a game in another universe: switch to it (the code stays in the address).
       if (m.universe && m.universe !== UNIVERSE.id && isUniverse(m.universe) && /^[A-Z]{4}$/.test(room)) {
-        history.replaceState(null, '', `#${room}`);
-        switchUniverse(m.universe, `${room} is a game in ${UNIVERSE_INFO.find((u) => u.id === m.universe)?.name ?? m.universe}: pick a character there and join.`);
+        switchUniverse(m.universe, `${room} is a game in ${UNIVERSE_INFO.find((u) => u.id === m.universe)?.name ?? m.universe}: pick a character there and join.`, room);
         return;
       }
       errorEl.textContent = m.reason;
