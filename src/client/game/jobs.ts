@@ -1,6 +1,6 @@
 // Client side of jobs: payphone booths, objective markers, the job HUD, respect, room mode.
 import * as THREE from 'three';
-import { GANGS, RESPECT } from '../../shared/packs';
+import { GANGS, RESPECT, RULES } from '../../shared/packs';
 import { Mode, type PlayerInfo, type S2C, type YouState } from '../../shared/protocol';
 import type { City } from '../../shared/world/cityTypes';
 import { type Booth, gangColor, gangSpots } from '../../shared/world/gangSpots';
@@ -85,7 +85,8 @@ export class Jobs {
   update(dt: number, you: YouState | null, me: { x: number; y: number } | null, glow: ParticleLayer, night: number, serverNow: number, mine: PlayerInfo | undefined, sound: Sound): void {
     if ((this.pickT -= dt) <= 0 || (this.onJob && this.ringing.size)) { this.pick(you, me); this.pickT = 12; }
     this.boothView.update(dt, (b) => this.ringing.has(b.id), glow, night);
-    if (this.boothView.newRing) for (const b of this.ringingBooths()) sound.play('phone_ring', b.x, b.y);
+    // A payphone rings out loud; a job post's bell only swings (no sound for it yet).
+    if (this.boothView.newRing && RULES.jobPost === 'payphone') for (const b of this.ringingBooths()) sound.play('phone_ring', b.x, b.y);
     this.marker.update(dt, you?.mt ?? null, glow);
     if (you) this.hud.update(serverNow, you.rs, mine, this.players);
   }

@@ -7,6 +7,7 @@ import type { Batch } from './instancing';
 
 // Massing lives in shared/world/massing.ts (the server needs the same roofs).
 import { KIND, type Mass } from '../../shared/world/massing';
+import { WORLD } from '../../shared/world/worldSpec';
 export { KIND, type Mass, massesFor } from '../../shared/world/massing';
 
 export interface DetailBatches {
@@ -64,6 +65,7 @@ export function decorate(b: Building, lot: Lot | undefined, masses: Mass[], rng:
     const plan = new RoofPlanner(m.r, rng);
     const area = W(m.r) * D(m.r);
     const y = m.h;
+    if (!WORLD.modern) continue; // an older era: bare roofs (parapets only)
     if (m.kind === KIND.metal) {
       // Skylight strips and a few vents on industrial roofs.
       const along = W(m.r) >= D(m.r);

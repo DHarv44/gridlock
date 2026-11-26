@@ -15,7 +15,8 @@ export interface Part {
 export type Paint = 'body' | 'glass' | 'dark' | 'chrome' | 'trim' | 'headlight' | 'taillight'
   | 'red' | 'blue' | 'white' | 'black' | 'yellow' | 'olive' | 'tire' | `#${string}`;
 
-export type Movement = 'wheels' | 'bike' | 'tracks' | 'rotor' | 'boat';
+/** `legs`: a ridden animal (a horse, a team pulling a wagon): no wheels, the rider sits astride. */
+export type Movement = 'wheels' | 'bike' | 'tracks' | 'rotor' | 'boat' | 'legs';
 
 export interface CrimeSpec {
   /** Heat added when a lawful unit sees it (civilian witnesses report half). */
@@ -58,6 +59,9 @@ export interface VehicleSpec {
    *  drive it. Without them it has no horn / no engine sound. */
   horn?: string;
   engine?: string;
+  /** How it dies at 0 hp: `explode` (default: burns a few seconds, then a blast) or `fall` (a
+   *  horse, a wagon: goes down at once, riders thrown, no fire). */
+  wrecks?: 'explode' | 'fall';
   armored?: boolean;    // occupants immune to small arms
   openTop?: boolean;    // occupants can be shot
   crushes?: boolean;    // drives over cars
@@ -370,6 +374,10 @@ export interface WorldSpec {
   arterialEvery: number;
   /** Colour of bare land where nothing else is drawn (between open-country blocks). */
   ground: string;
+  /** A modern place: paved streets with markings and traffic lights, street furniture (lamps,
+   *  hydrants, bins, shelters), rooftop machinery (AC units, tanks, vents, solar, helipads,
+   *  antennas). Not modern: every road is dirt, and none of that. */
+  modern: boolean;
 }
 
 /** What open country (zones with layout 'wild') is made of: scattered rock formations (solid,

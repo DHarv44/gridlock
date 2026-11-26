@@ -162,7 +162,7 @@ export class Game {
     addAtms(this.stage.scene, atmsOf(city));
     this.gas = new GasStations(this.stage.scene, city);
     this.interiors = new Interiors(this.stage.scene, city);
-    new Graffiti(this.stage.scene, city, meshes.graffitiSpots);
+    if (RULES.graffiti) new Graffiti(this.stage.scene, city, meshes.graffitiSpots);
     this.quality = new QualityGovernor(this.stage);
     this.quality.onAuto = (q) => this.hud.notify(`Graphics set to ${q} for a smoother frame rate (Esc to change)`, 'info');
     requestAnimationFrame(() => this.frame());

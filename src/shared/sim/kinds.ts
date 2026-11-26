@@ -11,15 +11,23 @@ export interface MovementTraits {
   /** Lives on water: floats (sinks only once wrecked), meets only other boats and swimmers, and
    *  you get out only at the shore. */
   floats?: boolean;
+  /** Runs on its own legs: no wheels drawn; its rider sits astride (drawn like a bike's). */
+  legs?: boolean;
+  /** Ridden astride (drawn at rider scale): bikes and horses. */
+  astride?: boolean;
 }
 
 export const MOVEMENTS: Record<Movement, MovementTraits> = {
   wheels: { skids: true },
-  bike: {},
+  bike: { astride: true },
   tracks: {},
   rotor: { flies: true },
   boat: { floats: true },
+  legs: { legs: true, astride: true },
 };
+
+export const onLegs = (spec: VehicleSpec): boolean => MOVEMENTS[spec.movement].legs === true;
+export const astride = (spec: VehicleSpec): boolean => MOVEMENTS[spec.movement].astride === true;
 
 export const flies = (spec: VehicleSpec): boolean => MOVEMENTS[spec.movement].flies === true;
 export const floats = (spec: VehicleSpec): boolean => MOVEMENTS[spec.movement].floats === true;

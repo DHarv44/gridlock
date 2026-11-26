@@ -199,7 +199,7 @@ export function genGraph(L: RoadLayout): { nodes: RoadNode[]; segs: Segment[]; b
     }
   }
   for (const n of nodes) {
-    n.lights = n.segs.length >= 3 && (xs[n.i].arterial || ys[n.j].arterial);
+    n.lights = WORLD.modern && n.segs.length >= 3 && (xs[n.i].arterial || ys[n.j].arterial);
     // Where only trails meet, the crossing is trail-sized and has no lights.
     if (n.segs.every((s) => segs[s].trail)) { n.wv = Math.min(n.wv, TRAIL_W); n.wh = Math.min(n.wh, TRAIL_W); n.lights = false; }
   }

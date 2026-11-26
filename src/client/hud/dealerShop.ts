@@ -2,6 +2,7 @@
 // picture, the picked one turning on the paint shop's turntable, its numbers as bars. Bought cars go
 // to your garage and are delivered outside.
 import { paletteFor, VEHICLES, vehicleIndex } from '../../shared/packs';
+import { onLegs } from '../../shared/sim/kinds';
 import type { YouState } from '../../shared/protocol';
 import { GarageScene } from '../render/garageScene';
 import { vehicleThumbs } from '../render/vehicleThumbs';
@@ -28,6 +29,7 @@ const showColor = (id: string, colors: Parameters<typeof paletteFor>[0]) => {
 const KIND = (t: number) => {
   const v = VEHICLES[t];
   if (v.movement === 'bike') return 'Motorbikes';
+  if (onLegs(v)) return v.trailer ? 'Wagons' : 'Horses';
   if (v.length > 6) return 'Trucks & buses';
   if (v.maxSpeed >= 42) return 'Sports';
   if (v.height >= 1.7) return 'Utility';

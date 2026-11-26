@@ -7,6 +7,7 @@ import { signalPosts } from '../../shared/world/breakables';
 import type { City, RoadNode } from '../../shared/world/cityTypes';
 import { lightState } from '../../shared/world/traffic';
 import { ZONES } from '../../shared/packs';
+import { WORLD } from '../../shared/world/worldSpec';
 import { Batch, lambert, UNIT } from './instancing';
 
 interface Signal { node: RoadNode; axis: 'h' | 'v'; x: number; y: number; down?: boolean }
@@ -18,6 +19,7 @@ export class StreetProps {
   private signalMesh: THREE.InstancedMesh | null = null;
 
   constructor(scene: THREE.Scene, private city: City, rng: Rng) {
+    if (!WORLD.modern) return; // an older era: no modern street furniture
     const box = new Batch(UNIT.box(), lambert());
     this.trafficSignals(scene);
     this.sidewalkClutter(box, rng);

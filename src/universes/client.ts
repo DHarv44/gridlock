@@ -4,6 +4,7 @@ import type { ClientAssets } from './clientTypes';
 
 const LOADERS: Record<string, () => Promise<{ ASSETS: ClientAssets }>> = {
   bayhaven: () => import('./bayhaven/client'),
+  redrock: () => import('./redrock/client'),
 };
 
 export async function loadClientAssets(id: string): Promise<ClientAssets> {

@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { type CharLook, VEHICLES, WEAPONS } from '../../shared/packs';
 import { EK, PF, PK, VF } from '../../shared/protocol';
+import { astride } from '../../shared/sim/kinds';
 import type { EntityStore, ViewEntity } from '../net/entities';
 import { FLOOR_H, floorOf, groundOf } from '../../shared/world/levels';
 import { putCarLights } from './carLights';
@@ -169,7 +170,7 @@ export class WorldView {
     if (!bike || !saddle) return false;
     if (v.root.parent !== bike.root) bike.root.add(v.root);
     // Sitting in a car (side by side, front and back) they need to be smaller to fit than astride a bike.
-    const k = VEHICLES[veh!.data[2]].movement === 'bike' ? RIDER_SCALE : SEAT_SCALE;
+    const k = astride(VEHICLES[veh!.data[2]]) ? RIDER_SCALE : SEAT_SCALE;
     v.root.scale.setScalar(k);
     v.root.rotation.set(0, 0, 0);
     // The model's left side is local -z (Blender +y), so + y (the driver's right) is + z.

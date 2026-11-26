@@ -1,7 +1,7 @@
 // The city map's legend: one button per kind of marker (icon, name, how many there are) that
 // shows or hides it with a click, plus All / None. Plain DOM over the map so it reads at full size
 // and clicks on it never land on the map underneath. The choice is remembered in this browser.
-import { SERVICES } from '../../shared/packs';
+import { RULES, SERVICES } from '../../shared/packs';
 import type { CityMap } from '../../shared/world/city';
 import { PLACE_ICON } from './minimap';
 import { handset } from './phoneIcon';
@@ -22,8 +22,11 @@ export class MapLegend {
     if (atms) count.set('atm', atms);
     count.set('property', map.city.properties.length);
     const rows: Row[] = [
-      ...Object.entries(PLACE_ICON).filter(([k]) => count.has(k)).map(([key, v]) => ({ key, label: v.label, icon: dot(v.color, v.glyph) })),
-      { key: 'phones', label: 'Ringing payphone', icon: phone() },
+      // A verb's label is the universe's name for its place (the first service with it: Gunsmith,
+      // Livery Stable...), else the engine's generic one.
+      ...Object.entries(PLACE_ICON).filter(([k]) => count.has(k))
+        .map(([key, v]) => ({ key, label: SERVICES.find((s) => s.verb === key)?.name ?? v.label, icon: dot(v.color, v.glyph) })),
+      { key: 'phones', label: RULES.jobPost === 'post' ? 'Job post with work' : 'Ringing payphone', icon: phone() },
       { key: 'property', label: 'Property', icon: house() },
       { key: 'players', label: 'Players', icon: dot('#ffffff', '') },
     ];

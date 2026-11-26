@@ -2,6 +2,7 @@
 // see the hood's blue PHONE sign (a white handset); the gang's colour is a stripe along its curb edge.
 // A phone that rings for you blinks its lamp, shakes its handset and lights the pavement.
 import * as THREE from 'three';
+import { RULES } from '../../shared/packs';
 import { type Booth, gangColor } from '../../shared/world/gangSpots';
 import { handset } from '../hud/phoneIcon';
 import type { ParticleLayer } from './particles';
@@ -37,6 +38,10 @@ export class Booths {
     const dark = new THREE.MeshLambertMaterial({ color: '#25272b' });
     const off = new THREE.MeshLambertMaterial({ color: '#3a3c40' });
     const sign = new THREE.MeshBasicMaterial({ map: signTexture() });
+    const post = RULES.jobPost === 'post';
+    const wood = new THREE.MeshLambertMaterial({ color: '#6b4a2e' });
+    const paper = new THREE.MeshLambertMaterial({ color: '#e6dcc0' });
+    const brass = new THREE.MeshLambertMaterial({ color: '#b58a3a' });
     for (const b of booths) {
       const color = gangColor(b.gang);
       const g = new THREE.Group();
@@ -48,6 +53,23 @@ export class Booths {
         g.add(m);
         return m;
       };
+      if (post) {
+        // A job post: a timber post with a notice board, the gang's flag and a bell that swings when
+        // there's work for you.
+        part(box, wood, 0.3, 0, 0, 0.18, 2.8, 0.18);                      // post
+        part(box, wood, 0.18, 1.0, 0, 0.08, 1.0, 1.1);                    // board
+        for (const z of [-0.28, 0.12]) part(box, paper, 0.12, 1.2 + z * 0.4, z, 0.02, 0.45, 0.32); // notices
+        part(box, wood, 0.1, 2.6, 0, 0.7, 0.08, 0.08);                    // arm
+        part(box, new THREE.MeshLambertMaterial({ color }), 0.32, 2.2, 0.35, 0.03, 0.5, 0.6); // gang flag
+        const bell = part(box, brass, -0.15, 2.25, 0, 0.22, 0.3, 0.22);   // the bell
+        const on = new THREE.MeshBasicMaterial({ color });
+        g.position.set(b.x, 0, b.y);
+        g.rotation.y = -b.angle;
+        scene.add(g);
+        bell.userData.off = brass;
+        this.phones.push({ booth: b, lamp: bell, handset: bell, on, color: new THREE.Color(color) });
+        continue;
+      }
       // Local +x points at the street; the phone faces -x (the sidewalk), where you stand to answer.
       part(box, metal, 0.3, 0, 0, 0.12, 2.4, 0.12);                       // pole
       part(box, shell, 0.22, 0.9, 0, 0.06, 1.2, 0.9);                     // back panel
@@ -78,8 +100,14 @@ export class Booths {
     const burst = this.t % RING_CYCLE < 2;
     for (const p of this.phones) {
       const ring = ringing(p.booth) && burst;
-      p.lamp.material = ring ? p.on : p.lamp.userData.off;
-      p.handset.position.y = 1.3 + (ring ? Math.sin(this.t * 90) * 0.015 : 0);
+      if (p.lamp === p.handset) {
+        // A job post's bell swings while it rings.
+        p.lamp.rotation.x = ring ? Math.sin(this.t * 14) * 0.5 : 0;
+        p.lamp.material = ringing(p.booth) ? p.on : p.lamp.userData.off;
+      } else {
+        p.lamp.material = ring ? p.on : p.lamp.userData.off;
+        p.handset.position.y = 1.3 + (ring ? Math.sin(this.t * 90) * 0.015 : 0);
+      }
       if (ringing(p.booth)) glow.put(p.booth.x, p.booth.y, 0.08, 3 + night * 3, 1, 0, p.color.r, p.color.g, p.color.b, (ring ? 0.4 : 0.18) + night * 0.25);
     }
   }

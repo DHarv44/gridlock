@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { PALETTE, type Paint, type Part, VEHICLES, type VehicleSpec } from '../../shared/packs';
+import { onLegs } from '../../shared/sim/kinds';
 import { hitchOffset } from '../../shared/sim/physics';
 import { densify, shapeGeometry, widthAt } from './bodyShape';
 import { type Model, type ModelPart, vehicleModel } from './models';
@@ -51,7 +52,7 @@ function partGeometry(spec: VehicleSpec, part: Part, color: THREE.Color): THREE.
 }
 
 function wheels(spec: VehicleSpec, axleOverride?: number[]): THREE.BufferGeometry[] {
-  if (spec.movement === 'rotor' || spec.movement === 'boat') return [];
+  if (spec.movement === 'rotor' || spec.movement === 'boat' || onLegs(spec)) return [];
   const out: THREE.BufferGeometry[] = [];
   const r = spec.movement === 'bike' ? 0.32 : spec.movement === 'tracks' ? 0 : Math.min(0.48, spec.height * 0.24);
   if (r === 0) return out;

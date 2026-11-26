@@ -11,11 +11,13 @@ export const DEFAULT_UNIVERSE: Universe = BAYHAVEN;
 
 const LOADERS: Record<string, () => Promise<Universe>> = {
   bayhaven: async () => BAYHAVEN,
+  redrock: async () => (await import('./redrock')).REDROCK,
 };
 
 /** What the universe picker lists (no packs loaded for it). */
 export const UNIVERSE_INFO: UniverseInfo[] = [
   { id: BAYHAVEN.id, name: BAYHAVEN.name, blurb: BAYHAVEN.blurb },
+  { id: 'redrock', name: 'Redrock Territory', blurb: 'An 1870s frontier territory: timber towns, prairie and badlands, horses, outlaws and the law.' },
 ];
 
 export const isUniverse = (id: unknown): id is string => typeof id === 'string' && id in LOADERS;

@@ -8,6 +8,11 @@ export const DEFAULT_RULES = {
    *  only. (Radio is on when the universe lists stations; ATMs where specs say `atm`; payphones
    *  per respect.phonesPerGang.) */
   cellPhone: true,
+  /** What gangs' job points look like: a payphone at the curb, or a timber post with a notice
+   *  board and a bell (no phone ring; render/booths.ts). */
+  jobPost: 'payphone' as 'payphone' | 'post',
+  /** Gangs spray their tags (FactionSpec.brand / tags) on walls in their turf. */
+  graffiti: true,
   /** Who works a walk-in counter when the layout doesn't name someone (a ped archetype id). */
   clerk: '',
   /** What a clerk who fights back pulls from under the counter if they carry no gun (weapon id). */

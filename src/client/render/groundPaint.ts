@@ -58,7 +58,7 @@ export function paintChunk(map: CityMap, cx: number, cy: number, canvas: HTMLCan
     const x0 = Math.min(s.x0, s.x1) - (s.axis === 'v' ? hw : 0), x1 = Math.max(s.x0, s.x1) + (s.axis === 'v' ? hw : 0);
     const y0 = Math.min(s.y0, s.y1) - (s.axis === 'h' ? hw : 0), y1 = Math.max(s.y0, s.y1) + (s.axis === 'h' ? hw : 0);
     if (!inView(x0, y0, x1, y1)) continue;
-    rect(x0, y0, x1, y1, s.trail ? TRAIL() : s.lanes > 1 ? ASPHALT_ART : ASPHALT);
+    rect(x0, y0, x1, y1, s.trail || !WORLD.modern ? TRAIL() : s.lanes > 1 ? ASPHALT_ART : ASPHALT);
     if (s.bridge) {
       rect(x0 - 1.2, y0, x0, y1, '#9a978e');
       rect(x1, y0, x1 + 1.2, y1, '#9a978e');
@@ -66,9 +66,9 @@ export function paintChunk(map: CityMap, cx: number, cy: number, canvas: HTMLCan
   }
   for (const n of city.nodes) {
     if (!inView(n.x - n.wv, n.y - n.wh, n.x + n.wv, n.y + n.wh)) continue;
-    rect(n.x - n.wv / 2, n.y - n.wh / 2, n.x + n.wv / 2, n.y + n.wh / 2, n.segs.every((si) => city.segs[si].trail) ? TRAIL() : ASPHALT);
+    rect(n.x - n.wv / 2, n.y - n.wh / 2, n.x + n.wv / 2, n.y + n.wh / 2, !WORLD.modern || n.segs.every((si) => city.segs[si].trail) ? TRAIL() : ASPHALT);
   }
-  for (const s of city.segs) if (!s.trail) roadWear(ctx, s, inView);
+  if (WORLD.modern) for (const s of city.segs) if (!s.trail) roadWear(ctx, s, inView);
 
   // Blocks and lots.
   for (const b of city.blocks) {
@@ -91,7 +91,7 @@ export function paintChunk(map: CityMap, cx: number, cy: number, canvas: HTMLCan
     rect(p.x0, p.y0, p.x1, p.y1, WATER);
   }
 
-  paintMarkings(ctx, map, inView);
+  if (WORLD.modern) paintMarkings(ctx, map, inView);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalAlpha = 0.12;
   ctx.globalCompositeOperation = 'overlay';
@@ -193,8 +193,9 @@ function paintLot(ctx: CanvasRenderingContext2D, lot: Lot, ground: string): void
       break;
     }
     case 'yard': paintDriveway(ctx, lot); backyard(ctx, lot); break;
-    case 'plaza': fill('#a29d92'); grid(ctx, r, 3, 'rgba(0,0,0,0.08)'); break;
-    case 'parking': fill('#45484d'); stallLines(ctx, lot); break;
+    // An older era's yards and squares are packed earth, not paving.
+    case 'plaza': if (WORLD.modern) { fill('#a29d92'); grid(ctx, r, 3, 'rgba(0,0,0,0.08)'); } else fill('#b09a72'); break;
+    case 'parking': if (WORLD.modern) { fill('#45484d'); stallLines(ctx, lot); } else fill('#a8906a'); break;
     case 'containers': fill('#6f6c66'); break;
     case 'pad': {
       fill('#5a5d55');
@@ -204,8 +205,8 @@ function paintLot(ctx: CanvasRenderingContext2D, lot: Lot, ground: string): void
     default: {
       fill(ground);
       if (lot.pad) {
-        // Drive-in apron in front of service buildings.
-        ctx.fillStyle = '#55585d';
+        // Drive-in apron in front of service buildings (a dirt yard in an older era).
+        ctx.fillStyle = WORLD.modern ? '#55585d' : '#9a7a52';
         const b = lot.building?.rect;
         if (b) ctx.fillRect(Math.min(r.x0, b.x0), Math.min(r.y0, b.y0), Math.max(r.x1, b.x1) - Math.min(r.x0, b.x0), Math.max(r.y1, b.y1) - Math.min(r.y0, b.y0));
       }

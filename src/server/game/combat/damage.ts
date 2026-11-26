@@ -108,9 +108,11 @@ export function damageVehicle(w: World, v: Vehicle, amount: number, attackerId: 
     }
   }
   if (v.hp <= 0 && v.burning < 0) {
-    v.burning = 0;
     v.hp = 0;
     if (attacker?.player) v.stolenBy = attacker.player.id; // remembered for kill credit
+    // A horse or a wagon goes down where it is; anything with fuel burns, then blows.
+    if (v.spec.wrecks === 'fall') wreckVehicle(w, v);
+    else v.burning = 0;
   }
 }
 
@@ -123,12 +125,21 @@ export function wallCrash(w: World, v: Vehicle, impact: number, vx: number, vy: 
   if (impact > 12) w.emit(FX.Spark, Math.round(v.body.x + (vx / sp) * v.spec.length / 2), Math.round(v.body.y + (vy / sp) * v.spec.length / 2));
 }
 
-/** Turns a burning vehicle into a wreck with a blast. */
+/** Turns a burning vehicle into a wreck with a blast; one that `wrecks: 'fall'` (a horse, a
+ *  wagon) just goes down, throwing its riders. */
 export function wreckVehicle(w: World, v: Vehicle): void {
   v.wrecked = true;
   v.burning = -1;
   v.wreckT = 0;
   v.siren = false;
+  if (v.spec.wrecks === 'fall') {
+    for (const sid of v.seats) {
+      const occ = sid ? w.peds.get(sid) : undefined;
+      if (occ && !occ.dead) { unseatPed(w, occ, true); damagePed(w, occ, 15, 0); }
+    }
+    v.body.vx = 0; v.body.vy = 0; v.body.av = 0;
+    return;
+  }
   const credit = v.stolenBy ? w.players.get(v.stolenBy) : undefined;
   const creditPed = credit ? w.peds.get(credit.pid) : undefined;
   for (const sid of v.seats) {

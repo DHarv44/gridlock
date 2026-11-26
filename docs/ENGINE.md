@@ -55,7 +55,22 @@ film's names, characters, story, map or look).
    formations (`Obstacle.kind 'rock'`, solid: buttes and outcrops) and ponds (`City.ponds`, water
    for isWater / boats) and tints the ground. A hand-made map file and an in-game editor are not
    built; a universe shapes its map with these settings and its districts.
-6. **Second universe: an original western.** A frontier generator (prairie, trails, towns from the
-   lot/place builders); horses as a movement kind (gaits, stamina, calling your horse); hitching for
-   wagons on the existing trailer physics; era weapons; posses instead of patrol cars. Done when
-   Bayhaven is unchanged and the western plays.
+6. **Second universe: Redrock Territory** (first slice done 2026-11-27; `src/universes/redrock/`).
+   An original 1870s territory on the same engine and feel: three timber towns (Sulphur Springs,
+   Copper Gulch, Calloway) on dirt streets, homesteads, prairie with ponds and outcrops, red
+   badlands of buttes, a river with crossings, cliffs all round (2.5 km map). Horses (mustang,
+   quarter horse, draft, thoroughbred) and wagons (buckboard, covered wagon, stagecoach; a team in
+   harness pulling the wagon on the trailer physics). Six-shooter, double-barrel, lever rifle,
+   buffalo rifle, dynamite, lamp oil; gatling wagon at the fort. Three outlaw outfits posting work
+   on job posts; deputies, marshals and a posse on horseback, the cavalry at the top. Gunsmith,
+   livery stable, doctor, sheriff's office (cells), bank (vault), fire hall; homesteads, saloons,
+   general stores, hotels, barns to own. Money in frontier dollars.
+   Engine verbs it added: movement kind `legs` (no wheels, rider astride), `VehicleSpec.wrecks:
+   'fall'` (goes down, riders thrown, no fire), `WorldSpec.modern` (off: dirt streets, no
+   markings/lights/street furniture/rooftop machinery, earthen yards), `RULES.jobPost: 'post'`
+   (timber post with a bell, no ring), `RULES.graffiti`, map legend from the universe's place names.
+   Checks: `npx tsx scripts/redrock.ts`; any script in a universe: `npx tsx scripts/universe.ts
+   redrock smoke 60`.
+   Not yet: horse stamina and gaits, calling your horse, Blender models (box models stand in),
+   leg animation, its own cast and voiced calls (job posts give briefs only), era sounds (a bell,
+   hooves, whinnies), hitching and unhitching wagons.

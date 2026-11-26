@@ -11,6 +11,7 @@ export const DEFAULT_WORLD: WorldSpec = {
   spacing: { near: 74, far: 134 },
   arterialEvery: 4,
   ground: '#b7b4ab',
+  modern: true,
 };
 
 /** The world spec in force. */
