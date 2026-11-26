@@ -1,7 +1,7 @@
 // Headless checks of the two driving modes (client/game/steering.ts, pointDrive.ts), driving a real
 // car through the shared physics on open ground: classic is gas/brake/steer exactly as before; point
-// to drive steers to where you point, comes round when you point behind you, never backs up by
-// itself, and reverses only while Aim is held (pointing where the back goes).
+// to drive (keyboard and mouse only) steers to where you point, comes round when you point behind
+// you, never backs up by itself, and reverses only while Aim is held (pointing where the back goes).
 // `npx tsx scripts/drive.ts`
 import { Steering } from '../src/client/game/steering';
 import type { DriveMode, Input } from '../src/client/game/input';
@@ -73,9 +73,9 @@ check(b.y > 3 && Math.abs(angleDiff(b.angle, NORTH)) < 10 * DEG, 'point: Aim + S
 // Reverse and point east: the back of the car swings round to the east.
 b = drive(at(NORTH), fake(['aim', 'steerRight'], 'point'), 5);
 check(Math.abs(angleDiff(b.angle + Math.PI, EAST)) < 15 * DEG, `point: Aim + D backs round until the rear points east (heading ${(b.angle / DEG).toFixed(0)}°)`);
-// Pad: how far the stick is pushed is how fast.
-const slow = drive(at(EAST), fake([], 'point', { lx: 0.4 }), 3), fast = drive(at(EAST), fake([], 'point', { lx: 1 }), 3);
-check(fast.x > slow.x * 1.5, 'point: a half push on the stick drives slower than a full one');
+// Keyboard and mouse only: the controller's stick and triggers don't point or reverse.
+o = out(fake([], 'point', { lx: 1, lt: 1 }));
+check(o.throttle === 0 && o.steer === 0, 'point: the controller plays no part (keyboard and mouse only)');
 // Letting go: no throttle, no steer.
 o = out(fake([], 'point'));
 check(o.throttle === 0 && o.steer === 0, 'point: nothing pointed, coasting');
