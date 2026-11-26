@@ -1,8 +1,9 @@
-// Steering: on foot W/A/S/D move north/west/south/east on screen and you face your movement,
-// or, while Aim (right mouse) is held, the way the mouse turns you; in vehicles W/S are gas/brake
-// and A/D steer. A controller is fully analog and twin-stick: the left stick moves or steers, the
-// right stick points where you aim (on foot, out of a car window, or a turret), triggers for fire
-// or gas and brake. Weapons fire the way you aim, with auto-aim onto the nearest target in a cone.
+// Steering: on foot you face the mouse (from your character toward it) and W/S/A/D move forward,
+// back and strafe from that facing; in vehicles W/S are gas/brake and A/D steer, and the mouse
+// aims out of the window or points a turret. A controller is fully analog and twin-stick: the left
+// stick moves or steers, the right stick points where you aim (on foot, out of a car window, or a
+// turret), triggers for fire or gas and brake. Weapons fire the way you aim, with auto-aim onto the
+// nearest target in a cone.
 import { VEHICLES } from '../../shared/packs';
 import { Mode, type YouState } from '../../shared/protocol';
 import type { Input } from './input';
@@ -39,11 +40,11 @@ export class Steering {
     const turn = !inCar ? input.axis('footLeft', 'footRight') : air ? input.axis('heliLeft', 'heliRight') : input.axis('steerLeft', 'steerRight');
     const fwd = !inCar ? input.axis('footDown', 'footUp') : air ? input.axis('heliBack', 'heliForward') : input.axis('brake', 'gas');
     const firing = input.held('fire');
-    // Twin-stick: the right stick (or the mouse while Aim is held) points where you aim, in screen
-    // directions, wherever you're moving or facing.
-    const mouse = input.mouseAim();
-    const pointed = mouse ?? (pad.rx || pad.ry ? Math.atan2(pad.ry, pad.rx) : null);
-    input.aimingNow = pointed !== null;
+    // Twin-stick: the right stick, or the mouse, points where you aim (screen directions), whichever
+    // way you're moving. Aiming on purpose (a hold-up) is the stick pushed or Aim held.
+    const stick = pad.rx || pad.ry ? Math.atan2(pad.ry, pad.rx) : null;
+    const pointed = stick ?? input.mouseAim();
+    input.aimingNow = stick !== null || input.scoped;
     if (inCar) {
       this.lastHeading = heading;
       const rate = you.vt >= 0 ? VEHICLES[you.vt].turret ?? 0 : 0;
@@ -60,16 +61,22 @@ export class Steering {
       // Pad: left stick steers in proportion, RT/LT are progressive gas and brake.
       return { mx: 0, my: 0, throttle: clamp1(fwd + pad.rt - pad.lt), steer: clamp1(turn + pad.lx), aim };
     }
-    // On foot the keys are screen directions: W north, D east, S south, A west (diagonals too).
-    // The left stick moves any direction, its push setting the pace; the right stick aims.
-    // You face the way you're moving (or aiming) and keep that facing when you stop.
-    let mx = turn, my = -fwd;
-    const len = Math.hypot(mx, my);
-    if (len > 0) { mx /= len; my /= len; } else { mx = pad.lx; my = pad.ly; }
-    // Aiming (right mouse or right stick) turns you freely while you move any way.
+    // On foot you face the mouse (or the right stick). The keys go by that facing: W forward, S back,
+    // A and D strafe. The left stick moves in any screen direction, its push setting the pace, and
+    // with nothing aiming you face the way it moves; you keep your facing when you stop.
     if (pointed !== null) this.facing = pointed;
-    else if (mx || my) this.facing = Math.atan2(my, mx);
-    input.facingHint = this.facing;
+    let mx = 0, my = 0;
+    if (turn || fwd) {
+      const c = Math.cos(this.facing), s = Math.sin(this.facing);
+      // Screen y points down, so your right-hand side is (-sin, cos) of where you face.
+      mx = c * fwd - s * turn;
+      my = s * fwd + c * turn;
+      const len = Math.hypot(mx, my);
+      mx /= len; my /= len;
+    } else {
+      mx = pad.lx; my = pad.ly;
+      if (pointed === null && (mx || my)) this.facing = Math.atan2(my, mx);
+    }
     const aim = firing ? assist(from.x, from.y, this.facing) ?? this.facing : this.facing;
     return { mx, my, throttle: 0, steer: 0, aim };
   }

@@ -129,6 +129,17 @@ button:disabled { opacity: 0.4; cursor: default; }
 /* Phone conversations (hud/talk.ts): comic speech bubbles beside your character, whose head is at
    the root's origin. The caller's bubble sits up and to the right with a lightning tail (a voice
    down a phone line); yours up and to the left with a plain tail. Lettered in bold capitals. */
+/* Aim held: a crosshair at the mouse (hud/crosshair.ts). */
+.crosshair { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; z-index: 5; opacity: 0; transition: opacity 0.12s; }
+.crosshair.on { opacity: 1; }
+.crosshair i { position: absolute; background: #f4f1e8; box-shadow: 0 0 0 1px rgba(0,0,0,0.65); }
+.crosshair i:nth-child(1), .crosshair i:nth-child(2) { width: 2px; height: 10px; left: -1px; }
+.crosshair i:nth-child(1) { top: -16px; }
+.crosshair i:nth-child(2) { top: 6px; }
+.crosshair i:nth-child(3), .crosshair i:nth-child(4) { height: 2px; width: 10px; top: -1px; }
+.crosshair i:nth-child(3) { left: -16px; }
+.crosshair i:nth-child(4) { left: 6px; }
+.crosshair b { position: absolute; width: 2px; height: 2px; left: -1px; top: -1px; background: #ff4b3a; box-shadow: 0 0 0 1px rgba(0,0,0,0.65); }
 .talk { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; z-index: 6; }
 .talk .tb { position: absolute; bottom: 46px; width: max-content; max-width: min(380px, 70vw); padding: 10px 14px 11px;
   background: #fbf8ef; color: #121417; border: 3px solid #121417; border-radius: 22px / 18px; box-shadow: 3px 4px 0 rgba(0,0,0,0.4);

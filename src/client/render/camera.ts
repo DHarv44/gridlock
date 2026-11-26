@@ -4,11 +4,15 @@ import * as THREE from 'three';
 // GTA2 frames ~25 x 19 m on foot at 4:3; widescreen and longer gun ranges get a bit more room.
 const FOOT_HEIGHT = 44;
 const MAX_HEIGHT = 115;
+/** Holding Aim brings the camera this much closer. */
+const SCOPE_ZOOM = 0.6;
 
 export class ChaseCamera {
   x = 1000;
   y = 1000;
   height = FOOT_HEIGHT;
+  /** Zoom state the height has settled at (a change of Aim zooms fast until it gets there). */
+  private wasScoped = false;
   private leadX = 0;
   private leadY = 0;
   /** Shake "trauma" 0..1; the visible shake is trauma² so small hits stay subtle. */
@@ -23,15 +27,18 @@ export class ChaseCamera {
     this.trauma = Math.min(1, this.trauma + trauma);
   }
 
-  update(dt: number, tx: number, ty: number, vx: number, vy: number, alt: number, aimX: number, aimY: number, driving: boolean): void {
+  /** `scoped`: Aim held, the camera closes in (quickly, and back out quickly on letting go). */
+  update(dt: number, tx: number, ty: number, vx: number, vy: number, alt: number, aimX: number, aimY: number, driving: boolean, scoped = false): void {
     const speed = Math.hypot(vx, vy);
     const dev = window as unknown as { __camHeight?: number; __camAt?: { x: number; y: number } }; // dev hooks
     if (dev.__camAt) { tx = dev.__camAt.x; ty = dev.__camAt.y; vx = 0; vy = 0; aimX = tx; aimY = ty; }
     const forced = dev.__camHeight;
     // GTA2: height grows with speed (about 2x at top speed), zooms out fast and creeps back in.
-    const zoom = driving ? 1 + Math.min(1.2, Math.max(0, speed - 3) / 40) : 1;
+    const zoom = (driving ? 1 + Math.min(1.2, Math.max(0, speed - 3) / 40) : 1) * (scoped ? SCOPE_ZOOM : 1);
     const want = forced ?? Math.min(MAX_HEIGHT, FOOT_HEIGHT * zoom + alt * 0.9);
-    this.height += (want - this.height) * Math.min(1, dt * (want > this.height ? 2.2 : 0.45));
+    const rate = scoped !== this.wasScoped ? 8 : want > this.height ? 2.2 : 0.45;
+    if (Math.abs(want - this.height) < 0.5) this.wasScoped = scoped;
+    this.height += (want - this.height) * Math.min(1, dt * rate);
     // Big lead along travel in vehicles (capped to part of the view); on foot, toward the aim point.
     const half = this.height * Math.tan(THREE.MathUtils.degToRad(this.cam.fov / 2));
     let lx = driving ? vx * 1.1 : (aimX - tx) * 0.22;
