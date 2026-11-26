@@ -3,6 +3,7 @@
 Renders in its own scene (GridlockReview, Workbench engine) so the user's viewport and render
 settings are never touched.
   blender_run art/review.py -- --models sedan,gt [--views front34,rear34,side,top] [--clay] [--name cars]
+  [--universe redrock]  (models built with build.py --universe redrock; paints from its specs)
 Views are multiples of each model's bounding size around its centre.
 """
 import os
@@ -28,9 +29,14 @@ VIEWS = {
 }
 
 
+UNIVERSE = "bayhaven"
+
+
 def model_objs(mid):
+    # Another universe's models live under `<universe>:<set>:<id>` (build.py), Bayhaven's `<set>:<id>`.
     for c in bpy.data.collections:
-        if c.name.endswith(":" + mid):
+        parts = c.name.split(":")
+        if parts[-1] == mid and (len(parts) == 3 and parts[0] == UNIVERSE or len(parts) == 2 and UNIVERSE == "bayhaven"):
             return c, [o for o in c.all_objects if o.type == 'MESH']
     raise KeyError(mid)
 
@@ -71,7 +77,8 @@ def render(models, views, clay, name, w=520, h=330, dist=1.3, grid=0):
     rows = []
     # Vehicles with a fixed colour (police, army...) show in it; the rest keep the review red.
     import json
-    with open(os.path.join(ART, "specs", "game.json")) as f:
+    specs = os.path.join(ART, "specs") if UNIVERSE == "bayhaven" else os.path.join(ART, "specs", UNIVERSE)
+    with open(os.path.join(specs, "game.json")) as f:
         paints = {k: v.get("paint") for k, v in json.load(f)["vehicles"].items()}
     paint = bpy.data.materials.get("paint")
     base = tuple(paint.diffuse_color) if paint else None
@@ -127,7 +134,8 @@ def render(models, views, clay, name, w=520, h=330, dist=1.3, grid=0):
 
 
 args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-models = args[args.index("--models") + 1].split(",")
+UNIVERSE = args[args.index("--universe") + 1] if "--universe" in args else "bayhaven"
+models =args[args.index("--models") + 1].split(",")
 views = args[args.index("--views") + 1].split(",") if "--views" in args else ["front34", "rear34", "side", "top"]
 name = args[args.index("--name") + 1] if "--name" in args else "review"
 size = [int(v) for v in args[args.index("--size") + 1].split("x")] if "--size" in args else [520, 330]

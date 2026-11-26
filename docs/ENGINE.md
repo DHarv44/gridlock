@@ -78,5 +78,14 @@ film's names, characters, story, map or look).
    server/game/systems/mounts.ts), hitching (G while stopped / X: `VehicleSpec.hitch` and
    `hitchAs`; a wagon unhitches into a team and a seatless standing wagon, and a team backed onto
    a pole hitches on; systems/hitching.ts). Protocol 20.
-   Not yet: Blender models (box models stand in), leg animation, its own cast and voiced calls
-   (job posts give briefs only), era sounds (a bell, hooves, whinnies).
+   Horse movement is its own verb (2026-11-27): sim/mount.ts `stepMount`, chosen by
+   `VehicleSpec.gaits` (walk/trot/canter/gallop speeds, pick-up and let-go, turn rate standing and
+   at a gallop, backing up): it goes where it points (no slide), eases down through its gaits,
+   turns on the spot standing, shies at walls without damage. Breeds differ only in those numbers.
+   Legs swing by gait (render/legs.ts): parts tagged `leg_fl/fr/rl/rr` (box or Blender), the gait
+   read from the speed it's really going. Blender models (art/horse.py, tack.py, team.py,
+   wagon*.py; `build.py --universe redrock` → src/universes/redrock/models/*.glb): six breeds in
+   saddle, teams in harness, buckboard, covered wagon, stagecoach, buggy, water and gatling wagons,
+   standing wagons, and the period guns.
+   Not yet: its own cast and voiced calls (job posts give briefs only), era sounds (a bell,
+   hooves, whinnies); the gatling gun doesn't traverse (trailer parts don't animate).

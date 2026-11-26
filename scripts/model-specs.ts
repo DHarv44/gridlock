@@ -1,8 +1,9 @@
 // Writes art/specs/game.json: the sizes the Blender build must match (vehicle bodies are the physics
 // boxes; weapons are at real size). The packs stay the source; rerun this after changing them.
-// `npx tsx scripts/model-specs.ts`
+// `npx tsx scripts/model-specs.ts` (Bayhaven: art/specs/game.json)
+// `npx tsx scripts/universe.ts redrock model-specs` (another universe: art/specs/<id>/game.json)
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { PALETTE, VEHICLES, WEAPONS } from '../src/shared/packs';
+import { PALETTE, UNIVERSE, VEHICLES, WEAPONS } from '../src/shared/packs';
 
 // `paint`: the vehicle's first fixed colour (police, army...), so review sheets show liveries as in game.
 const vehicles = Object.fromEntries(VEHICLES.map((v) => [v.id, {
@@ -13,6 +14,8 @@ const vehicles = Object.fromEntries(VEHICLES.map((v) => [v.id, {
 }]));
 const weapons = Object.fromEntries(WEAPONS.filter((w) => w.size > 0).map((w) => [w.id, { name: w.name, size: w.size, hold: w.hold }]));
 
-mkdirSync('art/specs', { recursive: true });
-writeFileSync('art/specs/game.json', `${JSON.stringify({ vehicles, weapons }, null, 1)}\n`);
-console.log(`art/specs/game.json: ${Object.keys(vehicles).length} vehicles, ${Object.keys(weapons).length} weapons`);
+// Bayhaven (the default universe) keeps the top-level specs; every other universe has its own folder.
+const dir = UNIVERSE.id && UNIVERSE.id !== 'bayhaven' ? `art/specs/${UNIVERSE.id}` : 'art/specs';
+mkdirSync(dir, { recursive: true });
+writeFileSync(`${dir}/game.json`, `${JSON.stringify({ vehicles, weapons }, null, 1)}\n`);
+console.log(`${dir}/game.json: ${Object.keys(vehicles).length} vehicles, ${Object.keys(weapons).length} weapons`);

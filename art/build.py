@@ -5,9 +5,12 @@ Headless: blender -b --factory-startup -P art/build.py -- --set vehicles --expor
 
 Sizes come from art/specs/game.json (written from the packs by scripts/model-specs.ts); looks come
 from art/specs/vehicles.json and art/specs/weapons.json. Each model is one collection holding an
-empty named after the game id, its static mesh, and any moving parts (rotor, tailrotor, turret)
-with their origins at their pivots. Export: src/client/models/<set>.glb (Draco-compressed; the
-client imports them by URL, render/models.ts).
+empty named after the game id, its static mesh, and any moving parts (rotor, tailrotor, turret,
+leg_fl...) with their origins at their pivots. Export: src/client/models/<set>.glb (Draco-compressed;
+the client imports them by URL, render/models.ts).
+
+Other universes: `--universe redrock` reads art/specs/redrock/*.json and exports to
+src/universes/redrock/models/<set>.glb; its collections are named `redrock:<set>`.
 """
 import importlib
 import json
@@ -31,10 +34,32 @@ import kit  # noqa: E402
 
 GRID = {"vehicles": 14.0, "weapons": 1.6}
 COLS = {"vehicles": 6, "weapons": 5}
+# The universe being built (--universe); Bayhaven, the default, keeps the top-level specs and output.
+UNIVERSE = "bayhaven"
+
+
+def spec_dir():
+    return os.path.join(ART, "specs") if UNIVERSE == "bayhaven" else os.path.join(ART, "specs", UNIVERSE)
+
+
+def out_path(set_name):
+    if UNIVERSE == "bayhaven":
+        return os.path.join(ROOT, "src", "client", "models", set_name + ".glb")
+    return os.path.join(ROOT, "src", "universes", UNIVERSE, "models", set_name + ".glb")
+
+
+def set_coll(set_name):
+    """A set's collection name: `vehicles` for Bayhaven, `redrock:vehicles` for another universe."""
+    return set_name if UNIVERSE == "bayhaven" else "%s:%s" % (UNIVERSE, set_name)
+
+
+def model_coll(set_name, mid):
+    """A model's own collection (`vehicles:sedan`, `redrock:vehicles:mustang`)."""
+    return "%s:%s" % (set_coll(set_name), mid)
 
 
 def spec(name):
-    with open(os.path.join(ART, "specs", name + ".json")) as f:
+    with open(os.path.join(spec_dir(), name + ".json")) as f:
         return json.load(f)
 
 
@@ -47,7 +72,7 @@ def merged(base, over):
 
 def assemble(set_name, mid, objs, slot):
     """Join a model's static parts, hang everything off an empty named `mid`, move it to its slot."""
-    col = kit.coll("%s:%s" % (set_name, mid), kit.coll(set_name))
+    col = kit.coll(model_coll(set_name, mid), kit.coll(set_coll(set_name)))
     anim = [o for o in objs if o.get("anim")]
     static = [o for o in objs if not o.get("anim")]
     body = kit.join(mid + ".body", static, col)
@@ -59,11 +84,13 @@ def assemble(set_name, mid, objs, slot):
     parts = [body]
     groups = {}
     for o in anim:
-        groups.setdefault(o["anim"], []).append(o)
-    for tag, obs in groups.items():
-        # Copy it out now: the join deletes these objects, and their property with them.
+        # `part` keeps same-tagged pieces apart (a team's two horses each have a leg_fl).
+        groups.setdefault(o.get("part", o["anim"]), []).append(o)
+    for key, obs in groups.items():
+        # Copy them out now: the join deletes these objects, and their properties with them.
         pivot = tuple(obs[0].get("pivot", (0, 0, 0)))
-        j = kit.join("%s.%s" % (mid, tag), obs, col)
+        tag = obs[0]["anim"]
+        j = kit.join("%s.%s" % (mid, key), obs, col)
         kit.origin_to(j, pivot)
         j["anim"] = tag
         j.parent = root
@@ -83,12 +110,14 @@ def build_vehicles(only):
         if only and vid not in only:
             continue
         st = merged(styles[look["style"]], look.get("over", {})) if "style" in look else look
-        if isinstance(st.get("cab"), dict) and "style" in st["cab"]:  # trucks: the cab is a car style
-            st["cab"] = merged(styles[st["cab"]["style"]], st["cab"])
+        # Trucks: the cab is a car style. Teams and buggies: the horse in harness is a horse style.
+        for sub in ("cab", "horse"):
+            if isinstance(st.get(sub), dict) and "style" in st[sub]:
+                st[sub] = merged(styles[st[sub]["style"]], st[sub])
         kind = st.get("kind", "car")
         dims = game[vid] if vid in game else game[look["dims"]]["trailer"] if "dims" in look else None
         mod = importlib.import_module(kind)
-        col = kit.coll("vehicles:%s" % vid, kit.coll("vehicles"))
+        col = kit.coll(model_coll("vehicles", vid), kit.coll(set_coll("vehicles")))
         objs = mod.build(vid, st, dims, col)
         _, n = assemble("vehicles", vid, objs, slot)
         total += n
@@ -103,7 +132,7 @@ def build_weapons(only):
     for slot, (wid, look) in enumerate(looks["weapons"].items()):
         if only and wid not in only:
             continue
-        col = kit.coll("weapons:%s" % wid, kit.coll("weapons"))
+        col = kit.coll(model_coll("weapons", wid), kit.coll(set_coll("weapons")))
         objs = weapon.build(wid, look, game.get(wid), col)
         _, n = assemble("weapons", wid, objs, slot)
         total += n
@@ -112,9 +141,9 @@ def build_weapons(only):
 
 
 def export(set_name):
-    path = os.path.join(ROOT, "src", "client", "models", set_name + ".glb")
+    path = out_path(set_name)
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    c = bpy.data.collections[set_name]
+    c = bpy.data.collections[set_coll(set_name)]
     sc = kit.scene()
     vl = sc.view_layers[0]
     for o in vl.objects:
@@ -140,6 +169,8 @@ def export(set_name):
 
 
 def main(argv):
+    global UNIVERSE
+    UNIVERSE = argv[argv.index("--universe") + 1] if "--universe" in argv else "bayhaven"
     sets = [argv[argv.index("--set") + 1]] if "--set" in argv else ["vehicles", "weapons"]
     only = set(argv[argv.index("--only") + 1].split(",")) if "--only" in argv else None
     kit.scene()
@@ -147,7 +178,7 @@ def main(argv):
         kit.reset()
     elif only is None:  # one whole set: leave the other alone
         for s in sets:
-            c = bpy.data.collections.get(s)
+            c = bpy.data.collections.get(set_coll(s))
             if c:
                 for sub in [c] + list(c.children_recursive):
                     for o in list(sub.objects):
@@ -157,7 +188,7 @@ def main(argv):
     else:
         for s in sets:  # rebuild just these models
             for mid in only:
-                c = bpy.data.collections.get("%s:%s" % (s, mid))
+                c = bpy.data.collections.get(model_coll(s, mid))
                 if c:
                     for o in list(c.objects):
                         bpy.data.objects.remove(o, do_unlink=True)

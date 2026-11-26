@@ -1,0 +1,263 @@
+{
+ "vehicles": {
+  "mustang": {
+   "name": "Mustang",
+   "length": 2.5,
+   "width": 0.75,
+   "height": 1.7,
+   "movement": "legs",
+   "paint": "#6b3e22",
+   "siren": false,
+   "openTop": true,
+   "armored": false
+  },
+  "quarter_horse": {
+   "name": "Quarter Horse",
+   "length": 2.5,
+   "width": 0.75,
+   "height": 1.7,
+   "movement": "legs",
+   "paint": "#6b3e22",
+   "siren": false,
+   "openTop": true,
+   "armored": false
+  },
+  "draft_horse": {
+   "name": "Draft Horse",
+   "length": 2.8,
+   "width": 0.9,
+   "height": 1.85,
+   "movement": "legs",
+   "paint": "#1c1a18",
+   "siren": false,
+   "openTop": true,
+   "armored": false
+  },
+  "thoroughbred": {
+   "name": "Thoroughbred",
+   "length": 2.5,
+   "width": 0.75,
+   "height": 1.7,
+   "movement": "legs",
+   "paint": "#6b3e22",
+   "siren": false,
+   "openTop": true,
+   "armored": false
+  },
+  "law_horse": {
+   "name": "Lawman's Horse",
+   "length": 2.5,
+   "width": 0.75,
+   "height": 1.7,
+   "movement": "legs",
+   "paint": "#1c1a18",
+   "siren": false,
+   "openTop": true,
+   "armored": false
+  },
+  "cavalry_horse": {
+   "name": "Cavalry Horse",
+   "length": 2.5,
+   "width": 0.75,
+   "height": 1.7,
+   "movement": "legs",
+   "paint": "#6b3e22",
+   "siren": false,
+   "openTop": true,
+   "armored": false
+  },
+  "buckboard": {
+   "name": "Buckboard",
+   "length": 2.8,
+   "width": 1.7,
+   "height": 1.7,
+   "movement": "legs",
+   "paint": "#6b3e22",
+   "siren": false,
+   "openTop": true,
+   "armored": false,
+   "trailer": {
+    "length": 3.6,
+    "width": 1.7,
+    "height": 1.2,
+    "hitch": 1.2
+   }
+  },
+  "covered_wagon": {
+   "name": "Covered Wagon",
+   "length": 2.8,
+   "width": 1.7,
+   "height": 1.7,
+   "movement": "legs",
+   "paint": "#1c1a18",
+   "siren": false,
+   "openTop": true,
+   "armored": false,
+   "trailer": {
+    "length": 5,
+    "width": 1.9,
+    "height": 2.6,
+    "hitch": 1.2
+   }
+  },
+  "stagecoach": {
+   "name": "Stagecoach",
+   "length": 2.8,
+   "width": 1.7,
+   "height": 1.7,
+   "movement": "legs",
+   "paint": "#6b3e22",
+   "siren": false,
+   "openTop": false,
+   "armored": false,
+   "trailer": {
+    "length": 4.2,
+    "width": 1.9,
+    "height": 2.4,
+    "hitch": 1.2
+   }
+  },
+  "team": {
+   "name": "Team of Horses",
+   "length": 2.8,
+   "width": 1.7,
+   "height": 1.7,
+   "movement": "legs",
+   "paint": "#6b3e22",
+   "siren": false,
+   "openTop": true,
+   "armored": false
+  },
+  "buckboard_standing": {
+   "name": "Buckboard (unhitched)",
+   "length": 3.6,
+   "width": 1.7,
+   "height": 1.2,
+   "movement": "legs",
+   "paint": "#6b3e22",
+   "siren": false,
+   "openTop": false,
+   "armored": false
+  },
+  "covered_standing": {
+   "name": "Covered Wagon (unhitched)",
+   "length": 5,
+   "width": 1.9,
+   "height": 2.6,
+   "movement": "legs",
+   "paint": "#6b3e22",
+   "siren": false,
+   "openTop": false,
+   "armored": false
+  },
+  "coach_standing": {
+   "name": "Stagecoach (unhitched)",
+   "length": 4.2,
+   "width": 1.9,
+   "height": 2.4,
+   "movement": "legs",
+   "paint": "#6b3e22",
+   "siren": false,
+   "openTop": false,
+   "armored": false
+  },
+  "doctor_buggy": {
+   "name": "Doctor's Buggy",
+   "length": 2.5,
+   "width": 0.8,
+   "height": 1.7,
+   "movement": "legs",
+   "paint": "#1c1a18",
+   "siren": false,
+   "openTop": true,
+   "armored": false,
+   "trailer": {
+    "length": 2.6,
+    "width": 1.5,
+    "height": 1.4,
+    "hitch": 1
+   }
+  },
+  "water_wagon": {
+   "name": "Water Wagon",
+   "length": 2.8,
+   "width": 1.7,
+   "height": 1.7,
+   "movement": "legs",
+   "paint": "#8f8f8a",
+   "siren": false,
+   "openTop": true,
+   "armored": false,
+   "trailer": {
+    "length": 3.8,
+    "width": 1.7,
+    "height": 1.8,
+    "hitch": 1.2
+   }
+  },
+  "gatling_wagon": {
+   "name": "Gatling Wagon",
+   "length": 2.8,
+   "width": 1.7,
+   "height": 1.7,
+   "movement": "legs",
+   "paint": "#8a4a24",
+   "siren": false,
+   "openTop": true,
+   "armored": false,
+   "trailer": {
+    "length": 3.6,
+    "width": 1.7,
+    "height": 1.6,
+    "hitch": 1.2
+   }
+  }
+ },
+ "weapons": {
+  "knife": {
+   "name": "Bowie Knife",
+   "size": 0.25,
+   "hold": "one"
+  },
+  "hatchet": {
+   "name": "Hatchet",
+   "size": 0.45,
+   "hold": "one"
+  },
+  "derringer": {
+   "name": "Pocket Pistol",
+   "size": 0.12,
+   "hold": "one"
+  },
+  "revolver": {
+   "name": "Six-Shooter",
+   "size": 0.26,
+   "hold": "one"
+  },
+  "shotgun": {
+   "name": "Double-Barrel",
+   "size": 0.8,
+   "hold": "two"
+  },
+  "lever_rifle": {
+   "name": "Lever-Action Rifle",
+   "size": 0.95,
+   "hold": "two"
+  },
+  "long_rifle": {
+   "name": "Buffalo Rifle",
+   "size": 1.15,
+   "hold": "two"
+  },
+  "dynamite": {
+   "name": "Dynamite",
+   "size": 0.2,
+   "hold": "throw"
+  },
+  "lamp_oil": {
+   "name": "Lamp Oil",
+   "size": 0.2,
+   "hold": "throw"
+  }
+ }
+}

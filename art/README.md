@@ -27,5 +27,15 @@ origins are their pivots. A truck's trailer is `<id>_trailer`; a weapon's back p
 The client (render/models.ts) splits them by material role: paint (tinted per car), fixed, shiny,
 head, tail, siren_red, siren_blue; weapons by material name (`w_steel` → the `steel` look).
 
+## Other universes
+`--universe <id>` (build.py and review.py) reads `specs/<id>/` and exports to
+`src/universes/<id>/models/`; Bayhaven, the default, keeps `specs/*.json` and `src/client/models/`.
+`npx tsx scripts/universe.ts redrock model-specs` writes `specs/redrock/game.json`.
+Redrock's builders: `horse.py` (lofted horses, each leg a moving part: anim `leg_fl/leg_fr/leg_rl/
+leg_rr` pivoting at shoulder/hip), `tack.py` (saddles, bridles, harness), `team.py` (horses in
+harness with pole or shafts), `wagon.py` (running gear) with `wagon_bodies.py` / `wagon_special.py`.
+A part's optional `part` property keeps same-tagged pieces apart (a team's two horses' legs).
+Headless: `blender -b --factory-startup -P art/build.py -- --universe redrock --export`.
+
 The build runs in its own scene (`Gridlock`) and root collection, so other projects open in the
 same Blender are never touched or exported.
