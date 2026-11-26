@@ -248,5 +248,16 @@ for (let t = 0; t < 30 * 30; t++) room.tick();
 const lawRides = [...w.vehicles.values()].filter((v) => v.spec.roles.includes('police'));
 check(lawRides.length > 0 && lawRides.every((v) => onLegs(v.spec)), `deputies ride out (${lawRides.length} on horseback)`);
 
+// The soundtrack: listed from its folder with titles; each new song from the region you're in.
+const { songs } = await import('../src/server/soundtrack');
+const { nextSong } = await import('../src/shared/soundtrack');
+const listed = songs(UNIVERSE);
+check(listed.some((s) => s.file === 'dust_at_dusk.m4a' && s.title === 'Dust at Dusk' && s.dur > 30), `the soundtrack lists its songs (${listed.map((s) => `${s.title} ${Math.round(s.dur)}s`).join(', ')})`);
+const tagged = [{ file: 'a', title: 'A', dur: 99, regions: ['town'] }, { file: 'b', title: 'B', dur: 99, regions: ['prairie'] },
+  { file: 'c', title: 'C', dur: 99, regions: [] }, { file: 'd', title: 'D', dur: 99, regions: ['town'] }];
+check(nextSong(tagged, 'town', 'a', 0.1)?.file === 'd' && nextSong(tagged, 'prairie', '', 0.5)?.file === 'b'
+  && nextSong(tagged, 'badlands', '', 0.5)?.file === 'c' && nextSong([tagged[2]], 'town', 'c', 0.3)?.file === 'c',
+'the next song comes from your region (else one that plays anywhere), not the one just played');
+
 console.log(failures ? `${failures} check(s) failed` : 'all Redrock checks passed');
 process.exit(failures ? 1 : 0);

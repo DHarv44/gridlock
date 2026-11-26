@@ -21,7 +21,10 @@ content/
   redrock/                     the western's own content (its contentDir)
     characters/, player/       as above
     soundtrack/                its music instead of radio stations: <title_in_snake_case>.m4a,
-                               and tracks.json giving each file's title
+                               and tracks.json giving each file's title and the regions (zone
+                               ids: town, homesteads, prairie, badlands, fort) it plays in; leave
+                               "regions" empty to play anywhere. A song always plays out; the next
+                               one comes from the region you're in when it starts.
   SCRIPTS.md                   every conversation, readable (generated: npm run scripts)
 ```
 

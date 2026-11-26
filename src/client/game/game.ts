@@ -6,6 +6,7 @@ import { groundOf, isWayStrip } from '../../shared/world/levels';
 import { heightAt, installWays } from '../../shared/world/ways';
 import { Highways } from '../render/highways';
 import { Radio } from '../audio/radio';
+import { Soundtrack } from '../audio/soundtrack';
 import { Sound } from '../audio/sound';
 import { Hud } from '../hud/hud';
 import { openMenu } from '../hud/menu';
@@ -18,7 +19,7 @@ import { Phone } from '../hud/phone';
 import { Talk } from '../hud/talk';
 import { Crosshair, zoomFloor } from '../hud/crosshair';
 import { PaintGarage } from '../hud/paintGarage';
-import { cleanVoice, RULES, SERVICES, VEHICLES } from '../../shared/packs';
+import { cleanVoice, RULES, SERVICES, VEHICLES, ZONES } from '../../shared/packs';
 import { floats } from '../../shared/sim/kinds';
 import { vehicleObstacles } from './obstacles';
 import { MAP_SIZE, type Place } from '../../shared/world/cityTypes';
@@ -85,6 +86,7 @@ export class Game {
   private jobs: Jobs;
   private sound = new Sound();
   private radio = new Radio(new URLSearchParams(location.search).has('mute'));
+  private soundtrack = new Soundtrack(new URLSearchParams(location.search).has('mute'));
   private you: YouState | null = null;
   private players: PlayerInfo[] = [];
   private owners = new Map<number, string>();
@@ -322,6 +324,9 @@ export class Game {
     if (this.acc > STEP * 4) this.acc = 0;
     this.predict.decay(dt);
     this.radio.update(dt, this.you && this.you.mode !== Mode.Dead ? this.you.vid : 0, this.sound.musicLevel);
+    // The soundtrack: each new song from the region you're in (audio/soundtrack.ts).
+    const at = this.ownState(1);
+    this.soundtrack.update(this.sound.musicLevel, at ? ZONES[this.map.zoneAt(at.x, at.y)]?.id ?? '' : '');
     const gm = Math.floor(this.gameMinutes);
     this.phone.update(dt, this.you, `${String(Math.floor(gm / 60) % 24).padStart(2, '0')}:${String(gm % 60).padStart(2, '0')}`);
     if (this.you && !document.hidden) this.quality.sample(dt);
@@ -506,6 +511,7 @@ export class Game {
 
   private leave(): void {
     this.running = false;
+    this.soundtrack.stop();
     this.conn.close();
     this.onLeave();
   }

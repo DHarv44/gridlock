@@ -128,7 +128,11 @@ film's names, characters, story, map or look).
    faceted stones). Brush (render/brush.ts) is 3D bushes, not solid, thickest in the washes, built
    and dropped with each ground chunk. Real elevation (slopes you climb) is a possible later step on
    the same height map.
-   Soundtrack: the western has music instead of radio stations (content/redrock/soundtrack/,
-   tracks.json for titles); the player for it isn't built yet.
+   Soundtrack (2026-11-26): music that isn't a radio (the western has no stations). Songs in
+   <contentDir>/soundtrack/, tracks.json giving each its title and `regions` (zone ids; none =
+   anywhere). Server: server/soundtrack.ts lists and serves them (/api/soundtrack, /soundtrack/).
+   Client: audio/soundtrack.ts plays one at a time, never cut short; after a short quiet the next
+   comes from the region you're in then (shared/soundtrack.ts nextSong: your zone's, else the
+   untagged, else any; never the same twice running). Music volume; ?mute never starts it.
    Not yet: voices for its cast and your lines (they show in bubbles), era
    sounds (a bell, hooves, whinnies); the gatling gun doesn't traverse (trailer parts don't animate).

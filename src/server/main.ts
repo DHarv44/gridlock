@@ -7,6 +7,7 @@ import { WebSocketServer } from 'ws';
 import { loadAllUniverses } from '../universes';
 import { Lobby } from './lobby';
 import { radioRoutes } from './radio';
+import { soundtrackRoutes } from './soundtrack';
 
 const PORT = Number(process.env.GRIDLOCK_PORT ?? process.env.PORT ?? 5228);
 const DIST = resolve(process.cwd(), 'dist');
@@ -29,6 +30,7 @@ const server = createServer((req, res) => {
     return;
   }
   if (radioRoutes(req, res, url, UNIVERSES)) return;
+  if (soundtrackRoutes(req, res, url, UNIVERSES)) return;
   if (url.pathname === '/api/health') {
     res.writeHead(200, { 'content-type': 'application/json' });
     // Memory in use (MB): what an always-on host bills for.

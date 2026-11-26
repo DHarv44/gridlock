@@ -18,6 +18,7 @@ export default defineConfig({
       '/ws': { target: `ws://localhost:${SERVER_PORT}`, ws: true },
       '/api': { target: `http://localhost:${SERVER_PORT}` },
       '/radio': { target: `http://localhost:${SERVER_PORT}` },
+      '/soundtrack': { target: `http://localhost:${SERVER_PORT}` },
     },
   },
 });

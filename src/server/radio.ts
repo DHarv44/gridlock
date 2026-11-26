@@ -18,14 +18,15 @@ function folders(u: Universe): Record<string, string> {
   return Object.fromEntries(u.radio.map((s) => [s.id, join(rootOf(u), s.id)]));
 }
 
-function tracks(dir: string): string[] {
+/** The audio files in a folder, sorted. */
+export function tracks(dir: string): string[] {
   try { return readdirSync(dir).filter((f) => TYPES[extname(f).toLowerCase()] && statSync(join(dir, f)).isFile()).sort(); } catch { return []; }
 }
 
 /** Path → [size, mtime, seconds]: a file is only read again when it changes. */
 const durations = new Map<string, [number, number, number | null]>();
 
-function lengthOf(full: string): number | null {
+export function lengthOf(full: string): number | null {
   const st = statSync(full);
   const hit = durations.get(full);
   if (hit && hit[0] === st.size && hit[1] === st.mtimeMs) return hit[2];
@@ -91,19 +92,24 @@ export function radioRoutes(req: IncomingMessage, res: ServerResponse, url: URL,
   const file = basename(decodeURIComponent(parts[parts.length - 1] ?? ''));
   // Only files the listing would show: no paths outside the station's folders.
   if (!dir || !tracks(dir).includes(file)) { res.writeHead(404).end(); return true; }
-  const full = join(dir, file);
+  serveAudio(req, res, join(dir, file));
+  return true;
+}
+
+/** Streams an audio file, honouring range requests (seeking, and browsers loading in pieces). */
+export function serveAudio(req: IncomingMessage, res: ServerResponse, full: string): void {
+  const file = basename(full);
   const size = statSync(full).size;
   const type = TYPES[extname(file).toLowerCase()];
   const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? '');
   if (range) {
     const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
     const end = range[1] && range[2] ? Math.min(size - 1, Number(range[2])) : size - 1;
-    if (start >= size || start > end) { res.writeHead(416, { 'content-range': `bytes */${size}` }).end(); return true; }
+    if (start >= size || start > end) { res.writeHead(416, { 'content-range': `bytes */${size}` }).end(); return; }
     res.writeHead(206, { 'content-type': type, 'content-length': end - start + 1, 'content-range': `bytes ${start}-${end}/${size}`, 'accept-ranges': 'bytes' });
     createReadStream(full, { start, end }).pipe(res);
-    return true;
+    return;
   }
   res.writeHead(200, { 'content-type': type, 'content-length': size, 'accept-ranges': 'bytes' });
   createReadStream(full).pipe(res);
-  return true;
 }
