@@ -189,6 +189,8 @@ export interface TableView {
   bj?: { hands: { cards: number[]; bet: number; total: number }[]; active: number; dealer: number[]; dealerTotal: number; phase: string; outcome: string[] };
   roulette?: { last: number; history: number[] };
   dice?: { variant: string; point: number; main: number; bet: number; side: string; last: [number, number] | null; said: string };
+  /** Craps (shared/games/craps.ts): the point (0 off), your bets [kind, number, amount, odds]. */
+  craps?: { point: number; bets: [string, number, number, number][]; last: [number, number] | null; said: string };
   slots?: { reels: number[] | null; won: number };
   faro?: { turn: [number, number] | null; bets: [number, number][]; left: number; said: string };
   /** Cheating (RULES.cardCheats), when you could right now: which moves, and the cards you've

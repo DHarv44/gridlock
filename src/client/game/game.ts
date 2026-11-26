@@ -6,7 +6,8 @@ import { groundOf, isWayStrip } from '../../shared/world/levels';
 import { heightAt, installWays } from '../../shared/world/ways';
 import { Highways } from '../render/highways';
 import { RailwayView } from '../render/railway';
-import { joinContent, tableContent, type TableSend } from '../hud/cardTable';
+import { joinScreen, tableScreen, type TableSend } from '../hud/cardTable';
+import { TableRoom } from '../hud/tableRoom';
 import { knownVenues } from '../hud/cardMarks';
 import { type CardVenue, cardVenues } from '../../shared/world/tables';
 import { Radio } from '../audio/radio';
@@ -149,6 +150,7 @@ export class Game {
     this.input.onNav = (c) => {
       if (this.garage.isOpen) this.garage.nav(c);
       else if (this.shop.isOpen) this.shop.nav(c);
+      else if (this.tables.isOpen) this.tables.nav(c);
       else if (this.phone.capturing || this.phone.ringingNow) this.phone.nav(c);
       else if (!this.bigMap.isOpen) this.pane.nav(c);
       else if (c === 'back') this.bigMap.close();
@@ -201,17 +203,26 @@ export class Game {
     this.cardMarks = knownVenues(this.allVenues, this.friends, this.gangGames);
   }
 
-  /** A card or casino table's pane: sit down (or meet the friend whose game it is), then play.
-   *  Closing it gets you up from the table. */
+  /** A card or casino table's screen (hud/tableRoom.ts): sit down (or meet the friend whose game it
+   *  is), then play. Leaving it gets you up from the table. */
   private openTable(id: number): void {
     const spot = this.map.city.tables[id];
-    if (!spot || !this.you) return;
+    if (!spot || !this.you || this.tables.isOpen) return;
     const send: TableSend = (m) => this.conn.send({ t: 'table', ...m });
-    this.pane.open(() => (this.tableView && this.tableView.id === id
-      ? tableContent(spot, this.tableView, this.you!, send)
-      : joinContent(spot, this.you!, (k) => this.friends.has(k), send)));
-    this.pane.onClose = () => { if (this.tableView) send({ op: 'leave' }); };
+    this.input.enabled = false;
+    this.input.release();
+    this.tableSeated = false;
+    this.tables.open({
+      screen: (a) => (this.tableView && this.tableView.id === id
+        ? tableScreen(spot, this.tableView, this.you!, send, a)
+        : joinScreen(spot, this.you!, (k) => this.friends.has(k), send)),
+      leave: () => { if (this.tableView) send({ op: 'leave' }); },
+      close: () => { this.input.enabled = true; this.tableSeated = false; },
+    });
   }
+  private tables = new TableRoom();
+  /** You've sat down at the open table (so its view going away means you were put out). */
+  private tableSeated = false;
   private props: StreetProps;
   private furniture: StreetPropsView;
   private fixtures: FixturesView;
@@ -245,10 +256,11 @@ export class Game {
         if (this.bigMap.isOpen) this.bigMap.close(); else this.bigMap.open(o?.x ?? MAP_SIZE / 2, o?.y ?? MAP_SIZE / 2);
         break;
       }
-      case 'phone': if (RULES.cellPhone && !this.garage.isOpen && !this.shop.isOpen) this.phone.button(); break;
+      case 'phone': if (RULES.cellPhone && !this.garage.isOpen && !this.shop.isOpen && !this.tables.isOpen) this.phone.button(); break;
       case 'menu':
         if (this.garage.isOpen) { this.garage.leave(); return; }
         if (this.shop.isOpen) { this.shop.leave(); return; }
+        if (this.tables.isOpen) { this.tables.leave(); return; }
         if (this.phone.isOpen) { this.phone.close(); return; }
         if (this.bigMap.isOpen) { this.bigMap.close(); return; }
         if (this.pane.isOpen) this.pane.close();
@@ -291,10 +303,15 @@ export class Game {
         this.storefronts.setOwners(this.owners);
         break;
       case 'profile': this.profile = m.p; break;
-      case 'table': this.tableView = m.v; this.pane.refresh(); break;
+      case 'table':
+        this.tableView = m.v;
+        if (m.v) this.tableSeated = true;
+        else if (this.tableSeated && this.tables.isOpen) this.tables.leave(false); // thrown out, or shot
+        this.tables.refresh();
+        break;
       case 'friends':
         this.friends = new Set(m.list.map(([id]) => id)); this.gangGames = new Set(m.games ?? []);
-        this.refreshCardMarks(); this.phone.setFriends(m.list); this.pane.refresh();
+        this.refreshCardMarks(); this.phone.setFriends(m.list); this.tables.refresh();
         break;
       case 'radio': this.radio.set(m.vid, m.station); break;
       case 'save': saveProgress(m.id, m.p); break;
@@ -353,7 +370,7 @@ export class Game {
     const now = performance.now();
     const dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
-    this.input.pollPad(dt, this.pane.isOpen || this.bigMap.isOpen || this.garage.isOpen || this.shop.isOpen || this.phone.capturing, this.phone.ringingNow);
+    this.input.pollPad(dt, this.pane.isOpen || this.bigMap.isOpen || this.garage.isOpen || this.shop.isOpen || this.tables.isOpen || this.phone.capturing, this.phone.ringingNow);
     this.acc += dt;
     let n = 0;
     while (this.acc >= STEP && n < 4) {

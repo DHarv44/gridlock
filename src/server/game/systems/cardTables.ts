@@ -8,6 +8,8 @@ import type { TableSpec } from '../../../shared/packs/types';
 import type { S2C, TableView } from '../../../shared/protocol';
 import { bjAct, bjDeal, bjStake, bjValue, type Blackjack, type Dice, type Faro, faroTurn, newBlackjack, newDice, newFaro, pullSlots, rollDice, rouletteName, spinRoulette, type RouletteBet } from '../../../shared/games/house';
 import { faceUp, options } from '../../../shared/games/poker';
+import { type Craps, crapsWalkAway, newCraps } from '../../../shared/games/craps';
+import { crapsOp, crapsView } from './cardCraps';
 import type { TableSpot } from '../../../shared/world/tables';
 import type { Player } from '../entities';
 import { removePed, spawnPed } from '../factory';
@@ -23,6 +25,7 @@ interface Session {
   poker?: PokerGame;
   bj?: Blackjack;
   dice?: Dice;
+  craps?: Craps;
   faro?: Faro;
   roulette?: { last: number; history: number[] };
   slots?: { reels: number[] | null; won: number };
@@ -79,7 +82,8 @@ export class CardTables {
       s.log.push(`You sit down with $${want.toLocaleString('en-US')} in chips.`);
     } else {
       if (spec.game === 'blackjack' || spec.game === 'twentyone') s.bj = newBlackjack(spec.game);
-      if (spec.game === 'craps' || spec.game === 'hazard') s.dice = newDice(spec.game);
+      if (spec.game === 'hazard') s.dice = newDice(spec.game);
+      if (spec.game === 'craps') s.craps = newCraps();
       if (spec.game === 'faro') s.faro = newFaro(w.rng);
       if (spec.game === 'roulette') s.roulette = { last: -1, history: [] };
       if (spec.game === 'slots') s.slots = { reels: null, won: 0 };
@@ -101,6 +105,8 @@ export class CardTables {
     }
     // A hand of blackjack in play is forfeit; dice and faro stakes on the layout come back.
     if (s.dice?.bet) pl.cash += s.dice.bet;
+    // Craps bets you can take down come back; ones on a number ride the dice out (games/craps.ts).
+    if (s.craps) { const back = crapsWalkAway(s.craps, this.w.rng); if (back) this.w.earn(pl, back); }
     if (s.faro) for (const v of s.faro.bets.values()) pl.cash += v;
     if (s.dealer) { const d = this.w.peds.get(s.dealer); if (d && !d.dead) removePed(this.w, d); }
     if (why) this.w.notify('info', why, pl);
@@ -228,6 +234,12 @@ export class CardTables {
       s.log.push(`${rouletteName(r.n)}. ${r.back[0] ? `You win $${(r.back[0] - v).toLocaleString('en-US')}.` : 'You lose.'}`);
       return null;
     }
+    if (s.craps) {
+      return crapsOp(s.craps, m, {
+        stake, rng: w.rng, log: (t) => s.log.push(t), pay: win,
+        take: (n) => { if (!(n > 0) || pl.cash + pl.bank < n) return false; take(pl, n); return true; },
+      });
+    }
     if (s.dice) {
       const g = s.dice;
       if (m.op === 'bet') {
@@ -304,6 +316,7 @@ export class CardTables {
     }
     if (s.roulette) v.roulette = s.roulette;
     if (s.dice) v.dice = { variant: s.dice.variant, point: s.dice.point, main: s.dice.main, bet: s.dice.bet, side: s.dice.side, last: s.dice.last, said: s.dice.said };
+    if (s.craps) v.craps = crapsView(s.craps);
     if (s.slots) v.slots = s.slots;
     if (s.faro) v.faro = { turn: s.faro.turn, bets: [...s.faro.bets], left: s.faro.box.length, said: s.faro.said };
     return v;

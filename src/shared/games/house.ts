@@ -191,7 +191,7 @@ export const SLOT_SYMBOLS = ['🍒', '🍋', '🍊', '🍑', '🔔', 'BAR', '7']
 /** How often each symbol comes up on a reel. */
 const SLOT_WEIGHTS = [7, 6, 5, 4, 3, 2, 1];
 /** Three of a kind pays (times the bet); two cherries pay double. About 89% comes back. */
-const SLOT_PAYS = [10, 15, 20, 30, 50, 100, 250];
+export const SLOT_PAYS = [10, 15, 20, 30, 50, 100, 250];
 
 export function pullSlots(rng: Rng, bet: number): { reels: number[]; back: number } {
   const total = SLOT_WEIGHTS.reduce((a, b) => a + b, 0);
