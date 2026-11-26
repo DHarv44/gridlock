@@ -102,7 +102,8 @@ export class Missions {
     }
     pl.mission = st;
     this.send(pl, true);
-    if (face) talk(w, pl, 'face', [...lead, [face.who, spec.kind]], face.ped);
+    // In person: what you asked, their brief, and you taking it.
+    if (face) talk(w, pl, 'face', [...lead, [face.who, spec.kind], [YOU, 'take']], face.ped);
     else if (via && GANGS.includes(giver)) briefCall(w, pl, giver, spec.kind, via, lead);
   }
 

@@ -442,8 +442,10 @@ export type CallSituation = 'intro' | 'hit' | 'torch' | 'steal' | 'courier' | 'f
   | 'answer' | 'refuse' | 'nudge' | 'tip' | 'hello' | 'voicemail' | 'greet' | 'rumour' | 'scared';
 /** What you say on your own in a call the server puts together: `pickup` answering your cell,
  *  `payphone` picking up a ringing payphone, `ask` asking for work when you ring someone, `on_it`
- *  after being sent to a payphone. */
-export type PlayerSituation = 'pickup' | 'payphone' | 'ask' | 'on_it';
+ *  after being sent to a payphone. Face to face (systems/faceTalk.ts): `greet` walking up to
+ *  someone, `work` asking one of a gang's people for work, `take` taking the job they brief,
+ *  `leave` closing a conversation. A universe without them leaves you silent there. */
+export type PlayerSituation = 'pickup' | 'payphone' | 'ask' | 'on_it' | 'greet' | 'work' | 'take' | 'leave';
 /** A turn as written: the caller's lines (or a version for a male and a female character), or
  *  the key of your line in player.json. A line's breaks are how it's read and shown. */
 export interface TurnFile { say?: string[]; male?: string[]; female?: string[]; you?: string; tone?: string; clip?: string }

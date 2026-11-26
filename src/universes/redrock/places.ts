@@ -9,7 +9,7 @@ export const SERVICES: ServiceSpec[] = [
   { id: 'gunsmith', name: 'Gunsmith', verb: 'gunshop', zones: ['town'], count: 3, sign: '#5a3a20', signText: 'GUNSMITH', stock: GUNS, interior: 'shop',
     robbery: { till: 60, fightBack: 0.5 } },
   { id: 'livery', name: 'Livery Stable', verb: 'dealer', zones: ['town', 'homesteads'], count: 3, sign: '#7a5a3a', signText: 'LIVERY',
-    stock: ['quarter_horse', 'mustang', 'draft_horse', 'thoroughbred', 'buckboard', 'covered_wagon'] },
+    stock: ['mule', 'indian_pony', 'draft_horse', 'quarter_horse', 'mustang', 'morgan', 'arabian', 'thoroughbred', 'buckboard', 'covered_wagon'] },
   { id: 'doctor', name: "Doctor's Office", verb: 'hospital', zones: ['town'], count: 3, sign: '#e6dcc0', signText: 'DOCTOR',
     spawns: [{ vehicle: 'doctor_buggy', count: 1 }] },
   { id: 'sheriff', name: "Sheriff's Office", verb: 'police', zones: ['town'], count: 3, sign: '#c9a227', signText: 'SHERIFF',

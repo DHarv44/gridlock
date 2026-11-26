@@ -4,8 +4,10 @@
 // arterial lines.
 import type { DistrictSpec, WeightedId, ZoneSpec } from '../../shared/packs/types';
 
-const riders: WeightedId[] = [{ id: 'quarter_horse', weight: 6 }, { id: 'mustang', weight: 3 }, { id: 'buckboard', weight: 2 }];
-const tied: WeightedId[] = [{ id: 'quarter_horse', weight: 6 }, { id: 'mustang', weight: 3 }, { id: 'draft_horse', weight: 2 },
+const riders: WeightedId[] = [{ id: 'quarter_horse', weight: 5 }, { id: 'mustang', weight: 3 }, { id: 'morgan', weight: 2 },
+  { id: 'indian_pony', weight: 1 }, { id: 'mule', weight: 1 }, { id: 'buckboard', weight: 2 }];
+const tied: WeightedId[] = [{ id: 'quarter_horse', weight: 5 }, { id: 'mustang', weight: 3 }, { id: 'morgan', weight: 2 },
+  { id: 'draft_horse', weight: 2 }, { id: 'mule', weight: 1.5 }, { id: 'indian_pony', weight: 1 }, { id: 'arabian', weight: 0.4 },
   { id: 'thoroughbred', weight: 0.4 }, { id: 'buckboard', weight: 1.5 }];
 const lawRide: WeightedId = { id: 'law_horse', weight: 1.2 };
 const folk: WeightedId[] = [{ id: 'townsfolk', weight: 10 }, { id: 'rancher', weight: 3 }, { id: 'prospector', weight: 1.5 }];

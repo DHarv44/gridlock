@@ -108,6 +108,14 @@ film's names, characters, story, map or look).
    (`talk` with `via: 'face'` and `ped`). A cast member's `voice` is optional: unvoiced lines show
    for as long as they take to read. Redrock's cast: townsfolk, settlers, prospectors,
    storekeepers, the bank guard, lawmen, troopers, gamblers and a rider for each outfit.
-   Protocol 22.
-   Not yet: voices for its cast (lines show in bubbles), your own side of a conversation, era
+   Protocol 22. Your side too (PlayerSituation `greet`, `work`, `take`, `leave`): you open, they
+   answer (and maybe pass on news), you take your leave; with a gang's rider you ask for work,
+   he briefs it, you take it. Redrock has its own player file (content/redrock/player), all in a
+   frontier voice, and doesn't load Bayhaven's recorded player lines.
+   Breeds (2026-11-26) differ like cars: speed, wind, pick-up, turning, size, toughness, price,
+   temperament. Ten saddle animals: mustang, quarter horse (sprinter), Morgan, Arabian (longest
+   wind), thoroughbred (fastest, tallest), Indian pony (small, nimblest), draft (big, slow), mule
+   (slowest, unflappable, goes all day), and the law's and army's horses. The saddle and rider
+   heights follow each one's size. Real walk/trot/canter speeds; gallops 10-17 m/s.
+   Not yet: voices for its cast and your lines (they show in bubbles), era
    sounds (a bell, hooves, whinnies); the gatling gun doesn't traverse (trailer parts don't animate).

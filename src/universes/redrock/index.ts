@@ -3,8 +3,8 @@
 // crossings; horses and wagons; three outlaw outfits; deputies, marshals and the cavalry.
 // No phones: the outfits post their work on job posts (a brief, no call), and their riders in town
 // give it face to face. Its cast (content/redrock/characters) is the people you can walk up and
-// talk to, shown in bubbles, not voiced yet; the player's own lines are the shared ones.
-import player from '../../../content/player/player.json';
+// talk to, shown in bubbles, not voiced yet; the player's side is its own (content/redrock/player).
+import player from '../../../content/redrock/player/player.json';
 import bankGuard from '../../../content/redrock/characters/bank_guard/bank_guard.json';
 import dryCreek from '../../../content/redrock/characters/dry_creek_hand/dry_creek_hand.json';
 import gambler from '../../../content/redrock/characters/gambler/gambler.json';

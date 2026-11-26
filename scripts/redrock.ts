@@ -143,6 +143,14 @@ const mount = spawnVehicle(w, vehicleIndex('quarter_horse'), straight.x0 + 80, s
 damageVehicle(w, mount, 10_000, 0);
 check(mount.wrecked && mount.burning < 0 && w.fires.size === fires, 'a horse killed falls at once: no fire, no explosion');
 
+// Breeds differ like cars do: the pony small and nimble, the thoroughbred tall and fastest, the
+// mule slow with the longest wind; a rider sits at the height of what they're on.
+const spec = (id: string) => VEHICLES[vehicleIndex(id)];
+const indian = spec('indian_pony'), tb = spec('thoroughbred'), mule = spec('mule');
+check(indian.length < tb.length && indian.height < tb.height && indian.saddles![0].z < tb.saddles![0].z, `a pony is smaller than a thoroughbred, its rider lower (${indian.saddles![0].z.toFixed(2)} m vs ${tb.saddles![0].z.toFixed(2)} m)`);
+check(tb.gaits!.gallop > indian.gaits!.gallop && indian.gaits!.turnSlow > tb.gaits!.turnSlow && mule.stamina!.gallop > tb.stamina!.gallop && mule.gaits!.gallop < indian.gaits!.gallop,
+  'the thoroughbred gallops fastest, the pony turns tightest, the mule is slowest but goes longest');
+
 // Gaits: a canter without Sprint, a gallop with it until the horse is blown, then a canter again.
 const gait = spawnVehicle(w, vehicleIndex('quarter_horse'), straight.x0 + 10, straight.y0, 0);
 const run = (secs: number, sprint: boolean) => {
@@ -160,7 +168,8 @@ const run = (secs: number, sprint: boolean) => {
 const canterTop = run(5, false).top;
 const gallop = run(4, true);
 check(gallop.top > canterTop * 1.4, `a canter tops out at ${canterTop.toFixed(1)} m/s, a gallop at ${gallop.top.toFixed(1)} m/s`);
-const blown = run(12, true);
+// The quarter horse is a sprinter: blown within ~5 s more, it canters a few seconds before it can go again.
+const blown = run(8, true);
 check(gait.blown && blown.now < gallop.top * 0.7, `held to a gallop it's blown and drops back to a canter (${blown.now.toFixed(1)} m/s)`);
 const rested = run(6, false);
 check(gait.stamina > 2, `cantering it gets its wind back (${gait.stamina.toFixed(1)} s of gallop after 6 s)`);
@@ -203,12 +212,15 @@ const said = (ped: number) => {
   pl.talkT = 0; heard.length = 0;
   const err = faceTalk(w, missions, pl, ped);
   const m = heard.find((h) => h.t === 'talk');
-  return { err, via: m?.via, ped: m?.ped, who: m?.parts?.[0]?.[0], s: m?.parts?.map((p) => p[1]) ?? [] };
+  const parts = m?.parts ?? [];
+  const them = parts.filter((p) => p[0] !== 'you');
+  return { err, via: m?.via, ped: m?.ped, who: them[0]?.[0], s: them.map((p) => p[1]), mine: parts.filter((p) => p[0] === 'you').map((p) => p[1]), all: parts.map((p) => `${p[0]}:${p[1]}`) };
 };
 const beside = (arch: string, dx = 1.5) => spawnPed(w, pedIndex(arch), tex.body.x + dx, tex.body.y);
 const folk = beside('townsfolk');
 const hi = said(folk.id);
-check(hi.via === 'face' && hi.ped === folk.id && hi.who === 'townsfolk' && hi.s[0] === 'greet' && folk.ai!.task === 'chat', `a stranger stops to talk (${hi.s.join(', ')}; ${folk.ai!.task})`);
+check(hi.via === 'face' && hi.ped === folk.id && hi.who === 'townsfolk' && hi.s[0] === 'greet' && folk.ai!.task === 'chat', `a stranger stops to talk (${hi.all.join(', ')}; ${folk.ai!.task})`);
+check(hi.mine[0] === 'greet', 'you open with a greeting of your own');
 const far = beside('townsfolk', 9);
 check(!said(far.id).who, 'someone across the street is too far to talk to');
 pl.wanted = 2;
@@ -217,7 +229,8 @@ pl.wanted = 0;
 check(fright.s[0] === 'scared', `wanted, folk are frightened of you (${fright.s.join(', ')})`);
 const rider = beside('dry_creek_rider', 0.5);
 const job = said(rider.id);
-check(!!pl.mission && job.who === 'dry_creek_hand' && job.s[0] === MISSIONS[pl.mission.spec].kind, `a Dry Creek rider gives you a job in person (${job.s.join(', ')})`);
+check(!!pl.mission && job.who === 'dry_creek_hand' && job.s[0] === MISSIONS[pl.mission.spec].kind, `a Dry Creek rider gives you a job in person (${job.all.join(', ')})`);
+check(job.mine.join() === 'work,take', 'you ask for work and take the job');
 check(said(rider.id).s[0] === 'busy', 'ask again while on it and he says finish it');
 pl.mission = null;
 pl.respect.lantern = -30;

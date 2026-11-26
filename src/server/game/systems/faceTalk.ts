@@ -2,7 +2,7 @@
 // (PedArchetype.talker, a cast member's lines); what happens is here. They stop and face you and
 // say their piece: a greeting, sometimes what they've heard, or fright if you're wanted or have a
 // gun out. One of a gang's people gives you its work in person, as its phone would.
-import { CALLS, type CallSituation, GANGS, RESPECT } from '../../../shared/packs';
+import { CALLS, type CallSituation, GANGS, RESPECT, YOU } from '../../../shared/packs';
 import { Mode } from '../../../shared/protocol';
 import { setTask } from '../ai/tasks';
 import type { Ped, Player, TaskName } from '../entities';
@@ -18,6 +18,8 @@ const GAP = 2;
 const CHAT_S = 9;
 /** A greeting is followed by what they've heard this often. */
 const RUMOUR = 0.4;
+/** Without news, you take your leave this often (with news, always). */
+const LEAVE = 0.5;
 /** What someone can be busy with and still stop for you. */
 const IDLE = new Set<TaskName>(['wander', 'stand', 'guard', 'chat', 'none']);
 
@@ -46,20 +48,25 @@ export function faceTalk(w: World, missions: Missions, pl: Player, pedId: number
   setTask(o, 'chat', p.id, CHAT_S);
   const gang = o.spec.faction;
   if (GANGS.includes(gang)) { work(w, missions, pl, gang, { who, ped: o.id }); return null; }
-  const parts: Part[] = [[who, 'greet']];
-  if (has(who, 'rumour') && w.rng.chance(RUMOUR)) parts.push([who, 'rumour']);
+  // You open; they answer, sometimes with what they've heard; you take your leave (always after
+  // news, now and then otherwise).
+  const parts: Part[] = [[YOU, 'greet'], [who, 'greet']];
+  const news = has(who, 'rumour') && w.rng.chance(RUMOUR);
+  if (news) parts.push([who, 'rumour']);
+  if (news || w.rng.chance(LEAVE)) parts.push([YOU, 'leave']);
   say(parts);
   return null;
 }
 
-/** One of a gang's people: they won't deal with you, you're already on a job, they've nothing
- *  yet, or they give you the job themselves. */
+/** One of a gang's people, asked for work: they won't deal with you, you're already on a job,
+ *  they've nothing yet, or they brief you on the job themselves (and you take it). */
 function work(w: World, missions: Missions, pl: Player, gang: string, face: Face): void {
-  const say = (s: CallSituation) => talk(w, pl, 'face', [[face.who, has(face.who, s) ? s : 'greet']], face.ped);
+  const ask: Part = [YOU, 'work'];
+  const say = (s: CallSituation) => talk(w, pl, 'face', [ask, [face.who, has(face.who, s) ? s : 'greet']], face.ped);
   const cd = (pl.talkCd ??= new Map());
   if (missions.respectOf(pl, gang) < RESPECT.noWorkBelow) { say('refuse'); return; }
   if (pl.mission) { say('busy'); return; }
   if ((cd.get(gang) ?? 0) > w.time) { say('nothing'); return; }
   cd.set(gang, w.time + RESPECT.phoneCooldown);
-  missions.offer(pl, gang, 1, [], face);
+  missions.offer(pl, gang, 1, [ask], face);
 }

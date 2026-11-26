@@ -1,0 +1,45 @@
+{
+  "about": "A drifter new to the Territory: few words, dry, polite enough, never rattled. Frontier speech, no modern turns of phrase. Lines show in bubbles (not voiced yet); \"says\" lists the lines you open or close a conversation with, one picked at random each time.",
+  "default": "male",
+  "voices": [
+    { "id": "male", "name": "Male", "who": "man", "about": "even, grounded, unflappable", "model": "../../player/model/pv_male.wav", "exaggeration": 0.45, "cfg": 0.5 },
+    { "id": "female", "name": "Female", "who": "woman", "about": "low, husky, unhurried", "model": "../../player/model/pv_female.wav", "exaggeration": 0.4, "cfg": 0.5 }
+  ],
+  "says": {
+    "pickup": ["rr_speak"],
+    "payphone": ["rr_post_read"],
+    "ask": ["rr_work_any"],
+    "on_it": ["rr_take_done"],
+    "greet": ["rr_howdy", "rr_afternoon", "rr_passing", "rr_word", "rr_nod"],
+    "work": ["rr_work_any", "rr_work_heard", "rr_work_hire", "rr_work_ride"],
+    "take": ["rr_take_done", "rr_take_pay", "rr_take_said", "rr_take_ride"],
+    "leave": ["rr_leave_obliged", "rr_leave_keep", "rr_leave_mind", "rr_leave_day"]
+  },
+  "lines": {
+    "sample": { "say": ["Reckon I can do that.", "What's it pay?"], "tone": "easy confidence, straight to the money (the character creator's demo)" },
+
+    "rr_speak": { "say": ["Speak your piece."], "tone": "flat" },
+    "rr_post_read": { "say": ["Says here you need a hand."], "tone": "reading a notice" },
+
+    "rr_howdy": { "say": ["Howdy."], "tone": "easy" },
+    "rr_afternoon": { "say": ["Afternoon."], "tone": "touching the hat brim" },
+    "rr_passing": { "say": ["Just passing through."], "tone": "dry, a little wary" },
+    "rr_word": { "say": ["A word, friend?"], "tone": "polite" },
+    "rr_nod": { "say": ["Fine day for it."], "tone": "dry" },
+
+    "rr_work_any": { "say": ["Heard your outfit's hiring."], "tone": "low, getting to it" },
+    "rr_work_heard": { "say": ["Word is you've got work", "for a fella who can ride and shoot."], "tone": "matter of fact" },
+    "rr_work_hire": { "say": ["I'm for hire, if the money's right."], "tone": "level" },
+    "rr_work_ride": { "say": ["Got anything for me?"], "tone": "short" },
+
+    "rr_take_done": { "say": ["Consider it done."], "tone": "flat certainty" },
+    "rr_take_pay": { "say": ["Have the money ready."], "tone": "cool" },
+    "rr_take_said": { "say": ["You'll hear when it's finished."], "tone": "dry" },
+    "rr_take_ride": { "say": ["I'll ride out directly."], "tone": "brisk" },
+
+    "rr_leave_obliged": { "say": ["Obliged."], "tone": "a nod" },
+    "rr_leave_keep": { "say": ["I'll keep it in mind."], "tone": "noncommittal" },
+    "rr_leave_mind": { "say": ["Mind how you go."], "tone": "easy" },
+    "rr_leave_day": { "say": ["Good day to you."], "tone": "polite, moving on" }
+  }
+}
