@@ -59,13 +59,23 @@ export function paintChunk(map: CityMap, cx: number, cy: number, canvas: HTMLCan
     rect(X0, r.y0, X1, r.y1, WATER);
   }
 
-  // Where a highway's trench and its dives replace the avenue: concrete verges (the trench itself is
-  // cut out below).
+  // A highway's corridor (no street along it): a grass verge, mown in stripes, with a gravel shoulder
+  // at each edge; the cross streets are painted over it, and the trench is cut out below.
   for (const w of city.ways) {
-    for (const [a0, a1] of w.sunk) {
-      const p = wayPoint(w, a0, -AVENUE_W / 2), q = wayPoint(w, a1, AVENUE_W / 2);
-      if (inView(Math.min(p.x, q.x), Math.min(p.y, q.y), Math.max(p.x, q.x), Math.max(p.y, q.y))) rect(Math.min(p.x, q.x), Math.min(p.y, q.y), Math.max(p.x, q.x), Math.max(p.y, q.y), '#8d8a83');
+    if (w.kind !== 'highway') continue;
+    const p = wayPoint(w, LAND0, -AVENUE_W / 2), q = wayPoint(w, LAND1, AVENUE_W / 2);
+    const x0 = Math.min(p.x, q.x), y0 = Math.min(p.y, q.y), x1 = Math.max(p.x, q.x), y1 = Math.max(p.y, q.y);
+    if (!inView(x0, y0, x1, y1)) continue;
+    rect(x0, y0, x1, y1, '#8a877e');
+    const g0 = wayPoint(w, LAND0, -AVENUE_W / 2 + 1.2), g1 = wayPoint(w, LAND1, AVENUE_W / 2 - 1.2);
+    rect(Math.min(g0.x, g1.x), Math.min(g0.y, g1.y), Math.max(g0.x, g1.x), Math.max(g0.y, g1.y), '#66734f');
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    for (let a = Math.floor(Math.max(LAND0, w.axis === 'h' ? X0 : Y0) / 6) * 6; a < Math.min(LAND1, w.axis === 'h' ? X1 : Y1); a += 12) {
+      const s = wayPoint(w, a, -AVENUE_W / 2 + 1.2), e = wayPoint(w, a + 6, AVENUE_W / 2 - 1.2);
+      ctx.fillRect(Math.min(s.x, e.x), Math.min(s.y, e.y), Math.abs(e.x - s.x), Math.abs(e.y - s.y));
     }
+    // Where it crosses the river, the river (the highway bridges it on its own).
+    if (r && w.axis === 'v') rect(x0, r.y0, x1, r.y1, WATER);
   }
   // Roads (trails: packed dirt). Highway decks and ramps are drawn in 3D (render/highways.ts).
   for (const s of city.segs) {

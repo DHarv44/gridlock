@@ -13,8 +13,10 @@ const FOOT_GAP = 4;
 /** Fewest cross streets between interchanges. */
 const EXIT_EVERY = 3;
 
+/** A road line becomes a highway's corridor: as wide as the highway and its ramps, never merged
+ *  away (it stays arterial), and no street along it (roadgen.ts). */
 function widen(l: RoadLine): void {
-  l.width = AVENUE_W; l.lanes = 2; l.parking = false; l.highway = true;
+  l.width = AVENUE_W; l.lanes = 2; l.parking = false; l.highway = true; l.arterial = true;
 }
 
 /** The avenue nearest `target` (a fraction of the map) among `ok` arterials, or -1. */
@@ -28,8 +30,8 @@ function nearest(lines: RoadLine[], ok: (i: number) => boolean, target: number):
   return bi;
 }
 
-/** Marks and widens the avenues highways will run over: the first east-west (north of the river), the
- *  second north-south (its avenue bridges the river too). */
+/** Marks and widens the lines that become highway corridors: the first east-west (north of the
+ *  river), the second north-south (it crosses the river on its own). */
 export function pickWayLines(L: RoadLayout): void {
   const spec = WORLD.highways;
   if (!spec || spec.count <= 0) return;
@@ -38,7 +40,7 @@ export function pickWayLines(L: RoadLayout): void {
   if (j >= 0) widen(L.ys[j]);
   if (spec.count > 1) {
     const i = nearest(L.xs, (i) => i >= 2 && i <= nx - 2, 0.56);
-    if (i >= 0) { widen(L.xs[i]); L.bridgeLines.add(i); }
+    if (i >= 0) { widen(L.xs[i]); L.bridgeLines.delete(i); }
   }
 }
 
@@ -51,37 +53,32 @@ export function buildWays(L: RoadLayout, g: Graph): Way[] {
   const lines: { axis: 'h' | 'v'; line: number }[] = [];
   L.ys.forEach((l, j) => { if (l.highway) lines.push({ axis: 'h', line: j }); });
   L.xs.forEach((l, i) => { if (l.highway) lines.push({ axis: 'v', line: i }); });
-  const drop = new Set<number>();
   for (const { axis, line } of lines) {
-    const w = buildWay(L, g, axis, line, ways.length, lines, drop);
+    const w = buildWay(L, g, axis, line, ways.length, lines);
     if (w) ways.push(w);
   }
-  if (drop.size) compact(g, drop);
   return ways;
 }
 
-function buildWay(L: RoadLayout, g: Graph, axis: 'h' | 'v', line: number, wi: number, all: { axis: 'h' | 'v'; line: number }[], drop: Set<number>): Way | null {
+function buildWay(L: RoadLayout, g: Graph, axis: 'h' | 'v', line: number, wi: number, all: { axis: 'h' | 'v'; line: number }[]): Way | null {
   const H = DECK_H;
   const pos = axis === 'h' ? L.ys[line].pos : L.xs[line].pos;
   const along = (n: RoadNode) => (axis === 'h' ? n.x : n.y);
   const hw = (n: RoadNode) => (axis === 'h' ? n.wv : n.wh) / 2;
+  // The cross streets passing under the corridor, in order along it.
   const ln = g.nodes.filter((n) => n.level === undefined && (axis === 'h' ? n.j === line : n.i === line)).sort((a, b) => along(a) - along(b));
   if (ln.length < 6) return null;
-  const segOf = (k: number): Segment | undefined => {
-    const a = ln[k], b = ln[k + 1];
-    if (!a || !b) return undefined;
-    for (const si of a.segs) { const s = g.segs[si]; if (s.axis === axis && (s.a === b.id || s.b === b.id)) return s; }
-    return undefined;
-  };
+  /** Between cross streets k and k+1 the corridor crosses the river (no ramps there). */
+  const overRiver = (k: number) => axis === 'v' && L.riverRow >= 0 && ln[k].j <= L.riverRow && ln[k + 1].j > L.riverRow;
   const way: Way = { kind: 'highway', axis, line, pos, strip: WAY0 + wi, a0: 0, a1: 0, profile: [], sunk: [], bridges: [], ramps: [] };
   // Stretches where the deck isn't at its usual height: no ramps there.
   const busy: [number, number][] = [];
   const free = (a0: number, a1: number) => busy.every(([b0, b1]) => a1 < b0 || a0 > b1);
-  for (let k = 0; k < ln.length - 1; k++) { const s = segOf(k); if (!s || s.bridge) busy.push([along(ln[k]) - 1, along(ln[k + 1]) + 1]); }
+  for (let k = 0; k < ln.length - 1; k++) if (overRiver(k)) busy.push([along(ln[k]) - 1, along(ln[k + 1]) + 1]);
   const pts: [number, number][] = [[0, H], [MAP_SIZE, H]];
-  // Where the other highway crosses this one (the north-south one climbs over the east-west).
+  // Where the other highway's corridor crosses this one (the north-south one climbs over).
   const other = all.find((o) => o.axis !== axis);
-  const kx = axis === 'v' && other ? ln.findIndex((n) => n.j === other.line) : -1;
+  const cross = axis === 'v' && other ? L.ys[other.line].pos : null;
   // A rare stretch sunk in a trench: the cross streets bridge it; long blocks either side for the
   // dive (MAIN_GRADE), never near the crossing or the river.
   const spec = WORLD.highways!;
@@ -94,9 +91,9 @@ function buildWay(L: RoadLayout, g: Graph, axis: 'h' | 'v', line: number, wi: nu
       for (const q of [p + 1, p]) {
         if (p - 1 < 1 || q + 1 > ln.length - 2) continue;
         if (!need(p - 1, p) || !need(q, q + 1)) continue;
-        if (kx >= 0 && kx >= p - 2 && kx <= q + 2) continue;
+        if (cross !== null && cross > along(ln[p - 2] ?? ln[0]) && cross < along(ln[q + 2] ?? ln[ln.length - 1])) continue;
         let ok = true;
-        for (let k = p - 1; k <= q; k++) { const s = segOf(k); if (!s || s.bridge) ok = false; }
+        for (let k = p - 1; k <= q; k++) if (overRiver(k)) ok = false;
         if (!ok) continue;
         const t0 = along(ln[p - 1]) + hw(ln[p - 1]) + 3, t1 = along(ln[p]) - hw(ln[p]) - 3;
         const u0 = along(ln[q]) + hw(ln[q]) + 3, u1 = along(ln[q + 1]) - hw(ln[q + 1]) - 3;
@@ -104,8 +101,6 @@ function buildWay(L: RoadLayout, g: Graph, axis: 'h' | 'v', line: number, wi: nu
         way.sunk.push([t0, u1]);
         busy.push([t0 - 1, u1 + 1]);
         for (let k = p; k <= q; k++) way.bridges.push([along(ln[k]) - hw(ln[k]), along(ln[k]) + hw(ln[k])]);
-        // The avenue isn't there any more: the trench and its dives take its place.
-        for (let k = p - 1; k <= q; k++) drop.add(segOf(k)!.id);
         sunken = true;
         break;
       }
@@ -113,8 +108,8 @@ function buildWay(L: RoadLayout, g: Graph, axis: 'h' | 'v', line: number, wi: nu
     }
   }
   // Over the other highway: up to twice the deck height across its deck, at MAIN_GRADE either side.
-  if (kx >= 0) {
-    const c = along(ln[kx]), half = DECK_HALF + 4, rise = H / MAIN_GRADE;
+  if (cross !== null) {
+    const c = cross, half = DECK_HALF + 4, rise = H / MAIN_GRADE;
     pts.push([c - half - rise, H], [c - half, 2 * H], [c + half, 2 * H], [c + half + rise, H]);
     busy.push([c - half - rise - 1, c + half + rise + 1]);
   }
@@ -181,6 +176,8 @@ function buildWay(L: RoadLayout, g: Graph, axis: 'h' | 'v', line: number, wi: nu
     way.ramps.push(r);
     if (on) addSeg(n, deck, { oneway: true, path }, 4.6, 1);
     else addSeg(deck, n, { oneway: true, path }, 4.6, 1);
+    // A ramp meets the cross street at a signalled junction under the highway.
+    n.lights = WORLD.modern;
   };
   for (const k of exits) {
     const isFirst = k === first, isLast = k === last;
@@ -190,18 +187,4 @@ function buildWay(L: RoadLayout, g: Graph, axis: 'h' | 'v', line: number, wi: nu
   deckNodes.sort((a, b) => along(a) - along(b));
   for (let i = 0; i + 1 < deckNodes.length; i++) addSeg(deckNodes[i], deckNodes[i + 1], { level: way.strip }, 2 * DECK_HALF, 2);
   return way;
-}
-
-/** Takes segments out of the graph (renumbering the rest); junctions left with a straight road
- *  through them lose their lights. */
-function compact(g: Graph, drop: Set<number>): void {
-  const keep = g.segs.filter((s) => !drop.has(s.id));
-  const remap = new Map<number, number>();
-  keep.forEach((s, i) => { remap.set(s.id, i); s.id = i; });
-  g.segs.length = 0;
-  g.segs.push(...keep);
-  for (const n of g.nodes) {
-    n.segs = n.segs.filter((s) => remap.has(s)).map((s) => remap.get(s)!);
-    if (n.segs.length < 3) n.lights = false;
-  }
 }

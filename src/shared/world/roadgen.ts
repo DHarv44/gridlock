@@ -177,7 +177,10 @@ export function genGraph(L: RoadLayout): { nodes: RoadNode[]; segs: Segment[]; b
   const open = (z: number) => z < 0 || isWild(z);
   const wildPair = (za: number, zb: number) => (isWild(za) || isWild(zb)) && open(za) && open(zb);
 
+  // A highway's corridor (world/waygen.ts) is a line with no street along it: the cross streets
+  // pass under the highway, and there's no avenue.
   for (let j = 0; j <= ny; j++) {
+    if (ys[j].highway) continue;
     for (let i = 0; i < nx; i++) {
       const above = clusterAt(i, j - 1), below = clusterAt(i, j);
       if (above === below && above >= 0) continue;
@@ -187,6 +190,7 @@ export function genGraph(L: RoadLayout): { nodes: RoadNode[]; segs: Segment[]; b
     }
   }
   for (let i = 0; i <= nx; i++) {
+    if (xs[i].highway) continue;
     for (let j = 0; j < ny; j++) {
       if (j === riverRow) {
         if (!L.bridgeLines.has(i)) continue;

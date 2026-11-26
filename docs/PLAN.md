@@ -138,12 +138,14 @@ now and then parked in industrial lots. `npx tsx scripts/monster.ts`. Still to c
 launches and surviving landings, the body bouncing on its suspension.
 
 ## J. Highways (asked 2026-11-26; done)
-Two highways over Bayhaven's avenues (WorldSpec.highways; world/waygen.ts, world/ways.ts,
-render/highways.ts): an east-west one and a north-south one that climbs to 11 m over it, and one
-rare stretch sunk in a trench (cross streets bridge it, 12% dives, 4.8 m deep). The avenues under
-them are widened (AVENUE_W) for ramp lanes. Interchanges are diamonds at cross streets: each way an
-exit that peels off the deck, comes down beside it and ends at the crossing's lights, and an
-on-ramp that starts past the crossing and merges in; the ends are half diamonds. A deck lives on
+Two highways on their own corridors through Bayhaven (WorldSpec.highways; world/waygen.ts,
+world/ways.ts, render/highways.ts): an east-west one and a north-south one that climbs to 11 m over
+it, and one rare stretch sunk in a trench (cross streets bridge it, 12% dives, 4.8 m deep). A
+corridor replaces a road line (AVENUE_W wide, grass verge, no street along it): the user's rule is
+that highways don't follow roads, the cross streets pass under them. Interchanges are diamonds at
+cross streets: each way an exit that peels off the deck, comes down beside it and ends at a
+signalled junction on the cross street, and an on-ramp that starts there and merges in; the ends
+are half diamonds. A deck lives on
 its own strip off the map (world/levels.ts WAY0+), so collision, bullets and the spatial hash keep
 it apart; past the switch on a ramp you're moved between street and strip, and drawing maps it back
 over the avenue at the deck's height (heightAt), tilted on the ramps. Traffic spawns on the decks,
