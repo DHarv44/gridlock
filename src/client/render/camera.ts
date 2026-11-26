@@ -5,7 +5,7 @@ import * as THREE from 'three';
 const FOOT_HEIGHT = 44;
 const MAX_HEIGHT = 115;
 /** Holding Aim brings the camera this much closer, at this pace (1/s), the same in and out. */
-const SCOPE_ZOOM = 0.6, SCOPE_RATE = 9;
+const SCOPE_ZOOM = 0.6, SCOPE_RATE = 4;
 
 export class ChaseCamera {
   x = 1000;
