@@ -65,6 +65,12 @@ export interface VehicleSpec {
   stamina?: { gallop: number; canter: number };
   /** Comes at a whistle (the Call key) to the player who last rode it. */
   comesWhenCalled?: boolean;
+  /** A team-drawn wagon: unhitching (the Hitch key, stopped) leaves the wagon standing as
+   *  `wagon` and you driving the bare `team` (vehicle ids). */
+  hitch?: { team: string; wagon: string };
+  /** A wagon standing without its team (seats 0): a team backed up to its pole hitches on and it
+   *  becomes this vehicle (whose `hitch.team` is that team). */
+  hitchAs?: string;
   /** How it dies at 0 hp: `explode` (default: burns a few seconds, then a blast) or `fall` (a
    *  horse, a wagon: goes down at once, riders thrown, no fire). */
   wrecks?: 'explode' | 'fall';

@@ -71,6 +71,12 @@ film's names, characters, story, map or look).
    (timber post with a bell, no ring), `RULES.graffiti`, map legend from the universe's place names.
    Checks: `npx tsx scripts/redrock.ts`; any script in a universe: `npx tsx scripts/universe.ts
    redrock smoke 60`.
-   Not yet: horse stamina and gaits, calling your horse, Blender models (box models stand in),
-   leg animation, its own cast and voiced calls (job posts give briefs only), era sounds (a bell,
-   hooves, whinnies), hitching and unhitching wagons.
+   Horses (2026-11-27): gaits and wind (`VehicleSpec.stamina`: a canter without Sprint, a gallop
+   with it until blown, back to a gallop at 30% wind; AI riders gallop to chase or flee; the wind is
+   sent as `YouState.st` so prediction matches; a wind bar on the HUD), the whistle (H on foot /
+   L3: `comesWhenCalled`; the last horse you rode comes, round a corner if it's far or stuck;
+   server/game/systems/mounts.ts), hitching (G while stopped / X: `VehicleSpec.hitch` and
+   `hitchAs`; a wagon unhitches into a team and a seatless standing wagon, and a team backed onto
+   a pole hitches on; systems/hitching.ts). Protocol 20.
+   Not yet: Blender models (box models stand in), leg animation, its own cast and voiced calls
+   (job posts give briefs only), era sounds (a bell, hooves, whinnies).

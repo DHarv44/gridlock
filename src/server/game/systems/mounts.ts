@@ -69,9 +69,10 @@ function lead(w: World, v: Vehicle): void {
   if (!p || p.dead || p.vehicle || v.wrecked || v.seats.some((s) => s)) { stop(v); return; }
   const at = w.pedPos(p);
   let dx = at.x - v.body.x, dy = at.y - v.body.y, d = Math.hypot(dx, dy);
-  // From far off, or stuck (against a building, a rock): it appears round a corner nearby instead.
-  if (d > 220 || (d > 30 && v.idleT > 3)) {
-    const s = laneSpawn(w, at.x, at.y, 45, 80, at);
+  // From far off, or stuck (against a building, a rock): it appears on a road nearby instead
+  // (round a corner if it was far, closer in if it was already close).
+  if (d > 220 || (d > ARRIVE + 1 && v.idleT > 3)) {
+    const s = d > 30 ? laneSpawn(w, at.x, at.y, 45, 80, at) : laneSpawn(w, at.x, at.y, 8, 25, at);
     if (s) {
       v.body.x = s.x; v.body.y = s.y; v.body.angle = s.angle; v.body.vx = 0; v.body.vy = 0; v.body.av = 0; v.idleT = 0;
       dx = at.x - v.body.x; dy = at.y - v.body.y; d = Math.hypot(dx, dy);

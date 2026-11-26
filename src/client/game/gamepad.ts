@@ -15,7 +15,7 @@ const isPlayStation = (id: string) => /054c|dualshock|dualsense|wireless control
 /** Raw button indices used to drive menus (fixed, so menus always work). */
 export const PAD = { a: 0, b: 1, lb: 4, rb: 5, up: 12, down: 13, left: 14, right: 15 } as const;
 
-export type PadAction = 'jump' | 'sprint' | 'call' | 'handbrake' | 'horn' | 'gallop' | 'climb' | 'descend'
+export type PadAction = 'jump' | 'sprint' | 'call' | 'handbrake' | 'horn' | 'gallop' | 'hitch' | 'climb' | 'descend'
   | 'fire' | 'prevWeapon' | 'nextWeapon' | 'action' | 'radio' | 'map' | 'scores' | 'menu' | 'phone';
 
 /** Button actions, each its own setting, grouped by where they apply; the same button can do
@@ -28,6 +28,7 @@ export const PAD_ACTIONS: { id: PadAction; label: string; context: Context; grou
   { id: 'handbrake', label: 'Handbrake', context: 'car', group: 'Car', button: 0 },
   { id: 'horn', label: 'Horn / siren', context: 'car', group: 'Car', button: 10 },
   { id: 'gallop', label: 'Gallop (on horseback)', context: 'car', group: 'Car', button: 1 },
+  { id: 'hitch', label: 'Hitch / unhitch a wagon (stopped)', context: 'car', group: 'Car', button: 2 },
   { id: 'climb', label: 'Climb', context: 'air', group: 'Helicopter', button: 0 },
   { id: 'descend', label: 'Descend', context: 'air', group: 'Helicopter', button: 1 },
   { id: 'fire', label: 'Fire / swing', context: 'any', group: 'Weapons', button: 5 },

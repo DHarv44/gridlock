@@ -14,9 +14,10 @@ export const BTN = {
   enter: 32, interact: 64, reload: 128, next: 256, prev: 512, horn: 1024, jump: 2048,
   aim: 4096, // deliberately aiming (Aim held / right stick): what a hold-up takes
   call: 8192, // whistle for your mount (systems/mounts.ts)
+  hitch: 16384, // hitch a team to a wagon, or unhitch it (systems/hitching.ts)
 } as const;
 /** Edge-triggered buttons must not repeat when the server re-uses a stale input. */
-export const EDGE_BUTTONS = BTN.enter | BTN.interact | BTN.reload | BTN.next | BTN.prev | BTN.call;
+export const EDGE_BUTTONS = BTN.enter | BTN.interact | BTN.reload | BTN.next | BTN.prev | BTN.call | BTN.hitch;
 
 /** [seq, mx, my, throttle, steer, aim, buttons, weaponWish] */
 export type InputMsg = [number, number, number, number, number, number, number, number];

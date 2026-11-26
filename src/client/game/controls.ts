@@ -6,7 +6,7 @@
 export type Action =
   | 'footUp' | 'footDown' | 'footLeft' | 'footRight' | 'jump' | 'sprint'
   | 'call'
-  | 'gas' | 'brake' | 'steerLeft' | 'steerRight' | 'handbrake' | 'horn' | 'gallop'
+  | 'gas' | 'brake' | 'steerLeft' | 'steerRight' | 'handbrake' | 'horn' | 'gallop' | 'hitch'
   | 'heliForward' | 'heliBack' | 'heliLeft' | 'heliRight' | 'climb' | 'descend'
   | 'turretLeft' | 'turretRight'
   | 'fire' | 'aim' | 'prevWeapon' | 'nextWeapon'
@@ -36,6 +36,7 @@ export const ACTIONS: ActionDef[] = [
   A('handbrake', 'Handbrake', 'held', 'car', 'Car', ['Space']),
   A('horn', 'Horn / siren', 'edge', 'car', 'Car', ['KeyH']),
   A('gallop', 'Gallop (on horseback)', 'held', 'car', 'Car', ['ShiftLeft']),
+  A('hitch', 'Hitch / unhitch a wagon (stopped)', 'edge', 'car', 'Car', ['KeyG']),
   A('heliForward', 'Fly forward', 'held', 'air', 'Helicopter', ['KeyW', 'ArrowUp']),
   A('heliBack', 'Fly back', 'held', 'air', 'Helicopter', ['KeyS', 'ArrowDown']),
   A('heliLeft', 'Turn left', 'held', 'air', 'Helicopter', ['KeyA', 'ArrowLeft']),

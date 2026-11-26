@@ -54,6 +54,19 @@ const horses = [0, 1, 2, 3, 5, 6, 7]; // coat colours (palette.ts)
 const teamBase = { movement: 'legs' as const, wrecks: 'fall' as const, stamina: { gallop: 8, canter: 0.7 }, length: 2.8, width: 1.7, height: 1.7, mass: 1800,
   brake: 9, reverse: 1.2, grip: 9, turnIn: 0.02, turnRate: 1.8, minTurnRadius: 6, maxLateral: 3, rearAxle: 0 };
 
+type Wagon = NonNullable<VehicleSpec['trailer']>;
+const BUCKBOARD: Wagon = { length: 3.6, width: 1.7, height: 1.2, hitch: 1.2, model: wagon('#8a6a4a') };
+const COVERED: Wagon = { length: 5, width: 1.9, height: 2.6, hitch: 1.2, model: wagon('#7a5a3a', '#e8e0cc') };
+const COACH: Wagon = { length: 4.2, width: 1.9, height: 2.4, hitch: 1.2, model: [...wagon('#7a2a20', '#7a2a20'), b(0.3, 0.46, -0.42, 0.42, 1.0, 1.08, '#b8902e')] };
+
+/** A wagon standing without its team: seatless (nobody can drive it), it hitches back as `as`. */
+const standing = (id: string, name: string, w: Wagon, hp: number, as: string): VehicleSpec => ({
+  id, name, movement: 'legs', wrecks: 'fall', length: w.length, width: w.width, height: w.height, mass: 900,
+  // A nominal top speed (the physics divides by it); with no seat it's never driven.
+  maxSpeed: 1, accel: 0, brake: 6, reverse: 0, grip: 12, turnRate: 0, hp, seats: 0, price: 0, colors: horses,
+  roles: [], model: w.model, hitchAs: as,
+});
+
 export const VEHICLES: VehicleSpec[] = [
   { ...mount, id: 'mustang', name: 'Mustang', maxSpeed: 20, accel: 8, turnRate: 3.3, hp: 180, price: 120, stamina: { gallop: 15, canter: 0.6 }, colors: horses, roles: ['traffic', 'parked'], model: horse() },
   { ...mount, id: 'quarter_horse', name: 'Quarter Horse', maxSpeed: 19, accel: 9, hp: 220, price: 90, colors: horses, roles: ['traffic', 'parked'], model: horse() },
@@ -65,13 +78,20 @@ export const VEHICLES: VehicleSpec[] = [
 
   { ...teamBase, id: 'buckboard', name: 'Buckboard', maxSpeed: 14, accel: 5, hp: 400, seats: 2, openTop: true, price: 160, colors: horses,
     roles: ['traffic', 'parked'], model: team(), saddles: [{ x: -1.9, z: 1.3, lean: 0 }, { x: -1.9, y: 0.5, z: 1.3, lean: 0 }],
-    trailer: { length: 3.6, width: 1.7, height: 1.2, hitch: 1.2, model: wagon('#8a6a4a') } },
+    trailer: BUCKBOARD, hitch: { team: 'team', wagon: 'buckboard_standing' } },
   { ...teamBase, id: 'covered_wagon', name: 'Covered Wagon', maxSpeed: 11, accel: 3.5, hp: 600, seats: 2, openTop: true, price: 260, colors: [2, 3, 6],
     roles: ['traffic'], model: team(), saddles: [{ x: -1.9, z: 1.3, lean: 0 }, { x: -1.9, y: 0.5, z: 1.3, lean: 0 }],
-    trailer: { length: 5, width: 1.9, height: 2.6, hitch: 1.2, model: wagon('#7a5a3a', '#e8e0cc') } },
+    trailer: COVERED, hitch: { team: 'team', wagon: 'covered_standing' } },
   { ...teamBase, id: 'stagecoach', name: 'Stagecoach', maxSpeed: 15, accel: 4.5, hp: 700, seats: 6, price: 0, colors: [0, 1],
-    roles: ['traffic'], model: team(),
-    trailer: { length: 4.2, width: 1.9, height: 2.4, hitch: 1.2, model: [...wagon('#7a2a20', '#7a2a20'), b(0.3, 0.46, -0.42, 0.42, 1.0, 1.08, '#b8902e')] } },
+    roles: ['traffic'], model: team(), trailer: COACH, hitch: { team: 'team', wagon: 'coach_standing' } },
+
+  // A team out of harness (what's left driving when you unhitch), and the wagons left standing:
+  // back a team up to one's pole and hitch on (G).
+  { ...teamBase, id: 'team', name: 'Team of Horses', maxSpeed: 16, accel: 6, hp: 360, seats: 2, openTop: true, price: 0, colors: horses,
+    roles: [], model: team(), saddles: [{ x: -0.2, z: 1.3, lean: 0.05 }, { x: -0.2, y: 0.5, z: 1.3, lean: 0.05 }] },
+  standing('buckboard_standing', 'Buckboard (unhitched)', BUCKBOARD, 400, 'buckboard'),
+  standing('covered_standing', 'Covered Wagon (unhitched)', COVERED, 600, 'covered_wagon'),
+  standing('coach_standing', 'Stagecoach (unhitched)', COACH, 700, 'stagecoach'),
   { ...teamBase, id: 'doctor_buggy', name: "Doctor's Buggy", length: 2.5, width: 0.8, maxSpeed: 15, accel: 5.5, hp: 300, seats: 2, openTop: true, price: 0, colors: [2],
     roles: ['ambulance'], model: horse('#1a1612'), trailer: { length: 2.6, width: 1.5, height: 1.4, hitch: 1.0, model: wagon('#16171a', '#16171a') } },
   { ...teamBase, id: 'water_wagon', name: 'Water Wagon', maxSpeed: 12, accel: 4, hp: 500, seats: 2, openTop: true, price: 0, colors: [3],

@@ -7,6 +7,7 @@ import { SPRINT, stepVehicle, wearOf } from '../../../shared/sim/physics';
 import { damagePed, killPed, wallCrash } from '../combat/damage';
 import { climbStairs, leaveOnRoof } from './lifts';
 import { callMount, canGallop } from './mounts';
+import { toggleHitch } from './hitching';
 import { onAttacked } from '../ai/reactions';
 import { tickWeapon, tryFire } from '../combat/fire';
 import type { Ped, Player, Vehicle } from '../entities';
@@ -74,6 +75,7 @@ function applyInput(w: World, pl: Player, p: Ped, inp: InputMsg, dt: number): vo
       v.ctl.sprint = (btn & BTN.sprint) !== 0 && canGallop(v);
       v.ctl.up = (btn & BTN.up) !== 0; v.ctl.down = (btn & BTN.down) !== 0;
       if (btn & BTN.horn) { if (v.spec.siren) v.siren = !v.siren; else v.horn = true; }
+      if (btn & BTN.hitch) toggleHitch(w, pl, v);
       const vx = v.body.vx, vy = v.body.vy;
       wallCrash(w, v, stepVehicle(v.body, v.spec, v.ctl, dt, w.statics, true, (x, y) => w.map.onRoad(x, y), wearOf(v.hp / v.spec.hp, v.id)), vx, vy);
       if (v.spec.turret) v.turret = turnTurret(v.turret, aim, dt, v.spec.turret);
@@ -105,7 +107,8 @@ function cycleWeapon(p: Ped, dir: number): void {
 function nearestVehicle(w: World, p: Ped): Vehicle | null {
   let best: Vehicle | null = null, bd = Infinity;
   w.vehiclesNear(p.body.x, p.body.y, 9, (v) => {
-    if (v.wrecked || v.burning >= 0 || (flies(v.spec) && v.body.alt > 1)) return;
+    // A seatless vehicle (a wagon standing without its team) can't be got into.
+    if (v.wrecked || v.burning >= 0 || v.spec.seats === 0 || (flies(v.spec) && v.body.alt > 1)) return;
     const d = dist(p.body.x, p.body.y, v.body.x, v.body.y) - Math.max(v.spec.length, v.spec.width) / 2;
     if (d < 1.8 && d < bd) { bd = d; best = v; }
   });

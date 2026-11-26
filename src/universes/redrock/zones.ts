@@ -28,7 +28,7 @@ export const ZONES: ZoneSpec[] = [
     wall: ['#8a6a4a', '#a07a52', '#cfc2a2', '#7a3a2a'], roof: ['#5a4632', '#4a3a2a', '#6a5642'],
     trees: 0.8, parkingChance: 0, plazaChance: 0, pedDensity: 0.8,
     peds: [{ id: 'homesteader', weight: 6 }, { id: 'rancher', weight: 3 }],
-    trafficDensity: 0.25, traffic: riders, parked: tied, parkedDensity: 0.4, roadDrop: 0.3, windows: 0.2,
+    trafficDensity: 0.25, traffic: riders, parked: [...tied, { id: 'buckboard_standing', weight: 2 }], parkedDensity: 0.4, roadDrop: 0.3, windows: 0.2,
   },
   {
     id: 'prairie', name: 'Prairie', mapColor: '#8a7a4a', ground: '#c4a274', sidewalk: '#c4a274', lot: noLot, layout: 'wild',

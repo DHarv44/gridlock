@@ -17,6 +17,7 @@ const { updateTrailers } = await import('../src/server/game/systems/trailers');
 const { addHeat } = await import('../src/server/game/systems/wanted');
 const { callMount, canGallop, updateMounts } = await import('../src/server/game/systems/mounts');
 const { laneSpawn } = await import('../src/server/game/systems/spawnPoints');
+const { toggleHitch } = await import('../src/server/game/systems/hitching');
 const { LAND0, MAP_SIZE } = await import('../src/shared/world/cityTypes');
 
 let failures = 0;
@@ -99,6 +100,15 @@ void rested;
 const pl = room.join('Tex', { send: () => {}, close: () => {} });
 if (typeof pl === 'string') throw new Error(pl);
 
+// Hitching: a stopped buckboard unhitches (the wagon stands, you're on the team), and hitches on again.
+const rig = spawnVehicle(w, vehicleIndex('buckboard'), straight.x0 + 140, straight.y0, 0);
+const rigId = rig.id;
+toggleHitch(w, pl, rig);
+const left = [...w.vehicles.values()].find((o) => o.spec.id === 'buckboard_standing' && Math.hypot(o.body.x - rig.body.x, o.body.y - rig.body.y) < 8);
+check(rig.spec.id === 'team' && !!left && left.spec.seats === 0, 'unhitched: the team is free and the wagon stands where it was');
+toggleHitch(w, pl, rig);
+check(rig.id === rigId && rig.spec.id === 'buckboard' && !w.vehicles.has(left!.id), 'backed onto its pole, the team hitches on again');
+
 // The whistle: the player's last horse comes to them.
 const tex = w.peds.get(pl.pid)!;
 const tied = laneSpawn(w, tex.body.x, tex.body.y, 70, 110)!;
@@ -112,6 +122,7 @@ for (let t = 0; t < 40 * 30 && mine.calledBy; t++) {
   close = Math.hypot(mine.body.x - at.x, mine.body.y - at.y);
 }
 check(close <= 5 && mine.calledBy === 0, `whistled for, the horse comes to its rider (${close.toFixed(1)} m away)`);
+if (close > 5) console.log('  horse:', { calledBy: mine.calledBy, seats: mine.seats, wrecked: mine.wrecked, idleT: mine.idleT, hp: mine.hp, texDead: tex.dead, texVeh: tex.vehicle });
 addHeat(pl, 45);
 for (let t = 0; t < 30 * 30; t++) room.tick();
 const lawRides = [...w.vehicles.values()].filter((v) => v.spec.roles.includes('police'));
