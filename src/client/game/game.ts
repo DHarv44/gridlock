@@ -49,6 +49,7 @@ import { Storefronts } from '../render/storefronts';
 import { addAtms } from '../render/atms';
 import { GasStations } from '../render/gasStations';
 import { Interiors } from '../render/interiors';
+import { GameTables } from '../render/gameTables';
 import { atmsOf } from '../../shared/world/atms';
 import { Water } from '../render/water';
 import { type OwnState, type PlayerTag, WorldView } from '../render/worldView';
@@ -182,7 +183,7 @@ export class Game {
     this.storefronts = new Storefronts(this.stage.scene, city);
     addAtms(this.stage.scene, atmsOf(city));
     this.gas = new GasStations(this.stage.scene, city);
-    this.interiors = new Interiors(this.stage.scene, city);
+    this.interiors = new Interiors(this.stage.scene, city, new GameTables(this.stage.scene, city).drawn);
     if (RULES.graffiti) new Graffiti(this.stage.scene, city, meshes.graffitiSpots);
     this.quality = new QualityGovernor(this.stage);
     this.quality.onAuto = (q) => this.hud.notify(`Graphics set to ${q} for a smoother frame rate (Esc to change)`, 'info');

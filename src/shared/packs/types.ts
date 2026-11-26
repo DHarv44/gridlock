@@ -366,6 +366,9 @@ export interface TableSpec {
   caught?: 'shoot' | 'throwOut';
   /** What the table is drawn as: a card or dice table, or a slot machine. */
   prop?: 'table' | 'slots';
+  /** Its furniture model (art/furniture.py: poker_oval, blackjack, blackjack_wood, roulette, craps,
+   *  slots, card_table, faro, dice_table, folding); by default the plain one for its game. */
+  model?: string;
 }
 
 /** Where tables are (Universe.venues): every walk-in place of a layout (a casino's floor, a
