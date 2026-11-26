@@ -4,7 +4,7 @@ import type { CharacterProgress, CharacterSave, CharLook } from './packs/charact
 export const TICK_HZ = 30;
 export const SNAP_EVERY = 2;             // snapshots at 15 Hz
 export const INTERP_DELAY_MS = 120;
-export const PROTOCOL_VERSION = 17;
+export const PROTOCOL_VERSION = 18;
 /** Every Nth snapshot carries every entity in full (others list unchanged ones in `k`). */
 export const FULL_SNAP_EVERY = 30;
 
@@ -44,7 +44,8 @@ export const PF = { dead: 1, fast: 2, aim: 4, burning: 8, down: 16, player: 32, 
 export const VF = { siren: 1, wreck: 2, burning: 4, brake: 8, lights: 16, driven: 32, smoke: 64, reverse: 128 } as const;
 export const PK = { cash: 0, weapon: 1, health: 2, armor: 3, frenzy: 4 } as const;
 
-export const FX = { Shot: 0, Boom: 1, Blood: 2, Swing: 3, Horn: 4, Splash: 5, Spark: 6, Throw: 7 } as const;
+/** Hit: [8, attacker ped, victim ped, weapon index]: a melee blow landing. */
+export const FX = { Shot: 0, Boom: 1, Blood: 2, Swing: 3, Horn: 4, Splash: 5, Spark: 6, Throw: 7, Hit: 8 } as const;
 export const HIT = { none: 0, flesh: 1, metal: 2, wall: 3 } as const;
 
 export const Mode = { Foot: 0, Driver: 1, Passenger: 2, Dead: 3, Busted: 4 } as const;

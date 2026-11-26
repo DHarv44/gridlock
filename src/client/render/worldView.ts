@@ -6,7 +6,7 @@ import type { EntityStore, ViewEntity } from '../net/entities';
 import { FLOOR_H, floorOf, groundOf } from '../../shared/world/levels';
 import { putCarLights } from './carLights';
 import type { Effects } from './effects';
-import { animatePed, HIP_H, makePed, type PedView, ridePed, setPedWeapon } from './pedMesh';
+import { animatePed, HIP_H, makePed, type PedView, ridePed, setPedWeapon, SWING_TIME } from './pedMesh';
 import { lampMaterial, makeVehicle, showDamage, sirenMats, type VehicleView } from './vehicleMesh';
 import { decodeDamage } from './vehicleDamage';
 import { Skids } from './skids';
@@ -204,6 +204,12 @@ export class WorldView {
     s.renderOrder = 10;
     v.root.add(s);
     this.labels.set(id, s);
+  }
+
+  /** A ped swung a melee weapon: their arm throws the blow. */
+  swing(pid: number): void {
+    const v = this.peds.get(pid);
+    if (v) { v.swingT = SWING_TIME; v.swingSide = -(v.swingSide ?? 1); }
   }
 
   /** Dry ground at a point (set by the game from the city map): a boat there is under a bridge. */

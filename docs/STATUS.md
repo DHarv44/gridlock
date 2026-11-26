@@ -90,6 +90,22 @@
   character marked "welcome". `npm run voices` masters recordings into src/client/voice/,
   `npm run scripts` writes content/SCRIPTS.md. The user records the lines (Benny's are in); the
   rest are silent bubbles until recorded (or filled by scripts/voice-calls.ts).
+- Feel pass (2026-11-26):
+  - Clipping: your predicted car or ped stops at other vehicles where they're drawn
+    (shared/sim/dynamic.ts, client/game/obstacles.ts), never the car you're in.
+  - Street furniture: lamp posts, hydrants, bins and boxes (packs/streetProps.ts,
+    shared/world/breakables.ts, server systems/breakables.ts, render/breakables.ts) stop a slow
+    car and topple to a fast one (a dent, sparks or water); they stand again after 150 s with
+    nobody near. Protocol 17, then 18.
+  - Vehicle damage (RULES.vehicleHpTake and the crash/wear numbers): dents show in full but cost
+    half the health; below 70% health a car loses pull, top speed and grip and pulls to one side
+    (shared physics `wear`, predicted too).
+  - Melee (packs weapons knockback, stagger, hitSound): fists 18 a punch; blows shove and stagger;
+    three in a row floor someone; FX.Hit plays the thud and jolts the camera; peds throw the blow
+    (pedMesh blow()); melee auto-aim only reaches as far as the weapon.
+  - Aim: a crosshair at the mouse (always on keyboard and mouse); Aim zooms in gently, never so far
+    that the spot you're aiming at leaves the screen.
+  - Tests: `npx tsx scripts/props.ts`, `scripts/melee.ts`, `scripts/drive.ts`.
 - Persistent games (2026-11-26): the plan is one always-on server (Railway, a volume at
   GRIDLOCK_DATA; README "Over the internet, always on"), so nobody hosts: a room saves as it's
   played and when it empties, the server unloads it after ten idle minutes, and any member opens it

@@ -18,7 +18,7 @@ export function updateAi(w: World, dt: number): void {
     if (!p.ai || p.dead || p.player) continue;
     const ai = p.ai;
     ai.t += dt;
-    if (p.down > 0) { p.ctl.mx = 0; p.ctl.my = 0; p.trigger = false; continue; }
+    if (p.down > 0 || (p.stagger ?? 0) > 0) { p.ctl.mx = 0; p.ctl.my = 0; p.trigger = false; continue; }
     ai.think -= dt;
     if (ai.think <= 0) {
       ai.think = 0.45 + w.rng.next() * 0.3;

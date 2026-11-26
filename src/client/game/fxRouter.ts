@@ -6,7 +6,9 @@ import type { EntityStore } from '../net/entities';
 import type { ChaseCamera } from '../render/camera';
 import type { Effects } from '../render/effects';
 
-export function routeFx(events: number[][], fx: Effects, sound: Sound, store: EntityStore, cam: ChaseCamera): void {
+/** `swing`: a ped swung a melee weapon (their arm animates); `myPid`: your own ped, whose blows
+ *  landing (and blows landing on you) shake the camera a little. */
+export function routeFx(events: number[][], fx: Effects, sound: Sound, store: EntityStore, cam: ChaseCamera, swing: (pid: number) => void = () => {}, myPid = 0): void {
   for (const e of events) {
     switch (e[0]) {
       case FX.Shot: {
@@ -28,9 +30,20 @@ export function routeFx(events: number[][], fx: Effects, sound: Sound, store: En
       case FX.Blood: fx.blood(e[1], e[2]); break;
       case FX.Splash: fx.splash(e[1], e[2]); sound.play('splash', e[1], e[2]); break;
       case FX.Spark: fx.spark(e[1], e[2]); sound.play('crash', e[1], e[2]); break;
+      case FX.Hit: {
+        // A blow landing: its thud, and a jolt for you if you threw it or took it.
+        const [, by, on, wi] = e;
+        const victim = store.all.get(on);
+        const w = WEAPONS[wi];
+        if (victim && w) sound.play(w.hitSound ?? w.sound, victim.x, victim.y);
+        if (on === myPid) cam.addShake(0.3);
+        else if (by === myPid) cam.addShake(0.12);
+        break;
+      }
       case FX.Swing: case FX.Throw: case FX.Horn: {
         const ent = store.all.get(e[1]);
         if (!ent) break;
+        if (e[0] === FX.Swing) swing(e[1]);
         // A horn is the vehicle's own (pack field); vehicles without one stay quiet.
         const voice = e[0] === FX.Horn ? VEHICLES[ent.data[2]]?.horn : e[0] === FX.Throw ? 'throw' : 'swing';
         if (voice) sound.play(voice, ent.x, ent.y);

@@ -52,7 +52,13 @@ export interface PedView {
   deadT: number;
   hop: number;              // seconds left in a jump arc
   lookKey?: string;         // what the look was built from (players rebuild when it changes)
+  /** Throwing a melee blow: seconds left of it, and which arm (fists alternate). */
+  swingT?: number;
+  swingSide?: number;
 }
+
+/** How long a melee blow's arm movement takes (s). */
+export const SWING_TIME = 0.24;
 
 interface Colours { skin: string; top: string; bottom: string; hat: string | null; hair: string; shoes: string; style: number }
 
@@ -171,6 +177,7 @@ export function animatePed(v: PedView, dt: number, speed: number, aiming: boolea
   }
   v.deadT = 0;
   b.rotation.z = 0;
+  b.rotation.y = 0; // (a blow twists the body: see blow())
   b.position.y = busy ? -0.55 : 0;
   v.legL.rotation.x = v.legR.rotation.x = 0;
   v.phase += dt * Math.min(speed, 8) * 2.1;
@@ -192,4 +199,23 @@ export function animatePed(v: PedView, dt: number, speed: number, aiming: boolea
     v.armL.rotation.x = 0;
   }
   if (!hands) v.armR.rotation.x = 0;
+  if (v.swingT && v.swingT > 0) blow(v, dt);
+}
+
+/** A melee blow: a straight jab out and back (fists, alternating arms; knives and machetes from
+ *  the weapon hand), or a two-handed sweep across the body (a bat). */
+function blow(v: PedView, dt: number): void {
+  v.swingT = Math.max(0, (v.swingT ?? 0) - dt);
+  const u = 1 - v.swingT / SWING_TIME, out = Math.sin(Math.PI * u);
+  const hold = v.weapon >= 0 ? WEAPONS[v.weapon].hold : 'fist';
+  if (hold === 'two') {
+    // Wind up behind, sweep through to the front.
+    v.armL.rotation.z = v.armR.rotation.z = Math.PI / 2.2;
+    v.armL.rotation.x = v.armR.rotation.x = 1.2 - 2.4 * u;
+    v.body.rotation.y = 0.5 - u;
+    return;
+  }
+  const arm = hold === 'fist' && (v.swingSide ?? 1) < 0 ? v.armL : v.armR;
+  arm.rotation.z = (Math.PI / 2) * (0.35 + 0.65 * out);
+  v.body.rotation.y = (arm === v.armL ? 0.25 : -0.25) * out;
 }

@@ -53,6 +53,10 @@ export interface Ped {
   hp: number; armor: number;
   dead: boolean; deadT: number;
   down: number;             // knocked-down timer
+  /** Reeling from a blow (s): can't act, slides with the knock (shorter than being floored). */
+  stagger?: number;
+  /** The last few blows this ped landed: on whom and when, for a combo that floors them. */
+  combo?: { target: number; hits: number; t: number };
   burning: number;          // seconds left on fire
   weapons: HeldWeapon[];
   wi: number;

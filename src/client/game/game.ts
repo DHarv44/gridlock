@@ -231,7 +231,7 @@ export class Game {
         this.gameMinutes = m.gt;
         this.you = m.you;
         this.predict.reconcile(m.you, m.ack);
-        routeFx(m.fx, this.fx, this.sound, this.store, this.cam);
+        routeFx(m.fx, this.fx, this.sound, this.store, this.cam, (pid) => this.view.swing(pid), m.you.pid);
         break;
       case 'players': this.players = m.list; this.jobs.players = m.list; break;
       case 'props': this.furniture.setDown(m.down); break;
@@ -276,7 +276,7 @@ export class Game {
   private aimAngle = 0;
   private hudFrame = 0;
   private steering = new Steering();
-  private autoAim = makeAimAssist(this.store, () => this.you?.pid ?? 0);
+  private autoAim = makeAimAssist(this.store, () => this.you?.pid ?? 0, () => this.you?.w[this.you.wi]?.[0] ?? -1);
 
   private tick(own: OwnState | null): void {
     const inp = this.input;

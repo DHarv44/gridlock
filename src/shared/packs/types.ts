@@ -125,6 +125,11 @@ export interface WeaponSpec {
   projectile?: { speed: number; fuse?: number; radius: number; blast: number; fire?: boolean; arc?: boolean };
   tracer: string;
   sound: string;
+  /** Melee: the sound of it landing (else `sound`), how hard it shoves who it hits (m/s) and how
+   *  long they reel, unable to act (s). */
+  hitSound?: string;
+  knockback?: number;
+  stagger?: number;
   hold: 'fist' | 'one' | 'two' | 'heavy' | 'throw';
   vehicleOnly?: boolean;
   driveBy?: boolean;       // usable from a car window

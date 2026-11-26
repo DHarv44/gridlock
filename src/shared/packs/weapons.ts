@@ -5,10 +5,10 @@ import { WEAPON_MODELS } from './weaponModels';
 const W = (w: WeaponSpec): WeaponSpec => ({ ...w, model: WEAPON_MODELS[w.id] });
 
 export const WEAPONS: WeaponSpec[] = [
-  W({ id: 'fists', name: 'Fists', kind: 'melee', slot: 0, damage: 9, rate: 2.5, range: 1.3, spread: 0.9, auto: true, clip: 0, reload: 0, vehicleMul: 0.1, price: 0, ammoPrice: 0, ammoBundle: 0, tracer: '#fff', sound: 'punch', hold: 'fist', size: 0 }),
-  W({ id: 'knife', name: 'Knife', kind: 'melee', slot: 0, damage: 34, rate: 2.2, range: 1.4, spread: 0.8, auto: true, clip: 0, reload: 0, vehicleMul: 0.1, price: 120, ammoPrice: 0, ammoBundle: 0, tracer: '#fff', sound: 'slash', hold: 'one', size: 0.25 }),
-  W({ id: 'bat', name: 'Baseball Bat', kind: 'melee', slot: 0, damage: 28, rate: 1.6, range: 1.8, spread: 1.1, auto: true, clip: 0, reload: 0, vehicleMul: 0.4, price: 90, ammoPrice: 0, ammoBundle: 0, tracer: '#fff', sound: 'swing', hold: 'two', size: 0.85 }),
-  W({ id: 'machete', name: 'Machete', kind: 'melee', slot: 0, damage: 48, rate: 1.5, range: 1.7, spread: 1.0, auto: true, clip: 0, reload: 0, vehicleMul: 0.3, price: 260, ammoPrice: 0, ammoBundle: 0, tracer: '#fff', sound: 'slash', hold: 'one', size: 0.6 }),
+  W({ id: 'fists', name: 'Fists', kind: 'melee', slot: 0, damage: 18, rate: 2.4, range: 1.6, spread: 0.9, auto: true, clip: 0, reload: 0, vehicleMul: 0.1, price: 0, ammoPrice: 0, ammoBundle: 0, tracer: '#fff', sound: 'punch', knockback: 4.5, stagger: 0.35, hold: 'fist', size: 0 }),
+  W({ id: 'knife', name: 'Knife', kind: 'melee', slot: 0, damage: 34, rate: 2.2, range: 1.5, spread: 0.8, auto: true, clip: 0, reload: 0, vehicleMul: 0.1, price: 120, ammoPrice: 0, ammoBundle: 0, tracer: '#fff', sound: 'slash', knockback: 2, stagger: 0.3, hold: 'one', size: 0.25 }),
+  W({ id: 'bat', name: 'Baseball Bat', kind: 'melee', slot: 0, damage: 36, rate: 1.6, range: 1.9, spread: 1.1, auto: true, clip: 0, reload: 0, vehicleMul: 0.4, price: 90, ammoPrice: 0, ammoBundle: 0, tracer: '#fff', sound: 'swing', hitSound: 'punch', knockback: 8, stagger: 0.6, hold: 'two', size: 0.85 }),
+  W({ id: 'machete', name: 'Machete', kind: 'melee', slot: 0, damage: 48, rate: 1.5, range: 1.8, spread: 1.0, auto: true, clip: 0, reload: 0, vehicleMul: 0.3, price: 260, ammoPrice: 0, ammoBundle: 0, tracer: '#fff', sound: 'slash', knockback: 4, stagger: 0.5, hold: 'one', size: 0.6 }),
 
   W({ id: 'pistol', name: 'Pistol', kind: 'hitscan', slot: 1, damage: 22, rate: 4, range: 55, spread: 0.04, auto: false, clip: 15, reload: 1.2, vehicleMul: 0.6, price: 400, ammoPrice: 40, ammoBundle: 45, tracer: '#ffe6a0', sound: 'pistol', hold: 'one', size: 0.22, driveBy: true }),
   W({ id: 'revolver', name: 'Revolver', kind: 'hitscan', slot: 1, damage: 55, rate: 1.6, range: 65, spread: 0.025, auto: false, clip: 6, reload: 2, vehicleMul: 0.8, price: 900, ammoPrice: 60, ammoBundle: 24, tracer: '#ffd27a', sound: 'revolver', hold: 'one', size: 0.28, driveBy: true }),

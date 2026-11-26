@@ -10,6 +10,9 @@ import { crime } from '../systems/wanted';
 import type { World } from '../world';
 import { damagePed, damageVehicle, spawnFire } from './damage';
 
+/** Blows on the same person closer together than this (s) count toward a combo. */
+const COMBO_GAP = 1.5;
+
 const vehicleWeaponIds = new Map<string, number>();
 const vw = (id: string) => {
   let i = vehicleWeaponIds.get(id);
@@ -65,7 +68,7 @@ export function activeWeapon(w: World, p: Ped): { spec: WeaponSpec; index: numbe
 export function tryFire(w: World, p: Ped): void {
   const prev = p.triggerPrev;
   p.triggerPrev = p.trigger;
-  if (!p.trigger || p.dead || p.down > 0 || p.fireCd > 0) return;
+  if (!p.trigger || p.dead || p.down > 0 || (p.stagger ?? 0) > 0 || p.fireCd > 0) return;
   const aw = activeWeapon(w, p);
   if (!aw) return;
   const { spec, index, mounted } = aw;
@@ -137,10 +140,18 @@ function melee(w: World, p: Ped, spec: WeaponSpec, aim: number): void {
   });
   if (best) {
     const o = best as Ped;
-    o.body.vx += Math.cos(aim) * 3; o.body.vy += Math.sin(aim) * 3;
-    // Heavy swings can floor people; players only go down to the big ones, and rarely.
-    const floors = o.player ? spec.damage >= 40 && w.rng.chance(0.35) : spec.damage > 20 || w.rng.chance(0.15);
-    if (floors) o.down = Math.max(o.down, 0.8);
+    // The blow lands: a shove they reel from (no control while they slide), and a thud.
+    const push = spec.knockback ?? 3;
+    o.body.vx = Math.cos(aim) * push; o.body.vy = Math.sin(aim) * push;
+    o.stagger = Math.max(o.stagger ?? 0, spec.stagger ?? 0.3);
+    // Three in a row on the same person floors them; heavy weapons can on their own (players
+    // only to the big ones, and rarely).
+    const c = p.combo && p.combo.target === o.id && w.time - p.combo.t < COMBO_GAP ? p.combo : { target: o.id, hits: 0, t: 0 };
+    c.hits++; c.t = w.time;
+    p.combo = c;
+    const heavy = o.player ? spec.damage >= 40 && w.rng.chance(0.35) : spec.damage > 30 || w.rng.chance(0.15);
+    if (c.hits >= 3 || heavy) { o.down = Math.max(o.down, 1.0); c.hits = 0; }
+    w.emit(FX.Hit, p.id, o.id, WEAPONS.indexOf(spec));
     damagePed(w, o, spec.damage, p.id, { melee: true });
     return;
   }

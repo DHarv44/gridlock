@@ -13,8 +13,10 @@ import type { World } from '../world';
 export function stepPedBody(w: World, p: Ped, dt: number, speed: number): void {
   const b = p.body;
   const ox = b.x, oy = b.y;
-  if (p.down > 0 || p.dead) {
+  if (p.down > 0 || p.dead || (p.stagger ?? 0) > 0) {
+    // Floored or reeling: no control, sliding to a stop with whatever knocked you.
     p.down = Math.max(0, p.down - dt);
+    if (p.stagger) p.stagger = Math.max(0, p.stagger - dt);
     b.vx *= Math.exp(-5 * dt); b.vy *= Math.exp(-5 * dt);
     b.x += b.vx * dt; b.y += b.vy * dt;
     w.statics.resolveCircle(b, 0.35);

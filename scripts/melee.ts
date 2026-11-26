@@ -1,0 +1,56 @@
+// Headless checks of fist fights (server combat/fire.ts melee): a punch lands for real damage, shoves
+// the one it hits back (they reel, unable to act, while they slide), three in a row floors them, and
+// every blow that lands sends a hit event (its thud, the camera jolt, the swing's arm).
+// `npx tsx scripts/melee.ts`
+export {};
+process.env.GRIDLOCK_DATA = 'data-smoke/melee';
+const { Room } = await import('../src/server/room');
+const { PEDS, RULES, UNARMED, WEAPONS } = await import('../src/shared/packs');
+const { FX } = await import('../src/shared/protocol');
+const { spawnPed } = await import('../src/server/game/factory');
+
+let failures = 0;
+const check = (ok: boolean, what: string) => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${what}`); if (!ok) failures++; };
+
+const room = new Room('MELE', RULES.citySeed);
+room.stop();
+const pl = room.join('Boxer', { send: () => {}, close: () => {} });
+if (typeof pl === 'string') throw new Error(pl);
+room.stop();
+const w = room.world;
+const me = w.peds.get(pl.pid)!;
+me.wi = me.weapons.findIndex((h) => h.w === UNARMED);
+const fists = WEAPONS[UNARMED];
+const civ = PEDS.findIndex((p) => p.behaviour === 'civilian');
+const mark = spawnPed(w, civ, me.body.x + 1.1, me.body.y, Math.PI);
+mark.ai = null; // stands there and takes it
+const hp0 = mark.hp;
+const fx: number[][] = [];
+/** One punch: trigger for a tick facing the mark, then let things play out. */
+const punch = (after = 6) => {
+  me.aim = Math.atan2(mark.body.y - me.body.y, mark.body.x - me.body.x);
+  me.trigger = true; me.fireCd = 0;
+  const x0 = mark.body.x;
+  // The trigger goes in with the player's input; tryFire runs in the player tick.
+  pl.queue.push([0, 0, 0, 0, 0, me.aim, 1, -1]);
+  room.tick(); fx.push(...w.fx);
+  me.trigger = false;
+  const staggered = (mark.stagger ?? 0) > 0;
+  for (let i = 0; i < after; i++) { pl.queue.push([0, 0, 0, 0, 0, me.aim, 0, -1]); room.tick(); fx.push(...w.fx); }
+  return { moved: Math.hypot(mark.body.x - x0, 0), staggered };
+};
+
+const r1 = punch();
+check(hp0 - mark.hp >= fists.damage - 0.01, `a punch lands for ${hp0 - mark.hp} (fists: ${fists.damage})`);
+check(r1.staggered && r1.moved > 0.4, `it shoves them back ${r1.moved.toFixed(2)} m and they reel`);
+check(fx.some((e) => e[0] === FX.Hit && e[1] === me.id && e[2] === mark.id), 'a hit event goes out (thud, jolt)');
+check(fx.some((e) => e[0] === FX.Swing && e[1] === me.id), 'and the swing (the arm throws it)');
+// Walk back up to them and land two more, quickly: the third floors them.
+const close = () => { mark.body.x = me.body.x + 1.1; mark.body.y = me.body.y; mark.body.vx = 0; mark.body.vy = 0; };
+close(); punch(2); check(mark.down === 0, 'two in a row: still up');
+close(); punch(1); check(mark.down > 0, 'the third in a row floors them');
+const hits = Math.ceil(PEDS[civ].hp / fists.damage);
+check(hits <= 7, `a civilian goes down for good in ${hits} punches (was 12)`);
+
+console.log(failures ? `${failures} check(s) failed` : 'all melee checks passed');
+process.exit(failures ? 1 : 0);
