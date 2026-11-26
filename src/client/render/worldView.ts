@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { type CharLook, VEHICLES, WEAPONS } from '../../shared/packs';
 import { EK, PF, PK, VF } from '../../shared/protocol';
 import { astride } from '../../shared/sim/kinds';
+import { animateLegs } from './legs';
 import type { EntityStore, ViewEntity } from '../net/entities';
 import { FLOOR_H, floorOf, groundOf } from '../../shared/world/levels';
 import { putCarLights } from './carLights';
@@ -250,6 +251,7 @@ export class WorldView {
     const spinning = (flags & VF.driven) || alt > 0.3;
     for (const r of v.rotors) r.rotation.y += dt * (spinning ? 32 : 0);
     for (const r of v.tailRotors) r.rotation.z += dt * (spinning ? 40 : 0);
+    if (v.legs.length) animateLegs(v, VEHICLES[e.data[2]], e.x, e.y, dt);
     const sirenOn = !!(flags & VF.siren);
     const phase = Math.floor(this.time * 6) % 2;
     for (const s of v.sirens) {

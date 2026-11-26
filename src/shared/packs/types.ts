@@ -9,7 +9,8 @@ export interface Part {
   paint: Paint;
   /** Optional side silhouette [x, z] points; when set the part is this outline extruded across y. */
   profile?: [number, number][];
-  tag?: 'rotor' | 'tailrotor' | 'turret' | 'barrel' | 'siren' | 'headlight' | 'taillight';
+  /** `leg_*`: a mount's leg (front/rear, left/right), swung by its gait from the top of the box. */
+  tag?: 'rotor' | 'tailrotor' | 'turret' | 'barrel' | 'siren' | 'headlight' | 'taillight' | 'leg_fl' | 'leg_fr' | 'leg_rl' | 'leg_rr';
 }
 
 export type Paint = 'body' | 'glass' | 'dark' | 'chrome' | 'trim' | 'headlight' | 'taillight'

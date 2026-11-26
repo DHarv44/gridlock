@@ -3,8 +3,12 @@
 // 'fall'` (they go down, riders thrown; nothing burns). Box models in fractions of each one's size.
 import type { Paint, Part, VehicleSpec } from '../../shared/packs/types';
 
-const b = (x0: number, x1: number, y0: number, y1: number, z0: number, z1: number, paint: Paint): Part =>
-  ({ x: [x0, x1], y: [y0, y1], z: [z0, z1], paint });
+const b = (x0: number, x1: number, y0: number, y1: number, z0: number, z1: number, paint: Paint, tag?: Part['tag']): Part =>
+  ({ x: [x0, x1], y: [y0, y1], z: [z0, z1], paint, ...(tag ? { tag } : {}) });
+
+/** A leg (swung by its gait from the top), front or rear, left or right (y < 0 is the left). */
+const leg = (x0: number, x1: number, y0: number, y1: number, front: boolean): Part =>
+  b(x0, x1, y0, y1, 0, 0.48, 'body', `leg_${front ? 'f' : 'r'}${y0 < 0 ? 'l' : 'r'}` as Part['tag']);
 
 /** A horse seen from above and the side: barrel, neck, head, tail, four legs, saddle. */
 function horse(saddle: Paint = '#5a3a20'): Part[] {
@@ -15,8 +19,7 @@ function horse(saddle: Paint = '#5a3a20'): Part[] {
     b(0.44, 0.5, -0.16, 0.16, 0.76, 0.86, 'dark'),      // muzzle
     b(0.2, 0.3, -0.1, 0.1, 0.92, 1.0, 'black'),         // mane
     b(-0.44, -0.29, -0.12, 0.12, 0.38, 0.72, 'black'),  // tail
-    ...[0.13, -0.25].flatMap((x) => [-1, 1].map((s) => b(x, x + 0.08, s > 0 ? 0.22 : -0.44, s > 0 ? 0.44 : -0.22, 0, 0.48, 'body'))),
-    ...[0.13, -0.25].flatMap((x) => [-1, 1].map((s) => b(x, x + 0.08, s > 0 ? 0.22 : -0.44, s > 0 ? 0.44 : -0.22, 0, 0.07, 'black'))), // hooves
+    ...[0.13, -0.25].flatMap((x) => [-1, 1].map((s) => leg(x, x + 0.08, s > 0 ? 0.22 : -0.44, s > 0 ? 0.44 : -0.22, x > 0))),
     b(-0.12, 0.1, -0.54, 0.54, 0.76, 0.83, saddle),     // saddle and blanket
   ];
 }
@@ -27,8 +30,8 @@ function team(): Part[] {
     b(-0.3, 0.22, y0, y1, 0.46, 0.78, 'body'),
     b(0.16, 0.34, y0 + 0.08, y1 - 0.08, 0.62, 0.96, 'body'),
     b(0.32, 0.48, y0 + 0.1, y1 - 0.1, 0.76, 0.96, 'body'),
-    b(0.12, 0.2, y0 + 0.02, y1 - 0.02, 0, 0.48, 'body'),
-    b(-0.24, -0.16, y0 + 0.02, y1 - 0.02, 0, 0.48, 'body'),
+    leg(0.12, 0.2, y0 + 0.02, y1 - 0.02, true),
+    leg(-0.24, -0.16, y0 + 0.02, y1 - 0.02, false),
     b(-0.42, -0.3, y0 + 0.16, y1 - 0.16, 0.38, 0.7, 'black'),
   ];
   return [...one(-0.5, -0.04), ...one(0.04, 0.5), b(-0.5, 0.2, -0.03, 0.03, 0.5, 0.56, '#4a3424')]; // the pole between them

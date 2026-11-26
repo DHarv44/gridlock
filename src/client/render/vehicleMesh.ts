@@ -163,7 +163,14 @@ function buildParts(spec: VehicleSpec, model: Part[], body: string, wrecked: boo
     const raw = partGeometry(spec, part, col);
     const g = raw.index ? raw.toNonIndexed() : raw;
     if (spec.shape) shapeGeometry(g, spec.shape, spec.length, spec.height);
-    if (part.tag === 'rotor' || part.tag === 'tailrotor' || part.tag === 'turret' || part.tag === 'barrel' || part.tag === 'siren') {
+    if (part.tag?.startsWith('leg_')) {
+      // A leg swings from its top: geometry relative to that pivot.
+      g.computeBoundingBox();
+      const bb = g.boundingBox!;
+      const pivot = new THREE.Vector3((bb.min.x + bb.max.x) / 2, bb.max.y, (bb.min.z + bb.max.z) / 2);
+      g.translate(-pivot.x, -pivot.y, -pivot.z);
+      animated.push({ tag: part.tag, geo: g, offset: pivot });
+    } else if (part.tag === 'rotor' || part.tag === 'tailrotor' || part.tag === 'turret' || part.tag === 'barrel' || part.tag === 'siren') {
       g.computeBoundingBox();
       const offset = g.boundingBox!.getCenter(new THREE.Vector3());
       if (part.tag === 'rotor' || part.tag === 'tailrotor') g.translate(-offset.x, -offset.y, -offset.z);
@@ -202,6 +209,9 @@ export interface VehicleView {
   sirens: THREE.Mesh[];
   /** Head and tail lamp lenses (cab and trailer); their material shows whether the lights are on. */
   lamps: THREE.Mesh[];
+  /** A mount's legs (userData.leg: leg_fl...) and its stride state (render/legs.ts). */
+  legs: THREE.Mesh[];
+  gait: import('./legs').GaitState | null;
   /** Pivot at the hitch; rotate it by (trailer angle - vehicle angle). */
   trailer: THREE.Group | null;
   key: string;
@@ -237,7 +247,7 @@ export function makeVehicle(type: number, colorIdx: number, wrecked: boolean): V
   root.add(body);
   const shiny = b.shiny ? new THREE.Mesh(b.shiny, shinyMat) : null;
   if (shiny) root.add(shiny);
-  const view: VehicleView = { root, turret: null, rotors: [], tailRotors: [], sirens: [], lamps: [], trailer: null, key: `${type}:${colorIdx}:${wrecked}`,
+  const view: VehicleView = { root, turret: null, rotors: [], tailRotors: [], sirens: [], lamps: [], legs: [], gait: null, trailer: null, key: `${type}:${colorIdx}:${wrecked}`,
     cab: { body, shiny, lamps: null }, dents: null };
   if (b.lights) { const m = new THREE.Mesh(b.lights, lampMats.off); view.lamps.push(m); view.cab.lamps = m; root.add(m); }
   if (b.trailer && spec.trailer) {
@@ -255,8 +265,16 @@ export function makeVehicle(type: number, colorIdx: number, wrecked: boolean): V
     view.trailer = pivot;
   }
   for (const a of b.animated) {
-    const m = new THREE.Mesh(a.geo, a.tag === 'siren' ? sirenMats.redDim : animMat);
+    const m = new THREE.Mesh(a.geo, a.tag === 'siren' ? sirenMats.redDim : a.tag?.startsWith('leg_') ? bodyMat : animMat);
     m.castShadow = true;
+    if (a.tag?.startsWith('leg_')) {
+      // A mount's leg on its pivot (render/legs.ts swings it by gait).
+      m.position.copy(a.offset);
+      m.userData.leg = a.tag;
+      view.legs.push(m);
+      root.add(m);
+      continue;
+    }
     if (a.glb) {
       // Blender parts: the turret / rotors sit on their pivot; siren halves carry their colour.
       if (a.tag === 'turret') {
