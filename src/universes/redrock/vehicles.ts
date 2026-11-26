@@ -48,15 +48,16 @@ function wagon(bed: Paint, top?: Paint): Part[] {
 
 type Gaits = NonNullable<VehicleSpec['gaits']>;
 /** Gaits (sim/mount.ts): walk, trot, canter, gallop (m/s); pick-up and let-go (m/s²); turn rate
- *  standing and at a gallop (rad/s); backing up (m/s). The gallop is also its top speed. */
+ *  standing and at a gallop (rad/s); backing up (m/s). The gallop is also its top speed. Real
+ *  speeds: a walk ~1.7, a trot ~4, a canter ~6.5 (about a man sprinting), a gallop 12-14. */
 const G = (walk: number, trot: number, canter: number, gallop: number, accel: number, slow: number, turnSlow: number, turnFast: number, back: number): { gaits: Gaits; maxSpeed: number } =>
   ({ gaits: { walk, trot, canter, gallop, accel, slow, turnSlow, turnFast, back }, maxSpeed: gallop });
 
 // A saddle horse: a canter on the throttle, a gallop on Sprint for ~12 s, then twice that to get
 // its wind back. Turns on the spot standing, wide at a gallop. It comes to its rider's whistle.
 const mount = { movement: 'legs' as const, material: 'flesh' as const, openTop: true, length: 2.5, width: 0.75, height: 1.7, mass: 500,
-  stamina: { gallop: 12 }, comesWhenCalled: true, temper: { nerve: 0.55, buck: 0.3, lame: 0.4 }, ...G(2.2, 6, 11, 19, 7, 5, 3.0, 1.5, 1.2),
-  accel: 7, brake: 14, reverse: 1.2, grip: 10, turnRate: 3.0, seats: 2,
+  stamina: { gallop: 12 }, comesWhenCalled: true, temper: { nerve: 0.55, buck: 0.3, lame: 0.4 }, ...G(1.7, 3.8, 6.5, 12, 4.5, 5, 3.0, 1.5, 1.2),
+  accel: 4.5, brake: 14, reverse: 1.2, grip: 10, turnRate: 3.0, seats: 2,
   saddles: [{ x: -0.05, z: 1.28, lean: 0.05 }, { x: -0.62, z: 1.24, lean: 0 }] };
 const horses = [0, 1, 2, 3, 5, 6, 7]; // coat colours (palette.ts)
 
@@ -65,7 +66,7 @@ const horses = [0, 1, 2, 3, 5, 6, 7]; // coat colours (palette.ts)
 const teamBase = { movement: 'legs' as const, material: 'flesh' as const, stamina: { gallop: 8 },
   // A team in harness can't rear free or throw a driver off the box, but it can bolt with the wagon.
   temper: { nerve: 0.6, buck: 0, lame: 0.35 }, length: 2.8, width: 1.7, height: 1.7, mass: 1800,
-  ...G(2, 5, 9, 14, 3.5, 4, 0.9, 0.5, 0.8), accel: 3.5, brake: 9, reverse: 0.8, grip: 9, turnRate: 1.8 };
+  ...G(1.6, 3.5, 5.5, 9, 2.5, 4, 0.9, 0.5, 0.8), accel: 2.5, brake: 9, reverse: 0.8, grip: 9, turnRate: 1.8 };
 
 type Wagon = NonNullable<VehicleSpec['trailer']>;
 const BUCKBOARD: Wagon = { length: 3.6, width: 1.7, height: 1.2, hitch: 1.2, model: wagon('#8a6a4a') };
@@ -85,36 +86,36 @@ export const VEHICLES: VehicleSpec[] = [
   // corner. Draft: slow and strong. Thoroughbred: the fastest gallop, the shortest wind, turns wide.
   // Temperament: the trained law and army horses and the draft horse hold steady under fire; the
   // thoroughbred is hot and throws riders; the mustang has spirit.
-  { ...mount, id: 'mustang', name: 'Mustang', temper: { nerve: 0.55, buck: 0.4, lame: 0.4 }, ...G(2.3, 6.2, 11.5, 20, 7.5, 5, 3.2, 1.6, 1.2), hp: 180, price: 120, stamina: { gallop: 15 }, colors: horses, roles: ['traffic', 'parked'], model: horse() },
-  { ...mount, id: 'quarter_horse', name: 'Quarter Horse', temper: { nerve: 0.65, buck: 0.25, lame: 0.4 }, ...G(2.2, 6, 11, 19, 9, 6, 3.4, 1.8, 1.4), hp: 220, price: 90, colors: horses, roles: ['traffic', 'parked'], model: horse() },
-  { ...mount, id: 'draft_horse', name: 'Draft Horse', temper: { nerve: 0.85, buck: 0.1, lame: 0.3 }, length: 2.8, width: 0.9, height: 1.85, mass: 800, ...G(2, 4.8, 8, 13, 4.5, 4, 2.3, 1.0, 1.0), hp: 380, price: 70, stamina: { gallop: 8 }, colors: [2, 3, 6], roles: ['parked'], model: horse('#3a2a1a') },
-  { ...mount, id: 'thoroughbred', name: 'Thoroughbred', temper: { nerve: 0.3, buck: 0.55, lame: 0.45 }, ...G(2.4, 6.5, 12.5, 23, 8, 5, 2.7, 1.2, 1.1), hp: 160, price: 400, stamina: { gallop: 10 }, colors: [0, 1, 2], roles: ['parked'], model: horse('#2a1a12') },
+  { ...mount, id: 'mustang', name: 'Mustang', temper: { nerve: 0.55, buck: 0.4, lame: 0.4 }, ...G(1.8, 4, 6.8, 12.5, 4.8, 5, 3.2, 1.6, 1.2), hp: 180, price: 120, stamina: { gallop: 15 }, colors: horses, roles: ['traffic', 'parked'], model: horse() },
+  { ...mount, id: 'quarter_horse', name: 'Quarter Horse', temper: { nerve: 0.65, buck: 0.25, lame: 0.4 }, ...G(1.7, 3.8, 6.5, 12, 5.5, 6, 3.4, 1.8, 1.4), hp: 220, price: 90, colors: horses, roles: ['traffic', 'parked'], model: horse() },
+  { ...mount, id: 'draft_horse', name: 'Draft Horse', temper: { nerve: 0.85, buck: 0.1, lame: 0.3 }, length: 2.8, width: 0.9, height: 1.85, mass: 800, ...G(1.5, 3.2, 5, 8.5, 2.8, 4, 2.3, 1.0, 1.0), hp: 380, price: 70, stamina: { gallop: 8 }, colors: [2, 3, 6], roles: ['parked'], model: horse('#3a2a1a') },
+  { ...mount, id: 'thoroughbred', name: 'Thoroughbred', temper: { nerve: 0.3, buck: 0.55, lame: 0.45 }, ...G(1.8, 4.2, 7.2, 14, 5, 5, 2.7, 1.2, 1.1), hp: 160, price: 400, stamina: { gallop: 10 }, colors: [0, 1, 2], roles: ['parked'], model: horse('#2a1a12') },
   // The law's and the army's horses don't come to a stranger's whistle.
-  { ...mount, id: 'law_horse', name: "Lawman's Horse", temper: { nerve: 0.88, buck: 0.1, lame: 0.35 }, ...G(2.3, 6.2, 11.5, 21, 8, 5, 3.1, 1.5, 1.2), hp: 240, price: 0, colors: [2, 0], roles: ['police'], comesWhenCalled: false, model: horse('#1a1612') },
-  { ...mount, id: 'cavalry_horse', name: 'Cavalry Horse', temper: { nerve: 0.9, buck: 0.08, lame: 0.35 }, ...G(2.3, 6.2, 11.5, 21, 8, 5, 3.1, 1.5, 1.2), hp: 260, price: 0, colors: [0, 1], roles: ['military'], comesWhenCalled: false, model: horse('#28324a') },
+  { ...mount, id: 'law_horse', name: "Lawman's Horse", temper: { nerve: 0.88, buck: 0.1, lame: 0.35 }, ...G(1.8, 4, 6.8, 13, 5, 5, 3.1, 1.5, 1.2), hp: 240, price: 0, colors: [2, 0], roles: ['police'], comesWhenCalled: false, model: horse('#1a1612') },
+  { ...mount, id: 'cavalry_horse', name: 'Cavalry Horse', temper: { nerve: 0.9, buck: 0.08, lame: 0.35 }, ...G(1.8, 4, 6.8, 13, 5, 5, 3.1, 1.5, 1.2), hp: 260, price: 0, colors: [0, 1], roles: ['military'], comesWhenCalled: false, model: horse('#28324a') },
 
-  { ...teamBase, id: 'buckboard', name: 'Buckboard', ...G(2, 5, 9, 14, 4, 4, 1.0, 0.55, 0.8), hp: 400, seats: 2, openTop: true, price: 160, colors: horses,
+  { ...teamBase, id: 'buckboard', name: 'Buckboard', ...G(1.6, 3.5, 5.5, 9, 2.8, 4, 1.0, 0.55, 0.8), hp: 400, seats: 2, openTop: true, price: 160, colors: horses,
     roles: ['traffic', 'parked'], model: team(), saddles: [{ x: -1.9, z: 1.3, lean: 0 }, { x: -1.9, y: 0.5, z: 1.3, lean: 0 }],
     trailer: BUCKBOARD, hitch: { team: 'team', wagon: 'buckboard_standing' } },
-  { ...teamBase, id: 'covered_wagon', name: 'Covered Wagon', ...G(1.8, 4.2, 7.5, 11, 2.5, 3.5, 0.8, 0.45, 0.6), hp: 600, seats: 2, openTop: true, price: 260, colors: [2, 3, 6],
+  { ...teamBase, id: 'covered_wagon', name: 'Covered Wagon', ...G(1.4, 3, 4.5, 7, 1.8, 3.5, 0.8, 0.45, 0.6), hp: 600, seats: 2, openTop: true, price: 260, colors: [2, 3, 6],
     roles: ['traffic'], model: team(), saddles: [{ x: -1.9, z: 1.3, lean: 0 }, { x: -1.9, y: 0.5, z: 1.3, lean: 0 }],
     trailer: COVERED, hitch: { team: 'team', wagon: 'covered_standing' } },
-  { ...teamBase, id: 'stagecoach', name: 'Stagecoach', ...G(2, 5.2, 9.5, 15, 3.5, 4, 0.85, 0.5, 0.7), hp: 700, seats: 6, price: 0, colors: [0, 1],
+  { ...teamBase, id: 'stagecoach', name: 'Stagecoach', ...G(1.6, 3.6, 5.8, 9.5, 2.5, 4, 0.85, 0.5, 0.7), hp: 700, seats: 6, price: 0, colors: [0, 1],
     roles: ['traffic'], model: team(), trailer: COACH, hitch: { team: 'team', wagon: 'coach_standing' } },
 
   // A team out of harness (what's left driving when you unhitch), and the wagons left standing:
   // back a team up to one's pole and hitch on (G).
-  { ...teamBase, id: 'team', name: 'Team of Horses', ...G(2.1, 5.5, 10, 16, 5, 4.5, 1.8, 0.9, 1.0), hp: 360, seats: 2, openTop: true, price: 0, colors: horses,
+  { ...teamBase, id: 'team', name: 'Team of Horses', ...G(1.7, 3.8, 6, 10, 3.5, 4.5, 1.8, 0.9, 1.0), hp: 360, seats: 2, openTop: true, price: 0, colors: horses,
     roles: [], model: team(), saddles: [{ x: -0.2, z: 1.3, lean: 0.05 }, { x: -0.2, y: 0.5, z: 1.3, lean: 0.05 }] },
   standing('buckboard_standing', 'Buckboard (unhitched)', BUCKBOARD, 400, 'buckboard'),
   standing('covered_standing', 'Covered Wagon (unhitched)', COVERED, 600, 'covered_wagon'),
   standing('coach_standing', 'Stagecoach (unhitched)', COACH, 700, 'stagecoach'),
-  { ...teamBase, id: 'doctor_buggy', name: "Doctor's Buggy", length: 2.5, width: 0.8, ...G(2.2, 5.5, 10, 15, 5, 4.5, 1.3, 0.7, 0.8), hp: 300, seats: 2, openTop: true, price: 0, colors: [2],
+  { ...teamBase, id: 'doctor_buggy', name: "Doctor's Buggy", length: 2.5, width: 0.8, ...G(1.7, 3.8, 6, 10, 3.5, 4.5, 1.3, 0.7, 0.8), hp: 300, seats: 2, openTop: true, price: 0, colors: [2],
     roles: ['ambulance'], model: horse('#1a1612'), trailer: { length: 2.6, width: 1.5, height: 1.4, hitch: 1.0, model: wagon('#16171a', '#16171a') } },
-  { ...teamBase, id: 'water_wagon', name: 'Water Wagon', ...G(1.9, 4.5, 8, 12, 3, 3.5, 0.85, 0.45, 0.6), hp: 500, seats: 2, openTop: true, price: 0, colors: [3],
+  { ...teamBase, id: 'water_wagon', name: 'Water Wagon', ...G(1.5, 3.2, 5, 7.5, 2, 3.5, 0.85, 0.45, 0.6), hp: 500, seats: 2, openTop: true, price: 0, colors: [3],
     roles: ['fire'], model: team(), saddles: [{ x: -1.9, z: 1.3, lean: 0 }, { x: -1.9, y: 0.5, z: 1.3, lean: 0 }],
     trailer: { length: 3.8, width: 1.7, height: 1.8, hitch: 1.2, model: [...wagon('#7a2a20'), b(-0.45, 0.25, -0.38, 0.38, 0.5, 0.95, '#5a4632')] } },
-  { ...teamBase, id: 'gatling_wagon', name: 'Gatling Wagon', ...G(2, 4.8, 8.5, 13, 3.5, 4, 0.85, 0.45, 0.7), hp: 900, seats: 3, openTop: true, price: 0, colors: [1],
+  { ...teamBase, id: 'gatling_wagon', name: 'Gatling Wagon', ...G(1.5, 3.3, 5.2, 8, 2.5, 4, 0.85, 0.45, 0.7), hp: 900, seats: 3, openTop: true, price: 0, colors: [1],
     roles: ['military'], weapons: ['gatling'], turret: 1.4, model: team(), saddles: [{ x: -1.9, z: 1.3, lean: 0 }, { x: -3.2, z: 1.3, lean: 0 }],
     trailer: { length: 3.6, width: 1.7, height: 1.6, hitch: 1.2, model: [...wagon('#28324a'), b(-0.3, 0.2, -0.12, 0.12, 0.5, 0.75, 'chrome')] } },
 ];
