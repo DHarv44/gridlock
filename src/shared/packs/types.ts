@@ -454,6 +454,10 @@ export interface PropertySpec {
   interior?: InteriorLayout;    // walk in: the ground floor is laid out like this
   /** The counter can be held up. Owned by another player, a hold-up takes from its safe instead. */
   robbery?: RobberySpec;
+  /** Its own pin on the maps instead of the plain property marker (with its own legend toggle,
+   *  `label`): a colour and a glyph, a character or one of the drawn ones (hud/mapGlyphs.ts:
+   *  'mug'). Hovering it on the big map also lists the games its tables deal. */
+  icon?: { color: string; glyph: string; label: string };
 }
 
 export interface Squad { vehicle: string; crew: string[] }

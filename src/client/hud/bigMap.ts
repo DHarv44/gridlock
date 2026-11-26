@@ -10,6 +10,8 @@ import type { Blip } from '../game/jobs';
 import type { Pt } from '../game/route';
 import type { Mark } from '../game/waypoint';
 import { bakeCityMap } from './mapArt';
+import { drawGlyph } from './mapGlyphs';
+import { gamesAt, iconKey } from './mapPlaces';
 import { MapLegend } from './mapLegend';
 import { phoneBlip } from './phoneIcon';
 import { PLACE_ICON } from './minimap';
@@ -137,7 +139,7 @@ export class BigMap {
     this.labels(ctx);
     this.route(ctx, f);
     this.pins = [];
-    if (!this.hidden.has('property')) this.properties(ctx, f);
+    this.properties(ctx, f); // each kind hides with its own toggle
     for (const s of this.map.city.services) {
       const verb = SERVICES[s.spec].verb;
       if (this.hidden.has(verb)) continue;
@@ -200,12 +202,23 @@ export class BigMap {
     for (const p of this.map.city.properties) {
       const mine = f.owned.has(p.id), owner = f.owners.get(p.id);
       const [px, py] = this.toScreen(p.x, p.y);
-      ctx.fillStyle = mine ? '#6fe08a' : owner ? '#7d8288' : 'rgba(111,224,138,0.6)';
-      ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(px, py - 7); ctx.lineTo(px + 6, py - 1); ctx.lineTo(px + 6, py + 6); ctx.lineTo(px - 6, py + 6); ctx.lineTo(px - 6, py - 1); ctx.closePath();
-      ctx.fill(); ctx.stroke();
       const spec = PROPERTIES[p.spec];
-      this.pins.push({ x: px, y: py, label: mine ? `${p.name} · yours` : owner ? `${p.name} · ${owner}` : `${p.name} · $${spec.price.toLocaleString('en-US')}` });
+      const icon = spec.icon;
+      if (icon) {
+        // Its own pin (a saloon's mug), hidden with its own legend toggle; yours ringed green.
+        if (this.hidden.has(iconKey(icon.label))) continue;
+        pin(ctx, px, py, icon.color, icon.glyph, 8.5);
+        if (mine || owner) { ctx.strokeStyle = mine ? '#6fe08a' : '#7d8288'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(px, py, 11, 0, Math.PI * 2); ctx.stroke(); }
+      } else {
+        if (this.hidden.has('property')) continue;
+        ctx.fillStyle = mine ? '#6fe08a' : owner ? '#7d8288' : 'rgba(111,224,138,0.6)';
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(px, py - 7); ctx.lineTo(px + 6, py - 1); ctx.lineTo(px + 6, py + 6); ctx.lineTo(px - 6, py + 6); ctx.lineTo(px - 6, py - 1); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+      }
+      const own = mine ? 'yours' : owner ?? `$${spec.price.toLocaleString('en-US')}`;
+      const games = gamesAt(this.map.city, p.id);
+      this.pins.push({ x: px, y: py, label: games ? `${p.name} · ${own}\n${games}` : `${p.name} · ${own}` });
     }
   }
 
@@ -232,12 +245,18 @@ export class BigMap {
     let best: Pin | null = null, bd = 12;
     for (const p of this.pins) { const d = Math.hypot(p.x - m.x, p.y - m.y); if (d < bd) { bd = d; best = p; } }
     if (!best) return;
+    // One line, or several (a saloon: its name, then the games it deals, one to a line).
+    const lines = best.label.split('\n');
     ctx.font = `600 13px ${FONT}`;
-    const tw = ctx.measureText(best.label).width + 16;
+    const tw = Math.max(...lines.map((l) => ctx.measureText(l).width)) + 16, th = 8 + lines.length * 17;
     ctx.fillStyle = 'rgba(11,13,16,0.92)';
-    ctx.beginPath(); ctx.roundRect(best.x + 12, best.y - 26, tw, 24, 4); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText(best.label, best.x + 20, best.y - 14);
+    ctx.beginPath(); ctx.roundRect(best.x + 12, best.y - 10 - th, tw, th, 4); ctx.fill();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    lines.forEach((l, i) => {
+      ctx.fillStyle = i ? '#d9c79a' : '#fff';
+      ctx.font = `${i ? 500 : 600} 13px ${FONT}`;
+      ctx.fillText(l, best!.x + 20, best!.y - 10 - th + 12.5 + i * 17);
+    });
   }
 }
 
@@ -246,10 +265,7 @@ export function pin(ctx: CanvasRenderingContext2D, x: number, y: number, color: 
   ctx.fillStyle = color; ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   if (!glyph) return;
-  ctx.fillStyle = '#111';
-  ctx.font = `800 ${Math.round(r * 1.15)}px ${FONT}`;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(glyph, x, y + 0.5);
+  drawGlyph(ctx, glyph, x, y, r, FONT);
 }
 
 /** Teardrop marker standing on (x, y). */

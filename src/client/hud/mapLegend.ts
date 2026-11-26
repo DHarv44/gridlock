@@ -1,8 +1,10 @@
 // The city map's legend: one button per kind of marker (icon, name, how many there are) that
 // shows or hides it with a click, plus All / None. Plain DOM over the map so it reads at full size
 // and clicks on it never land on the map underneath. The choice is remembered in this browser.
-import { RULES, SERVICES } from '../../shared/packs';
+import { PROPERTIES, RULES, SERVICES } from '../../shared/packs';
 import type { CityMap } from '../../shared/world/city';
+import { glyphCanvas } from './mapGlyphs';
+import { iconKey } from './mapPlaces';
 import { PLACE_ICON } from './minimap';
 import { handset } from './phoneIcon';
 
@@ -20,12 +22,22 @@ export class MapLegend {
     const count = new Map<string, number>();
     for (const s of map.city.services) { const v = SERVICES[s.spec].verb; count.set(v, (count.get(v) ?? 0) + 1); }
     if (atms) count.set('atm', atms);
-    count.set('property', map.city.properties.length);
+    // Properties with their own icon (a saloon) get their own row; the rest are plain 'Property'.
+    const icons = new Map<string, { color: string; glyph: string; label: string }>();
+    let plain = 0;
+    for (const p of map.city.properties) {
+      const icon = PROPERTIES[p.spec].icon;
+      if (!icon) { plain++; continue; }
+      icons.set(icon.label, icon);
+      count.set(iconKey(icon.label), (count.get(iconKey(icon.label)) ?? 0) + 1);
+    }
+    count.set('property', plain);
     const rows: Row[] = [
       // A verb's label is the universe's name for its place (the first service with it: Gunsmith,
       // Livery Stable...), else the engine's generic one.
       ...Object.entries(PLACE_ICON).filter(([k]) => count.has(k))
         .map(([key, v]) => ({ key, label: SERVICES.find((s) => s.verb === key)?.name ?? v.label, icon: dot(v.color, v.glyph) })),
+      ...[...icons.values()].map((i) => ({ key: iconKey(i.label), label: i.label, icon: glyphCanvas(i.color, i.glyph, 'Bahnschrift, "Segoe UI", sans-serif') as HTMLElement })),
       { key: 'phones', label: RULES.jobPost === 'post' ? 'Job post with work' : 'Ringing payphone', icon: phone() },
       { key: 'property', label: 'Property', icon: house() },
       { key: 'players', label: 'Players', icon: dot('#ffffff', '') },
