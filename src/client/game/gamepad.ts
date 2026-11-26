@@ -16,7 +16,7 @@ const isPlayStation = (id: string) => /054c|dualshock|dualsense|wireless control
 export const PAD = { a: 0, b: 1, lb: 4, rb: 5, up: 12, down: 13, left: 14, right: 15 } as const;
 
 export type PadAction = 'jump' | 'sprint' | 'handbrake' | 'horn' | 'climb' | 'descend'
-  | 'fire' | 'prevWeapon' | 'nextWeapon' | 'action' | 'radio' | 'map' | 'scores' | 'menu' | 'phone';
+  | 'fire' | 'prevWeapon' | 'nextWeapon' | 'action' | 'radio' | 'map' | 'scores' | 'menu' | 'phone' | 'driveMode';
 
 /** Button actions, each its own setting, grouped by where they apply; the same button can do
  *  different jobs in different groups (A: jump / handbrake / climb). Sticks and triggers are
@@ -26,6 +26,7 @@ export const PAD_ACTIONS: { id: PadAction; label: string; context: Context; grou
   { id: 'sprint', label: 'Sprint', context: 'foot', group: 'On foot', button: 1 },
   { id: 'handbrake', label: 'Handbrake', context: 'car', group: 'Car', button: 0 },
   { id: 'horn', label: 'Horn / siren', context: 'car', group: 'Car', button: 10 },
+  { id: 'driveMode', label: 'Driving mode: classic / point to drive', context: 'car', group: 'Car', button: 11 },
   { id: 'climb', label: 'Climb', context: 'air', group: 'Helicopter', button: 0 },
   { id: 'descend', label: 'Descend', context: 'air', group: 'Helicopter', button: 1 },
   { id: 'fire', label: 'Fire / swing', context: 'any', group: 'Weapons', button: 5 },

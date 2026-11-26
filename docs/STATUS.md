@@ -86,6 +86,14 @@
   character marked "welcome". `npm run voices` masters recordings into src/client/voice/,
   `npm run scripts` writes content/SCRIPTS.md. The user records the lines (Benny's are in); the
   rest are silent bubbles until recorded (or filled by scripts/voice-calls.ts).
+- Driving modes (2026-11-26): classic (unchanged: gas, brake, steer) or point to drive
+  (client/game/pointDrive.ts, cars and tanks; helicopters stay classic): W/A/S/D (8-way) or the
+  left stick point where to go and the car steers there (stick push = speed); pointing behind
+  brakes and swings round, never backing up by itself; reverse is Aim held (right mouse, or LT),
+  pointing where the back goes, and the mouse drive-by falls back to auto-aim. Chosen separately
+  for keyboard and controller (pause menu, or V / R3 to toggle; saved in the browser).
+  `npx tsx scripts/drive.ts`. Also: twin-stick aiming in vehicles (right stick: drive-by, heli
+  guns, turret) and a shared car radio (protocol 16).
 - Company (2026-11-23): waypoints go to the server and show, in each player's colour, to everyone in
   the same vehicle; players riding inside a car have their names over it; a passed job's pay is split
   with the players riding with you or within RULES.shareRange; you can bail out of a moving vehicle

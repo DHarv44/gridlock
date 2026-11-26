@@ -206,6 +206,11 @@ export class Game {
         if (station !== null) this.conn.send({ t: 'radio', station });
         break;
       }
+      case 'driveMode': {
+        const m = this.input.toggleDriveMode();
+        this.hud.notify(m === 'point' ? 'Driving: point to drive (hold Aim to reverse)' : 'Driving: classic', 'info');
+        break;
+      }
       case 'scoreOn': this.hud.showScore(true, this.players, this.code); break;
       case 'scoreOff': this.hud.showScore(false, this.players, this.code); break;
     }

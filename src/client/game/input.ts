@@ -5,7 +5,11 @@ import { BTN } from '../../shared/protocol';
 import { type Action, ACTIONS, Bindings } from './controls';
 import { PAD, Pad, PAD_ACTIONS, type PadAction } from './gamepad';
 
-export type UiAction = 'action' | 'chat' | 'map' | 'menu' | 'radio' | 'scoreOn' | 'scoreOff' | 'phone';
+export type UiAction = 'action' | 'chat' | 'map' | 'menu' | 'radio' | 'scoreOn' | 'scoreOff' | 'phone' | 'driveMode';
+/** How you drive cars and tanks: `classic` (gas, brake and steer) or `point` (point where you want
+ *  to go, game/pointDrive.ts). Chosen separately for the keyboard and the controller. */
+export type DriveMode = 'classic' | 'point';
+const DRIVE_STORE = 'gridlock.drive.v1';
 export type NavCmd = 'up' | 'down' | 'left' | 'right' | 'ok' | 'back' | 'zoomIn' | 'zoomOut';
 
 const EDGE_BTN: Partial<Record<Action, number>> = { prevWeapon: BTN.prev, nextWeapon: BTN.next, horn: BTN.horn };
@@ -40,7 +44,31 @@ export class Input {
   /** Current facing, kept by Steering so a new aim starts where you already face. */
   facingHint = 0;
 
+  /** The driving mode for the keyboard and for the controller (saved in this browser). */
+  private drive: { kb: DriveMode; pad: DriveMode } = { kb: 'classic', pad: 'classic' };
+
+  /** The driving mode for whatever you're using now. */
+  driveMode(): DriveMode { return this.pad.active ? this.drive.pad : this.drive.kb; }
+  driveModeOf(device: 'kb' | 'pad'): DriveMode { return this.drive[device]; }
+
+  /** Sets the driving mode for the keyboard or the controller. */
+  setDriveMode(device: 'kb' | 'pad', mode: DriveMode): void {
+    this.drive[device] = mode;
+    try { localStorage.setItem(DRIVE_STORE, JSON.stringify(this.drive)); } catch { /* ignore */ }
+  }
+
+  /** Flips the driving mode for whatever you're using now; returns the new one. */
+  toggleDriveMode(): DriveMode {
+    const device = this.pad.active ? 'pad' : 'kb';
+    this.setDriveMode(device, this.drive[device] === 'point' ? 'classic' : 'point');
+    return this.drive[device];
+  }
+
   constructor(private canvas: HTMLCanvasElement) {
+    try {
+      const saved = JSON.parse(localStorage.getItem(DRIVE_STORE) ?? 'null') as Partial<Record<'kb' | 'pad', string>> | null;
+      for (const d of ['kb', 'pad'] as const) if (saved?.[d] === 'point') this.drive[d] = 'point';
+    } catch { /* classic */ }
     window.addEventListener('keydown', (e) => this.key(e, e.code, true));
     window.addEventListener('keyup', (e) => this.key(e, e.code, false));
     window.addEventListener('blur', () => this.release());
@@ -152,6 +180,7 @@ export class Input {
     if (pad.pressed('map')) this.onUi('map');
     if (pad.pressed('radio')) this.onUi('radio');
     if (pad.pressed('phone')) this.onUi('phone');
+    if (pad.pressed('driveMode')) this.onUi('driveMode');
     if (!this.enabled) return;
     for (const d of PAD_ACTIONS) {
       if (!pad.pressed(d.id)) continue;

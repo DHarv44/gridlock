@@ -9,7 +9,7 @@ export type Action =
   | 'heliForward' | 'heliBack' | 'heliLeft' | 'heliRight' | 'climb' | 'descend'
   | 'turretLeft' | 'turretRight'
   | 'fire' | 'aim' | 'prevWeapon' | 'nextWeapon'
-  | 'action' | 'radio' | 'chat' | 'map' | 'scores' | 'phone';
+  | 'action' | 'radio' | 'chat' | 'map' | 'scores' | 'phone' | 'driveMode';
 
 export type ActionKind = 'held' | 'edge' | 'ui';
 
@@ -33,6 +33,7 @@ export const ACTIONS: ActionDef[] = [
   A('steerRight', 'Steer right', 'held', 'car', 'Car', ['KeyD', 'ArrowRight']),
   A('handbrake', 'Handbrake', 'held', 'car', 'Car', ['Space']),
   A('horn', 'Horn / siren', 'edge', 'car', 'Car', ['KeyH']),
+  A('driveMode', 'Driving mode: classic / point to drive', 'ui', 'car', 'Car', ['KeyV']),
   A('heliForward', 'Fly forward', 'held', 'air', 'Helicopter', ['KeyW', 'ArrowUp']),
   A('heliBack', 'Fly back', 'held', 'air', 'Helicopter', ['KeyS', 'ArrowDown']),
   A('heliLeft', 'Turn left', 'held', 'air', 'Helicopter', ['KeyA', 'ArrowLeft']),

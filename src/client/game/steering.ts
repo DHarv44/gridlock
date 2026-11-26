@@ -6,6 +6,7 @@
 import { VEHICLES } from '../../shared/packs';
 import { Mode, type YouState } from '../../shared/protocol';
 import type { Input } from './input';
+import { pointDrive } from './pointDrive';
 
 const DEG = Math.PI / 180;
 const TURRET_RATE = 1.5;
@@ -41,7 +42,9 @@ export class Steering {
     const firing = input.held('fire');
     // Twin-stick: the right stick (or the mouse while Aim is held) points where you aim, in screen
     // directions, wherever you're moving or facing.
-    const mouse = input.mouseAim();
+    // Driving in point mode, Aim (right mouse) is reverse: the drive-by falls back to auto-aim.
+    const pointDriving = mode === Mode.Driver && !air && input.driveMode() === 'point';
+    const mouse = pointDriving ? null : input.mouseAim();
     const pointed = mouse ?? (pad.rx || pad.ry ? Math.atan2(pad.ry, pad.rx) : null);
     input.aimingNow = pointed !== null;
     if (inCar) {
@@ -57,6 +60,8 @@ export class Steering {
       if (!tank && firing) aim = assist(from.x, from.y, aim) ?? aim;
       this.facing = aim;
       if (mode !== Mode.Driver) return { mx: 0, my: 0, throttle: 0, steer: 0, aim };
+      // Point to drive (cars and tanks, not helicopters): see pointDrive.ts.
+      if (pointDriving) return { mx: 0, my: 0, ...pointDrive(input, you, heading, tank), aim };
       // Pad: left stick steers in proportion, RT/LT are progressive gas and brake.
       return { mx: 0, my: 0, throttle: clamp1(fwd + pad.rt - pad.lt), steer: clamp1(turn + pad.lx), aim };
     }
