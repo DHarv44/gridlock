@@ -54,6 +54,33 @@ const a0 = horse.body.angle;
 for (let t = 0; t < 30; t++) stepVehicle(horse.body, horse.spec, { mx: 0, my: 0, throttle: 0.5, steer: 1, handbrake: false, sprint: false, up: false, down: false }, DT, w.statics, true);
 check(Math.abs(horse.body.angle - a0) > 1, 'and wheels round sharply');
 
+// How a horse moves, not a car: it turns on the spot standing, never slides sideways, backs up only
+// slowly, and shies to a stop at a wall without hurting itself.
+const ctl = (throttle: number, steer: number, sprint = false) => ({ mx: 0, my: 0, throttle, steer, handbrake: false, sprint, up: false, down: false });
+const pony = spawnVehicle(w, vehicleIndex('quarter_horse'), straight.x0 + 30, straight.y0, 0);
+const p0 = { x: pony.body.x, y: pony.body.y };
+for (let t = 0; t < 30; t++) stepVehicle(pony.body, pony.spec, ctl(0, 1), DT, w.statics, true);
+check(Math.abs(pony.body.angle) > 1.5 && Math.hypot(pony.body.x - p0.x, pony.body.y - p0.y) < 0.3, `standing, it turns on the spot (${pony.body.angle.toFixed(2)} rad in 1 s)`);
+pony.body.angle = 0; pony.body.av = 0;
+// Open ground (nothing to bump): only the gait itself.
+const open = { resolveObb: () => null } as unknown as typeof w.statics;
+for (let t = 0; t < 4 * 30; t++) stepVehicle(pony.body, pony.spec, ctl(1, 0, true), DT, open, true);
+let slide = 0;
+for (let t = 0; t < 30; t++) {
+  stepVehicle(pony.body, pony.spec, ctl(1, 1, true), DT, open, true);
+  slide = Math.max(slide, Math.abs(-pony.body.vx * Math.sin(pony.body.angle) + pony.body.vy * Math.cos(pony.body.angle)));
+}
+check(slide < 0.01, `turning hard at a gallop it doesn't slide sideways (${slide.toFixed(3)} m/s)`);
+for (let t = 0; t < 4 * 30; t++) stepVehicle(pony.body, pony.spec, ctl(-1, 0), DT, w.statics, true);
+const backing = -(pony.body.vx * Math.cos(pony.body.angle) + pony.body.vy * Math.sin(pony.body.angle));
+check(backing > 0 && backing <= pony.spec.gaits!.back + 0.01, `reined back it stops, then backs up slowly (${backing.toFixed(1)} m/s)`);
+const rock = city.obstacles.find((o) => o.kind === 'rock' && o.rect.x1 - o.rect.x0 > 8)!;
+const rx = (rock.rect.x0 + rock.rect.x1) / 2, ry = (rock.rect.y0 + rock.rect.y1) / 2;
+const charger = spawnVehicle(w, vehicleIndex('mustang'), rock.rect.x0 - 25, ry, 0);
+let worst = 0;
+for (let t = 0; t < 5 * 30; t++) worst = Math.max(worst, stepVehicle(charger.body, charger.spec, ctl(1, 0, true), DT, w.statics, true));
+check(worst === 0 && charger.body.x < rx, 'galloped at a rock it pulls up short: no crash damage');
+
 // A stagecoach: the coach swings round behind the team through a turn.
 const coach = spawnVehicle(w, vehicleIndex('stagecoach'), straight.x0 + 40, straight.y0, 0);
 coach.trailer = 0;

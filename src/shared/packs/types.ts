@@ -59,10 +59,14 @@ export interface VehicleSpec {
    *  drive it. Without them it has no horn / no engine sound. */
   horn?: string;
   engine?: string;
-  /** A mount's gaits: without Sprint it canters at `canter` of its top speed; holding Sprint it
-   *  gallops at full speed for up to `gallop` seconds, then has to canter while it gets its wind
-   *  back (half as fast as it spends it). */
-  stamina?: { gallop: number; canter: number };
+  /** A ridden animal's gaits (sim/mount.ts): speeds (m/s) at a walk, trot, canter (a full
+   *  throttle) and gallop (Sprint); how fast it picks speed up and lets it go (m/s²); its turn rate
+   *  (rad/s) standing or walking and at a gallop; how fast it backs up. With `gaits` a vehicle
+   *  moves as a mount, not a car. */
+  gaits?: { walk: number; trot: number; canter: number; gallop: number; accel: number; slow: number; turnSlow: number; turnFast: number; back: number };
+  /** A mount's wind: it can gallop for up to `gallop` seconds, then has to canter while it gets its
+   *  wind back (half as fast as it spends it). */
+  stamina?: { gallop: number };
   /** Comes at a whistle (the Call key) to the player who last rode it. */
   comesWhenCalled?: boolean;
   /** A team-drawn wagon: unhitching (the Hitch key, stopped) leaves the wagon standing as
