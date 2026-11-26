@@ -169,5 +169,5 @@ export function tableContent(spot: TableSpot, v: TableView, you: YouState, send:
     rows.push({ name: 'Deal a turn', sub: 'First card loses, second wins', group: 'The layout', onClick: () => send({ op: 'turn' }) });
   }
   rows.push(leave());
-  return { title: spot.name, subtitle: sub, html: `<div class="cardtable">${html}${log}</div>`, rows, wide: !!v.poker };
+  return { title: spot.name, subtitle: sub, html: `<div class="cardtable">${html}${log}</div>`, rows, wide: true };
 }

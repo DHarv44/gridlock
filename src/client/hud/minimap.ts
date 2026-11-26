@@ -1,6 +1,6 @@
 // Radar: the baked city map around you, place pins, players, hostiles, job blips, and waypoint
 // routes as dashed lines in their owners' colours (markers cling to the edge when out of range).
-import { SERVICES } from '../../shared/packs';
+import { SERVICES, type ServiceVerb } from '../../shared/packs';
 import type { PlayerInfo } from '../../shared/protocol';
 import type { CityMap } from '../../shared/world/city';
 import type { Blip } from '../game/jobs';
@@ -12,7 +12,9 @@ import { phoneBlip } from './phoneIcon';
 const SCALE = 0.5; // px per metre in the baked image
 const JOB_COLOR = '#ffd21f';
 
-export const PLACE_ICON: Record<string, { color: string; label: string; glyph: string }> = {
+/** Every service verb's map icon (typed by the verbs, so a new verb can't go without one). */
+export const PLACE_ICON: Record<ServiceVerb | 'atm', { color: string; label: string; glyph: string }> = {
+  casino: { color: '#d9b53a', label: 'Casino', glyph: '♠' },
   gunshop: { color: '#ff4a3d', label: 'Guns', glyph: 'G' },
   dealer: { color: '#4fa3ff', label: 'Car dealer', glyph: 'D' },
   respray: { color: '#ffd34f', label: 'Paint shop', glyph: 'P' },

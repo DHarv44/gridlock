@@ -11,6 +11,9 @@ const { RULES, TABLES } = await import('../src/shared/packs');
 let failures = 0;
 const check = (ok: boolean, what: string) => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${what}`); if (!ok) failures++; };
 
+// A fresh room each run (a room's save keeps who you've met and been invited by).
+const { rmSync } = await import('node:fs');
+rmSync('data-smoke/tables', { recursive: true, force: true });
 const room = new Room('CARD', RULES.citySeed);
 room.stop();
 const msgs: { t: string; kind?: string; text?: string; v?: import('../src/shared/protocol').TableView | null; from?: string; body?: string }[] = [];
@@ -73,11 +76,14 @@ for (let i = 0; i < 30 * 120 && hands < 4; i++) {
   if (!v) break;
   if (v.street === 'show' && lastStreet !== 'show') hands++;
   lastStreet = v.street;
+  if (v.between && view()!.chips <= 0) send({ op: 'rebuy' });
   if (v.yourTurn) send({ op: v.toCall ? 'call' : 'check' });
 }
 check(hands >= 3, `${hands} hands played at a human pace`);
+ticks(2); // (the last move's view arrives on the next tick)
+const onTable = view()?.chips ?? 0, inPocket = pl.cash;
 send({ op: 'leave' }); ticks(1);
-check(pl.cash > 19000 || pl.cash === 19000, `cashed out: $${pl.cash.toLocaleString('en-US')}`);
+check(pl.cash === inPocket + onTable, `leaving cashes your chips out ($${onTable.toLocaleString('en-US')})`);
 void sat;
 
 // A gang's game: no invite, no seat; respect brings a text; then you're in.
@@ -86,6 +92,7 @@ pl.cash = 200000;
 seat = gt; goTo(gt);
 const before = msgs.length;
 send({ op: 'sit', table: gt.id, n: 20000 }); ticks(1);
+if (process.env.DEBUG) console.log('  said:', msgs.slice(before).filter((m) => m.t === 'msg').map((m) => m.text).join(' | '), 'view:', !!view(), 'met:', [...pl.met].join(','), 'respect:', JSON.stringify(pl.respect));
 check(view() === null && msgs.slice(before).some((m) => m.text?.includes('invite')), 'a gang\'s back room: "Private game. You need an invite."');
 pl.respect[gt.gang!] = RULES.cardInviteRespect + 5;
 ticks(70);
@@ -106,12 +113,14 @@ for (let k = 0; k < 6 && !view(); k++) { room.onMessage(pl, { t: 'dial', gang: `
 check(!!view()?.poker, 'after a call, their game\'s on and you sit in');
 // Cheating at a friend's: sooner or later they see it and throw you out.
 let thrown = false;
-for (let k = 0; k < 60 && !thrown; k++) {
-  ticks(30);
+pl.cash += 5000;
+for (let k = 0; k < 1200 && !thrown; k++) {
+  ticks(10);
   const v = view();
   if (!v) { thrown = true; break; }
   if (v.cheats?.includes('ace')) send({ op: 'cheat', s: 'ace' });
   else if (v.cheats?.includes('peek')) send({ op: 'cheat', s: 'peek' });
+  if (v.poker?.between && v.chips <= 0) send({ op: 'rebuy' });
   if (v.poker?.yourTurn) send({ op: 'call' });
   if (!view()) thrown = true;
 }

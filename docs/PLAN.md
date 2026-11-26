@@ -168,7 +168,13 @@ riders other than players.
 A walk-in casino (world/interiors.ts layout): gaming floor, cashier cage, security; games to play with
 your money (cards, wheel, slots, kept simple and readable from the top-down view), house edge in the
 pack's numbers; a heist hook later (the cage and the vault, like the bank).
-Decided with the user (2026-11-26), in progress (engine: shared/games, scripts/cards.ts):
+Built (2026-11-27): rules in shared/games (cards, poker + pokerAi, house), tables placed by
+world/tables.ts from packs TABLES / VENUES / FRIENDS, run by server systems/cardTables.ts,
+cardPoker.ts (seated NPC players, cheats, call-outs), cardInvites.ts (gang invites, friends), shown in
+the pane by client hud/cardTable.ts. Bayhaven: the Golden Anchor (verb 'casino', plan 'casino'),
+three gang back rooms, Walt / Dee / Lenny's yard games. `npx tsx scripts/cards.ts`, `scripts/tables.ts`.
+Redrock's saloons get theirs from the Old West session (a VenueSpec on layout 'saloon', mix: true).
+Decided with the user (2026-11-26):
 - Games open in the slide-in pane, the same pattern as the shops.
 - Bayhaven's casino: craps, slots, roulette, blackjack, Texas hold'em.
 - Redrock's saloons (the casino of the western): 5-card draw, 5-card stud, twenty-one, faro,

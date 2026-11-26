@@ -41,6 +41,10 @@ button, input { font-family: inherit; }
 .cardtable .die { font-size: 34px; margin-right: 4px; }
 .cardtable .reels { display: flex; gap: 8px; } .cardtable .reel { flex: 1; text-align: center; font-size: 28px; padding: 8px; border-radius: 6px; background: #f4f1e8; color: #16171a; font-weight: 700; }
 .cardtable .tlog { font-size: 12px; color: var(--dim); }
+/* At a table, a row's buttons sit under its name and wrap, however many there are. */
+.pane:has(.cardtable) .item.slotted { flex-wrap: wrap; gap: 6px; }
+.pane:has(.cardtable) .item.slotted .nm { flex-basis: 100%; }
+.pane:has(.cardtable) .slot { width: auto; flex: 1 1 60px; }
 .lobby-card label { display: flex; flex-direction: column; gap: 6px; color: var(--dim); font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; }
 .lobby-card input { background: #14171c; border: 1px solid var(--line); color: var(--ink); padding: 11px 12px; font-size: 18px; border-radius: 4px; outline: none; }
 .lobby-card input:focus { border-color: var(--accent); }
