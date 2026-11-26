@@ -20,7 +20,6 @@ export class StreetPropsView {
   private mine = new Map<number, number>();
   private m = new THREE.Matrix4();
   private q = new THREE.Quaternion();
-  private e = new THREE.Euler();
   private meshes: THREE.InstancedMesh[] = [];
 
   constructor(scene: THREE.Scene, readonly props: Breakables) {
@@ -54,46 +53,91 @@ export class StreetPropsView {
   /** Standing (as far as this client knows)? */
   standing(i: number): boolean { return !this.down.has(i) && !this.mine.has(i); }
 
-  /** Your own car knocked it over: down at once, ahead of the server. */
+  /** Your own car knocked it over: it starts to fall at once, ahead of the server. */
   knock(i: number, angle: number): void {
+    if (!this.down.has(i) && !this.mine.has(i)) this.falling.set(i, 0);
     this.mine.set(i, angle);
     this.place(i);
     this.dirty();
   }
 
-  /** The server's list of what's down. */
+  /** The server's list of what's down. Newly down ones fall (not the ones already lying there
+   *  when you arrive). */
   setDown(list: [number, number][]): void {
     const before = new Set([...this.down.keys(), ...this.mine.keys()]);
     this.down = new Map(list.map(([i, a]) => [i, a / 100]));
     this.mine.clear();
+    for (const i of this.down.keys()) if (!before.has(i) && this.synced) this.falling.set(i, 0);
+    for (const i of before) if (!this.down.has(i)) this.falling.delete(i);
+    this.synced = true;
     for (const i of new Set([...before, ...this.down.keys()])) this.place(i);
     this.dirty();
   }
 
+  /** Every frame: props on their way down. */
+  update(dt: number): void {
+    if (!this.falling.size) return;
+    for (const [i, t] of this.falling) {
+      const done = t + dt >= this.fallTime(i) + BOUNCE;
+      if (done) this.falling.delete(i); else this.falling.set(i, t + dt);
+      this.place(i);
+    }
+    this.dirty();
+  }
+
+  /** Props falling: how long since they were hit (s). */
+  private falling = new Map<number, number>();
+  /** The server's first list has come (props already down then just lie there). */
+  private synced = false;
+
+  /** A tall pole takes longer to come down than a bin (like a toppling rod, ~√height). */
+  private fallTime(i: number): number {
+    const h = Math.max(...STREET_PROPS[this.props.list[i].kind].parts.map((p) => (p.y ?? 0) + p.h));
+    return 0.25 + 0.2 * Math.sqrt(h);
+  }
+
+  /** How far over (0 upright .. π/2 flat): speeding up as it goes, then a little bounce. */
+  private tilt(i: number): number {
+    const t = this.falling.get(i);
+    if (t === undefined) return Math.PI / 2;
+    const T = this.fallTime(i);
+    if (t < T) { const u = t / T; return (Math.PI / 2) * u * u; }
+    const b = (t - T) / BOUNCE;
+    return Math.PI / 2 - 0.12 * Math.sin(Math.PI * b) * (1 - b);
+  }
+
   private dirty(): void { for (const mesh of this.meshes) mesh.instanceMatrix.needsUpdate = true; }
 
-  /** Puts a prop's parts standing, or lying flat the way it fell (pivoting at its foot). */
+  /** Puts a prop's parts standing, or tipped over about its foot the way it was hit. */
   private place(i: number): void {
     const p = this.props.list[i];
     const fell = this.down.get(i) ?? this.mine.get(i);
     const lamp = this.lampOf.get(i);
     if (lamp !== undefined) this.lamps[lamp].off = fell !== undefined;
+    // Tipping about the foot: turn the fall direction onto +x, tip +y over toward it, turn back.
+    const pivot = this.pivot.identity();
+    if (fell !== undefined) {
+      const th = this.tilt(i);
+      pivot.makeTranslation(p.x, 0.12 * Math.sin(th), p.y)
+        .multiply(this.r1.makeRotationY(-fell)).multiply(this.r2.makeRotationZ(-th)).multiply(this.r3.makeRotationY(fell));
+    } else pivot.makeTranslation(p.x, 0, p.y);
     for (const s of this.slots[i]) {
       const { part } = s, out = part.out ?? 0, y = part.y ?? 0;
       const sx = part.w, sy = part.h, sz = part.d ?? part.w;
       // Standing: the part's own spot, its long side out over the road for an arm.
-      const ax = p.ox * out, az = p.oy * out;
       const along = p.ox !== 0 ? [sz, sy, sx] : [sx, sy, sz];
-      if (fell === undefined) {
-        this.m.compose(new THREE.Vector3(p.x + ax, y, p.y + az), this.q.identity(), new THREE.Vector3(along[0], along[1], along[2]));
-      } else {
-        // Lying: tipped 90° about its foot, falling the way the car was going.
-        const fx = Math.cos(fell), fy = Math.sin(fell);
-        const px = p.x + ax + fx * (y + 0.1), pz = p.y + az + fy * (y + 0.1);
-        this.e.set(0, -fell, -Math.PI / 2, 'YXZ');
-        this.m.compose(new THREE.Vector3(px, 0.12, pz), this.q.setFromEuler(this.e), new THREE.Vector3(along[0], along[1], along[2]));
-      }
-      s.mesh.setMatrixAt(s.index, this.m);
+      this.m.compose(this.v.set(p.ox * out, y, p.oy * out), this.q.identity(), this.sc.set(along[0], along[1], along[2]));
+      s.mesh.setMatrixAt(s.index, this.m.premultiply(pivot));
     }
   }
+
+  private pivot = new THREE.Matrix4();
+  private r1 = new THREE.Matrix4();
+  private r2 = new THREE.Matrix4();
+  private r3 = new THREE.Matrix4();
+  private v = new THREE.Vector3();
+  private sc = new THREE.Vector3();
 }
+
+/** The little bounce when a fallen prop hits the ground (s). */
+const BOUNCE = 0.22;

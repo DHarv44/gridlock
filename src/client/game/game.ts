@@ -347,6 +347,7 @@ export class Game {
     const sq = this.view.skids.squeal;
     this.sound.tyres(sq.k, sq.x, sq.y);
     this.fx.update(dt);
+    this.furniture.update(dt);
     this.water.update(dt);
     this.jobs.update(dt, this.you, disp, this.fx.glow, night, this.store.serverNow(), this.players.find((p) => p.id === this.myId), this.sound);
     nearestSiren(this.store, disp, this.sound);
