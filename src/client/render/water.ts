@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Rng } from '../../shared/rng';
 import type { CityMap } from '../../shared/world/city';
 import { LAND0, LAND1, LANE_W } from '../../shared/world/cityTypes';
+import { WORLD } from '../../shared/world/worldSpec';
 import { Batch, lambert, UNIT } from './instancing';
 
 function normalMap(): THREE.CanvasTexture {
@@ -71,6 +72,7 @@ export class Water {
     const deck = new Batch(UNIT.box(), lambert());
     for (const b of map.city.bridges) {
       const w = b.x1 - b.x0, len = b.y1 - b.y0 + 2, cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
+      if (!WORLD.modern) { timberBridge(deck, cx, cy, w, len, r); continue; }
       deck.add(cx, -1.4, cy, w + 0.6, 1.5, len, '#5d5f62');
       deck.add(cx, 0.08, cy, w - 0.4, 0.02, len, '#3a3d42');
       // Lane markings on the deck.
@@ -93,5 +95,22 @@ export class Water {
   update(dt: number): void {
     this.t += dt;
     this.tex.offset.set(this.t * 0.004, this.t * 0.0025);
+  }
+}
+
+/** A trestle bridge before concrete: a plank deck (boards across it) on timber stringers, a rail of
+ *  posts and a top rail each side, and pile bents standing in the river. */
+function timberBridge(deck: Batch, cx: number, cy: number, w: number, len: number, r: { y0: number; y1: number }): void {
+  deck.add(cx, -0.9, cy, w + 0.4, 1.0, len, '#4a3624');
+  deck.add(cx, 0.06, cy, w, 0.05, len, '#7a5a3a');
+  for (let y = cy - len / 2 + 0.2; y < cy + len / 2; y += 1.1) deck.add(cx, 0.1, y, w, 0.02, 0.08, '#4e3a26');
+  for (const side of [-1, 1]) {
+    const x = cx + side * (w / 2 + 0.1);
+    for (let y = cy - len / 2 + 0.5; y < cy + len / 2; y += 2.4) deck.add(x, 0, y, 0.18, 1.1, 0.18, '#5a4026');
+    deck.add(x, 1.0, cy, 0.14, 0.12, len, '#6a4a2e');
+  }
+  for (let y = r.y0 + 8; y < r.y1 - 4; y += 9) {
+    for (let k = -1; k <= 1; k++) deck.add(cx + k * w * 0.35, -4, y, 0.4, 4, 0.4, '#3e2c1a');
+    deck.add(cx, -1.2, y, w, 0.3, 0.4, '#3e2c1a');
   }
 }

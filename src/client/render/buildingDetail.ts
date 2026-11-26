@@ -58,6 +58,8 @@ export interface Decorated { housings: Housing[]; awning: number }
 export function decorate(b: Building, lot: Lot | undefined, masses: Mass[], rng: Rng, out: DetailBatches): Decorated {
   const housings: Housing[] = [];
   if (b.kind === 'house') { house(b, masses[0], rng, out); return { housings, awning: -1 }; }
+  // An older era's street front: a false front over the street and a porch on posts below it.
+  if (!WORLD.modern) return frontier(b, lot, masses, rng, out, housings);
   for (const m of masses) parapet(m, out);
   const top = masses.reduce((a, c) => (c.h > a.h ? c : a));
   for (const m of masses) {
@@ -157,6 +159,49 @@ function house(b: Building, m: Mass, rng: Rng, out: DetailBatches): void {
     const z = along ? cy(r) + rng.range(-1, 1) : r.y0 + D(r) * t;
     out.box.add(x, m.h, z, 0.9, 3.3, 0.9, '#7a4a3a');
   }
+}
+
+/** A frontier street building: a false front, a squared facade standing up past the roof along the
+ *  street side (often stepped), low side walls, and a porch roof on posts over the boardwalk. */
+function frontier(b: Building, lot: Lot | undefined, masses: Mass[], rng: Rng, out: DetailBatches, housings: Housing[]): Decorated {
+  const top = masses.reduce((a, c) => (c.h > a.h ? c : a));
+  const front = lot && lot.front >= 0 ? lot.front : -1;
+  const wall = shade(top.wall, 0.95), trim = shade(top.wall, 0.7);
+  for (const m of masses) {
+    const r = m.r, t = 0.3;
+    // Low side and back walls round the roof.
+    out.box.add(cx(r), m.h, r.y0 + t / 2, W(r), 0.4, t, wall);
+    out.box.add(cx(r), m.h, r.y1 - t / 2, W(r), 0.4, t, wall);
+    out.box.add(r.x0 + t / 2, m.h, cy(r), t, 0.4, D(r) - 2 * t, wall);
+    out.box.add(r.x1 - t / 2, m.h, cy(r), t, 0.4, D(r) - 2 * t, wall);
+  }
+  if (front < 0) return { housings, awning: -1 };
+  const r = b.rect, [dx, dz] = DIR_VEC[front as 0 | 1 | 2 | 3];
+  const along = dx === 0; // the street runs along x when the front faces north or south
+  const span = along ? W(r) : D(r);
+  // The false front: up 1.8-3.4 m over the roof, with a cornice; stepped in the middle sometimes.
+  const rise = rng.range(1.8, 3.4), y = top.h, th = 0.35;
+  const fx = dx > 0 ? r.x1 - th / 2 : dx < 0 ? r.x0 + th / 2 : cx(r);
+  const fz = dz > 0 ? r.y1 - th / 2 : dz < 0 ? r.y0 + th / 2 : cy(r);
+  const face = (w: number, h: number, c: string, lift = 0) =>
+    out.box.add(fx, y + lift, fz, along ? w : th + 0.04, h, along ? th + 0.04 : w, c);
+  face(span, rise, wall);
+  face(span + 0.3, 0.25, trim, rise);
+  if (rng.chance(0.5)) { face(span * 0.4, 0.9, wall, rise); face(span * 0.44, 0.2, trim, rise + 0.9); }
+  // The porch: a plank roof out over the walk, posts at its outer edge.
+  const depth = 2.6, ph = 3.0;
+  const px = dx > 0 ? r.x1 + depth / 2 : dx < 0 ? r.x0 - depth / 2 : cx(r);
+  const pz = dz > 0 ? r.y1 + depth / 2 : dz < 0 ? r.y0 - depth / 2 : cy(r);
+  const roofC = shade('#7a5a3a', rng.range(0.8, 1.05));
+  out.box.add(px, ph, pz, along ? span : depth, 0.14, along ? depth : span, roofC);
+  const n = Math.max(2, Math.round(span / 3));
+  for (let k = 0; k < n; k++) {
+    const s = -span / 2 + 0.3 + (k * (span - 0.6)) / (n - 1);
+    const ox = dx !== 0 ? px + dx * (depth / 2 - 0.15) : cx(r) + s;
+    const oz = dz !== 0 ? pz + dz * (depth / 2 - 0.15) : cy(r) + s;
+    out.box.add(ox, 0, oz, 0.16, ph, 0.16, '#5a4026');
+  }
+  return { housings, awning: front };
 }
 
 const AWNINGS = ['#b0302a', '#2f6a3a', '#24508f', '#d9a32a', '#7a2a5a', '#2a7a7a'];

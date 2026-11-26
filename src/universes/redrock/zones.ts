@@ -26,9 +26,10 @@ export const ZONES: ZoneSpec[] = [
   },
   {
     id: 'homesteads', name: 'Homesteads', mapColor: '#6a6a3a', ground: '#a89a62', sidewalk: '#a89a62',
-    lot: { min: 22, max: 34, setback: [5, 9], height: [3.5, 5.5], coverage: 0.4 }, layout: 'houses',
-    wall: ['#8a6a4a', '#a07a52', '#cfc2a2', '#7a3a2a'], roof: ['#5a4632', '#4a3a2a', '#6a5642'],
-    trees: 0.8, parkingChance: 0, plazaChance: 0, pedDensity: 0.8,
+    // Claims, not suburbs: a cabin or farmhouse well back on a wide plot of open ground.
+    lot: { min: 40, max: 64, setback: [8, 18], height: [3.5, 5.5], coverage: 0.4, width: [8, 14] }, layout: 'houses',
+    wall: ['#8a6a4a', '#a07a52', '#cfc2a2', '#7a3a2a', '#6e5238'], roof: ['#5a4632', '#4a3a2a', '#6a5642'],
+    trees: 0.25, parkingChance: 0, plazaChance: 0, pedDensity: 0.8,
     peds: [{ id: 'homesteader', weight: 6 }, { id: 'rancher', weight: 3 }],
     trafficDensity: 0.25, traffic: riders, parked: [...tied, { id: 'buckboard_standing', weight: 2 }], parkedDensity: 0.4, roadDrop: 0.3, windows: 0.2,
   },
@@ -64,6 +65,8 @@ export const ZONES: ZoneSpec[] = [
     peds: [{ id: 'trooper', weight: 10 }],
     trafficDensity: 0.2, traffic: [{ id: 'cavalry_horse', weight: 4 }], parked: [{ id: 'cavalry_horse', weight: 3 }],
     parkedDensity: 0.6, roadDrop: 0, fenced: true, windows: 0.1,
+    // A log palisade round timber barracks and stables.
+    perimeter: { color: '#6a4a2e', h: 4.2 }, compoundKind: 'block',
   },
 ];
 

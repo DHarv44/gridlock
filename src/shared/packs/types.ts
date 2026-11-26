@@ -263,7 +263,9 @@ export interface ZoneSpec {
   mapColor: string;
   ground: string;               // lot ground colour
   sidewalk: string;
-  lot: { min: number; max: number; setback: [number, number]; height: [number, number]; coverage: number };
+  /** Lot widths (m), the building's setback and height, coverage; `width`: a house's own frontage
+   *  (m), when it stands on a plot wider than itself (layout 'houses'; default: the plot's width). */
+  lot: { min: number; max: number; setback: [number, number]; height: [number, number]; coverage: number; width?: [number, number] };
   /** `wild`: open country (no sidewalks; roads only along arterial lines, as trails; `wild` says
    *  what the ground holds). */
   layout: 'buildings' | 'houses' | 'park' | 'docks' | 'compound' | 'wild';
@@ -286,6 +288,11 @@ export interface ZoneSpec {
   warehouses?: boolean;
   /** Busy streets: bins, mailboxes, newspaper boxes and bus shelters along the curb. */
   busy?: boolean;
+  /** A compound's perimeter (layout 'compound'): its colour and height (m). Default a 3 m grey
+   *  security fence; a fort's log palisade is brown and taller. */
+  perimeter?: { color: string; h: number };
+  /** A compound's buildings: 'hangar' (metal sheds, the default) or 'block' (plain timber or brick). */
+  compoundKind?: 'hangar' | 'block';
 }
 
 export interface DistrictSpec {

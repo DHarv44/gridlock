@@ -200,6 +200,15 @@ export class LotBuilder {
     if (front === Dir.S) b.y0 = Math.max(b.y0, b.y1 - maxDepth);
     if (front === Dir.W) b.x1 = Math.min(b.x1, b.x0 + maxDepth);
     if (front === Dir.E) b.x0 = Math.max(b.x0, b.x1 - maxDepth);
+    // A house narrower than its plot sits somewhere along it, the rest open ground.
+    if (z.lot.width) {
+      const along = front === Dir.N || front === Dir.S;
+      const span = along ? rectW(b) : rectH(b), want = this.rng.range(z.lot.width[0], z.lot.width[1]);
+      if (span > want) {
+        const off = this.rng.range(0, span - want);
+        if (along) { b.x0 += off; b.x1 = b.x0 + want; } else { b.y0 += off; b.y1 = b.y0 + want; }
+      }
+    }
     if (rectW(b) < 6 || rectH(b) < 6) return;
     this.addBuilding(lot, b, this.rng.range(z.lot.height[0], z.lot.height[1]), z, 'house');
     if (this.rng.chance(0.6)) {
@@ -212,9 +221,9 @@ export class LotBuilder {
   }
 
   private compound(block: Block, area: Rect, z: ZoneSpec): void {
-    const gate = 12, t = 0.6, fh = 3;
+    const gate = 12, t = 0.6, fh = z.perimeter?.h ?? 3, fc = z.perimeter?.color ?? '#8a8f80';
     const midX = (area.x0 + area.x1) / 2, midY = (area.y0 + area.y1) / 2;
-    const fence = (rect: Rect) => this.out.obstacles.push({ rect, h: fh, color: '#8a8f80', kind: 'fence' });
+    const fence = (rect: Rect) => this.out.obstacles.push({ rect, h: fh, color: fc, kind: 'fence' });
     fence({ x0: area.x0, x1: midX - gate / 2, y0: area.y0, y1: area.y0 + t });
     fence({ x0: midX + gate / 2, x1: area.x1, y0: area.y0, y1: area.y0 + t });
     fence({ x0: area.x0, x1: midX - gate / 2, y0: area.y1 - t, y1: area.y1 });
@@ -231,7 +240,7 @@ export class LotBuilder {
       if (k % 3 === 2) { this.addLot(block, r, 'parking', -1); return; }
       const lot = this.addLot(block, r, 'building', -1);
       const b = insetRect(r, this.rng.range(z.lot.setback[0], z.lot.setback[1]));
-      if (rectW(b) > 8 && rectH(b) > 8) this.addBuilding(lot, b, this.rng.range(z.lot.height[0], z.lot.height[1]), z, 'hangar');
+      if (rectW(b) > 8 && rectH(b) > 8) this.addBuilding(lot, b, this.rng.range(z.lot.height[0], z.lot.height[1]), z, z.compoundKind ?? 'hangar');
       else lot.use = 'pad';
     });
   }

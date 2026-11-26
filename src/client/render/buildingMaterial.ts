@@ -2,12 +2,15 @@
 // facades (window grid, frames, floor bands, storefronts) that light up at night, and roof
 // surfaces (gravel/tar for flat roofs, corrugated metal for industrial ones).
 import * as THREE from 'three';
+import { WORLD } from '../../shared/world/worldSpec';
 
 export interface BuildingUniforms { uNight: { value: number } }
 
 export function buildingMaterial(): { mat: THREE.MeshLambertMaterial; uniforms: BuildingUniforms } {
   const uniforms: BuildingUniforms = { uNight: { value: 0 } };
   const mat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+  // Before glass and tar (WORLD.modern off): board roofs, clapboard, small sash windows, lamplight.
+  if (!WORLD.modern) mat.defines = { OLD_ERA: '' };
   mat.onBeforeCompile = (sh) => {
     sh.uniforms.uNight = uniforms.uNight;
     sh.vertexShader = sh.vertexShader
@@ -43,9 +46,17 @@ export function buildingMaterial(): { mat: THREE.MeshLambertMaterial; uniforms: 
             } else {
               float n = vnoise(vGW.xz * 0.35) * 0.6 + vnoise(vGW.xz * 2.1) * 0.4;
               col *= 0.82 + 0.3 * n;
+            #ifdef OLD_ERA
+              // A board roof: courses of planks, weathered unevenly.
+              float run = abs(vGN.x) > 0.5 ? vGW.x : vGW.z;
+              float course = floor(run / 0.32);
+              col *= 0.86 + 0.18 * h21(vec2(course, floor((abs(vGN.x) > 0.5 ? vGW.z : vGW.x) / 2.4)));
+              col *= 1.0 - 0.16 * step(0.86, fract(run / 0.32));
+            #else
               // Tar seams.
               vec2 g = abs(fract(vGW.xz / 6.0) - 0.5);
               col *= 1.0 - 0.12 * step(0.485, max(g.x, g.y));
+            #endif
             }
           } else {
             col = vWall;
@@ -55,6 +66,25 @@ export function buildingMaterial(): { mat: THREE.MeshLambertMaterial; uniforms: 
             float floorH = kind > 1.5 ? 2.8 : 3.3;
             vec2 cell = vec2(floor(u / 2.6), floor(v / floorH));
             vec2 f = vec2(fract(u / 2.6), fract(v / floorH));
+          #ifdef OLD_ERA
+            // Clapboard siding: overlapping boards, each a little different.
+            float board = floor(v / 0.26);
+            col *= 0.9 + 0.12 * h21(vec2(board, floor(u / 4.0)));
+            col *= 1.0 - 0.14 * step(0.82, fract(v / 0.26));
+            // Small sash windows: dark panes, a timber frame darker than the wall, a muntin cross.
+            float inWin = step(0.3, f.x) * step(f.x, 0.7) * step(0.3, f.y) * step(f.y, 0.78) * step(0.9, v);
+            float frame = step(0.26, f.x) * step(f.x, 0.74) * step(0.26, f.y) * step(f.y, 0.82) * step(0.9, v) * (1.0 - inWin);
+            float muntin = inWin * max(step(abs(f.x - 0.5), 0.015), step(abs(f.y - 0.54), 0.015));
+            float wins = step(1.0 - density, h21(cell * 0.37 + vWin.y));
+            float store = 0.0;
+            vec3 glass = mix(vec3(0.04, 0.035, 0.03), vec3(0.16, 0.15, 0.13), 0.3 * h21(cell + 3.1));
+            col = mix(col, col * 0.55, frame * wins);
+            col = mix(col, glass, inWin * wins * 0.92);
+            col = mix(col, col * 0.5, muntin * wins);
+            // Lamplight: oil lamps, all warm.
+            float lit = step(0.5, h21(cell + vWin.y * 7.0)) * inWin * wins * (1.0 - muntin);
+            vec3 warm = mix(vec3(1.0, 0.66, 0.3), vec3(1.0, 0.74, 0.4), h21(cell * 1.3));
+          #else
             // Brick/panel texture and floor bands.
             col *= 0.93 + 0.07 * vnoise(vec2(u * 1.7, v * 3.3));
             col *= 1.0 - 0.1 * step(f.y, 0.06) * step(3.0, v);
@@ -68,6 +98,7 @@ export function buildingMaterial(): { mat: THREE.MeshLambertMaterial; uniforms: 
             col = mix(col, glass, max(inWin * wins, store) * 0.9);
             float lit = step(0.55, h21(cell + vWin.y * 7.0)) * inWin * wins + store * 0.8;
             vec3 warm = mix(vec3(1.0, 0.78, 0.45), vec3(0.75, 0.85, 1.0), step(0.8, h21(cell * 1.3)));
+          #endif
             gWindowGlow = warm * lit * uNight * 0.85;
             col *= mix(0.6, 1.0, smoothstep(0.0, 3.5, v));
           }

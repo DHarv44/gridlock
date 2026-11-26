@@ -1,7 +1,7 @@
 // The city map (M): pan by dragging, zoom with the wheel, click to set a waypoint (click it again
 // or right-click to clear), hover a pin for its name; the legend (mapLegend.ts) hides or shows kinds.
 // A controller pans with the D-pad, zooms with the bumpers and drops the waypoint at the centre.
-import { DISTRICTS, FACTIONS, PROPERTIES, SERVICES } from '../../shared/packs';
+import { DISTRICTS, FACTIONS, PROPERTIES, RULES, SERVICES } from '../../shared/packs';
 import type { PlayerInfo } from '../../shared/protocol';
 import type { CityMap } from '../../shared/world/city';
 import { type Atm, atmsOf } from '../../shared/world/atms';
@@ -159,7 +159,7 @@ export class BigMap {
       if (b.shape === 'phone') {
         if (this.hidden.has('phones')) continue;
         phoneBlip(ctx, px, py, 9, b.color);
-        this.pins.push({ x: px, y: py, label: 'Payphone ringing: walk into it to answer' });
+        this.pins.push({ x: px, y: py, label: RULES.jobPost === 'post' ? 'Job post with work: walk up to it to take it' : 'Payphone ringing: walk into it to answer' });
         continue;
       }
       ctx.fillStyle = b.color; ctx.strokeStyle = '#000'; ctx.lineWidth = 2;

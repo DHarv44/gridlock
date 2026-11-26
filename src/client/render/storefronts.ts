@@ -6,6 +6,7 @@ import { PROPERTIES, SERVICES } from '../../shared/packs';
 import { signWidth } from '../../shared/world/atms';
 import { type City, DIR_VEC, type Lot, type Place } from '../../shared/world/cityTypes';
 import { VERBS } from '../../shared/verbs';
+import { WORLD } from '../../shared/world/worldSpec';
 import type { ParticleLayer } from './particles';
 
 const texCache = new Map<string, THREE.CanvasTexture>();
@@ -20,10 +21,22 @@ function signTexture(text: string, bg: string, fg: string): THREE.CanvasTexture 
   const ctx = c.getContext('2d')!;
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, c.width, c.height);
-  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-  ctx.lineWidth = 6;
-  ctx.strokeRect(5, 5, c.width - 10, c.height - 10);
-  ctx.font = '700 62px Bahnschrift, "Segoe UI", sans-serif';
+  if (WORLD.modern) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(5, 5, c.width - 10, c.height - 10);
+    ctx.font = '700 62px Bahnschrift, "Segoe UI", sans-serif';
+  } else {
+    // A painted board: the grain of its planks, a hand-ruled border in the lettering's colour,
+    // and slab-serif capitals.
+    for (let y = 0; y < c.height; y += 24) { ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.fillRect(0, y, c.width, 2); }
+    ctx.strokeStyle = fg;
+    ctx.globalAlpha = 0.7;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(9, 9, c.width - 18, c.height - 18);
+    ctx.globalAlpha = 1;
+    ctx.font = '700 58px Rockwell, "Rockwell Extra Bold", Georgia, "Times New Roman", serif';
+  }
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.lineWidth = 8;
@@ -101,9 +114,18 @@ export class Storefronts {
       add(boxGeo, frame, wx + dx * 0.12, 0, wy + dy * 0.12, along ? doorW + 0.5 : 0.25, doorH + 0.3, along ? 0.25 : doorW + 0.5);
       add(boxGeo, lit, wx + dx * 0.26, 0, wy + dy * 0.26, along ? doorW : 0.06, doorH, along ? 0.06 : doorW);
     }
-    if (garage) {
+    if (garage && WORLD.modern) {
       const stripes = new THREE.MeshLambertMaterial({ color: '#8f9296' });
       for (let k = 0; k < 6; k++) add(boxGeo, stripes, wx + dx * 0.3, 0.4 + k * 0.5, wy + dy * 0.3, along ? doorW : 0.04, 0.06, along ? 0.04 : doorW);
+    } else if (garage) {
+      // Barn doors: two leaves of boards, each with a Z of bracing.
+      const wood = new THREE.MeshLambertMaterial({ color: '#6a4a2e' }), brace = new THREE.MeshLambertMaterial({ color: '#4a321e' });
+      add(boxGeo, wood, wx + dx * 0.28, 0, wy + dy * 0.28, along ? doorW : 0.05, doorH, along ? 0.05 : doorW);
+      for (const s of [-1, 1]) {
+        const o = s * doorW / 4;
+        for (const yy of [0.4, doorH - 0.5]) add(boxGeo, brace, wx + dx * 0.33 + (along ? o : 0), yy, wy + dy * 0.33 + (along ? 0 : o), along ? doorW / 2 - 0.2 : 0.04, 0.16, along ? 0.04 : doorW / 2 - 0.2);
+      }
+      add(boxGeo, brace, wx + dx * 0.33, 0, wy + dy * 0.33, along ? 0.1 : 0.05, doorH, along ? 0.05 : 0.1);
     }
     // Fascia band along the frontage.
     const fx = (b.x0 + b.x1) / 2, fy = (b.y0 + b.y1) / 2;
@@ -139,9 +161,11 @@ export class Storefronts {
     const x = place.counter ? place.x + dx * 0.8 - (dy !== 0 ? side : 0) : edgeX - dx * 1.2 + (dy !== 0 ? side : 0);
     const y = place.counter ? place.y + dy * 0.8 - (dx !== 0 ? side : 0) : edgeY - dy * 1.2 + (dx !== 0 ? side : 0);
     const group = new THREE.Group();
-    const post = new THREE.Mesh(boxGeo, new THREE.MeshLambertMaterial({ color: '#e8e4da' }));
+    // A realtor's board; before realtors, a hand-painted board on a stake.
+    const post = new THREE.Mesh(boxGeo, new THREE.MeshLambertMaterial({ color: WORLD.modern ? '#e8e4da' : '#5a4026' }));
     post.scale.set(0.12, 2.2, 0.12);
-    const board = new THREE.Mesh(flatGeo, new THREE.MeshBasicMaterial({ map: signTexture('FOR SALE', '#b8261d', '#ffffff') }));
+    const label = WORLD.modern ? signTexture('FOR SALE', '#b8261d', '#ffffff') : signTexture('FOR SALE', '#6a4a2e', '#efe6d2');
+    const board = new THREE.Mesh(flatGeo, new THREE.MeshBasicMaterial({ map: label }));
     board.scale.set(2.6, 1, 0.95);
     board.position.y = 2.25;
     group.add(post, board);
