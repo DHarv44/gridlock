@@ -16,7 +16,8 @@ import { Skids } from './skids';
 import { floatBoat } from './boats';
 
 export interface OwnState { pid: number; vid: number; x: number; y: number; angle: number; alt: number; driving: boolean; vx: number; vy: number; trailer?: number }
-export interface PlayerTag { name: string; color: string; look?: CharLook }
+/** `me`: your own character (drawn in your colours and look, never with a name over it). */
+export interface PlayerTag { name: string; color: string; look?: CharLook; me?: boolean }
 
 /** Riders shrink from the larger-than-life street size to about 1.1x life, to sit a real-size bike. */
 const RIDER_SCALE = 0.7;
@@ -188,7 +189,8 @@ export class WorldView {
   /** Other players get a floating name in their colour (no ground markers). */
   private addTag(id: number, v: PedView, tag: PlayerTag, isMe: boolean): void {
     this.tagged.add(id);
-    if (isMe) return;
+    // Your own name never shows (alone in a game, no name tags at all), on foot or riding.
+    if (isMe || tag.me) return;
     const c = document.createElement('canvas');
     c.width = 256; c.height = 64;
     const ctx = c.getContext('2d')!;
