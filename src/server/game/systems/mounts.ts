@@ -1,11 +1,11 @@
 // Mounts (vehicles with `stamina`: horses and teams). Their wind: spent galloping, got back at a
 // canter or at rest, half as fast. AI riders gallop when they chase or run. And a horse comes to
-// the whistle of whoever last rode it (`comesWhenCalled`): it trots, then gallops if it's far,
-// straight for them; from far off, or stuck out of anyone's sight, it comes round the nearest corner.
-import { angleDiff, clamp } from '../../../shared/math';
+// the whistle of whoever last rode it (`comesWhenCalled`): it canters, or gallops if it's far,
+// along the roads to them; from far off, or getting no closer, it comes round the nearest corner.
 import { VEHICLES } from '../../../shared/packs';
 import { galloping } from '../../../shared/sim/physics';
-import type { Player, TaskName, Vehicle } from '../entities';
+import { newDrive, routeTo } from '../ai/driving';
+import type { DriveState, Player, TaskName, Vehicle } from '../entities';
 import type { World } from '../world';
 import { laneSpawn } from './spawnPoints';
 import { bolting, isLame, updateSpook } from './spook';
@@ -24,7 +24,7 @@ export function updateMounts(w: World, dt: number): void {
     const driver = v.seats[0] ? w.peds.get(v.seats[0]) : undefined;
     if (driver?.player && v.spec.comesWhenCalled) adopt(w, driver.player, v);
     if (driver && !driver.player && driver.ai) v.ctl.sprint = canGallop(v) && HURRY.has(driver.ai.task);
-    if (v.calledBy && v.rearT <= 0 && !bolting(v)) lead(w, v);
+    if (v.calledBy && v.rearT <= 0 && !bolting(v)) lead(w, v, dt);
     updateSpook(w, v, dt); // rearing, bolting, limping (systems/spook.ts) override the above
     if (galloping(v.body, v.spec, v.ctl.sprint)) v.stamina = Math.max(0, v.stamina - dt);
     else v.stamina = Math.min(st.gallop, v.stamina + dt * RECOVER);
@@ -56,6 +56,8 @@ export function callMount(w: World, pl: Player): void {
   if (!v || v.wrecked) { w.notify('info', 'No horse answers your whistle.', pl); return; }
   if (v.seats.some((s) => s)) { w.notify('info', 'Someone is riding your horse.', pl); return; }
   v.calledBy = pl.id;
+  progress.delete(v);
+  routes.delete(v);
   w.notify('info', 'You whistle for your horse.', pl);
 }
 
@@ -64,27 +66,40 @@ function stop(v: Vehicle): void {
   v.ctl.throttle = 0; v.ctl.steer = 0; v.ctl.sprint = false;
 }
 
+/** How close a called horse has got to its rider, and how long since it last got closer (s). */
+const progress = new WeakMap<Vehicle, { best: number; t: number }>();
+/** No closer in this long (against a building, a rock, circling a fence): it's stuck. */
+const STUCK_S = 6;
+
 /** A called horse heads for its rider. */
-function lead(w: World, v: Vehicle): void {
+function lead(w: World, v: Vehicle, dt: number): void {
   const pl = w.players.get(v.calledBy);
   const p = pl ? w.peds.get(pl.pid) : undefined;
   if (!p || p.dead || p.vehicle || v.wrecked || v.seats.some((s) => s)) { stop(v); return; }
   const at = w.pedPos(p);
   let dx = at.x - v.body.x, dy = at.y - v.body.y, d = Math.hypot(dx, dy);
-  // From far off, or stuck (against a building, a rock): it appears on a road nearby instead
-  // (round a corner if it was far, closer in if it was already close).
-  if (d > 220 || (d > ARRIVE + 1 && v.idleT > 3)) {
+  let prog = progress.get(v);
+  if (!prog) progress.set(v, (prog = { best: d, t: 0 }));
+  if (d < prog.best - 1) { prog.best = d; prog.t = 0; } else prog.t += dt;
+  // From far off, or stuck: it appears on a road nearby instead (round a corner if it was far,
+  // closer in if it was already close).
+  if (d > 220 || (d > ARRIVE + 1 && prog.t > STUCK_S)) {
     const s = d > 30 ? laneSpawn(w, at.x, at.y, 45, 80, at) : laneSpawn(w, at.x, at.y, 8, 25, at);
     if (s) {
       v.body.x = s.x; v.body.y = s.y; v.body.angle = s.angle; v.body.vx = 0; v.body.vy = 0; v.body.av = 0; v.idleT = 0;
       dx = at.x - v.body.x; dy = at.y - v.body.y; d = Math.hypot(dx, dy);
     }
+    progress.set(v, { best: d, t: 0 });
+    routes.delete(v);
   }
   if (d < ARRIVE) { stop(v); return; }
-  const turn = angleDiff(v.body.angle, Math.atan2(dy, dx));
-  v.ctl.steer = clamp(turn * 2, -1, 1);
-  // Slow down to turn round, and to walk the last few metres up to them.
-  v.ctl.throttle = Math.abs(turn) > 1.6 ? 0.3 : clamp(d / 14, 0.25, 1);
-  v.ctl.sprint = d > 40 && canGallop(v);
-  v.ctl.handbrake = false;
+  // Along the roads round the buildings, as a rider would take it, then straight up to them.
+  let route = routes.get(v);
+  if (!route) routes.set(v, (route = newDrive(w, v)));
+  const gallop = d > 40 && canGallop(v);
+  routeTo(w, v, route, at.x, at.y, dt, { stopAt: ARRIVE - 1, ram: false, speed: gallop ? undefined : v.spec.gaits?.canter });
+  v.ctl.sprint = gallop;
 }
+
+/** A called horse's way along the roads. */
+const routes = new WeakMap<Vehicle, DriveState>();

@@ -300,7 +300,11 @@ export function cruise(w: World, v: Vehicle, p: Ped, dt: number, panic = false):
 export function driveTo(w: World, v: Vehicle, p: Ped, tx: number, ty: number, dt: number, opts: { stopAt: number; ram: boolean; speed?: number }): number {
   const ai = p.ai!;
   if (!ai.drive) ai.drive = newDrive(w, v);
-  const d = ai.drive;
+  return routeTo(w, v, ai.drive, tx, ty, dt, opts);
+}
+
+/** driveTo for whatever holds the route state (an AI driver, or a riderless horse called home). */
+export function routeTo(w: World, v: Vehicle, d: DriveState, tx: number, ty: number, dt: number, opts: { stopAt: number; ram: boolean; speed?: number }): number {
   const b = v.body;
   const dist = Math.hypot(tx - b.x, ty - b.y);
   if (flies(v.spec)) return flyTo(w, v, tx, ty, opts.stopAt, dt);
