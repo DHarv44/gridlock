@@ -8,6 +8,14 @@ export const DEFAULT_RULES = {
    *  only. (Radio is on when the universe lists stations; ATMs where specs say `atm`; payphones
    *  per respect.phonesPerGang.) */
   cellPhone: true,
+  /** Cheating at poker (systems/cardCheats.ts): slip in an ace, stack the deck on your deal, peek at
+   *  your neighbours' cards; card sharps at the tables sometimes cheat too, and you can call them
+   *  out. Off: nobody cheats and there's no calling out. */
+  cardCheats: true,
+  /** Respect a gang needs for you before it invites you to its back-room game. */
+  cardInviteRespect: 40,
+  /** A friend's game runs this many game minutes after they invite you or you call. */
+  friendGameMinutes: 180,
   /** What gangs' job points look like: a payphone at the curb, or a timber post with a notice
    *  board and a bell (no phone ring; render/booths.ts). */
   jobPost: 'payphone' as 'payphone' | 'post',

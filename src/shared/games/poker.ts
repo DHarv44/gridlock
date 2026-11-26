@@ -4,8 +4,19 @@
 import type { Rng } from '../rng';
 import { bestScore, type Card, cardText, deck, handName } from './cards';
 
-export type PokerVariant = 'holdem' | 'draw';
-export type Street = 'idle' | 'pre' | 'flop' | 'turn' | 'river' | 'draw' | 'second' | 'show';
+/** 'stud': five-card stud, the first card down and the other four dealt face up a street at a time. */
+export type PokerVariant = 'holdem' | 'draw' | 'stud';
+export type Street = 'idle' | 'pre' | 'flop' | 'turn' | 'river' | 'draw' | 'second' | 's3' | 's4' | 's5' | 'show';
+
+/** The streets a variant's betting rounds run through. */
+export const STREETS: Record<PokerVariant, Street[]> = {
+  holdem: ['pre', 'flop', 'turn', 'river', 'show'],
+  draw: ['pre', 'draw', 'second', 'show'],
+  stud: ['pre', 's3', 's4', 's5', 'show'],
+};
+
+/** Can everyone see this card? Stud's up cards (all but the first); everyone's at a showdown. */
+export const faceUp = (t: { variant: PokerVariant; street: Street }, k: number): boolean => (t.variant === 'stud' && k > 0) || t.street === 'show';
 
 export interface PokerSeat {
   name: string;
@@ -89,7 +100,7 @@ export function deal(t: PokerTable, rng: Rng, order?: Card[]): boolean {
   t.deck = order ? [...order] : deck(rng);
   t.board = [];
   t.result = null;
-  const n = t.variant === 'holdem' ? 2 : 5;
+  const n = t.variant === 'draw' ? 5 : 2;
   for (let r = 0; r < n; r++) for (let k = 1; k <= t.seats.length; k++) { const s = t.seats[(t.dealer + k) % t.seats.length]; if (!s.folded) s.cards.push(t.deck.pop()!); }
   t.currentBet = 0;
   t.minRaise = t.blinds[1];
@@ -169,7 +180,7 @@ function afterAction(t: PokerTable, i: number): void {
   const waiting = t.seats.findIndex((q) => inHand(q) && !q.allIn && (!q.acted || q.bet < t.currentBet));
   if (waiting >= 0) { t.toAct = next(t, i, (q) => inHand(q) && !q.allIn && (!q.acted || q.bet < t.currentBet)); return; }
   // The round's settled: on to the next.
-  const order: Street[] = t.variant === 'holdem' ? ['pre', 'flop', 'turn', 'river', 'show'] : ['pre', 'draw', 'second', 'show'];
+  const order = STREETS[t.variant];
   beginRound(t, order[order.indexOf(t.street) + 1]);
 }
 
@@ -180,10 +191,12 @@ function beginRound(t: PokerTable, street: Street): void {
   t.street = street;
   if (street === 'flop') { t.deck.pop(); t.board.push(t.deck.pop()!, t.deck.pop()!, t.deck.pop()!); say(t, `Flop: ${t.board.map(cardText).join(' ')}`); }
   if (street === 'turn' || street === 'river') { t.deck.pop(); t.board.push(t.deck.pop()!); say(t, `${street === 'turn' ? 'Turn' : 'River'}: ${cardText(t.board[t.board.length - 1])}`); }
+  // Stud: another card face up to everyone still in.
+  if (street === 's3' || street === 's4' || street === 's5') for (const q of t.seats) if (inHand(q)) q.cards.push(t.deck.pop()!);
   if (street === 'show') { award(t, false); return; }
   // Nobody left to bet against (all in): run it out.
   const canBet = t.seats.filter((q) => inHand(q) && !q.allIn).length;
-  if (street !== 'draw' && canBet < 2) { const order: Street[] = t.variant === 'holdem' ? ['flop', 'turn', 'river', 'show'] : ['second', 'show']; beginRound(t, order[order.indexOf(street) + 1] ?? 'show'); return; }
+  if (street !== 'draw' && canBet < 2) { const order = STREETS[t.variant]; beginRound(t, order[order.indexOf(street) + 1] ?? 'show'); return; }
   t.toAct = next(t, t.dealer, (q) => inHand(q) && (street === 'draw' || !q.allIn));
 }
 

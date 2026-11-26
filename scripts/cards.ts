@@ -20,7 +20,7 @@ check(handName(bestScore(C('Ah Kh 2c 7h 9h 3s Th'))) === 'Flush', 'best five of 
 
 const seat = (name: string, skill: number, stack: number): Seat => ({ name, stack, cards: [], bet: 0, total: 0, folded: false, allIn: false, acted: false, human: false, skill, sharp: false, cheated: false, out: false });
 
-function play(variant: 'holdem' | 'draw', skills: number[], hands: number, seed: number) {
+function play(variant: 'holdem' | 'draw' | 'stud', skills: number[], hands: number, seed: number) {
   const rng = new Rng(seed);
   const t = newTable(variant, skills.map((s, i) => seat(`P${i}`, s, 1000)), [5, 10], 2);
   let chips = 0, broke = false;
@@ -45,6 +45,42 @@ const h = play('holdem', [0.2, 0.2, 0.9, 0.9], 400, 7);
 check(!h.broke, 'hold\'em: 400 hands, every chip accounted for, every action legal');
 const d = play('draw', [0.2, 0.2, 0.9, 0.9], 400, 11);
 check(!d.broke, 'five-card draw: 400 hands, every chip accounted for');
+const st = play('stud', [0.2, 0.2, 0.9, 0.9], 400, 13);
+check(!st.broke, 'five-card stud: 400 hands, every chip accounted for');
+
+// House games: a long run of each comes out in the house's favour, by a believable edge.
+const { newBlackjack, bjDeal, bjAct, bjValue, spinRoulette, newDice, rollDice, pullSlots, newFaro, faroTurn } = await import('../src/shared/games/house');
+{
+  const rng = new Rng(21);
+  const edge = (name: string, n: number, round: () => [number, number], lo: number, hi: number) => {
+    let staked = 0, back = 0;
+    for (let k = 0; k < n; k++) { const [s, b] = round(); staked += s; back += b; }
+    const e = 1 - back / staked;
+    check(e > lo && e < hi, `${name}: the house keeps ${(e * 100).toFixed(1)}% over ${n} rounds`);
+  };
+  for (const variant of ['blackjack', 'twentyone'] as const) {
+    const g = newBlackjack(variant);
+    edge(variant, 20000, () => {
+      bjDeal(g, rng, 10);
+      // A simple player: hit to 17 (12 against a weak dealer card), double on 11.
+      let staked = 10;
+      while (g.phase === 'play') {
+        const h = g.hands[g.active], v = bjValue(h.cards).total, up = bjValue([g.dealer[1]]).total;
+        if (v === 11 && h.cards.length === 2) { staked += h.bet; bjAct(g, rng, 'double'); } else bjAct(g, rng, v < 12 || (v < 17 && up >= 7) ? 'hit' : 'stand');
+      }
+      return [staked, g.paid];
+    }, -0.04, 0.08);
+  }
+  edge('roulette (red)', 30000, () => [10, spinRoulette(rng, [{ on: 'red', amount: 10 }]).back[0]], 0.02, 0.09);
+  edge('roulette (a number)', 60000, () => [10, spinRoulette(rng, [{ on: 'number', n: 17, amount: 10 }]).back[0]], -0.02, 0.13);
+  for (const variant of ['craps', 'hazard'] as const) {
+    const g = newDice(variant);
+    edge(variant, 20000, () => { g.bet = 10; let r: number | null = null; while (r === null) r = rollDice(g, rng); return [10, r]; }, 0.0, 0.1);
+  }
+  edge('slots', 60000, () => [1, pullSlots(rng, 1).back], 0.02, 0.2);
+  const f = newFaro(rng);
+  edge('faro', 20000, () => { f.bets.set(5, 10); let back = 0; while (f.bets.size) back += faroTurn(f, rng); return [10, back]; }, 0.0, 0.06);
+}
 // Over many hands the sharks take the buddies' money (net of rebuys, tracked by final stacks + rebuys).
 function edge(variant: 'holdem' | 'draw', seed: number): number {
   const rng = new Rng(seed);

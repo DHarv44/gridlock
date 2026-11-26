@@ -338,7 +338,60 @@ export interface DistrictSpec {
 }
 
 export type ServiceVerb = 'gunshop' | 'dealer' | 'respray' | 'chopshop' | 'hospital' | 'police'
-  | 'fire' | 'military' | 'helipad' | 'bank' | 'gas';
+  | 'fire' | 'military' | 'helipad' | 'bank' | 'gas' | 'casino';
+
+/** A game a table runs (shared/games): poker (hold'em, five-card draw and stud) against other
+ *  players, or a house game against the bank. */
+export type GameKind = 'holdem' | 'draw' | 'stud' | 'blackjack' | 'twentyone' | 'roulette' | 'craps' | 'hazard' | 'slots' | 'faro';
+
+/** A kind of table (Universe.tables): its game, its stakes and its company. */
+export interface TableSpec {
+  id: string;
+  name: string;
+  game: GameKind;
+  /** Poker: hold'em's blinds [small, big]; draw and stud [ante, smallest bet]. House games: the
+   *  smallest and biggest bet. */
+  stakes: [number, number];
+  /** Poker: what you sit down with, at least and at most. */
+  buyIn?: [number, number];
+  /** Poker: how many others play, and how well (0, a buddy who calls everything, to 1, a shark). */
+  players?: number;
+  skill?: number;
+  /** Poker: the house's cut of each pot (a share) and its cap. */
+  rake?: [number, number];
+  /** Poker: the share of the others who are card sharps (they cheat now and then). */
+  sharps?: number;
+  /** Caught cheating here: shot dead where you sit, or thrown out (the house keeps your stack). */
+  caught?: 'shoot' | 'throwOut';
+  /** What the table is drawn as: a card or dice table, or a slot machine. */
+  prop?: 'table' | 'slots';
+}
+
+/** Where tables are (Universe.venues): every walk-in place of a layout (a casino's floor, a
+ *  saloon) whose table props each get one of `tables`; a back room in a walk-in place on each
+ *  gang's turf (the gang runs it: invite only, the first time); or a friend's yard (FriendSpec).
+ *  `mix`: each place gets its own few of `tables`, more of them the more tables its room holds. */
+export interface VenueSpec {
+  at: { layout: InteriorLayout } | { backroom: true } | { home: true };
+  tables: string[];
+  mix?: boolean;
+}
+
+/** A friend who plays cards at home (not a gangster): where their game is, what they text you. You
+ *  meet them at their place (Enter beside them), then call them up for a game, or they invite you. */
+export interface FriendSpec {
+  id: string;
+  name: string;
+  /** Their game (a TableSpec id). */
+  table: string;
+  /** Who they look like (a ped archetype). */
+  arch: string;
+  /** Said when you meet; texted when they invite you; when you call and the game's on; when it isn't. */
+  meet: string;
+  invite: string[];
+  on: string[];
+  busy: string[];
+}
 
 export interface ServiceSpec {
   id: string;
@@ -363,7 +416,7 @@ export interface RobberySpec { till: number; fightBack: number }
 
 /** How an enterable place's ground floor is laid out (shared/world/interiors.ts): generated for the
  *  first five, hand-made (packs/interiorPlans.ts) for the rest. */
-export type InteriorLayout = 'shop' | 'diner' | 'club' | 'saloon' | 'warehouse' | 'kiosk' | 'bank' | 'precinct' | 'tower' | 'apartments';
+export type InteriorLayout = 'shop' | 'diner' | 'club' | 'saloon' | 'warehouse' | 'kiosk' | 'bank' | 'precinct' | 'tower' | 'apartments' | 'casino';
 
 /** A hand-made ground floor, in metres: `a` across the room from its left inside corner (seen from the
  *  street), `d` in from the front wall. Rects are [a0, a1, d0, d1]. The shell (with the street door)
@@ -371,7 +424,7 @@ export type InteriorLayout = 'shop' | 'diner' | 'club' | 'saloon' | 'warehouse' 
 export interface InteriorPlan {
   w: number; d: number;
   walls: { r: [number, number, number, number]; h?: number }[];
-  props: { r: [number, number, number, number]; h: number; kind: 'counter' | 'shelf' | 'table' | 'booth' | 'bar' | 'rack' | 'desk' | 'stool' | 'dance' | 'bench' | 'bars' }[];
+  props: { r: [number, number, number, number]; h: number; kind: 'counter' | 'shelf' | 'table' | 'booth' | 'bar' | 'rack' | 'desk' | 'stool' | 'dance' | 'bench' | 'bars' | 'slots' }[];
   counter: [number, number];
   clerk: [number, number];
   /** Who works the counter (a ped archetype); the generated layouts use the clerk. */
@@ -604,6 +657,10 @@ export interface Universe {
   streetProps: StreetPropSpec[];
   /** Built and growing things the world places (churches, windmills, corrals, cacti...); none: [] or left out. */
   fixtures?: FixtureSpec[];
+  /** Card and casino games: the kinds of table, where they are, and friends with a game at home. */
+  tables?: TableSpec[];
+  venues?: VenueSpec[];
+  friends?: FriendSpec[];
   /** Call scripts: each character's file with its folder under `<contentDir>/characters/`, and the
    *  player's file (`<contentDir>/player/player.json`). */
   cast: [string, CharacterFile][];

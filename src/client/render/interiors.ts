@@ -14,16 +14,16 @@ import { StairShade } from './stairShade';
 
 const MODERN_FLOOR: Record<Interior['layout'], string> = {
   shop: '#d9d4c7', kiosk: '#d6d2c6', diner: '#e3d7c0', club: '#2b2531', saloon: '#6a4a30', warehouse: '#8f8d86', bank: '#cfc6b4', precinct: '#a9aeb3',
-  tower: '#bfc3c6', apartments: '#b89a78',
+  tower: '#bfc3c6', apartments: '#b89a78', casino: '#5a1a24',
 };
 const MODERN_WALL: Record<Interior['layout'], string> = {
   shop: '#ece8df', kiosk: '#ece8df', diner: '#efe4d2', club: '#3d3346', saloon: '#7a4a2e', warehouse: '#b8b5ad', bank: '#e9e2d2', precinct: '#d8dbdd',
-  tower: '#e6e8ea', apartments: '#ebe3d6',
+  tower: '#e6e8ea', apartments: '#ebe3d6', casino: '#d6c49a',
 };
 const MODERN_PROP: Record<PropKind, string> = {
   counter: '#6e5136', shelf: '#b9bdc2', table: '#7a5a3a', booth: '#a63a3a', bar: '#4a2a1a',
   rack: '#a9773d', desk: '#5f6368', stool: '#2a2a2a', dance: '#7a3aa0', bench: '#7a5a3a', bars: '#4a4e54',
-  lift: '#8d949b', stairs: '#6d6a64', bed: '#d9d2c4', piano: '#1e1a18',
+  lift: '#8d949b', stairs: '#6d6a64', bed: '#d9d2c4', piano: '#1e1a18', slots: '#c9a227',
   // Stairwells (world/stairs.ts): pale treads going up, dark ones going down, a steel rail between,
   // a bright nosing on every tread so the flights read from above.
   step: '#9c968b', stepDown: '#3a3733', rail: '#5d6166', nosing: '#f1ede4', nosingDown: '#77726a',
@@ -32,22 +32,23 @@ const MODERN_PROP: Record<PropKind, string> = {
 // saloon's dance floor is boards too, the hotel's booths are wooden settles.
 const OLD_FLOOR: Record<Interior['layout'], string> = {
   shop: '#8a6a48', kiosk: '#8a6a48', diner: '#7e5e40', club: '#6a4a30', saloon: '#6a4a30', warehouse: '#7a6448', bank: '#7a5a3e', precinct: '#7a6448',
-  tower: '#8a6a48', apartments: '#8a6a48',
+  tower: '#8a6a48', apartments: '#8a6a48', casino: '#6a3a2a',
 };
 const OLD_WALL: Record<Interior['layout'], string> = {
   shop: '#d8ccb0', kiosk: '#d8ccb0', diner: '#d2c2a0', club: '#8a5a3a', saloon: '#8a5a3a', warehouse: '#9a7a56', bank: '#cfc2a2', precinct: '#c8b898',
-  tower: '#d8ccb0', apartments: '#d8ccb0',
+  tower: '#d8ccb0', apartments: '#d8ccb0', casino: '#8a5a3a',
 };
 const OLD_PROP: Record<PropKind, string> = {
   counter: '#5a3a22', shelf: '#7a5a3a', table: '#6a4a2e', booth: '#5a3e26', bar: '#4a2a16',
   rack: '#8a6a40', desk: '#5a3e26', stool: '#3e2a1a', dance: '#9a7650', bench: '#6a4a2e', bars: '#3a3836',
-  lift: '#6a4a2e', stairs: '#6a4a2e', bed: '#cfc2a2', piano: '#2a1c14',
+  lift: '#6a4a2e', stairs: '#6a4a2e', bed: '#cfc2a2', piano: '#2a1c14', slots: '#8a6a40',
   step: '#9a7a56', stepDown: '#4a3624', rail: '#4a3624', nosing: '#c9a77c', nosingDown: '#6a5038',
 };
 const FLOOR = WORLD.modern ? MODERN_FLOOR : OLD_FLOOR;
 const WALL = WORLD.modern ? MODERN_WALL : OLD_WALL;
 const PROP = WORLD.modern ? MODERN_PROP : OLD_PROP;
 const CUT = '#2f3136';
+const FELT = '#1f6b3e';
 /** How close (m) outside a walk-in place you must be for it to open up. */
 const NEAR = 3.2;
 
@@ -80,13 +81,15 @@ export class Interiors {
       this.vaultDoors.set(k, g);
     });
     const box = new Batch(UNIT.box(), lambert());
+    const felt = new Set(city.tables.map((t) => t.prop).filter((p): p is NonNullable<typeof p> => !!p));
     const add = (r: { x0: number; y0: number; x1: number; y1: number }, y: number, h: number, color: string) =>
       box.add((r.x0 + r.x1) / 2, y, (r.y0 + r.y1) / 2, r.x1 - r.x0, h, r.y1 - r.y0, color);
     for (const i of city.interiors) {
       add(i.room, 0, 0.06, FLOOR[i.layout]);
       for (const w of i.walls) add(w.rect, 0, i.wallH, WALL[i.layout]);
       for (const r of i.rest) add(r.rect, 0, i.wallH, CUT);
-      for (const p of i.props) add(p.rect, FLAT.has(p.kind) ? 0.06 : 0, p.h, PROP[p.kind]);
+      // Game tables (world/tables.ts) wear green baize.
+      for (const p of i.props) add(p.rect, FLAT.has(p.kind) ? 0.06 : 0, p.h, p.kind === 'table' && felt.has(p) ? FELT : PROP[p.kind]);
     }
     box.build(scene);
   }

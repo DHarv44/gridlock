@@ -2,6 +2,7 @@ import type { Rect } from '../math';
 import type { Interior } from './interiors';
 import type { Way } from './wayTypes';
 import type { Railway } from './railgen';
+import type { TableSpot } from './tables';
 
 /** Map size and the land's edges come from the installed universe (worldSpec.ts). */
 export { LAND0, LAND1, MAP_SIZE } from './worldSpec';
@@ -159,4 +160,6 @@ export interface City {
   ways: Way[];
   /** The railway, if the universe has one (world/railgen.ts). */
   railway?: Railway;
+  /** Card and casino tables (world/tables.ts). */
+  tables: TableSpot[];
 }

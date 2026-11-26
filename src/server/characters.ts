@@ -1,6 +1,6 @@
 // Characters live in the players' browsers (local storage) and come along when they join. The
 // server only checks what it's handed is sane before playing it, and sends progress back.
-import { CALLERS, type CharacterLast, type CharacterProgress, type CharacterSave, CRIMES, cleanLook, cleanName, GANGS, PALETTE, UNIVERSE, VEHICLES } from '../shared/packs';
+import { CALLERS, type CharacterLast, type CharacterProgress, type CharacterSave, CRIMES, cleanLook, cleanName, FRIENDS, GANGS, PALETTE, UNIVERSE, VEHICLES } from '../shared/packs';
 import { MAP_SIZE } from '../shared/world/cityTypes';
 import type { Player } from './game/entities';
 
@@ -37,9 +37,18 @@ export function sanitizeCharacter(raw: unknown): CharacterSave | null {
     felonies: tally(c.felonies, Object.keys(CRIMES), 0, 1_000_000),
     deaths: int(c.deaths, 0, 1_000_000),
     respect: tally(c.respect, GANGS, -100, 100),
-    met: (Array.isArray(c.met) ? c.met : []).map(String).filter((id) => CALLERS.some((k) => k.id === id)),
+    met: (Array.isArray(c.met) ? c.met : []).map(String).filter((id) => CALLERS.some((k) => k.id === id) || cardContact(id)),
     ...(cleanLast(c.last) ? { last: cleanLast(c.last)! } : {}),
   };
+}
+
+/** Card-game contacts kept with `met` (systems/cardInvites.ts): friends met (and fallen out with),
+ *  gangs' games you're invited to or known at. */
+function cardContact(id: string): boolean {
+  const [kind, who] = id.split(':');
+  if (kind === 'friend' || kind === 'sore') return FRIENDS.some((f) => f.id === who);
+  if (kind === 'game' || kind === 'invite') return GANGS.includes(who);
+  return false;
 }
 
 /** A saved last spot: a real room code, a point in the city, a real vehicle type and paint. */

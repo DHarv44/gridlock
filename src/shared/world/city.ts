@@ -11,6 +11,7 @@ import { PlaceBuilder } from './placegen';
 import { genGraph, genLayout } from './roadgen';
 import { buildWays } from './waygen';
 import { buildRailway } from './railgen';
+import { placeTables } from './tables';
 
 const HALF_PI = Math.PI / 2;
 
@@ -73,7 +74,7 @@ export function generateCity(seed: number): City {
     seed, xs: layout.xs, ys: layout.ys, riverRow: layout.riverRow, ponds: lo.ponds, edge: WORLD.edge,
     cellZone: layout.cellZone, cellDistrict: layout.cellDistrict, cellBlock,
     nodes, segs, blocks: lo.blocks, lots: lo.lots, buildings, obstacles: lo.obstacles, rocks: lo.rocks, fixtures: lo.fixtures, trees: lo.trees,
-    parking, services: places.services, properties: places.properties, bridges, interiors: [], ways,
+    parking, services: places.services, properties: places.properties, bridges, interiors: [], ways, tables: [],
     ...(railway ? { railway } : {}),
   };
   // Walk-in ground floors; their places do business at the counter inside.
@@ -81,6 +82,8 @@ export function generateCity(seed: number): City {
   for (const i of city.interiors) i.place.counter = { x: i.counter.x, y: i.counter.y };
   const map = new CityMap(city);
   for (const p of city.parking) if (p.zone < 0) p.zone = map.zoneAt(p.x, p.y);
+  // Card and casino tables (world/tables.ts): the floors laid out for them, gangs' back rooms, friends' yards.
+  placeTables(city, (x, y) => map.districtAt(x, y));
   return city;
 }
 

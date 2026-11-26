@@ -10,7 +10,7 @@ import { CORR, floorsFor, type UpperFloor, upperFloors } from './floors';
 import { type Stairwell, stairPlan, stairwell } from './stairs';
 
 export type PropKind = 'counter' | 'shelf' | 'table' | 'booth' | 'bar' | 'rack' | 'desk' | 'stool' | 'dance' | 'bench' | 'bars'
-  | 'lift' | 'stairs' | 'bed' | 'step' | 'stepDown' | 'rail' | 'nosing' | 'nosingDown' | 'piano';
+  | 'lift' | 'stairs' | 'bed' | 'step' | 'stepDown' | 'rail' | 'nosing' | 'nosingDown' | 'piano' | 'slots';
 /** Not solid: drawn on the floor only. */
 export const FLAT_PROPS = new Set<PropKind>(['dance', 'stairs', 'step', 'stepDown', 'nosing', 'nosingDown']);
 export interface Box { rect: Rect; h: number }

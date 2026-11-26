@@ -29,9 +29,12 @@ export class Interact {
       [i.lift, ...i.floors.map((f) => f.lift)].forEach((s, f) =>
         this.lifts.push({ id: k, lot: f, verb: 'lift', spec: i.floors.length, x: s.x, y: s.y, name }));
     });
+    this.tables = city.tables.map((t) => ({ id: t.id, lot: -1, verb: 'table', spec: t.spec, x: t.at.x, y: t.at.y, name: t.name }));
   }
 
   private lifts: Place[] = [];
+  /** Card and casino tables (world/tables.ts): where you stand to play each (verb 'table', id the table). */
+  private tables: Place[] = [];
 
   /** Nearest usable place for the current position/mode, or null. */
   find(x: number, y: number, you: YouState): Spot | null {
@@ -54,6 +57,8 @@ export class Interact {
     for (const p of this.city.properties) consider(p, true);
     for (const a of this.atms) consider(a, false);
     for (const l of this.lifts) if (Math.hypot(l.x - x, l.y - y) < 2.3) consider(l, false);
+    // Tables stand close together (a row of slot machines): only the one you're right at.
+    if (!driving) for (const t of this.tables) if (Math.hypot(t.x - x, t.y - y) < 1.4) { const d = Math.hypot(t.x - x, t.y - y) - 1; if (d < bd) { bd = d; best = { place: t, property: false }; } }
     return best;
   }
 

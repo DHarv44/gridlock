@@ -58,6 +58,8 @@ export class StaticWorld {
       }
     });
     for (const o of city.obstacles) this.addBox({ ...o.rect, h: o.h });
+    // A friend's card table out in the yard (world/tables.ts; tables indoors are their room's props).
+    for (const t of city.tables) if (t.yard) this.addBox({ ...t.rect, h: 0.8 });
     // Payphone booths are solid (they don't get knocked over): the booth's body, square to the kerb,
     // from its back panel to just in front of the phone (render/booths.ts draws it).
     for (const b of gangSpots(city).booths) {

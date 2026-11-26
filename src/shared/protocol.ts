@@ -40,6 +40,10 @@ export type C2S =
   | { t: 'talk'; ped: number }            // talk to someone you're standing next to
   | { t: 'radio'; station: number }       // retune the radio of the car you're in (-1 off)
   | { t: 'waypoint'; at: [number, number] | null } // your map waypoint (shared with whoever rides with you)
+  /** At a card or casino table (world/tables.ts, server systems/cardTables.ts): `sit` (table id,
+   *  n: your buy-in at poker), `leave`, or a play: `op` the move, `n`/`m` amounts or choices, `k`
+   *  card indexes, `s` a name (a bet, a cheat). */
+  | { t: 'table'; op: string; table?: number; n?: number; m?: number; k?: number[]; s?: string }
   | { t: 'ping'; ts: number };
 
 /** How a spoken exchange reaches you: down a payphone's line, a cell's, or face to face. */
@@ -157,7 +161,40 @@ export type S2C =
    *  the whole list, sent when it changes and on joining. */
   | { t: 'props'; down: [number, number][] }
   /** The character's progress, for the browser to save (sent every few seconds and after buys). */
-  | { t: 'save'; id: string; p: CharacterProgress };
+  | { t: 'save'; id: string; p: CharacterProgress }
+  /** The table you're playing at, as you see it (null: you've left it). */
+  | { t: 'table'; v: TableView | null }
+  /** Friends with a card game whose number you have: [id, name]. */
+  | { t: 'friends'; list: [string, string][] };
+
+/** A card or casino table as one player sees it (server systems/cardTables.ts builds it; the pane,
+ *  client hud/cardTable.ts, draws it). Cards are 0..51 (games/cards.ts), -1 face down. */
+export interface TableView {
+  id: number;
+  name: string;
+  game: string;
+  stakes: [number, number];
+  /** Poker: your chips at the table (house games bet straight from your cash). */
+  chips: number;
+  /** What's been happening, newest last. */
+  log: string[];
+  poker?: {
+    street: string; board: number[]; pot: number; toCall: number; minTo: number; maxTo: number; yourTurn: boolean;
+    you: number; dealer: number; acting: number;
+    seats: { name: string; stack: number; bet: number; folded: boolean; allIn: boolean; out: boolean; cards: number[]; drew?: number }[];
+    /** Between hands: you can rebuy (you're out of chips) or the next deal is coming. */
+    between: boolean;
+  };
+  bj?: { hands: { cards: number[]; bet: number; total: number }[]; active: number; dealer: number[]; dealerTotal: number; phase: string; outcome: string[] };
+  roulette?: { last: number; history: number[] };
+  dice?: { variant: string; point: number; main: number; bet: number; side: string; last: [number, number] | null; said: string };
+  slots?: { reels: number[] | null; won: number };
+  faro?: { turn: [number, number] | null; bets: [number, number][]; left: number; said: string };
+  /** Cheating (RULES.cardCheats), when you could right now: which moves, and the cards you've
+   *  peeked at (seat index → cards). */
+  cheats?: string[];
+  peeked?: [number, number[]][];
+}
 
 export interface RoomListing { code: string; universe: string; players: number; max: number; names: string[] }
 

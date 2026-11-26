@@ -24,6 +24,29 @@ export const INTERIOR_PLANS: Partial<Record<InteriorLayout, InteriorPlan>> = {
     guards: [{ at: [12.4, 1.6], arch: 'guard' }],
     vault: { door: [7.2, 7.8, 11.6, 13.2], room: [7.8, 13.7, 11.0, 14.7], cash: [[9, 11.9], [10.7, 11.9], [12.4, 11.9], [9, 13.2], [10.7, 13.2], [12.4, 13.2]] },
   },
+  // The Golden Anchor: a gaming floor. Slot machines down the left wall, the tables in the middle
+  // (roulette, craps, two blackjack, two hold'em), the bar on the right, the cashier's cage at the
+  // back behind its counter. world/tables.ts gives each table and machine its game, in this order.
+  casino: {
+    w: 24, d: 20,
+    walls: [
+      { r: [0.3, 2.2, 15.4, 15.7], h: 2.8 }, { r: [6.4, 8.4, 15.4, 15.7], h: 2.8 }, { r: [8.1, 8.4, 15.7, 19.7], h: 2.8 }, // the cage
+    ],
+    props: [
+      ...[3, 4.6, 6.2, 7.8, 9.4, 11.0, 12.6].map((d) => ({ r: [0.4, 1.3, d, d + 1.0] as [number, number, number, number], h: 1.7, kind: 'slots' as const })),
+      { r: [4.6, 7.6, 4.6, 6.2], h: 0.85, kind: 'table' },   // roulette
+      { r: [10.4, 14.0, 4.6, 6.4], h: 0.85, kind: 'table' }, // craps
+      { r: [16.8, 19.0, 4.6, 5.9], h: 0.85, kind: 'table' }, // blackjack
+      { r: [16.8, 19.0, 10.2, 11.5], h: 0.85, kind: 'table' }, // blackjack
+      { r: [4.6, 7.2, 10.6, 12.1], h: 0.8, kind: 'table' },  // hold'em
+      { r: [10.8, 13.4, 10.8, 12.3], h: 0.8, kind: 'table' }, // high-limit hold'em
+      { r: [21.6, 23.6, 3.0, 12.5], h: 1.1, kind: 'bar' },
+      { r: [2.2, 6.4, 15.2, 15.7], h: 1.15, kind: 'counter' }, // the cage's window
+    ],
+    counter: [4.3, 14.4],
+    clerk: [4.3, 16.6],
+    guards: [{ at: [12, 2.0], arch: 'guard' }, { at: [20, 15.5], arch: 'guard' }],
+  },
   // Police precinct: a waiting area, the front desk with the desk sergeant, three barred cells along
   // the back, and an office.
   precinct: {

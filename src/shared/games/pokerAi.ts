@@ -9,24 +9,31 @@ import { options, pot, type PokerAction, type PokerTable } from './poker';
 /** Chance my hand beats the others still in (Monte Carlo over what's unseen). */
 export function equity(t: PokerTable, i: number, rng: Rng, iters: number): number {
   const me = t.seats[i];
-  const opps = t.seats.filter((s, k) => k !== i && !s.out && !s.folded).length;
+  const others = t.seats.filter((s, k) => k !== i && !s.out && !s.folded);
+  const opps = others.length;
   if (!opps) return 1;
-  const seen = new Set<Card>([...me.cards, ...t.board]);
+  const stud = t.variant === 'stud';
+  // Stud: everyone's up cards are on the table for all to see.
+  const known = (s: typeof me) => (stud ? s.cards.slice(1) : []);
+  const seen = new Set<Card>([...me.cards, ...t.board, ...others.flatMap(known)]);
   const unseen: Card[] = [];
   for (let c = 0; c < 52; c++) if (!seen.has(c)) unseen.push(c);
   const holdem = t.variant === 'holdem';
+  const fill = (s: typeof me) => (holdem ? 2 : 5 - known(s).length);
+  const mineNeed = stud ? 5 - me.cards.length : 0;
   let wins = 0;
   for (let n = 0; n < iters; n++) {
     // A partial shuffle: just the cards this deal needs.
-    const need = opps * (holdem ? 2 : 5) + (holdem ? 5 - t.board.length : 0);
+    const need = others.reduce((a, s) => a + fill(s), 0) + (holdem ? 5 - t.board.length : 0) + mineNeed;
     for (let k = 0; k < need; k++) { const j = k + Math.floor(rng.next() * (unseen.length - k)); [unseen[k], unseen[j]] = [unseen[j], unseen[k]]; }
     let p = 0;
-    const board = holdem ? [...t.board, ...unseen.slice(opps * 2, opps * 2 + 5 - t.board.length)] : [];
-    const mine = bestScore([...me.cards, ...board]);
+    const board = holdem ? unseen.slice(p, (p += 5 - t.board.length)).concat(t.board) : [];
+    const mine = bestScore([...me.cards, ...unseen.slice(p, (p += mineNeed)), ...board]);
     let best = true, tie = 0;
-    for (let o = 0; o < opps; o++) {
-      const hand = holdem ? [unseen[p], unseen[p + 1]] : unseen.slice(p, p + 5);
-      p += holdem ? 2 : 5;
+    for (const o of others) {
+      const k = fill(o);
+      const hand = [...known(o), ...unseen.slice(p, p + k)];
+      p += k;
       const s = bestScore([...hand, ...board]);
       if (s > mine) { best = false; break; }
       if (s === mine) tie++;

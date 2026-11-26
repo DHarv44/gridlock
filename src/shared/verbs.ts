@@ -31,6 +31,8 @@ export const VERBS: Record<ServiceVerb, VerbTraits> = {
   helipad: { site: 'clearing', automatic: true },
   bank: { site: 'storefront' },
   gas: { site: 'forecourt', automatic: true },
+  // A walk-in gaming floor: you play at its tables (world/tables.ts), not a counter.
+  casino: { site: 'storefront', automatic: true },
 };
 
 /** Traits of a place's verb; places that aren't services (ATMs, lifts, properties) have none. */

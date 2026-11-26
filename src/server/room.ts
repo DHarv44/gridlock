@@ -20,6 +20,8 @@ import { Economy } from './game/systems/economy';
 import { updateNpcPeds, updateVehicles } from './game/systems/movement';
 import { devTeleport, wayCrossings } from './game/systems/ways';
 import { updateTrains } from './game/systems/trains';
+import { CardTables } from './game/systems/cardTables';
+import { dialFriend, meetFriend, sendFriends, updateInvites } from './game/systems/cardInvites';
 import { equipStart, makeAvatar, processPlayers } from './game/systems/players';
 import { updateFires, updateProjectiles } from './game/systems/projectiles';
 import { updateTrailers } from './game/systems/trailers';
@@ -72,6 +74,7 @@ export class Room {
     w.onExplosion = (x, y, r, by) => this.vaults.explosion(x, y, r, by);
     this.robberies = new Robberies(w, this.econ.owners, this.business);
     this.furniture = new StreetFurniture(w);
+    this.tables = new CardTables(w);
     for (const [id, amount] of save?.safes ?? []) this.business.safes.set(id, amount);
     this.rounds = new Rounds(save?.mode ?? mode);
     for (const [id, name] of save?.owners ?? []) this.econ.owners.set(id, name);
@@ -94,6 +97,8 @@ export class Room {
   readonly robberies: Robberies;
   readonly furniture: StreetFurniture;
   readonly rounds: Rounds;
+  /** Card and casino tables (systems/cardTables.ts). */
+  readonly tables: CardTables;
 
   get size(): number {
     return this.world.players.size;
@@ -139,6 +144,7 @@ export class Room {
     pl.send(this.rounds.modeMsg());
     pl.send({ t: 'gates', open: this.vaults.open() } satisfies S2C);
     this.furniture.sendTo(pl);
+    sendFriends(pl);
     w.notify('info', `${name} joined`);
     this.start();
     return pl;
@@ -163,6 +169,7 @@ export class Room {
 
   leave(pl: Player): void {
     const w = this.world;
+    this.tables.leave(pl); // cashed out first, so it's saved
     this.storeProfile(pl);
     this.missions.drop(pl);
     const p = w.peds.get(pl.pid);
@@ -211,8 +218,15 @@ export class Room {
         if (err) pl.send({ t: 'msg', kind: 'info', text: err } satisfies S2C);
         break;
       }
+      case 'table': {
+        if (msg.op === 'meet') meetFriend(this.world, pl, Number(msg.table));
+        else this.tables.handle(pl, msg);
+        break;
+      }
       case 'dial': {
         if (!RULES.cellPhone) break;
+        // A friend with a card game (systems/cardInvites.ts).
+        if (String(msg.gang).startsWith('friend:')) { dialFriend(this.world, pl, String(msg.gang).slice(7)); break; }
         const err = this.cell.dial(pl, String(msg.gang));
         if (err) pl.send({ t: 'msg', kind: 'warn', text: err } satisfies S2C);
         break;
@@ -319,6 +333,8 @@ export class Room {
     this.business.update();
     this.vaults.update();
     this.robberies.update();
+    this.tables.update(DT);
+    updateInvites(w, DT, (t) => this.tables.inUse(t));
     this.tickCount++;
     if (this.tickCount % TICK_HZ === 0) this.rounds.check(w);
     this.rounds.tick(w, DT);

@@ -20,7 +20,8 @@ const APPS: { id: Screen; label: string; glyph: string }[] = [
 ];
 /** A caller as the phone shows them: a gang, a person (packs/calls.ts), in their gang's colour. */
 const gangOf = (id: string) => Object.entries(GANG_CALLERS).find(([, crew]) => crew.includes(id))?.[0] ?? id;
-const gangName = (g: string) => CALLERS.find((c) => c.id === g)?.name ?? FACTIONS.find((f) => f.id === g)?.name ?? g;
+const FRIEND_NAMES = new Map<string, string>();
+const gangName = (g: string) => FRIEND_NAMES.get(g) ?? CALLERS.find((c) => c.id === g)?.name ?? FACTIONS.find((f) => f.id === g)?.name ?? g;
 const gangColor = (g: string) => FACTIONS.find((f) => f.id === gangOf(g))?.color ?? '#ccc';
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 const $ = (n: number) => `$${n.toLocaleString('en-US')}`;
@@ -141,7 +142,16 @@ export class Phone {
 
   private contacts(): string[] {
     const rs = this.you?.rs ?? [];
-    return [...this.people, ...GANGS.filter((_, i) => (rs[i] ?? 0) >= RESPECT.cellAt)];
+    return [...this.people, ...GANGS.filter((_, i) => (rs[i] ?? 0) >= RESPECT.cellAt), ...this.friendList.map(([id]) => id)];
+  }
+
+  /** Friends with a card game whose number you have ([id 'friend:…', name]); dialling one asks
+   *  whether there's a game on. */
+  private friendList: [string, string][] = [];
+  setFriends(list: [string, string][]): void {
+    this.friendList = list;
+    for (const [id, name] of list) FRIEND_NAMES.set(id, name);
+    if (this.isOpen && this.screen === 'contacts') this.draw();
   }
 
   private go(s: Screen): void {

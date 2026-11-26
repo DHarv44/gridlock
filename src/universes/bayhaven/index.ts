@@ -21,6 +21,7 @@ import { RADIO } from './radio';
 import { STREET_PROPS } from './streetProps';
 import { CRIMES, RESPECT, ROLE_CREWS, RULES, SERVICE_CALLS, WANTED } from './rules';
 import { VEHICLES } from './vehicles';
+import { FRIENDS, TABLES, VENUES } from './tables';
 import { ARMOR_MODEL } from './weaponModels';
 import { WEAPONS } from './weapons';
 import { DISTRICTS, ZONES } from './zones';
@@ -73,6 +74,9 @@ export const BAYHAVEN: Universe = {
   },
   armorModel: ARMOR_MODEL,
   streetProps: STREET_PROPS,
+  tables: TABLES,
+  venues: VENUES,
+  friends: FRIENDS,
   // The island's map is the default (worldSpec.ts), plus two highways (one stretch of them sunk)
   // and the L: an elevated railway north-south through town, two trains of three cars.
   world: {

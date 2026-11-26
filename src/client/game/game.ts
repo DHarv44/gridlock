@@ -1,11 +1,12 @@
 // Client game: owns rendering, input, prediction and HUD for one connected session.
-import { type BuyKind, type InputMsg, Mode, type PlayerInfo, type Profile, type S2C, TICK_HZ, type YouState } from '../../shared/protocol';
+import { type BuyKind, type InputMsg, Mode, type PlayerInfo, type Profile, type S2C, type TableView, TICK_HZ, type YouState } from '../../shared/protocol';
 import { CityMap, generateCity } from '../../shared/world/city';
 import { StaticWorld } from '../../shared/world/collision';
 import { groundOf, isWayStrip } from '../../shared/world/levels';
 import { heightAt, installWays } from '../../shared/world/ways';
 import { Highways } from '../render/highways';
 import { RailwayView } from '../render/railway';
+import { joinContent, tableContent, type TableSend } from '../hud/cardTable';
 import { Radio } from '../audio/radio';
 import { Soundtrack } from '../audio/soundtrack';
 import { Sound } from '../audio/sound';
@@ -186,6 +187,21 @@ export class Game {
 
   private buildingUniforms: { uNight: { value: number } };
   private highways: Highways;
+  /** The table you're sat at, as the server shows it; friends whose number you have. */
+  private tableView: TableView | null = null;
+  private friends = new Set<string>();
+
+  /** A card or casino table's pane: sit down (or meet the friend whose game it is), then play.
+   *  Closing it gets you up from the table. */
+  private openTable(id: number): void {
+    const spot = this.map.city.tables[id];
+    if (!spot || !this.you) return;
+    const send: TableSend = (m) => this.conn.send({ t: 'table', ...m });
+    this.pane.open(() => (this.tableView && this.tableView.id === id
+      ? tableContent(spot, this.tableView, this.you!, send)
+      : joinContent(spot, this.you!, (k) => this.friends.has(k), send)));
+    this.pane.onClose = () => { if (this.tableView) send({ op: 'leave' }); };
+  }
   private props: StreetProps;
   private furniture: StreetPropsView;
   private fixtures: FixturesView;
@@ -204,6 +220,7 @@ export class Game {
         if (!this.interact.current && this.faceTalk.ped) { this.conn.send({ t: 'talk', ped: this.faceTalk.ped }); break; }
         if (!this.interact.current) { this.input.pressEnter(); break; }
         if (!this.interact.current.property && verbOf(this.interact.current.place.verb)?.shop) { this.openShop(this.interact.current.place); break; } // shop counter (hud/showroom.ts)
+        if (this.interact.current.place.verb === 'table') { this.openTable(this.interact.current.place.id); break; } // a card or casino table (hud/cardTable.ts)
         if (this.you) this.interact.toggle(() => this.you!, () => this.profile, this.owners, this.myName, (kind, id, place) => this.conn.send({ t: 'buy', kind, id, place }));
         break;
       case 'chat':
@@ -264,6 +281,8 @@ export class Game {
         this.storefronts.setOwners(this.owners);
         break;
       case 'profile': this.profile = m.p; break;
+      case 'table': this.tableView = m.v; this.pane.refresh(); break;
+      case 'friends': this.friends = new Set(m.list.map(([id]) => id)); this.phone.setFriends(m.list); this.pane.refresh(); break;
       case 'radio': this.radio.set(m.vid, m.station); break;
       case 'save': saveProgress(m.id, m.p); break;
       case 'msg':

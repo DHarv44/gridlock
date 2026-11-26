@@ -25,6 +25,7 @@ export const SERVICES: ServiceSpec[] = [
       { vehicle: 'humvee', count: 1 }, { vehicle: 'humvee_gun', count: 1 }, { vehicle: 'mrap', count: 1 }, { vehicle: 'mrap_gun', count: 1 }],
     guards: [{ archetype: 'soldier', count: 6 }] },
   { id: 'bank', name: 'Harbor Trust Bank', verb: 'bank', zones: ['downtown', 'midtown', 'commercial'], count: 3, sign: '#1e5a46', signText: 'BANK', atm: true, interior: 'bank' },
+  { id: 'casino', name: 'Golden Anchor Casino', verb: 'casino', zones: ['downtown', 'midtown', 'commercial'], count: 1, sign: '#c9a227', signText: 'CASINO', atm: true, interior: 'casino' },
   { id: 'gas', name: 'Gas & Go', verb: 'gas', zones: ['commercial', 'residential', 'suburbs', 'industrial', 'midtown', 'barrio'], count: 6, sign: '#d8402f', signText: 'GAS & GO', atm: true, interior: 'kiosk',
     robbery: { till: 500, fightBack: 0.1 } },
 ];
