@@ -67,7 +67,7 @@ function markingsTexture(across: number, along: number, lines: { l: number; colo
  *  drawn screen-door thin (uFade.w = 1 while it applies). */
 const fade = { value: new THREE.Vector4(0, 0, 12, 0) };
 
-function fadeable<T extends THREE.Material>(m: T): T {
+export function fadeable<T extends THREE.Material>(m: T): T {
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uFade = fade;
     sh.vertexShader = sh.vertexShader
@@ -107,7 +107,7 @@ export class Highways {
 
   constructor(scene: THREE.Scene, city: City, aniso = 8) {
     this.ways = city.ways;
-    if (!city.ways.length) return;
+    if (!city.ways.some((w) => w.kind === 'highway')) return;
     const deckTex = markingsTexture(2 * DECK_HALF, DECK_TILE, [
       { l: -0.45, color: '#d9b53a' }, { l: 0.45, color: '#d9b53a' },
       { l: -LANE_W, color: '#e8e6df', dash: true }, { l: LANE_W, color: '#e8e6df', dash: true },
@@ -117,6 +117,7 @@ export class Highways {
     const deck = new Mesher(), ramps = new Mesher(), walls = new Mesher(), girders = new Mesher();
     const cols: THREE.Matrix4[] = [], caps: THREE.Matrix4[] = [];
     for (const w of city.ways) {
+      if (w.kind !== 'highway') continue; // a railway's viaduct is render/railway.ts
       this.deck(w, deck, walls, girders);
       for (const r of w.ramps) this.ramp(w, r, ramps, walls, girders);
       this.trench(w, walls);

@@ -1,6 +1,7 @@
 import type { Rect } from '../math';
 import type { Interior } from './interiors';
 import type { Way } from './wayTypes';
+import type { Railway } from './railgen';
 
 /** Map size and the land's edges come from the installed universe (worldSpec.ts). */
 export { LAND0, LAND1, MAP_SIZE } from './worldSpec';
@@ -148,6 +149,8 @@ export interface City {
   bridges: Rect[];
   /** Walk-in ground floors (world/interiors.ts). */
   interiors: Interior[];
-  /** Raised and sunken ways: highways (world/waygen.ts). */
+  /** Raised and sunken ways: highways (world/waygen.ts), and an elevated railway's viaduct. */
   ways: Way[];
+  /** The railway, if the universe has one (world/railgen.ts). */
+  railway?: Railway;
 }

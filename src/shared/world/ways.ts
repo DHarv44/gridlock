@@ -5,6 +5,7 @@
 // both sides map to the same point over the avenue.
 import type { Box2, Circle2 } from './collision';
 import type { City } from './cityTypes';
+import { railColumns } from './railgen';
 import { FLOOR_H, floorOf, isWayStrip, LEVEL_BAND, MAX_FLOORS } from './levels';
 import { CLEAR_S, DECK_H, DECK_HALF, inRamp, MERGE, profileZ, RAMP_LEN, RAMP_W, rampS, SWITCH_S, WALL_H, WALL_T, type Way, wayLocal, wayPoint } from './wayTypes';
 
@@ -67,7 +68,7 @@ export function rampWalk(ways: Way[], x: number, y: number, tx: number, ty: numb
   const me = { x: x - mf * LEVEL_BAND, y }, to = { x: tx - tf * LEVEL_BAND, y: ty };
   // On a deck: down to the street first (even to get onto another way).
   const w = isWayStrip(mf) ? wayOn(ways, mf) : wayOn(ways, tf);
-  if (!w) return null;
+  if (!w || !w.ramps.length) return null; // a railway's viaduct: no walking up to it
   const down = isWayStrip(mf);
   let best = w.ramps[0], bd = Infinity;
   for (const r of w.ramps) {
@@ -94,7 +95,14 @@ export function rampWalk(ways: Way[], x: number, y: number, tx: number, ty: numb
  *  barriers (open where ramps join), the ramps' upper walls and the deck's ends. */
 export function wayCollision(city: City, isWater: (x: number, y: number) => boolean): { boxes: Box2[]; circles: Circle2[] } {
   const boxes: Box2[] = [], circles: Circle2[] = [];
+  // An elevated railway: its columns at the kerbs and the stations' stair towers on the sidewalks.
+  const rail = city.railway;
+  if (rail && rail.strip) {
+    for (const c of railColumns(rail, city.nodes, isWater)) circles.push({ x: c.x, y: c.y, r: 0.35, h: rail.z });
+    for (const s of rail.stations) for (const t of s.towers) boxes.push({ ...t, h: 4 });
+  }
   for (const w of city.ways) {
+    if (w.kind !== 'highway') continue;
     const lift = w.strip * LEVEL_BAND;
     // A box on the way from along a0..a1, across l0..l1 (ground, or lifted onto the strip).
     const box = (a0: number, a1: number, l0: number, l1: number, h: number, up: boolean) => {

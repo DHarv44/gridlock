@@ -19,6 +19,7 @@ import { Dispatch } from './game/systems/dispatch';
 import { Economy } from './game/systems/economy';
 import { updateNpcPeds, updateVehicles } from './game/systems/movement';
 import { devTeleport, wayCrossings } from './game/systems/ways';
+import { updateTrains } from './game/systems/trains';
 import { equipStart, makeAvatar, processPlayers } from './game/systems/players';
 import { updateFires, updateProjectiles } from './game/systems/projectiles';
 import { updateTrailers } from './game/systems/trailers';
@@ -301,6 +302,7 @@ export class Room {
     updateNpcPeds(w, DT);
     updateMounts(w, DT);
     updateVehicles(w, DT);
+    updateTrains(w, DT);
     wayCrossings(w);
     w.rebuildHashes();
     resolveContacts(w);

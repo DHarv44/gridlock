@@ -17,7 +17,7 @@ export type Paint = 'body' | 'glass' | 'dark' | 'chrome' | 'trim' | 'headlight' 
   | 'red' | 'blue' | 'white' | 'black' | 'yellow' | 'olive' | 'tire' | `#${string}`;
 
 /** `legs`: a ridden animal (a horse, a team pulling a wagon): no wheels, the rider sits astride. */
-export type Movement = 'wheels' | 'bike' | 'tracks' | 'rotor' | 'boat' | 'legs';
+export type Movement = 'wheels' | 'bike' | 'tracks' | 'rotor' | 'boat' | 'legs' | 'rail';
 
 export interface CrimeSpec {
   /** Heat added when a lawful unit sees it (civilian witnesses report half). */
@@ -406,6 +406,32 @@ export interface WorldSpec {
   /** Highways on decks over avenues (world/waygen.ts): how many (the first runs east-west, the
    *  second north-south), and how many stretches of them may run sunken in a trench instead. */
   highways?: { count: number; sunken: number };
+  /** A railway (world/railgen.ts, systems/trains.ts). */
+  railway?: RailSpec;
+}
+
+/** A railway along one road line. 'elevated': on a viaduct over the street (a city's L), on its own
+ *  strip, reached by the stations' stairs. 'grade': on the ground (a frontier railroad), `offset`
+ *  metres beside the road's centre line, crossing the streets it meets; anything on the track when
+ *  a train comes gets hit. */
+export interface RailSpec {
+  style: 'elevated' | 'grade';
+  /** The line it follows: 'h' east-west, 'v' north-south, nearest this fraction across the map
+   *  (never a highway's avenue). */
+  axis: 'h' | 'v';
+  at: number;
+  offset?: number;
+  /** A station every this many blocks (and one near each end). */
+  stationEvery: number;
+  /** Trains in service (one per track: up to two), cars per train, and the vehicle a car is. */
+  trains: number;
+  cars: number;
+  car: string;
+  /** Running speed (m/s) and the wait at each station (s). */
+  speed: number;
+  dwell: number;
+  /** What a station is called on the map ("Station", "Depot"). */
+  stationName: string;
 }
 
 /** What open country (zones with layout 'wild') is made of: scattered rock formations (solid,

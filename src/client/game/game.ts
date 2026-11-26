@@ -5,6 +5,7 @@ import { StaticWorld } from '../../shared/world/collision';
 import { groundOf, isWayStrip } from '../../shared/world/levels';
 import { heightAt, installWays } from '../../shared/world/ways';
 import { Highways } from '../render/highways';
+import { RailwayView } from '../render/railway';
 import { Radio } from '../audio/radio';
 import { Soundtrack } from '../audio/soundtrack';
 import { Sound } from '../audio/sound';
@@ -167,6 +168,7 @@ export class Game {
     this.props = meshes.props;
     this.water = new Water(this.stage.scene, this.map);
     this.highways = new Highways(this.stage.scene, city);
+    new RailwayView(this.stage.scene, city, (x, y) => this.map.isWater(x, y));
     this.storefronts = new Storefronts(this.stage.scene, city);
     addAtms(this.stage.scene, atmsOf(city));
     this.gas = new GasStations(this.stage.scene, city);

@@ -511,6 +511,17 @@
    "siren": false,
    "openTop": false,
    "armored": false
+  },
+  "metro": {
+   "name": "L Train",
+   "length": 14.6,
+   "width": 2.9,
+   "height": 3.7,
+   "movement": "rail",
+   "paint": "#f2f2ee",
+   "siren": false,
+   "openTop": false,
+   "armored": true
   }
  },
  "weapons": {

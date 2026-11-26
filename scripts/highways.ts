@@ -12,7 +12,7 @@ let failures = 0;
 const check = (ok: boolean, what: string) => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${what}`); if (!ok) failures++; };
 
 const city = generateCity(RULES.citySeed);
-const ways = city.ways;
+const ways = city.ways.filter((w) => w.kind === 'highway');
 check(ways.length === 2, `two highways (${ways.map((w) => `${w.axis === 'h' ? 'east-west' : 'north-south'} ${w.a0.toFixed(0)}..${w.a1.toFixed(0)}, ${w.ramps.length} ramps`).join('; ')})`);
 const sunk = ways.flatMap((w) => w.sunk);
 check(sunk.length === 1, `one stretch sunk in a trench (${sunk.map(([a, b]) => `${a.toFixed(0)}..${b.toFixed(0)}`).join(', ')})`);
@@ -86,7 +86,7 @@ const from = wayPoint(w0, off.foot + off.up * (RAMP_LEN + 120), 1.5 * 3.6 * off.
 const car2 = spawnVehicle(w, vehicleIndex('sedan'), from.x + w0.strip * 2560, from.y, 0);
 const drv2 = spawnPed(w, pedWith('civilian'), car2.body.x, car2.body.y);
 seatPed(w, drv2, car2, 0);
-const street = { x: offNode.x + 4, y: offNode.y + 70 };
+const street = { x: offNode.x - 1.8, y: offNode.y + 70 };
 setTask(drv2, 'respond', 0, street.x, street.y);
 let cameDown = false, best2 = Infinity;
 for (let i = 0; i < 30 * 40; i++) {
@@ -94,6 +94,7 @@ for (let i = 0; i < 30 * 40; i++) {
   room.tick();
   if (floorOf(car2.body.x) === 0) cameDown = true;
   best2 = Math.min(best2, Math.hypot(car2.body.x - street.x, car2.body.y - street.y));
+  if (process.env.DEBUG && i % 60 === 0) console.log('exit', i, car2.body.x.toFixed(1), car2.body.y.toFixed(1), drv2.ai!.drive?.route.slice(0, 3).join(','), drv2.ai!.drive?.via?.length ?? 0, `target ${street.x.toFixed(0)},${street.y.toFixed(0)}`);
   if (best2 < 18) break;
 }
 check(cameDown && best2 < 20, `a driver on the deck heading for a side street takes the exit down to it (${best2.toFixed(0)} m away at best)`);

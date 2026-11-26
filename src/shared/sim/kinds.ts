@@ -15,6 +15,8 @@ export interface MovementTraits {
   legs?: boolean;
   /** Ridden astride (drawn at rider scale): bikes and horses. */
   astride?: boolean;
+  /** Runs on a railway (systems/trains.ts moves it): no physics step, boarded only at a station. */
+  rails?: boolean;
 }
 
 export const MOVEMENTS: Record<Movement, MovementTraits> = {
@@ -24,7 +26,10 @@ export const MOVEMENTS: Record<Movement, MovementTraits> = {
   rotor: { flies: true },
   boat: { floats: true },
   legs: { legs: true, astride: true },
+  rail: { rails: true },
 };
+
+export const onRails = (spec: VehicleSpec): boolean => MOVEMENTS[spec.movement].rails === true;
 
 export const onLegs = (spec: VehicleSpec): boolean => MOVEMENTS[spec.movement].legs === true;
 export const astride = (spec: VehicleSpec): boolean => MOVEMENTS[spec.movement].astride === true;

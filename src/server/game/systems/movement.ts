@@ -1,7 +1,7 @@
 // Moves NPC peds and all vehicles not stepped by a player's input; handles water,
 // burning wrecks, turrets and horns.
 import { angleDiff, approach } from '../../../shared/math';
-import { flies, floats } from '../../../shared/sim/kinds';
+import { flies, floats, onRails } from '../../../shared/sim/kinds';
 import { FX } from '../../../shared/protocol';
 import { stepFoot, stepVehicle, wearOf } from '../../../shared/sim/physics';
 import { killPed, wallCrash, wreckVehicle } from '../combat/damage';
@@ -62,7 +62,8 @@ export function updateVehicles(w: World, dt: number): void {
     v.fireCd = Math.max(0, v.fireCd - dt);
     if (v.horn) { w.emit(FX.Horn, v.id); v.horn = false; }
     const driver = v.seats[0] ? w.peds.get(v.seats[0]) : undefined;
-    if (!playerDriven(w, v)) {
+    // A train's cars are laid along the track by systems/trains.ts, not driven.
+    if (!playerDriven(w, v) && !onRails(v.spec)) {
       // A horse called by its rider (systems/mounts.ts) goes on its own.
       const driven = (!!driver && !driver.dead && !v.wrecked) || ((v.calledBy > 0 || bolting(v)) && !v.wrecked);
       const vx = v.body.vx, vy = v.body.vy;

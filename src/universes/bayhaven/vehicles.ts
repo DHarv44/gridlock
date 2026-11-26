@@ -108,4 +108,8 @@ export const VEHICLES: VehicleSpec[] = [
   // shrugs off crashes, and is quick but tall and wide, so it corners like a truck. Sold at the
   // dealer; now and then one sits parked somewhere.
   { ...car, horn: 'horn_air', engine: 'engine_muscle', id: 'monster', name: 'Earthshaker', shape: undefined, turnIn: 0.3, length: 5.8, width: 3.3, height: 3.4, mass: 4800, maxSpeed: 36, accel: 11, brake: 18, reverse: 8, grip: 9, turnRate: 2.1, hp: 1400, seats: 2, crushes: true, price: 120000, colors: 'bright', roles: ['parked'], model: M.monster() },
+
+  // The L: a rapid-transit car on the elevated railway (world/railgen.ts; systems/trains.ts runs
+  // it). Never spawned on the street, never for sale; you ride it from its stations.
+  { ...heavy, horn: 'horn_bus', engine: 'engine_diesel', id: 'metro', name: 'L Train', movement: 'rail', length: 14.6, width: 2.9, height: 3.7, mass: 30000, maxSpeed: 18, accel: 1, brake: 1.2, reverse: 0, grip: 50, turnRate: 0, turnIn: 0, hp: 100000, seats: 9, armored: true, crushes: true, price: 0, colors: [0], roles: [], model: M.metro() },
 ];

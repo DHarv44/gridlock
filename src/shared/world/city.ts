@@ -9,6 +9,7 @@ import { floorOf, isWayStrip, LEVEL_BAND } from './levels';
 import { PlaceBuilder } from './placegen';
 import { genGraph, genLayout } from './roadgen';
 import { buildWays } from './waygen';
+import { buildRailway } from './railgen';
 
 const HALF_PI = Math.PI / 2;
 
@@ -40,6 +41,8 @@ export function generateCity(seed: number): City {
   const { nodes, segs, bridges } = genGraph(layout);
   // Highways (world/waygen.ts): their decks and ramps join the road graph.
   const ways = buildWays(layout, { nodes, segs });
+  // A railway (world/railgen.ts); an elevated one is a way too.
+  const railway = buildRailway(layout, { nodes, segs }, ways);
   const lotBuilder = new LotBuilder(rng, seed);
   const lo = lotBuilder.build(layout);
   const nx = layout.xs.length - 1, ny = layout.ys.length - 1;
@@ -66,6 +69,7 @@ export function generateCity(seed: number): City {
     cellZone: layout.cellZone, cellDistrict: layout.cellDistrict, cellBlock,
     nodes, segs, blocks: lo.blocks, lots: lo.lots, buildings, obstacles: lo.obstacles, rocks: lo.rocks, trees: lo.trees,
     parking, services: places.services, properties: places.properties, bridges, interiors: [], ways,
+    ...(railway ? { railway } : {}),
   };
   // Walk-in ground floors; their places do business at the counter inside.
   city.interiors = interiorsOf(city);

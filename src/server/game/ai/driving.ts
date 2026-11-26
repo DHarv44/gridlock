@@ -370,6 +370,13 @@ export function routeTo(w: World, v: Vehicle, d: DriveState, tx: number, ty: num
   }
   const turnAhead = Math.abs(angleDiff(b.angle, Math.atan2(gy - P.y, gx - P.x))) > 0.5;
   let target = turnAhead && Math.hypot(gx - P.x, gy - P.y) < 30 ? 10 : fast;
+  // A corner at the junction we're coming up to: brake for it before we get there, not in it.
+  if (d.route.length > 1) {
+    const n0 = w.city.nodes[d.route[0]], n1 = w.city.nodes[d.route[1]];
+    const toNode = Math.hypot(n0.x - P.x, n0.y - P.y);
+    const bend = Math.abs(angleDiff(b.angle, Math.atan2(n1.y - n0.y, n1.x - n0.x)));
+    if (bend > 0.7 && toNode < 28) target = Math.min(target, 6 + toNode * 0.25);
+  }
   target = Math.min(target, clear.cap + 4);
   // Lights and siren on: traffic pulls over to the right, so go by on the left when it's clear.
   if (v.siren && clear.cap < 10 && !turnAhead && laneClear(w, v)) {

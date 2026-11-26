@@ -1,7 +1,8 @@
 // Applies player inputs (movement, weapons, vehicles) and handles death/busted/respawn.
 import { dist } from '../../../shared/math';
 import { PLAYER_ARCHETYPE, RULES, UNARMED, WEAPONS, weaponIndex } from '../../../shared/packs';
-import { flies, floats } from '../../../shared/sim/kinds';
+import { flies, floats, onRails } from '../../../shared/sim/kinds';
+import { stationEnter, trainLeave } from './trains';
 import { BTN, EDGE_BUTTONS, type InputMsg, Mode, type S2C } from '../../../shared/protocol';
 import { SPRINT, stepVehicle, wearOf } from '../../../shared/sim/physics';
 import { damagePed, killPed, wallCrash } from '../combat/damage';
@@ -110,7 +111,8 @@ function nearestVehicle(w: World, p: Ped): Vehicle | null {
   let best: Vehicle | null = null, bd = Infinity;
   w.vehiclesNear(p.body.x, p.body.y, 9, (v) => {
     // A seatless vehicle (a wagon standing without its team) can't be got into.
-    if (v.wrecked || v.burning >= 0 || v.spec.seats === 0 || (flies(v.spec) && v.body.alt > 1)) return;
+    // A train is boarded at a station (systems/trains.ts), not like a car.
+    if (v.wrecked || v.burning >= 0 || v.spec.seats === 0 || onRails(v.spec) || (flies(v.spec) && v.body.alt > 1)) return;
     const d = dist(p.body.x, p.body.y, v.body.x, v.body.y) - Math.max(v.spec.length, v.spec.width) / 2;
     if (d < 1.8 && d < bd) { bd = d; best = v; }
   });
@@ -120,6 +122,7 @@ function nearestVehicle(w: World, p: Ped): Vehicle | null {
 function toggleVehicle(w: World, pl: Player, p: Ped): void {
   if (p.vehicle) {
     const v = w.vehicles.get(p.vehicle);
+    if (v && onRails(v.spec)) { trainLeave(w, pl, p, v); return; }
     if (v && flies(v.spec)) {
       const floor = w.statics.floorAt(v.body.x, v.body.y);
       if (v.body.alt > floor + 1) return; // still in the air
@@ -154,7 +157,8 @@ function toggleVehicle(w: World, pl: Player, p: Ped): void {
     return;
   }
   const v = nearestVehicle(w, p);
-  if (!v) return;
+  // No car to hand: at a station, take the train.
+  if (!v) { stationEnter(w, pl, p); return; }
   const driver = v.seats[0] ? w.peds.get(v.seats[0]) : undefined;
   if (driver?.player) {
     const seat = freeSeat(v, 1);

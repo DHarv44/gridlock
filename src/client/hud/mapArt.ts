@@ -6,7 +6,7 @@ import { LAND0, LAND1, MAP_SIZE } from '../../shared/world/cityTypes';
 import { turfGang } from '../../shared/world/gangTurf';
 import { DECK_HALF, MERGE, RAMP_LEN, RAMP_W, wayPoint } from '../../shared/world/wayTypes';
 
-export const MAP_COLORS = { water: '#0e2431', land: '#15181d', road: '#3a404a', arterial: '#4b525e', rock: '#3a2a22', highway: '#b8863a' };
+export const MAP_COLORS = { water: '#0e2431', land: '#15181d', road: '#3a404a', arterial: '#4b525e', rock: '#3a2a22', highway: '#b8863a', rail: '#8f96a3', station: '#d8dde6' };
 
 /** Blends a hex colour toward another (t = share of `b`). */
 function mix(a: string, b: string, t: number): string {
@@ -68,6 +68,7 @@ export function bakeCityMap(map: CityMap, scale: number): HTMLCanvasElement {
   }
   // Highways over their avenues: a bold amber band with a dark edge, the ramps peeling off it.
   for (const w of city.ways) {
+    if (w.kind !== 'highway') continue;
     const band = (a0: number, a1: number, l0: number, l1: number) => {
       const p = wayPoint(w, Math.min(a0, a1), Math.min(l0, l1)), q = wayPoint(w, Math.max(a0, a1), Math.max(l0, l1));
       ctx.fillRect(Math.min(p.x, q.x), Math.min(p.y, q.y), Math.abs(q.x - p.x), Math.abs(q.y - p.y));
@@ -78,6 +79,22 @@ export function bakeCityMap(map: CityMap, scale: number): HTMLCanvasElement {
     ctx.fillStyle = MAP_COLORS.highway;
     band(w.a0, w.a1, -DECK_HALF, DECK_HALF);
     for (const r of w.ramps) band(r.foot, r.foot + r.up * (RAMP_LEN + MERGE), r.lat - RAMP_W / 2, r.lat + RAMP_W / 2);
+  }
+  // The railway: a dark line with cross ties, its stations as blocks.
+  const rail = city.railway;
+  if (rail) {
+    const P = (a: number, l: number) => (rail.axis === 'h' ? [a, rail.pos + l] : [rail.pos + l, a]) as [number, number];
+    const mid = (rail.tracks[0] + rail.tracks[rail.tracks.length - 1]) / 2;
+    ctx.strokeStyle = MAP_COLORS.rail; ctx.lineWidth = 3.2;
+    ctx.beginPath(); ctx.moveTo(...P(rail.a0 - 30, mid)); ctx.lineTo(...P(rail.a1 + 30, mid)); ctx.stroke();
+    ctx.lineWidth = 1.2; ctx.setLineDash([1.2, 5]);
+    ctx.beginPath(); ctx.moveTo(...P(rail.a0 - 30, mid - 3)); ctx.lineTo(...P(rail.a1 + 30, mid - 3)); ctx.moveTo(...P(rail.a0 - 30, mid + 3)); ctx.lineTo(...P(rail.a1 + 30, mid + 3)); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = MAP_COLORS.station;
+    for (const s of rail.stations) {
+      const p = P(s.a - s.half, mid - 6), q = P(s.a + s.half, mid + 6);
+      ctx.fillRect(Math.min(p[0], q[0]), Math.min(p[1], q[1]), Math.abs(q[0] - p[0]), Math.abs(q[1] - p[1]));
+    }
   }
   ctx.restore();
   // Gang turf: hatched in the gang's colour with a solid edge.

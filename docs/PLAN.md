@@ -150,6 +150,18 @@ over the avenue at the deck's height (heightAt), tilted on the ramps. Traffic sp
 AI takes ramps (one way, no U-turns across the median), routes prefer highways, police and on-foot
 AI follow you up and down. Standing under a deck, it thins out over you. `npx tsx scripts/highways.ts`.
 
+## K. Trains (asked 2026-11-26; Bayhaven done, Redrock nouns with the Old West session)
+A railway along one road line (WorldSpec.railway: RailSpec; world/railgen.ts, server
+systems/trains.ts, render/railway.ts). 'elevated' (Bayhaven's L): a viaduct over a north-south
+street on its own way strip, columns at the kerbs, climbing over the highway it crosses; stations
+mid-block every few blocks with side platforms, canopies and named stair towers on the sidewalks.
+'grade' (meant for Redrock): track on the ground beside (or down) a road, low platforms, crossbucks.
+Each train runs its own track end to end and back, stopping at every station. Press Enter at a
+stair tower's door to take the next train (you wait there); Enter at a station gets you off by the
+nearest exit. Cars are `movement: 'rail'` vehicles laid along the track (no physics), never
+boarded like a car. `npx tsx scripts/trains.ts`. Not yet: AI traffic stopping at grade crossings,
+riders other than players.
+
 ## Casino (asked 2026-11-26)
 A walk-in casino (world/interiors.ts layout): gaming floor, cashier cage, security; games to play with
 your money (cards, wheel, slots, kept simple and readable from the top-down view), house edge in the

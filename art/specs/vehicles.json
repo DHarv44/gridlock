@@ -400,6 +400,7 @@
   "semi_trailer": {"kind": "truck", "body": "trailer", "dims": "semi", "mat": "white", "deck": 1.25,
                    "wheel": {"r": 0.5, "w": 0.28, "x": [-0.33, -0.42], "spokes": 0}},
   "monster": {"kind": "monster", "shell": {"style": "pickup", "len": 4.9, "w": 2.15, "h": 1.75},
-              "wheel": {"r": 0.84, "w": 0.78, "x": [0.31, -0.31], "rim": "chrome"}}
+              "wheel": {"r": 0.84, "w": 0.78, "x": [0.31, -0.31], "rim": "chrome"}},
+  "metro": {"kind": "train", "floor": 1.05}
  }
 }
