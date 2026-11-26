@@ -60,7 +60,7 @@ export class Breakables {
   /** Lamp-post style: down every road (not bridges), alternating sides, arms out over the road. */
   private alongRoads(city: City, kind: number, every: number): void {
     for (const s of city.segs) {
-      if (s.bridge) continue;
+      if (s.bridge || s.trail) continue; // nothing down a trail through open country
       const len = s.axis === 'h' ? s.x1 - s.x0 : s.y1 - s.y0;
       const side = s.width / 2 + 0.6;
       for (let p = 16; p < len - 10; p += every) {
@@ -78,7 +78,7 @@ export class Breakables {
     const kerb = STREET_PROPS.map((s, kind) => ({ s, kind })).filter(({ s }) => s.along === 'kerb');
     for (const b of city.blocks) {
       const z = ZONES[b.zone];
-      if (z.layout === 'park' || z.layout === 'compound') continue;
+      if (z.layout === 'park' || z.layout === 'compound' || z.layout === 'wild') continue;
       const r = b.rect;
       for (const { s, kind } of kerb) {
         if (s.busyOnly && !z.busy) continue;

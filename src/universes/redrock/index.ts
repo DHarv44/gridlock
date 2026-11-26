@@ -10,6 +10,7 @@ import { MARK_NAMES, MISSIONS, MODES } from './missions';
 import { FACTIONS, HAIR, PEDS, SHOES, SKIN } from './peds';
 import { PROPERTIES, SERVICES } from './places';
 import { CRIMES, RESPECT, ROLE_CREWS, RULES, SERVICE_CALLS, WANTED } from './rules';
+import { STREET_PROPS } from './streetProps';
 import { VEHICLES } from './vehicles';
 import { WEAPONS } from './weapons';
 import { DISTRICTS, ZONES } from './zones';
@@ -79,6 +80,7 @@ export const REDROCK: Universe = {
       'Yancey', 'Corbin', 'Ashby', 'Pike', 'Hatch', 'Merritt', 'Coley', 'Bram', 'Starling', 'Thorne'],
   },
   armorModel: VEST,
+  streetProps: STREET_PROPS,
   cast: [],
   player: player as unknown as PlayerFile,
 };

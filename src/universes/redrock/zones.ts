@@ -20,7 +20,7 @@ export const ZONES: ZoneSpec[] = [
     wall: ['#8a6a4a', '#a07a52', '#6e5238', '#b89a72', '#9a5a3a', '#cfc2a2', '#7a6a5a'], roof: ['#5a4632', '#4a3a2a', '#6a5642'],
     trees: 0.05, parkingChance: 0.04, plazaChance: 0.05, pedDensity: 6,
     peds: [...folk, { id: 'gambler', weight: 0.6 }, { id: 'deputy', weight: 0.8 }],
-    trafficDensity: 0.5, traffic: [...riders, lawRide], parked: tied, parkedDensity: 1.0, roadDrop: 0.05, windows: 0.3,
+    trafficDensity: 0.5, traffic: [...riders, lawRide], parked: tied, parkedDensity: 1.0, roadDrop: 0.05, windows: 0.3, busy: true,
   },
   {
     id: 'homesteads', name: 'Homesteads', mapColor: '#6a6a3a', ground: '#a89a62', sidewalk: '#a89a62',
