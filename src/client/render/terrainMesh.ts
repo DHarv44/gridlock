@@ -11,17 +11,23 @@ import { groundZ, installedTerrain } from '../../shared/world/terrain';
  *  triangles), and the height of one rock layer on a cliff face. */
 const RES = 2, FINE = 1, LAYER = 2.4;
 
-/** A chunk's plane bent over the land, or null where it's all level. */
-export function terrainGeo(x0: number, y0: number, size: number): THREE.PlaneGeometry | null {
+/** Lattice rows worked between pauses (render/ground.ts spreads a chunk's build over frames). */
+const BAND = 24;
+
+/** A chunk's plane bent over the land, or null where it's all level. A generator: it pauses every
+ *  BAND rows and returns the geometry. */
+export function* terrainGeo(x0: number, y0: number, size: number): Generator<void, THREE.PlaneGeometry | null> {
   const t = installedTerrain();
   if (!t) return null;
-  return bent(x0, y0, size, hasCliffs(x0, y0, size) ? FINE : RES);
+  const cliffs = yield* hasCliffs(x0, y0, size);
+  return yield* bent(x0, y0, size, cliffs ? FINE : RES);
 }
 
 /** Whether any of the chunk has a wall in it (a steep step between points 2 m apart). */
-function hasCliffs(x0: number, y0: number, size: number): boolean {
+function* hasCliffs(x0: number, y0: number, size: number): Generator<void, boolean> {
   const t = installedTerrain()!;
   for (let y = y0; y <= y0 + size; y += 2) {
+    if ((y - y0) % (2 * BAND) === 2 * BAND - 2) yield;
     let prev = groundZ(t, x0, y, true);
     for (let x = x0 + 2; x <= x0 + size; x += 2) {
       const z = groundZ(t, x, y, true);
@@ -32,24 +38,26 @@ function hasCliffs(x0: number, y0: number, size: number): boolean {
   return false;
 }
 
-function bent(x0: number, y0: number, size: number, RES: number): THREE.PlaneGeometry | null {
+function* bent(x0: number, y0: number, size: number, RES: number): Generator<void, THREE.PlaneGeometry | null> {
   const t = installedTerrain()!;
   const segs = Math.round(size / RES);
-  const geo = new THREE.PlaneGeometry(size, size, segs, segs).rotateX(-Math.PI / 2);
-  const pos = geo.attributes.position, nrm = geo.attributes.normal;
   // Heights on the vertex lattice with a one-vertex border, so each normal comes from the land
   // either side of it, the same on both sides of a chunk edge (no seams in the light).
   const m = segs + 3, H = new Float32Array(m * m);
   let any = false;
   for (let j = 0; j < m; j++) {
+    if (j % BAND === BAND - 1) yield;
     for (let i = 0; i < m; i++) {
       const h = groundZ(t, x0 + (i - 1) * RES, y0 + (j - 1) * RES, true);
       H[j * m + i] = h;
       if (h !== 0) any = true;
     }
   }
-  if (!any) { geo.dispose(); return null; }
+  if (!any) return null;
+  const geo = new THREE.PlaneGeometry(size, size, segs, segs).rotateX(-Math.PI / 2);
+  const pos = geo.attributes.position, nrm = geo.attributes.normal;
   for (let v = 0; v < pos.count; v++) {
+    if (v % 3000 === 2999) yield;
     const i = Math.round((pos.getX(v) + size / 2) / RES) + 1, j = Math.round((pos.getZ(v) + size / 2) / RES) + 1;
     pos.setY(v, H[j * m + i]);
     const gx = (H[j * m + i + 1] - H[j * m + i - 1]) / (2 * RES), gy = (H[(j + 1) * m + i] - H[(j - 1) * m + i]) / (2 * RES);

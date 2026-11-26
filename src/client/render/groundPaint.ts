@@ -32,7 +32,9 @@ function noisePattern(): HTMLCanvasElement {
   return noise;
 }
 
-export function paintChunk(map: CityMap, cx: number, cy: number, canvas: HTMLCanvasElement): void {
+/** Paints one chunk's ground. A generator: it pauses now and then (render/ground.ts spreads a
+ *  chunk's painting over frames). */
+export function* paintChunk(map: CityMap, cx: number, cy: number, canvas: HTMLCanvasElement): Generator<void> {
   const city = map.city;
   const size = CHUNK * PX;
   canvas.width = canvas.height = size;
@@ -49,7 +51,7 @@ export function paintChunk(map: CityMap, cx: number, cy: number, canvas: HTMLCan
   }
   rect(LAND0, LAND0, LAND1, LAND1, WORLD.ground);
   // Open country's ground from the lie of the land (groundRelief.ts); towns and roads go over it.
-  if (hasWild()) { paintRelief(ctx, map, X0, Y0, CHUNK); grain(ctx, map, cx, cy); }
+  if (hasWild()) { yield* paintRelief(ctx, map, X0, Y0, CHUNK); grain(ctx, map, cx, cy); yield; }
   const r = map.river;
   if (r && inView(0, r.y0, MAP_SIZE, r.y1)) {
     // Embankment: concrete in a modern city, a muddy bank before.

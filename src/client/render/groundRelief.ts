@@ -40,17 +40,22 @@ const LAYER = 2.4;
 /** A river on a gorge floor: silty water, shallow to deeper. */
 const RIVER: RGB = [92, 112, 104], RIVER_DEEP: RGB = [58, 84, 86];
 
+/** Rows worked between pauses: painting is spread over frames (render/ground.ts). */
+const BAND = 16;
+
 /**
  * Paints the chunk [X0, X0 + size) x [Y0, Y0 + size) of open country into `ctx` (in world metres).
- * Pixels outside open country are left clear for the town painting under/over them.
+ * Pixels outside open country are left clear for the town painting under/over them. A generator:
+ * it pauses every BAND rows, so the caller can spread the work over frames.
  */
-export function paintRelief(ctx: CanvasRenderingContext2D, map: CityMap, X0: number, Y0: number, size: number): void {
+export function* paintRelief(ctx: CanvasRenderingContext2D, map: CityMap, X0: number, Y0: number, size: number): Generator<void> {
   const seed = map.city.seed;
   // Each metre's zone, found at a point wobbled at two scales: where one kind of country gives way
   // to another the line wanders and frays, as soil and rock change, rather than ruling straight.
   const looksAt: (Look | null)[] = new Array(size * size);
   let any = false;
   for (let j = 0; j < size; j++) {
+    if (j % BAND === BAND - 1) yield;
     for (let i = 0; i < size; i++) {
       const x = X0 + i + 0.5, y = Y0 + j + 0.5;
       const [dx, dy] = warp(seed, x, y, WOBBLE);
@@ -65,7 +70,10 @@ export function paintRelief(ctx: CanvasRenderingContext2D, map: CityMap, X0: num
   // Heights on the metre grid (one extra row and column for slopes).
   const n = size + 1;
   const H = new Float32Array(n * n);
-  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) H[j * n + i] = relief(seed, X0 + i, Y0 + j);
+  for (let j = 0; j < n; j++) {
+    if (j % BAND === BAND - 1) yield;
+    for (let i = 0; i < n; i++) H[j * n + i] = relief(seed, X0 + i, Y0 + j);
+  }
 
   const img = new ImageData(size, size);
   const d = img.data;
@@ -74,9 +82,10 @@ export function paintRelief(ctx: CanvasRenderingContext2D, map: CityMap, X0: num
   // every rim; rivers on the gorge floors, sand in them, drier tops. The fine painted relief stays
   // as grain.
   const land = installedTerrain();
-  const L = land ? landGrid(land, X0, Y0, size) : null;
+  const L = land ? yield* landGrid(land, X0, Y0, size) : null;
   const shadeK = land ? SHADE * 0.45 : SHADE;
   for (let j = 0; j < size; j++) {
+    if (j % BAND === BAND - 1) yield;
     for (let i = 0; i < size; i++) {
       const l = looksAt[j * size + i];
       if (!l) continue;
@@ -118,12 +127,14 @@ export function paintRelief(ctx: CanvasRenderingContext2D, map: CityMap, X0: num
 
 /** Margin (m) round a chunk's land grid, for slopes and rims at its edges. */
 const M = 2;
+interface LandGrid { n: number; z: Float32Array; cut: Float32Array; rise: Float32Array; water: Uint8Array }
 
 /** The land under a chunk on the metre grid (with a margin): heights and what each point is. */
-function landGrid(t: Terrain, X0: number, Y0: number, size: number) {
+function* landGrid(t: Terrain, X0: number, Y0: number, size: number): Generator<void, LandGrid> {
   const n = size + 2 * M + 1, N = n * n;
   const z = new Float32Array(N), cut = new Float32Array(N), rise = new Float32Array(N), water = new Uint8Array(N);
   for (let j = 0; j < n; j++) {
+    if (j % BAND === BAND - 1) yield;
     for (let i = 0; i < n; i++) {
       const g = groundOf(t, X0 + i - M + 0.5, Y0 + j - M + 0.5, true), k = j * n + i;
       z[k] = g.z; cut[k] = g.cut; rise[k] = g.rise; water[k] = g.water ? 1 : 0;

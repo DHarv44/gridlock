@@ -1,5 +1,7 @@
 // Streams ground chunks (canvas textures on planes, bent over the land in open country) around
-// the camera.
+// the camera. A chunk takes 10-20 ms to paint and shape, too long for one frame: one coming into
+// the margin round the view is built as a job spread over frames, a few milliseconds each; only a
+// chunk already on screen (arriving, a jump across the map) is built at once.
 import * as THREE from 'three';
 import type { CityMap } from '../../shared/world/city';
 import { MAP_SIZE } from '../../shared/world/cityTypes';
@@ -12,12 +14,19 @@ import { strataOf, terrainGeo, terrainMaterial } from './terrainMesh';
 interface Chunk { mesh: THREE.Mesh; tex: THREE.CanvasTexture; used: number; brush: THREE.InstancedMesh[] }
 
 const MAX_CHUNKS = 48;
-const BUILDS_PER_FRAME = 3;
+/** Chunks on screen built at once per frame; the time (ms) per frame for the job in the margin. */
+const URGENT_PER_FRAME = 3;
 const BUILD_BUDGET_MS = 3;
+/** The margin the camera's view rect has round what's on screen (render/camera.ts viewRect). */
+const VIEW_MARGIN = 40;
 const N = Math.ceil(MAP_SIZE / CHUNK);
+
+/** A chunk being built over frames. */
+interface Job { k: number; steps: Generator<void> }
 
 export class Ground {
   private chunks = new Map<number, Chunk>();
+  private job: Job | null = null;
   private geo = new THREE.PlaneGeometry(CHUNK, CHUNK).rotateX(-Math.PI / 2);
   private sea: THREE.Mesh;
   private frame = 0;
@@ -53,25 +62,42 @@ export class Ground {
       }
     }
     missing.sort((a, b) => a[2] - b[2]);
-    // Build nearest first, within a small per-frame time budget (always at least one).
+    // On screen: built now, whole (finishing it if it's the job under way). Nearest first.
+    const onScreen = (i: number, j: number) => (i + 1) * CHUNK > view.x0 + VIEW_MARGIN && i * CHUNK < view.x1 - VIEW_MARGIN
+      && (j + 1) * CHUNK > view.y0 + VIEW_MARGIN && j * CHUNK < view.y1 - VIEW_MARGIN;
+    let urgent = 0;
+    for (const [i, j] of missing) {
+      if (urgent >= URGENT_PER_FRAME || !onScreen(i, j)) continue;
+      const k = j * N + i;
+      const steps = this.job?.k === k ? this.job.steps : this.build(i, j);
+      if (this.job?.k === k) this.job = null;
+      while (!steps.next().done) { /* all of it, this frame */ }
+      urgent++;
+    }
+    // In the margin: the job, a few milliseconds a frame; the nearest missing chunk next.
     const t0 = performance.now();
-    for (const [i, j] of missing.slice(0, BUILDS_PER_FRAME)) {
-      this.build(i, j);
-      if (performance.now() - t0 > BUILD_BUDGET_MS) break;
+    while (performance.now() - t0 < BUILD_BUDGET_MS) {
+      if (!this.job) {
+        const next = missing.find(([i, j]) => !this.chunks.has(j * N + i));
+        if (!next) break;
+        this.job = { k: next[1] * N + next[0], steps: this.build(next[0], next[1]) };
+      }
+      if (this.job.steps.next().done) this.job = null;
     }
     if (this.chunks.size > MAX_CHUNKS) this.evict();
   }
 
-  private build(i: number, j: number): void {
+  /** Builds a chunk, pausing as it goes (a generator; the chunk is in place when it's done). */
+  private *build(i: number, j: number): Generator<void> {
     const canvas = document.createElement('canvas');
-    paintChunk(this.map, i, j, canvas);
+    yield* paintChunk(this.map, i, j, canvas);
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = this.maxAniso;
     tex.generateMipmaps = true;
     // alphaTest: a trench's cut-out (groundPaint.ts) shows through.
     // Out in the hills a bent surface (terrainMesh.ts) that shades and casts shadow; else flat.
-    const hills = terrainGeo(i * CHUNK, j * CHUNK, CHUNK);
+    const hills = yield* terrainGeo(i * CHUNK, j * CHUNK, CHUNK);
     const mat = hills ? terrainMaterial(tex, strataOf(this.map, (i + 0.5) * CHUNK, (j + 0.5) * CHUNK))
       : new THREE.MeshLambertMaterial({ map: tex, alphaTest: 0.5 });
     const mesh = new THREE.Mesh(hills ?? this.geo, mat);
@@ -81,6 +107,7 @@ export class Ground {
     mesh.matrixAutoUpdate = false;
     mesh.updateMatrix();
     this.scene.add(mesh);
+    yield;
     const brush = hasWild() ? buildBrush(this.scene, this.map, i * CHUNK, j * CHUNK, CHUNK) : [];
     this.chunks.set(j * N + i, { mesh, tex, used: this.frame, brush });
   }
