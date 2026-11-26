@@ -17,6 +17,8 @@ const CELL = 24;
 const NX = Math.ceil(WORLD_X / CELL);
 const N = Math.ceil(MAP_SIZE / CELL);
 const TRUNK_R = 0.45;
+/** How far past the map's edge a boat can go out to sea (the map has ~80 m of sea all round). */
+const SEA_MARGIN = 0;
 
 export class StaticWorld {
   readonly boxes: Box2[] = [];
@@ -71,7 +73,7 @@ export class StaticWorld {
   /** Water a boat can be on: the sea round the island and the whole river, under the bridges too (a
    *  boat goes under the deck: from above, the bridge hides it). Upper-floor strips are dry. */
   boatWater(x: number, y: number): boolean {
-    if (x >= MAP_SIZE) return false;
+    if (x >= MAP_SIZE || y >= MAP_SIZE || x < -SEA_MARGIN || y < -SEA_MARGIN) return false; // the edge of the world
     if (x < LAND0 || x > LAND1 || y < LAND0 || y > LAND1) return true;
     return y > this.riverY0 && y < this.riverY1;
   }

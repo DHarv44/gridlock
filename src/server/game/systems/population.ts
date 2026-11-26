@@ -9,6 +9,7 @@ import type { World } from '../world';
 import { gangCarColor, gangMember, pedPool, turfGang } from '../../../shared/world/gangTurf';
 import { laneSpawn, pedSpawn } from './spawnPoints';
 import { groundOf } from '../../../shared/world/levels';
+import { mooredBoats } from './moorings';
 
 /** Gang rides added to the traffic on turf. */
 const GANG_CARS = VEHICLES.filter((v) => v.roles.includes('gang')).map((v) => ({ id: v.id, weight: 2.5 }));
@@ -39,6 +40,7 @@ export class Population {
 
   private buildFixed(): void {
     const w = this.w;
+    for (const m of mooredBoats(w)) this.fixed.push({ ...m, veh: 0, readyAt: 0 });
     // A clerk behind every walk-in counter (world/interiors.ts), kept like the services' guards.
     for (const i of w.city.interiors) {
       if (i.clerkArch) this.guards.push({ x: i.clerk.x, y: i.clerk.y, angle: i.clerk.angle, arch: pedIndex(i.clerkArch), ped: 0, readyAt: 0, indoor: true });

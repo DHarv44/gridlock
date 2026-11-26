@@ -120,6 +120,35 @@ Today a job is one of five fixed kinds with a one-line brief in a banner.
   end in a big job with a payoff (cash, a perk, the gang's turf going friendly); random odd jobs
   stay in between.
 
+## I. Getting airborne (asked 2026-11-26)
+Vehicles can leave the ground when they hit the right thing at speed: a ramp, a kerb or a car taken
+at an angle, a raised road's edge, a bridge hump. Today car physics is flat (alt is helicopters only).
+- I1. A vertical axis for wheeled vehicles in shared physics (height, vertical speed, gravity) with
+  launch from sloped surfaces and hard hits, flight that keeps its heading and spin, and landings
+  that hurt in proportion to the drop (damage, bounce, a lost wheel's worth of grip).
+- I2. Things to launch off: ramps and jump spots as city props (packs: shapes and where they go),
+  loading docks, parked trucks with lowered tailgates, the highway's raised sections (J).
+- I3. The view and sound: shadow left on the ground under a car in the air, the camera pulling out
+  with height, a landing thump; other players see it (alt in the snapshot, as helicopters do).
+
+## Monster truck (asked 2026-11-26)
+A monster truck: huge wheels and ride height, crushes cars it drives over (`crushes`, like the tank),
+bounces on its suspension, and is built for I (big launches, survives landings). A pack entry plus
+whatever wheel/suspension verbs it needs; where it's found (an arena lot, or a rare spawn) to decide.
+
+## J. Highways (asked 2026-11-26)
+Highways through the city: multi-lane roads on their own alignment above and below the street grid,
+with overpasses where they cross streets, underpasses where streets cross them, on and off ramps
+(exits) to the grid, and traffic that uses them. Needs height in the road network (today all roads
+are at ground level, bridges included), so it shares the vertical axis with I: driving up a ramp onto
+a deck, under a deck (hidden from above like a boat under a bridge), and AI routing on two levels.
+City generation stays deterministic.
+
+## Casino (asked 2026-11-26)
+A walk-in casino (world/interiors.ts layout): gaming floor, cashier cage, security; games to play with
+your money (cards, wheel, slots, kept simple and readable from the top-down view), house edge in the
+pack's numbers; a heist hook later (the cage and the vault, like the bank).
+
 ## G. Mobile (parked, 2026-11-23)
 The user wants the website usable on a phone: not a mobile port (no touch-control scheme, app install
 or radio re-encodes unless asked). Parked for now; when it comes back, keep it to that.

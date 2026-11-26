@@ -22,6 +22,10 @@ const heavy: Base = { ...car, horn: 'horn_air', engine: 'engine_diesel', shape: 
 // Helicopters' cruising speed is accel / air drag (shared/sim/physics.ts HELI_DRAG): ~24 m/s here.
 const chopper: Base = { movement: 'rotor', length: 11, width: 2.6, height: 3.2, mass: 2500, maxSpeed: 36, accel: 11, brake: 9, reverse: 10, grip: 1.2, turnRate: 1.9, hp: 650, seats: 4 };
 
+// Boats: plan-view bow drawn to a point (BodyShape), and the 'moored' role (see the boats below).
+const boat: Base & Pick<VehicleSpec, 'roles' | 'price'> = { movement: 'boat', length: 6, width: 2.2, height: 1.4, mass: 1500, maxSpeed: 25, accel: 6, brake: 5, reverse: 4, grip: 2, turnRate: 1.6, hp: 300, seats: 4, roles: ['moored'], price: 0,
+  shape: { nose: 0.85, tail: 0.08, tumble: 0.1, round: 0.38 } };
+
 export const VEHICLES: VehicleSpec[] = [
   { ...car, horn: 'horn_small', id: 'compact', name: 'Bolt Compact', length: 3.7, width: 1.7, height: 1.45, mass: 1000, maxSpeed: 30, accel: 8, price: 6000, colors: 'bright', roles: ['traffic', 'parked'], shape: S.bubble, model: M.compact() },
   { ...car, id: 'sedan', name: 'Regent Sedan', price: 11000, colors: 'civil', roles: ['traffic', 'parked'], model: M.sedan() },
@@ -90,4 +94,13 @@ export const VEHICLES: VehicleSpec[] = [
     saddles: [{ x: -0.3, z: 0.74, lean: -0.08 }, { x: -0.68, z: 0.86, lean: -0.05 }] },
   { ...car, horn: 'horn_small', engine: 'engine_bike', id: 'police_bike', name: 'Police Motorcycle', movement: 'bike', length: 2.3, width: 1.0, height: 1.45, mass: 330, maxSpeed: 44, accel: 13, brake: 22, grip: 9.5, turnRate: 3.0, hp: 200, seats: 1, openTop: true, siren: true, price: 0, colors: [0], roles: ['police'], shape: undefined, model: [...M.bike(), ...M.lightbar(-0.35, 0.75)],
     saddles: [{ x: -0.2, z: 0.9, lean: 0.12 }] },
+
+  // Boats: moored along the river and round the coast (role 'moored', not for sale: they'd be
+  // delivered to a street). Low grip: they slide through their turns.
+  { ...boat, engine: 'engine_sport', horn: 'horn_small', id: 'speedboat', name: 'Riptide Speedboat', length: 6.4, width: 2.3, height: 1.4, mass: 1500, maxSpeed: 30, accel: 7.5, brake: 6, reverse: 4, grip: 2.2, turnRate: 1.7, hp: 320, seats: 4, openTop: true, colors: 'bright', model: M.speedboat(),
+    saddles: [{ x: -0.2, y: -0.6, z: 0.95, lean: -0.1 }, { x: -0.2, y: 0.6, z: 0.95, lean: -0.1 }, { x: -1.5, y: -0.5, z: 0.95, lean: -0.1 }, { x: -1.5, y: 0.5, z: 0.95, lean: -0.1 }] },
+  { ...boat, engine: 'engine_bike', id: 'skiff', name: 'Gull Skiff', length: 4.2, width: 1.7, height: 0.9, mass: 400, maxSpeed: 14, accel: 4.5, brake: 4, reverse: 3, grip: 3, turnRate: 1.9, hp: 160, seats: 3, openTop: true, colors: 'dull', model: M.skiff(),
+    saddles: [{ x: -1.55, z: 0.72, lean: -0.05 }, { x: -0.3, z: 0.72, lean: -0.05 }, { x: 0.9, z: 0.72, lean: -0.05 }] },
+  { ...boat, engine: 'engine_diesel', horn: 'horn_air', id: 'cruiser', name: 'Harbourmaster Cruiser', length: 9.5, width: 3.1, height: 2.6, mass: 9000, maxSpeed: 18, accel: 3.5, brake: 4, reverse: 3, grip: 1.6, turnRate: 0.95, hp: 900, seats: 6, colors: 'dull', model: M.cruiser(),
+    shape: { nose: 0.8, tail: 0.06, tumble: 0.12, round: 0.32 } },
 ];

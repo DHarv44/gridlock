@@ -45,9 +45,26 @@ export function stepBoat(b: Body, spec: VehicleSpec, c: Controls, dt: number, wo
     b.x = ox; b.y = oy;
     b.vx *= -0.25; b.vy *= -0.25;
     b.av *= 0.3;
+    // Already up the bank where it was (shoved there by another boat, or turned onto it): it slides
+    // back off into the water.
+    if (!afloat(b, spec, world)) refloat(b, spec, world);
     return hit * 0.6;
   }
   return 0;
+}
+
+/** Eases a hull that's partly on the bank back off it: the smallest nudge (up to a hull's width)
+ *  that leaves it all on water. */
+function refloat(b: Body, spec: VehicleSpec, world: StaticWorld): void {
+  const x = b.x, y = b.y;
+  for (let r = 0.25; r <= spec.width + spec.length / 2; r += 0.25) {
+    for (let k = 0; k < 8; k++) {
+      const a = (k * Math.PI) / 4;
+      b.x = x + Math.cos(a) * r; b.y = y + Math.sin(a) * r;
+      if (afloat(b, spec, world)) return;
+    }
+  }
+  b.x = x; b.y = y;
 }
 
 /** Is the whole hull on boat water (its corners and the middle of each side)? */

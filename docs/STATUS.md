@@ -90,6 +90,14 @@
   character marked "welcome". `npm run voices` masters recordings into src/client/voice/,
   `npm run scripts` writes content/SCRIPTS.md. The user records the lines (Benny's are in); the
   rest are silent bubbles until recorded (or filled by scripts/voice-calls.ts).
+- Boats (2026-11-26): a `boat` movement kind (shared/sim/boat.ts: momentum carries through turns,
+  low sideways grip, the rudder needs flow, land is a wall) on the sea round the island and the whole
+  river, under bridges too (StaticWorld.boatWater; render/boats.ts drops a boat out of sight under
+  the deck; boats only collide with boats and swimmers). Speedboat, skiff and cabin cruiser (packs,
+  role 'moored', not for sale) lie moored along the riverbanks and coast where the bank is walkable
+  (world/moorings.ts, server systems/moorings.ts, kept like helipad helicopters). Step down from the
+  bank with the action key; you can only get out at the shore, going slowly; they float (a burnt-out
+  one sinks). Rocking hull and a foam wake. `npx tsx scripts/boats.ts`.
 - Handbrake and tyres (2026-11-26): the handbrake (Shift or Space; controls store v10) locks the
   rear wheels (shared/sim/physics.ts stepHandbrake, cars and bikes): the car keeps sliding the way
   it was going while steering spins it round, so a handbrake 180 works (~0.8 s, then drive off the

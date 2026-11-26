@@ -3,6 +3,7 @@ import type { Paint, Part } from './types';
 
 // Trucks, bikes, tanks and aircraft. Passenger cars live in carModels.ts.
 export * from './carModels';
+export * from './boatModels';
 
 export const boxTruck = (box: Paint = 'white'): Part[] => [
   p([[0.18, 0.15], [0.5, 0.15], [0.5, 0.5], [0.44, 0.74], [0.18, 0.76]], -0.5, 0.5, 'body'),
