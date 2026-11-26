@@ -30,6 +30,8 @@ export class StreetFurniture {
     for (const v of w.vehicles.values()) {
       if (v.wrecked || floats(v.spec) || (flies(v.spec) && v.body.alt > 1)) continue;
       if (Math.abs(v.body.vx) + Math.abs(v.body.vy) < 0.3) continue;
+      // Players' cars are stopped by a prop taken slowly; traffic just knocks it over or carries on.
+      const byPlayer = v.seats.some((s) => !!s && !!w.peds.get(s)?.player);
       this.props.meet(v.body, v.spec.length / 2, v.spec.width / 2, (i) => !this.down.has(i), (i, angle) => {
         const p = this.props.list[i], spec = STREET_PROPS[p.kind];
         this.down.set(i, { t: w.time, angle });
@@ -37,7 +39,7 @@ export class StreetFurniture {
         damageVehicle(w, v, spec.carDamage, v.seats[0], { x: p.x, y: p.y });
         if (spec.fx === 'spark') w.emit(FX.Spark, Math.round(p.x), Math.round(p.y));
         else if (spec.fx === 'water') w.emit(FX.Splash, Math.round(p.x), Math.round(p.y));
-      });
+      }, byPlayer);
     }
     if ((this.checkT -= dt) <= 0) {
       this.checkT = 5;

@@ -3,6 +3,7 @@
 import type { City } from './cityTypes';
 import { LAND0, LAND1, MAP_SIZE } from './cityTypes';
 import { FLAT_PROPS } from './interiors';
+import { gangSpots } from './gangSpots';
 import { WORLD_X } from './levels';
 import { KIND, massesFor } from './massing';
 
@@ -50,6 +51,13 @@ export class StaticWorld {
       }
     });
     for (const o of city.obstacles) this.addBox({ ...o.rect, h: o.h });
+    // Payphone booths are solid (they don't get knocked over): the booth's body, square to the kerb,
+    // from its back panel to just in front of the phone (render/booths.ts draws it).
+    for (const b of gangSpots(city).booths) {
+      const c = Math.round(Math.cos(b.angle)), s = Math.round(Math.sin(b.angle));
+      const cx = b.x + c * 0.125, cy = b.y + s * 0.125, hx = c ? 0.28 : 0.47, hy = c ? 0.47 : 0.28;
+      this.addBox({ x0: cx - hx, y0: cy - hy, x1: cx + hx, y1: cy + hy, h: 2.5 });
+    }
     for (const t of city.trees) this.addCircle({ x: t.x, y: t.y, r: TRUNK_R, h: 7 });
     this.stamp = new Uint32Array(this.boxes.length);
     this.stampC = new Uint32Array(this.circles.length);

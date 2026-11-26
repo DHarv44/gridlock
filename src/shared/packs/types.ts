@@ -86,7 +86,11 @@ export type WeaponKind = 'melee' | 'hitscan' | 'projectile' | 'thrown' | 'flame'
 
 /** One piece of a street prop's model, standing at the prop's spot (`out`: metres out over the
  *  road, for a lamp's arm and head; `lamp`: lights up at night). */
-export interface StreetPropPart { shape: 'cyl' | 'box'; w: number; h: number; d?: number; y?: number; out?: number; color: string; lamp?: boolean }
+export interface StreetPropPart {
+  shape: 'cyl' | 'box'; w: number; h: number; d?: number; y?: number; out?: number; color: string; lamp?: boolean;
+  /** Traffic-light arms reach across their own road: `arm` spans the reach, `end` hangs at its tip. */
+  span?: 'arm' | 'end';
+}
 
 /** Street furniture vehicles can knock over (packs/streetProps.ts). */
 export interface StreetPropSpec {
@@ -97,9 +101,9 @@ export interface StreetPropSpec {
   knockSpeed: number;
   /** Damage the vehicle takes knocking it over, and the share of its speed it keeps. */
   carDamage: number; slow: number;
-  /** Where the city puts it: down the roads `every` metres, or on block kerbs (`perBlock` min..max,
-   *  `busyOnly`: only on busy blocks). */
-  along: 'road' | 'kerb'; every?: number; perBlock?: [number, number]; busyOnly?: boolean;
+  /** Where the city puts it: down the roads `every` metres, on block kerbs (`perBlock` min..max,
+   *  `busyOnly`: only on busy blocks), or at each lit junction's approaches (`signal`). */
+  along: 'road' | 'kerb' | 'signal'; every?: number; perBlock?: [number, number]; busyOnly?: boolean;
   /** What knocking it over throws up. */
   fx?: 'spark' | 'water';
   parts: StreetPropPart[];

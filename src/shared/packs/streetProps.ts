@@ -13,6 +13,15 @@ export const STREET_PROPS: StreetPropSpec[] = [
     ],
   },
   {
+    // The lights themselves (their colours, the glow) are drawn live over the head: render/streetProps.ts.
+    id: 'signal', name: 'Traffic light', radius: 0.2, knockSpeed: 6, carDamage: 25, slow: 0.8, along: 'signal', fx: 'spark',
+    parts: [
+      { shape: 'cyl', w: 0.24, h: 6, color: '#24272b' },
+      { shape: 'box', w: 0.16, h: 0.16, y: 5.6, span: 'arm', color: '#24272b' },
+      { shape: 'box', w: 0.55, h: 1.1, d: 0.55, y: 4.6, span: 'end', color: '#1a1c1f' },
+    ],
+  },
+  {
     id: 'hydrant', name: 'Fire hydrant', radius: 0.18, knockSpeed: 4, carDamage: 10, slow: 0.9, along: 'kerb', perBlock: [1, 2], fx: 'water',
     parts: [{ shape: 'cyl', w: 0.32, h: 0.65, color: '#c0281e' }, { shape: 'cyl', w: 0.22, h: 0.14, y: 0.65, color: '#d8d2c0' }],
   },

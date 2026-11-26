@@ -1,13 +1,15 @@
-// Street furniture that stays put: live traffic signals, benches, bus shelters, the plaza fountain.
-// Lamp posts, hydrants, bins and boxes can be knocked over: render/breakables.ts.
+// Street furniture that stays put: the live traffic-light faces, benches, bus shelters, the plaza
+// fountain. Lamp posts, traffic-light posts, hydrants, bins and boxes can be knocked over:
+// render/breakables.ts.
 import * as THREE from 'three';
 import type { Rng } from '../../shared/rng';
-import { type City, LANE_W, type RoadNode } from '../../shared/world/cityTypes';
+import { signalPosts } from '../../shared/world/breakables';
+import type { City, RoadNode } from '../../shared/world/cityTypes';
 import { lightState } from '../../shared/world/traffic';
 import { ZONES } from '../../shared/packs';
 import { Batch, lambert, UNIT } from './instancing';
 
-interface Signal { node: RoadNode; axis: 'h' | 'v'; x: number; y: number }
+interface Signal { node: RoadNode; axis: 'h' | 'v'; x: number; y: number; down?: boolean }
 
 const SIG_COLORS = [new THREE.Color('#ff2a1f'), new THREE.Color('#ffb21f'), new THREE.Color('#2bff6a')];
 
@@ -17,33 +19,16 @@ export class StreetProps {
 
   constructor(scene: THREE.Scene, private city: City, rng: Rng) {
     const box = new Batch(UNIT.box(), lambert());
-    const cyl = new Batch(UNIT.cyl(8), lambert());
-    this.trafficSignals(scene, box, cyl);
+    this.trafficSignals(scene);
     this.sidewalkClutter(box, rng);
     this.parkFurniture(box, rng);
     box.build(scene);
-    cyl.build(scene);
   }
 
-  private trafficSignals(scene: THREE.Scene, box: Batch, cyl: Batch): void {
-    for (const n of this.city.nodes) {
-      if (!n.lights) continue;
-      for (const si of n.segs) {
-        const s = this.city.segs[si];
-        // Traffic on this segment approaching the node travels toward it.
-        const toward = s.a === n.id ? -1 : 1;
-        const hx = s.axis === 'h' ? toward : 0, hy = s.axis === 'v' ? toward : 0;
-        const rx = -hy, ry = hx;
-        const back = (s.axis === 'h' ? n.wv : n.wh) / 2 + 0.8;
-        const px = n.x - hx * back + rx * (s.width / 2 + 0.5), py = n.y - hy * back + ry * (s.width / 2 + 0.5);
-        const reach = s.lanes * LANE_W;
-        cyl.add(px, 0, py, 0.24, 6, 0.24, '#24272b');
-        box.add(px - rx * reach / 2, 5.6, py - ry * reach / 2, Math.abs(rx) * reach + 0.15, 0.16, Math.abs(ry) * reach + 0.15, '#24272b');
-        const hxp = px - rx * (reach - 0.3), hyp = py - ry * (reach - 0.3);
-        box.add(hxp, 4.6, hyp, 0.55, 1.1, 0.55, '#1a1c1f');
-        this.signals.push({ node: n, axis: s.axis, x: hxp, y: hyp });
-      }
-    }
+  /** The live lamp faces over each traffic light's head (the posts themselves can be knocked over:
+   *  render/breakables.ts; a knocked one's face goes dark and out of sight, setSignalDown). */
+  private trafficSignals(scene: THREE.Scene): void {
+    for (const s of signalPosts(this.city)) this.signals.push({ node: s.node, axis: s.axis, x: s.head.x, y: s.head.y });
     if (!this.signals.length) return;
     // Lamp face, big enough to read from the overhead camera.
     const geo = new THREE.BoxGeometry(0.7, 0.1, 0.7);
@@ -62,7 +47,16 @@ export class StreetProps {
     if (!mesh) return [];
     this.signals.forEach((s, i) => mesh.setColorAt(i, SIG_COLORS[lightState(s.node, s.axis, serverSeconds)]));
     mesh.instanceColor!.needsUpdate = true;
-    return this.signals;
+    return this.signals.filter((s) => !s.down);
+  }
+
+  /** A traffic light knocked over (or stood up again): its lamp face goes with it. */
+  setSignalDown(k: number, down: boolean): void {
+    const s = this.signals[k], mesh = this.signalMesh;
+    if (!s || !mesh || !!s.down === down) return;
+    s.down = down;
+    mesh.setMatrixAt(k, new THREE.Matrix4().makeTranslation(s.x, 5.72, s.y).scale(new THREE.Vector3(down ? 0 : 1, down ? 0 : 1, down ? 0 : 1)));
+    mesh.instanceMatrix.needsUpdate = true;
   }
 
   stateOf(s: Signal, t: number): number {

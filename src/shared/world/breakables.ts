@@ -5,12 +5,34 @@
 import { STREET_PROPS, ZONES } from '../packs';
 import { Rng } from '../rng';
 import type { Body } from '../sim/physics';
-import type { City } from './cityTypes';
+import { type City, LANE_W, type RoadNode } from './cityTypes';
 import { obbVsCircle } from './collision';
 
 /** One piece of street furniture: its kind (STREET_PROPS index), spot, and the way over the road
- *  (a lamp's arm reaches out that way). */
-export interface StreetProp { kind: number; x: number; y: number; ox: number; oy: number }
+ *  (a lamp's arm reaches out that way). A traffic light also has its arm's `reach` (m) and
+ *  `signal`: its place in signalPosts() order (the live lights drawn over its head). */
+export interface StreetProp { kind: number; x: number; y: number; ox: number; oy: number; reach?: number; signal?: number }
+
+/** Every traffic light at a lit junction: one per approach, in a fixed order (the renderer draws
+ *  each one's live lamp face at `head`). */
+export function signalPosts(city: City): { x: number; y: number; rx: number; ry: number; reach: number; head: { x: number; y: number }; node: RoadNode; axis: 'h' | 'v' }[] {
+  const out: ReturnType<typeof signalPosts> = [];
+  for (const n of city.nodes) {
+    if (!n.lights) continue;
+    for (const si of n.segs) {
+      const s = city.segs[si];
+      // Traffic on this segment approaching the node travels toward it.
+      const toward = s.a === n.id ? -1 : 1;
+      const hx = s.axis === 'h' ? toward : 0, hy = s.axis === 'v' ? toward : 0;
+      const rx = -hy, ry = hx;
+      const back = (s.axis === 'h' ? n.wv : n.wh) / 2 + 0.8;
+      const x = n.x - hx * back + rx * (s.width / 2 + 0.5), y = n.y - hy * back + ry * (s.width / 2 + 0.5);
+      const reach = s.lanes * LANE_W;
+      out.push({ x, y, rx, ry, reach, head: { x: x - rx * (reach - 0.3), y: y - ry * (reach - 0.3) }, node: n, axis: s.axis });
+    }
+  }
+  return out;
+}
 
 const CELL = 16;
 
@@ -21,6 +43,9 @@ export class Breakables {
   constructor(city: City) {
     STREET_PROPS.forEach((spec, kind) => {
       if (spec.along === 'road') this.alongRoads(city, kind, spec.every ?? 34);
+      if (spec.along === 'signal') {
+        signalPosts(city).forEach((s, k) => this.list.push({ kind, x: s.x, y: s.y, ox: -s.rx, oy: -s.ry, reach: s.reach, signal: k }));
+      }
     });
     this.onKerbs(city);
     this.list.forEach((p, i) => {
@@ -77,7 +102,9 @@ export class Breakables {
   /** A vehicle (half length and width) meets the standing props it's touching: fast enough, each is
    *  knocked flat (`knock` is told, with the way it was hit) and the vehicle keeps `slow` of its
    *  speed; slower, the prop stops it like a wall. */
-  meet(b: Body, hl: number, hw: number, standing: (i: number) => boolean, knock: (i: number, angle: number) => void): void {
+  /** `block`: a slow vehicle is stopped by a prop (players' cars); without it (traffic cutting a
+   *  corner), it only knocks things over when it's fast enough, and is never held up by one. */
+  meet(b: Body, hl: number, hw: number, standing: (i: number) => boolean, knock: (i: number, angle: number) => void, block = true): void {
     // A vehicle standing still is left where it is (parked against a hydrant, say).
     if (Math.abs(b.vx) + Math.abs(b.vy) < 0.3) return;
     const c = Math.cos(b.angle), s = Math.sin(b.angle);
@@ -93,6 +120,7 @@ export class Breakables {
         return;
       }
       // Too slow to knock it down: it's in the way.
+      if (!block) return;
       b.x += h.nx * h.depth; b.y += h.ny * h.depth;
       const vn = b.vx * h.nx + b.vy * h.ny;
       if (vn < 0) { b.vx -= vn * h.nx; b.vy -= vn * h.ny; }

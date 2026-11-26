@@ -50,6 +50,9 @@ export class StreetPropsView {
     for (const mesh of this.meshes) { mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true; }
   }
 
+  /** A traffic light went down (or up): its live lamp face goes with it (render/streetProps.ts). */
+  onSignal: (k: number, down: boolean) => void = () => {};
+
   /** Standing (as far as this client knows)? */
   standing(i: number): boolean { return !this.down.has(i) && !this.mine.has(i); }
 
@@ -114,6 +117,7 @@ export class StreetPropsView {
     const fell = this.down.get(i) ?? this.mine.get(i);
     const lamp = this.lampOf.get(i);
     if (lamp !== undefined) this.lamps[lamp].off = fell !== undefined;
+    if (p.signal !== undefined) this.onSignal(p.signal, fell !== undefined);
     // Tipping about the foot: turn the fall direction onto +x, tip +y over toward it, turn back.
     const pivot = this.pivot.identity();
     if (fell !== undefined) {
@@ -122,8 +126,10 @@ export class StreetPropsView {
         .multiply(this.r1.makeRotationY(-fell)).multiply(this.r2.makeRotationZ(-th)).multiply(this.r3.makeRotationY(fell));
     } else pivot.makeTranslation(p.x, 0, p.y);
     for (const s of this.slots[i]) {
-      const { part } = s, out = part.out ?? 0, y = part.y ?? 0;
-      const sx = part.w, sy = part.h, sz = part.d ?? part.w;
+      const { part } = s, y = part.y ?? 0, reach = p.reach ?? 0;
+      // A traffic light's arm spans its road; its head hangs at the tip.
+      const out = part.span === 'arm' ? reach / 2 : part.span === 'end' ? reach - 0.3 : part.out ?? 0;
+      const sx = part.w, sy = part.h, sz = part.span === 'arm' ? reach + 0.15 : part.d ?? part.w;
       // Standing: the part's own spot, its long side out over the road for an arm.
       const along = p.ox !== 0 ? [sz, sy, sx] : [sx, sy, sz];
       this.m.compose(this.v.set(p.ox * out, y, p.oy * out), this.q.identity(), this.sc.set(along[0], along[1], along[2]));

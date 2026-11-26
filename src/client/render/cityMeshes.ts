@@ -62,6 +62,7 @@ export class CityMeshes {
     this.props = new StreetProps(scene, city, rng);
     // Lamp posts, hydrants, bins and boxes: knockable (shared/world/breakables.ts).
     this.furniture = new StreetPropsView(scene, new Breakables(city));
+    this.furniture.onSignal = (k, down) => this.props.setSignalDown(k, down);
     this.lamps = this.furniture.lamps;
   }
 
