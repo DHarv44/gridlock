@@ -31,7 +31,7 @@ export const ACTIONS: ActionDef[] = [
   A('brake', 'Brake / reverse', 'held', 'car', 'Car', ['KeyS', 'ArrowDown']),
   A('steerLeft', 'Steer left', 'held', 'car', 'Car', ['KeyA', 'ArrowLeft']),
   A('steerRight', 'Steer right', 'held', 'car', 'Car', ['KeyD', 'ArrowRight']),
-  A('handbrake', 'Handbrake', 'held', 'car', 'Car', ['ShiftLeft', 'Space']),
+  A('handbrake', 'Handbrake', 'held', 'car', 'Car', ['Space']),
   A('horn', 'Horn / siren', 'edge', 'car', 'Car', ['KeyH']),
   A('heliForward', 'Fly forward', 'held', 'air', 'Helicopter', ['KeyW', 'ArrowUp']),
   A('heliBack', 'Fly back', 'held', 'air', 'Helicopter', ['KeyS', 'ArrowDown']),
@@ -62,9 +62,9 @@ export function overlaps(a: Context, b: Context): boolean {
   return (a === 'car' && b === 'tank') || (a === 'tank' && b === 'car');
 }
 
-// Bumped when defaults change (v9: every action its own setting, grouped by context; v10: the
-// handbrake on Shift as well as Space).
-const STORE = 'gridlock.controls.v10';
+// Bumped when defaults change (v9: every action its own setting, grouped by context; v10/v11: the
+// handbrake on Shift as well as Space, then back to Space only).
+const STORE = 'gridlock.controls.v11';
 export const MAX_KEYS = 2;
 
 /** Readable name for a key code or mouse button. */
