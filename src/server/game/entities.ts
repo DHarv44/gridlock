@@ -97,7 +97,10 @@ export interface Vehicle {
   stolenBy: number;         // player id who stole it (for chop shop)
   fireCalled: boolean;
   horn: boolean;
-  trailer: number;          // articulated trailer heading (semis), else = body angle
+  /** Its radio's station once someone riding in it retunes it (-1 off); until then the station
+   *  it came tuned to (picked on the client from its id). */
+  radio?: number;
+  trailer: number;         // articulated trailer heading (semis), else = body angle
   /** Damage taken on each side (front, rear, left, right), in hit points: what the model shows as
    *  dents, broken lamps and glass (combat/damage.ts damageLevels). */
   dents: number[];
@@ -172,6 +175,8 @@ export interface Player {
   met: Set<string>;
   /** Their map waypoint, shared with whoever rides with them. */
   waypoint?: [number, number] | null;
+  /** The vehicle they were last told the radio of (radio sync, room.ts). */
+  radioVid?: number;
   mission: MissionState | null;
   boothCd: Map<number, number>;   // booth id -> world time it may ring again
   /** Jobs blown in a row (a pass resets it): the mentor stops dealing with you past a point. */

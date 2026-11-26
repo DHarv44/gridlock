@@ -1,7 +1,7 @@
 // Applies player inputs (movement, weapons, vehicles) and handles death/busted/respawn.
 import { dist } from '../../../shared/math';
 import { PLAYER_ARCHETYPE, RULES, UNARMED, WEAPONS, weaponIndex } from '../../../shared/packs';
-import { BTN, EDGE_BUTTONS, type InputMsg, Mode } from '../../../shared/protocol';
+import { BTN, EDGE_BUTTONS, type InputMsg, Mode, type S2C } from '../../../shared/protocol';
 import { SPRINT, stepVehicle } from '../../../shared/sim/physics';
 import { damagePed, killPed, wallCrash } from '../combat/damage';
 import { leaveOnRoof } from './lifts';
@@ -19,6 +19,12 @@ export function processPlayers(w: World, dt: number): void {
   for (const pl of w.players.values()) {
     const p = w.peds.get(pl.pid);
     if (!p) continue;
+    // Into a car whose radio someone retuned: tune in to the same station.
+    if (p.vehicle !== (pl.radioVid ?? 0)) {
+      pl.radioVid = p.vehicle;
+      const station = w.vehicles.get(p.vehicle)?.radio;
+      if (station !== undefined) pl.send({ t: 'radio', vid: p.vehicle, station } satisfies S2C);
+    }
     if (pl.mode === Mode.Dead || pl.mode === Mode.Busted) {
       pl.queue.length = 0;
       pl.respawnT -= dt;

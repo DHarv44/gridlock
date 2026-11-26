@@ -1,7 +1,8 @@
 // In-vehicle radio, as a broadcast: each station plays on the clock (shared/radioSchedule.ts), so
 // tuning in joins whatever is on air and every player on a station hears the same thing. Like
 // GTA2, the radio belongs to the car: each one comes tuned to its own station (picked from its id),
-// and the radio key cycles that car's radio through the stations and Off, which it remembers.
+// and the radio key cycles that car's radio through the stations and Off, which it remembers. The
+// server keeps a retuned car's station, so the driver and passengers share one radio.
 //
 // The clock is only used to tune in (the right track, the right second) and to check at each
 // changeover that we're still with the broadcast. Between those the music runs itself: two decks,
@@ -130,11 +131,21 @@ export class Radio {
     if (g) g[i].gain.value = v; else this.decks[i].volume = v;
   }
 
-  /** The radio key: this car's next station (or off). Only works in a vehicle. */
-  next(): void {
-    if (!this.inVehicle) return;
+  /** The radio key: this car's next station (or off), returned to pass on to everybody riding in
+   *  the car; null when you're not in one. */
+  next(): number | null {
+    if (!this.inVehicle) return null;
     this.station = this.station + 1 >= RADIO.length ? -1 : this.station + 1;
     this.retuned.set(this.vehicle, this.station);
+    this.tune();
+    return this.station;
+  }
+
+  /** Somebody in the car retuned its radio (or you got into a car someone retuned). */
+  set(vehicle: number, station: number): void {
+    this.retuned.set(vehicle, station);
+    if (!this.inVehicle || vehicle !== this.vehicle || station === this.station) return;
+    this.station = station;
     this.tune();
   }
 

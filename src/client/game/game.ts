@@ -200,7 +200,12 @@ export class Game {
         if (this.pane.isOpen) this.pane.close();
         else openMenu({ pane: this.pane, sound: this.sound, quality: this.quality, input: this.input, code: this.code, record: () => this.profile.felonies ?? {}, leave: () => this.leave() });
         break;
-      case 'radio': this.radio.next(); break;
+      case 'radio': {
+        // The car's radio: everybody riding in it hears the change.
+        const station = this.radio.next();
+        if (station !== null) this.conn.send({ t: 'radio', station });
+        break;
+      }
       case 'scoreOn': this.hud.showScore(true, this.players, this.code); break;
       case 'scoreOff': this.hud.showScore(false, this.players, this.code); break;
     }
@@ -229,6 +234,7 @@ export class Game {
         this.storefronts.setOwners(this.owners);
         break;
       case 'profile': this.profile = m.p; break;
+      case 'radio': this.radio.set(m.vid, m.station); break;
       case 'save': saveProgress(m.id, m.p); break;
       case 'msg':
         if (m.kind === 'chat') this.hud.chatLine(m.text);

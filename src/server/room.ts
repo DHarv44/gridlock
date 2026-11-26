@@ -1,5 +1,5 @@
 // A room: one shared city, up to RULES.maxPlayers players, its own fixed-rate simulation.
-import { RULES, VEHICLES } from '../shared/packs';
+import { RADIO, RULES, VEHICLES } from '../shared/packs';
 import { type C2S, type InputMsg, Mode, PLAYER_COLORS, type S2C, SNAP_EVERY, TICK_HZ } from '../shared/protocol';
 import { DT } from '../shared/sim/physics';
 import { MAP_SIZE } from '../shared/world/cityTypes';
@@ -196,6 +196,17 @@ export class Room {
       case 'ping':
         pl.send({ t: 'pong', ts: msg.ts, st: Math.round(this.world.time * 1000) } satisfies S2C);
         break;
+      case 'radio': {
+        // Driver or passenger: it's the car's radio, so everybody riding in it hears the change.
+        const w = this.world, vid = w.peds.get(pl.pid)?.vehicle ?? 0, v = w.vehicles.get(vid);
+        const station = Number(msg.station);
+        if (!v || !Number.isInteger(station) || station < -1 || station >= RADIO.length) break;
+        v.radio = station;
+        for (const o of w.players.values()) {
+          if (o !== pl && w.peds.get(o.pid)?.vehicle === vid) o.send({ t: 'radio', vid, station } satisfies S2C);
+        }
+        break;
+      }
       case 'waypoint': {
         // Your map waypoint, shared with whoever rides with you (sent in the player list).
         const at = Array.isArray(msg.at) ? msg.at.map(Number) : null;

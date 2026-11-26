@@ -4,7 +4,7 @@ import type { CharacterProgress, CharacterSave, CharLook } from './packs/charact
 export const TICK_HZ = 30;
 export const SNAP_EVERY = 2;             // snapshots at 15 Hz
 export const INTERP_DELAY_MS = 120;
-export const PROTOCOL_VERSION = 15;
+export const PROTOCOL_VERSION = 16;
 /** Every Nth snapshot carries every entity in full (others list unchanged ones in `k`). */
 export const FULL_SNAP_EVERY = 30;
 
@@ -34,6 +34,7 @@ export type C2S =
   | { t: 'chat'; text: string }
   | { t: 'call'; accept: boolean }        // answer / decline the call that's ringing
   | { t: 'dial'; gang: string }           // ring a contact to ask for work
+  | { t: 'radio'; station: number }       // retune the radio of the car you're in (-1 off)
   | { t: 'waypoint'; at: [number, number] | null } // your map waypoint (shared with whoever rides with you)
   | { t: 'ping'; ts: number };
 
@@ -131,6 +132,9 @@ export type S2C =
   | { t: 'talk'; via: 'payphone' | 'cell'; parts: [string, string, number][] }
   /** People (packs/calls.ts PEOPLE_CONTACTS) whose number you have. */
   | { t: 'people'; ids: string[] }
+  /** A car's radio was retuned (by anyone riding in it), or you got into a car someone retuned:
+   *  its station (-1 off). Everybody in the car hears the same broadcast. */
+  | { t: 'radio'; vid: number; station: number }
   /** A message left on your phone when you missed someone's call: parts as in `talk`. */
   | { t: 'voicemail'; from: string; parts: [string, string, number][] }
   /** Vault doors standing open (interior indexes; world/interiors.ts). */

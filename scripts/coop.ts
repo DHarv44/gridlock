@@ -66,6 +66,12 @@ const ib = list.find((p) => p.id === b.id)!, ia = list.find((p) => p.id === a.id
 check(ia.vid === car.id && ib.vid === car.id && ib.wp?.[0] === 500 && ib.wp?.[1] === 600, "riders' vehicle and Bo's waypoint go out in the player list");
 room.onMessage(b, { t: 'waypoint', at: null } as never);
 check(!playerList(w).find((p) => p.id === b.id)!.wp, 'clearing it clears it');
+// The car's radio is shared: the passenger retunes it and the driver hears the change.
+const radioTo = (name: string) => inbox.get(name)!.filter((m) => m.t === 'radio') as unknown as { vid: number; station: number }[];
+room.onMessage(b, { t: 'radio', station: 2 } as never);
+check(car.radio === 2 && radioTo('Ana').at(-1)?.station === 2 && radioTo('Ana').at(-1)?.vid === car.id, 'a passenger retunes the radio and the driver hears it');
+room.onMessage(a, { t: 'radio', station: -1 } as never);
+check(car.radio === -1 && radioTo('Bo').at(-1)?.station === -1, 'the driver turns it off and the passenger hears that');
 
 // 4. The job passes with Bo in the car: the pay is split.
 const st = a.mission!;
