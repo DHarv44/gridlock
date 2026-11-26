@@ -5,11 +5,7 @@ import { BTN } from '../../shared/protocol';
 import { type Action, ACTIONS, Bindings } from './controls';
 import { PAD, Pad, PAD_ACTIONS, type PadAction } from './gamepad';
 
-export type UiAction = 'action' | 'chat' | 'map' | 'menu' | 'radio' | 'scoreOn' | 'scoreOff' | 'phone' | 'driveMode';
-/** How you drive cars and tanks with keyboard and mouse: `classic` (gas, brake and steer) or
- *  `point` (point where you want to go, game/pointDrive.ts). The controller always drives classic. */
-export type DriveMode = 'classic' | 'point';
-const DRIVE_STORE = 'gridlock.drive.v1';
+export type UiAction = 'action' | 'chat' | 'map' | 'menu' | 'radio' | 'scoreOn' | 'scoreOff' | 'phone';
 export type NavCmd = 'up' | 'down' | 'left' | 'right' | 'ok' | 'back' | 'zoomIn' | 'zoomOut';
 
 const EDGE_BTN: Partial<Record<Action, number>> = { prevWeapon: BTN.prev, nextWeapon: BTN.next, horn: BTN.horn };
@@ -44,25 +40,7 @@ export class Input {
   /** Current facing, kept by Steering so a new aim starts where you already face. */
   facingHint = 0;
 
-  /** The keyboard-and-mouse driving mode (saved in this browser). */
-  keyboardDrive: DriveMode = 'classic';
-
-  /** The driving mode now: the keyboard's choice, or classic while the controller is in use. */
-  driveMode(): DriveMode { return this.pad.active ? 'classic' : this.keyboardDrive; }
-
-  setDriveMode(mode: DriveMode): void {
-    this.keyboardDrive = mode;
-    try { localStorage.setItem(DRIVE_STORE, mode); } catch { /* ignore */ }
-  }
-
-  /** Flips the keyboard-and-mouse driving mode; returns the new one. */
-  toggleDriveMode(): DriveMode {
-    this.setDriveMode(this.keyboardDrive === 'point' ? 'classic' : 'point');
-    return this.keyboardDrive;
-  }
-
   constructor(private canvas: HTMLCanvasElement) {
-    try { if (localStorage.getItem(DRIVE_STORE) === 'point') this.keyboardDrive = 'point'; } catch { /* classic */ }
     window.addEventListener('keydown', (e) => this.key(e, e.code, true));
     window.addEventListener('keyup', (e) => this.key(e, e.code, false));
     window.addEventListener('blur', () => this.release());

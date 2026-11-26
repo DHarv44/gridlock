@@ -96,6 +96,22 @@ function placeBeside(w: World, p: Ped, v: Vehicle, side: number): void {
   w.statics.resolveCircle(p.body, 0.35);
 }
 
+/** Dry ground to step out of a boat onto: beside it, ahead or behind, within a long step of the
+ *  hull (the bank, a quay, a bridge end), or null out on open water. */
+export function shoreBeside(w: World, v: Vehicle): { x: number; y: number } | null {
+  const b = v.body, c = Math.cos(b.angle), s = Math.sin(b.angle);
+  const hw = v.spec.width / 2, hl = v.spec.length / 2;
+  for (const reach of [0.6, 1.2, 2.0, 3.0]) {
+    for (const [fwd, side] of [[0, 1], [0, -1], [0.6, 1], [0.6, -1], [-0.6, 1], [-0.6, -1], [1, 0], [-1, 0]]) {
+      const along = side ? fwd * hl : fwd * (hl + reach); // beside the hull, or off the bow / stern
+      const across = side * (hw + reach);
+      const x = b.x + c * along - s * across, y = b.y + s * along + c * across;
+      if (!w.map.isWater(x, y) && !w.statics.resolveCircle({ x, y }, 0.35)) return { x, y };
+    }
+  }
+  return null;
+}
+
 export function freeSeat(v: Vehicle, from = 0): number {
   for (let i = from; i < v.seats.length; i++) if (!v.seats[i]) return i;
   return -1;

@@ -8,7 +8,7 @@ import { climbStairs, leaveOnRoof } from './lifts';
 import { onAttacked } from '../ai/reactions';
 import { tickWeapon, tryFire } from '../combat/fire';
 import type { Ped, Player, Vehicle } from '../entities';
-import { freeSeat, giveWeapon, seatPed, spawnPed, unseatPed } from '../factory';
+import { freeSeat, giveWeapon, seatPed, shoreBeside, spawnPed, unseatPed } from '../factory';
 import type { World } from '../world';
 import { stepPedBody, turnTurret } from './movement';
 import { clearHeat, crime } from './wanted';
@@ -119,6 +119,16 @@ function toggleVehicle(w: World, pl: Player, p: Ped): void {
         else if (v.seats[0] === 0) { v.ctl.throttle = 0; v.ctl.steer = 0; }
         return;
       }
+    }
+    // Out of a boat: onto the shore beside it, or not at all out on open water. Slow enough to step
+    // off (no bailing out of a boat at speed).
+    if (v && v.spec.movement === 'boat') {
+      const at = Math.hypot(v.body.vx, v.body.vy) < 3 ? shoreBeside(w, v) : null;
+      if (!at) { w.notify('info', 'Pull up to the shore to get out.', pl); return; }
+      unseatPed(w, p, false);
+      p.body.x = at.x; p.body.y = at.y; p.body.alt = 0;
+      if (v.seats[0] === 0) { v.ctl.throttle = 0; v.ctl.steer = 0; }
+      return;
     }
     // Bailing out on the move: step out at a crawl, get thrown down and hurt faster, and at speed
     // it's the last thing you do. The vehicle rolls on without you.

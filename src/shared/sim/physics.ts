@@ -2,6 +2,7 @@
 import { approach, clamp, wrapAngle } from '../math';
 import type { VehicleSpec } from '../packs';
 import type { StaticWorld } from '../world/collision';
+import { stepBoat } from './boat';
 
 export const DT = 1 / 30;
 export const PED_RADIUS = 0.35;
@@ -10,6 +11,10 @@ export const SPRINT = 1.45;
 export const HELI_MAX_ALT = 48;
 export const HELI_CLIMB = 9;
 const HELI_DRAG = 0.45;
+/** Handbrake: share of the tyres' grip left to pull a slide back in line, friction of the locked
+ *  wheels (share of the brakes), how fast steering spins the car (share of its turn rate), and how
+ *  much of the engine's pull a power slide gets. */
+const HANDBRAKE_GRIP = 0.12, HANDBRAKE_FRICTION = 0.32, HANDBRAKE_SPIN = 1.6, HANDBRAKE_POWER = 0.5;
 /** How near the middle of a roof a helicopter's centre must be to set down on it (metres in from
  *  the edge it may hang over). */
 const HELI_PAD = 0.8;
@@ -69,6 +74,10 @@ const ASSIST_CONE = (25 * Math.PI) / 180;
  */
 export function stepVehicle(b: Body, spec: VehicleSpec, c: Controls, dt: number, world: StaticWorld, driven: boolean, onRoad?: (x: number, y: number) => boolean): number {
   if (spec.movement === 'rotor') return stepHeli(b, spec, c, dt, world, driven);
+  if (spec.movement === 'boat') return stepBoat(b, spec, c, dt, world, driven);
+  if (driven && c.handbrake && (spec.movement === 'wheels' || spec.movement === 'bike') && !spec.minTurnRadius) {
+    return stepHandbrake(b, spec, c, dt, world);
+  }
   const fx = Math.cos(b.angle), fy = Math.sin(b.angle);
   // Vehicles that pivot on their rear axle: the centre's sideways motion from turning is part of
   // the turn, not a skid, so it's taken out before grip acts on the slip.
@@ -125,6 +134,33 @@ export function stepVehicle(b: Body, spec: VehicleSpec, c: Controls, dt: number,
   const lat = vl + b.av * pivot;
   b.vx = nfx * vf - nfy * lat;
   b.vy = nfy * vf + nfx * lat;
+  b.x += b.vx * dt;
+  b.y += b.vy * dt;
+  return collideStatic(b, spec, world, 0);
+}
+
+/** Handbrake on (cars and bikes; heavy rigs just brake harder through the normal step): the rear
+ *  wheels lock, so the car stops carrying its speed round with it. It keeps sliding the way it was
+ *  going, slowed by the locked tyres, with only a little grip pulling the slide back in line, while
+ *  steering swings it round on the spot (steer right, it spins clockwise): hold it through a half
+ *  turn and let go facing back the way you came, still sliding, for a handbrake 180. Gas while
+ *  sliding pushes along the way it now points (a power slide); the brakes add to the friction. */
+function stepHandbrake(b: Body, spec: VehicleSpec, c: Controls, dt: number, world: StaticWorld): number {
+  const fx = Math.cos(b.angle), fy = Math.sin(b.angle);
+  let vf = b.vx * fx + b.vy * fy;
+  let vl = -b.vx * fy + b.vy * fx;
+  vl *= Math.exp(-spec.grip * HANDBRAKE_GRIP * dt);
+  if (c.throttle > 0) vf += spec.accel * c.throttle * HANDBRAKE_POWER * dt;
+  b.vx = fx * vf - fy * vl;
+  b.vy = fy * vf + fx * vl;
+  // Locked tyres scrubbing along the road, whichever way it's sliding.
+  const speed = Math.hypot(b.vx, b.vy);
+  const friction = spec.brake * (HANDBRAKE_FRICTION + (c.throttle < 0 ? -c.throttle * 0.5 : 0)) * dt;
+  const k = speed > 0 ? Math.max(0, speed - friction) / speed : 0;
+  b.vx *= k; b.vy *= k;
+  const targetAv = c.steer * spec.turnRate * HANDBRAKE_SPIN * clamp(speed / 3.5, 0, 1);
+  b.av += (targetAv - b.av) * Math.min(1, 10 * dt);
+  b.angle += b.av * dt;
   b.x += b.vx * dt;
   b.y += b.vy * dt;
   return collideStatic(b, spec, world, 0);

@@ -122,6 +122,15 @@ export class Effects {
       max: 22, r: 0.04, g: 0.04, b: 0.04, a: 0.35 + 0.3 * k });
   }
 
+  /** White water churned up behind a boat's stern, spreading and fading on the surface; `k` (0..1)
+   *  is how fast it's going, `w` the hull's width. */
+  foam(x: number, y: number, k: number, w: number): void {
+    for (let n = 0; n < 2; n++) {
+      this.alpha.spawn({ x: x + rnd(-w, w) * 0.3, y: y + rnd(-w, w) * 0.3, z: 0.06, vx: rnd(-0.6, 0.6), vy: rnd(-0.6, 0.6),
+        size: rnd(0.5, 0.9) * w * 0.5, grow: 1.2 + k, max: rnd(1.4, 2.4), r: 0.88, g: 0.93, b: 0.95, a: 0.35 + 0.3 * k, drag: 1.2 });
+    }
+  }
+
   /** Pale tyre smoke billowing off a sliding wheel; `k` (0..1) is how hard it slid. */
   tyreSmoke(x: number, y: number, k: number): void {
     const c = rnd(0.78, 0.88);

@@ -1,5 +1,5 @@
 // Client game: owns rendering, input, prediction and HUD for one connected session.
-import { BTN, type BuyKind, type InputMsg, Mode, type PlayerInfo, type Profile, type S2C, TICK_HZ, type YouState } from '../../shared/protocol';
+import { type BuyKind, type InputMsg, Mode, type PlayerInfo, type Profile, type S2C, TICK_HZ, type YouState } from '../../shared/protocol';
 import { CityMap, generateCity } from '../../shared/world/city';
 import { StaticWorld } from '../../shared/world/collision';
 import { FLOOR_H, groundOf } from '../../shared/world/levels';
@@ -103,6 +103,7 @@ export class Game {
     const meshes = new CityMeshes(this.stage.scene, city);
     this.fx = new Effects(this.stage.scene, this.stage.flash);
     this.view = new WorldView(this.stage.scene, this.fx, meshes.lamps);
+    this.view.dryAt = (x, y) => !this.map.isWater(x, y); // a boat on "dry ground" is under a bridge
     this.input = new Input(canvas);
     this.predict = new Predictor(statics, this.map);
     this.radar = new Minimap(this.map);
@@ -206,11 +207,6 @@ export class Game {
         if (station !== null) this.conn.send({ t: 'radio', station });
         break;
       }
-      case 'driveMode': {
-        const m = this.input.toggleDriveMode();
-        this.hud.notify(m === 'point' ? 'Driving: point to drive' : 'Driving: classic', 'info');
-        break;
-      }
       case 'scoreOn': this.hud.showScore(true, this.players, this.code); break;
       case 'scoreOff': this.hud.showScore(false, this.players, this.code); break;
     }
@@ -280,7 +276,7 @@ export class Game {
     const msg: InputMsg = [
       ++this.seq, c.mx, c.my, c.throttle, c.steer,
       Math.round(c.aim * 1000) / 1000,
-      inp.takeButtons() | (c.handbrake ? BTN.handbrake : 0),
+      inp.takeButtons(),
       inp.takeWeaponWish(),
     ];
     this.predict.apply(msg);

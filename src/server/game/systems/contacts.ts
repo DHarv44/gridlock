@@ -28,13 +28,15 @@ function obbVsObb(a: Vehicle, b: Vehicle): Hit | null {
 }
 
 const flying = (v: Vehicle) => v.spec.movement === 'rotor' && v.body.alt > 2;
+/** Boats only meet boats (and swimmers): a boat passing under a bridge never touches the cars on it. */
+const afloat = (v: Vehicle) => v.spec.movement === 'boat';
 
 export function resolveContacts(w: World): void {
   for (const a of w.vehicles.values()) {
     const A = a.body;
     const reach = a.spec.length / 2 + 7;
     w.vehHash.query(A.x, A.y, reach, (b) => {
-      if (b.id <= a.id || flying(a) !== flying(b)) return;
+      if (b.id <= a.id || flying(a) !== flying(b) || afloat(a) !== afloat(b)) return;
       if (flying(a) && Math.abs(a.body.alt - b.body.alt) > 4) return;
       const h = obbVsObb(a, b);
       if (h) vehicleHit(w, a, b, h);
@@ -42,6 +44,7 @@ export function resolveContacts(w: World): void {
     if (flying(a)) continue;
     w.pedHash.query(A.x, A.y, reach, (p) => {
       if (p.vehicle || p.jumpT > 0) return; // hopping peds clear the car
+      if (afloat(a) !== w.map.isWater(p.body.x, p.body.y)) return; // boats hit swimmers, cars walkers
       const c = Math.cos(A.angle), s = Math.sin(A.angle);
       const h = obbVsCircle(A.x, A.y, c, s, a.spec.length / 2, a.spec.width / 2, { x: p.body.x, y: p.body.y, r: PED_RADIUS });
       if (!h) return;

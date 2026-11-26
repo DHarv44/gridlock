@@ -51,7 +51,7 @@ function partGeometry(spec: VehicleSpec, part: Part, color: THREE.Color): THREE.
 }
 
 function wheels(spec: VehicleSpec, axleOverride?: number[]): THREE.BufferGeometry[] {
-  if (spec.movement === 'rotor') return [];
+  if (spec.movement === 'rotor' || spec.movement === 'boat') return [];
   const out: THREE.BufferGeometry[] = [];
   const r = spec.movement === 'bike' ? 0.32 : spec.movement === 'tracks' ? 0 : Math.min(0.48, spec.height * 0.24);
   if (r === 0) return out;

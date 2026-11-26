@@ -1,7 +1,7 @@
-// Tyre marks and tyre smoke from cars working their tyres past grip: handbrake turns and spins,
-// cornering hard, braking hard. The car physics keeps the velocity along the car (there's no real
-// sideways slide to measure), so the load is read from how the car moves: cornering force (turn
-// rate x speed) and braking (speed lost per second), both in m/s². Each car working hard lays an
+// Tyre marks and tyre smoke from cars working their tyres past grip: handbrake slides and spins,
+// very fast sharp turns, slamming the brakes. The load is read from how the car moves: sideways slip
+// (a handbrake slide), cornering force (turn rate x speed) and braking (speed lost per second), in
+// m/s². Each car working hard lays an
 // unbroken streak from its rear wheels (a mark from where each wheel was to where it is now, every
 // so often) that breaks when it eases off; harder still, it smokes. `squeal` is the hardest this
 // frame (for the tyre sound).
@@ -9,11 +9,14 @@ import { angleDiff } from '../../shared/math';
 import type { VehicleSpec } from '../../shared/packs';
 import type { Effects } from './effects';
 
-/** Tyre load (m/s²) where tyres start to mark, where they smoke, and as hard as it gets. */
-const MARK_LOAD = 9, SMOKE_LOAD = 14, FULL_LOAD = 24;
-/** Braking counts for this much of its deceleration (game cars stop hard: only slamming the brakes
- *  should mark). */
-const BRAKE_SHARE = 0.6;
+/** Tyre load (m/s²) where tyres start to mark, where they smoke, and as hard as it gets. Game cars
+ *  corner far harder than real ones, so only a fast, sharp turn gets there; an ordinary corner
+ *  doesn't. */
+const MARK_LOAD = 30, SMOKE_LOAD = 38, FULL_LOAD = 50;
+/** Braking as hard as the car can counts as this much load (so only slamming the brakes marks). */
+const BRAKE_LOAD = 34;
+/** A sideways slide (the handbrake) counts this much per m/s of slip: a couple of m/s marks. */
+const SLIP_LOAD = 11;
 /** Below this speed (m/s) nothing marks. */
 const MIN_SPEED = 3;
 /** How far a wheel travels between marks (m). */
@@ -36,8 +39,9 @@ export class Skids {
     if (!t) { if (this.cars.size > 400) this.cars.clear(); this.cars.set(id, t = { a, speed, load: 0, wheels: null }); }
     if (dt <= 0) return;
     // Cornering (turn rate x speed) or braking, smoothed so one jumpy frame doesn't mark.
+    const slip = Math.abs(-vx * Math.sin(a) + vy * Math.cos(a));
     const raw = spec.movement === 'wheels' && alt < 0.2 && speed > MIN_SPEED
-      ? Math.max(Math.abs(angleDiff(t.a, a) / dt) * speed, ((t.speed - speed) / dt) * BRAKE_SHARE) : 0;
+      ? Math.max(Math.abs(angleDiff(t.a, a) / dt) * speed, ((t.speed - speed) / dt / spec.brake) * BRAKE_LOAD, slip * SLIP_LOAD) : 0;
     t.load += (raw - t.load) * Math.min(1, dt * 12);
     t.a = a; t.speed = speed;
     if (t.load < MARK_LOAD) { t.wheels = null; return; }

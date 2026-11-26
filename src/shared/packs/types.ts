@@ -15,7 +15,7 @@ export interface Part {
 export type Paint = 'body' | 'glass' | 'dark' | 'chrome' | 'trim' | 'headlight' | 'taillight'
   | 'red' | 'blue' | 'white' | 'black' | 'yellow' | 'olive' | 'tire' | `#${string}`;
 
-export type Movement = 'wheels' | 'bike' | 'tracks' | 'rotor';
+export type Movement = 'wheels' | 'bike' | 'tracks' | 'rotor' | 'boat';
 
 export interface CrimeSpec {
   heat: number;

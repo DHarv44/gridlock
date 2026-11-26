@@ -10,6 +10,7 @@ import { animatePed, HIP_H, makePed, type PedView, ridePed, setPedWeapon } from 
 import { lampMaterial, makeVehicle, showDamage, sirenMats, type VehicleView } from './vehicleMesh';
 import { decodeDamage } from './vehicleDamage';
 import { Skids } from './skids';
+import { floatBoat } from './boats';
 
 export interface OwnState { pid: number; vid: number; x: number; y: number; angle: number; alt: number; driving: boolean; vx: number; vy: number; trailer?: number }
 export interface PlayerTag { name: string; color: string; look?: CharLook }
@@ -205,6 +206,9 @@ export class WorldView {
     this.labels.set(id, s);
   }
 
+  /** Dry ground at a point (set by the game from the city map): a boat there is under a bridge. */
+  dryAt: (x: number, y: number) => boolean = () => false;
+
   private vehicle(e: ViewEntity, dt: number, own: OwnState | null, night: number): void {
     const d = e.data;
     const type = d[2], color = d[6], flags = d[7];
@@ -225,6 +229,9 @@ export class WorldView {
     const x = mine ? own!.x : e.x, y = mine ? own!.y : e.y, a = mine ? own!.angle : e.angle, alt = mine ? own!.alt : e.alt;
     v.root.position.set(x, alt, y);
     v.root.rotation.y = -a;
+    if (spec.movement === 'boat') {
+      floatBoat(v.root, this.fx, spec, this.time + e.id * 1.7, dt, x, y, a, mine ? own!.vx : e.vx, mine ? own!.vy : e.vy, wreck, this.dryAt(x, y));
+    }
     v.root.visible = e.id !== this.hiddenVehicle;
     showDamage(v, spec, e.id, dents);
     this.carLabel(e.id, v.root, spec.height);

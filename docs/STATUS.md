@@ -90,18 +90,14 @@
   character marked "welcome". `npm run voices` masters recordings into src/client/voice/,
   `npm run scripts` writes content/SCRIPTS.md. The user records the lines (Benny's are in); the
   rest are silent bubbles until recorded (or filled by scripts/voice-calls.ts).
-- Driving modes (2026-11-26): classic (unchanged: gas, brake, steer) or, for keyboard and mouse
-  only, point to drive (client/game/pointDrive.ts, cars and tanks; helicopters and the controller
-  always drive classic): W/A/S/D (8-way) point where to go and the car steers there; pointing
-  behind turns round as tight as the speed allows (brake straight, then a handbrake turn), never
-  backing up by itself. Reverse is its own button (right mouse by default, sharing Aim's, when the
-  drive-by falls back to auto-aim; rebind it and right mouse aims again): held, it backs up
-  pointing where the back goes, or, moving and pointing back the way you came, it's an e-brake
-  spin that whips round and drives off. Pause menu or V to switch; saved in the browser.
-  Tyre marks and smoke (render/skids.ts) come from tyre load (turn rate x speed, hard braking),
-  since the physics has no sideways slide; a looping tyre squeal follows the hardest slide
-  (audio/sound.ts `tyres`; ASSETS.md `skid`, a CC0 Chrysler cornering squeal).
-  `npx tsx scripts/drive.ts`. Also: twin-stick aiming in vehicles (right stick: drive-by, heli
+- Handbrake and tyres (2026-11-26): the handbrake (Shift or Space; controls store v10) locks the
+  rear wheels (shared/sim/physics.ts stepHandbrake, cars and bikes): the car keeps sliding the way
+  it was going while steering spins it round, so a handbrake 180 works (~0.8 s, then drive off the
+  way you came). Tyre marks and smoke (render/skids.ts) come from sideways slip, slamming the
+  brakes or a very fast sharp turn, never an ordinary corner; a looping tyre squeal follows the
+  hardest slide (audio/sound.ts `tyres`; ASSETS.md `skid`, a CC0 Chrysler cornering squeal).
+  `npx tsx scripts/drive.ts`. (A "point to drive" second mode was tried and removed: classic only.)
+  Also: twin-stick aiming in vehicles (right stick: drive-by, heli
   guns, turret) and a shared car radio (protocol 16).
 - Company (2026-11-23): waypoints go to the server and show, in each player's colour, to everyone in
   the same vehicle; players riding inside a car have their names over it; a passed job's pay is split

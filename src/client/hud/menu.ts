@@ -66,12 +66,6 @@ export function openMenu(d: MenuDeps): void {
       <div class="keys">${input.pad.active ? padSummary(input) : keySummary(input)}</div>`,
     rows: [
       { name: 'Change controls…', sub: 'Keyboard, mouse and controller', group: 'Controls', onClick: () => openControls(pane, input, () => openMenu(d)) },
-      {
-        name: `Driving (keyboard & mouse): ${input.keyboardDrive === 'point' ? 'point to drive' : 'classic'}`,
-        sub: input.keyboardDrive === 'point' ? 'Point where to go and the car steers there; hold Reverse to back up or spin round' : 'Gas, brake and steer',
-        group: 'Controls',
-        onClick: () => { input.toggleDriveMode(); openMenu(d); },
-      },
       ...LEVELS.map((l) => ({
         name: `${l.label}${quality.current === l.q ? '  ✓' : ''}`, sub: l.sub, group: 'Graphics',
         onClick: () => quality.choose(l.q),

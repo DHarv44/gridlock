@@ -1,7 +1,7 @@
 // Static collision world: axis-aligned boxes (buildings, containers, fences) and tree trunks,
 // bucketed in a uniform grid. Used by server physics and client-side prediction alike.
 import type { City } from './cityTypes';
-import { MAP_SIZE } from './cityTypes';
+import { LAND0, LAND1, MAP_SIZE } from './cityTypes';
 import { FLAT_PROPS } from './interiors';
 import { WORLD_X } from './levels';
 import { KIND, massesFor } from './massing';
@@ -30,6 +30,9 @@ export class StaticWorld {
   private q = 1;
 
   constructor(city: City) {
+    const r = city.riverRow;
+    this.riverY0 = city.ys[r].pos + city.ys[r].width / 2;
+    this.riverY1 = city.ys[r + 1].pos - city.ys[r + 1].width / 2;
     // Walk-in buildings: their room's walls (with the door gap), furniture and the solid rest,
     // instead of one solid box.
     const open = new Set(city.interiors.map((i) => i.building));
@@ -59,6 +62,18 @@ export class StaticWorld {
         for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) this.roofCells[j * N + i].push(id);
       }
     });
+  }
+
+  /** The river's banks (y): set in the constructor. */
+  private riverY0 = 0;
+  private riverY1 = 0;
+
+  /** Water a boat can be on: the sea round the island and the whole river, under the bridges too (a
+   *  boat goes under the deck: from above, the bridge hides it). Upper-floor strips are dry. */
+  boatWater(x: number, y: number): boolean {
+    if (x >= MAP_SIZE) return false;
+    if (x < LAND0 || x > LAND1 || y < LAND0 || y > LAND1) return true;
+    return y > this.riverY0 && y < this.riverY1;
   }
 
   private roofs: (Box2 & { bi: number })[] = [];
