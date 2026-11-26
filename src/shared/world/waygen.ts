@@ -1,6 +1,6 @@
-// Highways (WORLD.highways). Two steps. Before blocks are laid out (pickWayLines): pick the lines that
-// become corridors and plan each from the lines alone (planWay): which cross streets pass it (the
-// main streets; the side streets end at its fence, roadgen.ts), where its interchanges are, and,
+// Highways (WORLD.highways), on corridors of their own through the blocks (world/corridors.ts). Two
+// steps. Before blocks are laid out (planWays): plan each from the lines alone (planWay): which cross
+// streets pass it (the main streets; the side streets end short of it, roadgen.ts), where its interchanges are, and,
 // rarely, a trench that side streets bridge. Once the road graph exists (buildWays): its height
 // profile (on the ground, climbing only to bridge the streets that pass under it, the river and the
 // other highway; down in its trench), diamond interchanges with their ramps at ground level beside
@@ -9,43 +9,20 @@
 import { LANE_W, MAP_SIZE, type RoadLine, type RoadNode, type Segment } from './cityTypes';
 import type { RoadLayout } from './roadgen';
 import { WORLD } from './worldSpec';
-import { AVENUE_W, DECK_H, DECK_HALF, FOOT_GAP, HUMP, HUMP_GRADE, HUMP_PAD, MAIN_GRADE, MERGE, profileZ, RAMP_LAT, RAMP_LEN, RAMP_W, type Ramp, TRENCH_D, type Way, WAY0, wayPoint } from './wayTypes';
+import { CORRIDOR_W, DECK_H, DECK_HALF, FOOT_GAP, HUMP, HUMP_GRADE, HUMP_PAD, MAIN_GRADE, MERGE, profileZ, RAMP_LAT, RAMP_LEN, RAMP_W, type Ramp, TRENCH_D, type Way, WAY0, wayPoint } from './wayTypes';
 
 /** The run a trench's dive takes. */
 const DIVE = TRENCH_D / MAIN_GRADE;
 /** A ramp's reach along the corridor from its cross street's kerb. */
 const REACH = FOOT_GAP + RAMP_LEN + MERGE;
 
-/** A road line becomes a highway's corridor: as wide as the highway and its ramps, never merged
- *  away (it stays arterial), and no street along it (roadgen.ts). */
-function widen(l: RoadLine): void {
-  l.width = AVENUE_W; l.lanes = 2; l.parking = false; l.highway = true; l.arterial = true;
-}
-
-/** The arterial nearest `target` (a fraction of the map) among `ok` lines, or -1. */
-function nearest(lines: RoadLine[], ok: (i: number) => boolean, target: number): number {
-  let bi = -1, bd = Infinity;
-  lines.forEach((l, i) => {
-    if (!l.arterial || !ok(i)) return;
-    const d = Math.abs(l.pos / MAP_SIZE - target);
-    if (d < bd) { bd = d; bi = i; }
-  });
-  return bi;
-}
-
-/** Marks and widens the corridors (the first east-west, north of the river; the second north-south,
- *  over the river on its own) and plans each. */
-export function pickWayLines(L: RoadLayout): void {
+/** Plans each highway corridor (world/corridors.ts put them in: east-west first). */
+export function planWays(L: RoadLayout): void {
   const spec = WORLD.highways;
   if (!spec || spec.count <= 0) return;
-  const nx = L.xs.length - 1, ny = L.ys.length - 1, r = L.riverRow;
   const corridors: { axis: 'h' | 'v'; line: number }[] = [];
-  const j = nearest(L.ys, (j) => j >= 2 && j <= ny - 2 && (r < 0 || (j !== r && j !== r + 1)), 0.32);
-  if (j >= 0) { widen(L.ys[j]); corridors.push({ axis: 'h', line: j }); }
-  if (spec.count > 1) {
-    const i = nearest(L.xs, (i) => i >= 2 && i <= nx - 2, 0.56);
-    if (i >= 0) { widen(L.xs[i]); L.bridgeLines.delete(i); corridors.push({ axis: 'v', line: i }); }
-  }
+  L.ys.forEach((l, j) => { if (l.highway) corridors.push({ axis: 'h', line: j }); });
+  L.xs.forEach((l, i) => { if (l.highway) { corridors.push({ axis: 'v', line: i }); L.bridgeLines.delete(i); } });
   // One trench at most (WORLD.highways.sunken), on the first corridor with room for it.
   let trenched = spec.sunken <= 0;
   corridors.forEach((c, k) => {
@@ -61,14 +38,14 @@ export function pickWayLines(L: RoadLayout): void {
 function planWay(L: RoadLayout, axis: 'h' | 'v', otherAt: number | null, climbs: boolean, trenchOk: boolean): NonNullable<RoadLine['plan']> {
   const cross = axis === 'h' ? L.xs : L.ys;
   const at = (k: number) => cross[k].pos, hw = (k: number) => cross[k].width / 2;
-  const all = cross.map((_, k) => k).filter((k) => !cross[k].highway);
+  const all = cross.map((_, k) => k).filter((k) => !cross[k].highway && !cross[k].rail);
   const river = axis === 'v' && L.riverRow >= 0 ? [L.ys[L.riverRow].pos, L.ys[L.riverRow + 1].pos] : null;
   const overlaps = (a0: number, a1: number, b0: number, b1: number) => a1 > b0 && a0 < b1;
   // What the other highway and the river need: their corridor or water kept clear, and if this
   // highway climbs over them, the climb (where nothing can join it).
   const climb = (c0: number, c1: number): [number, number] => [c0 - HUMP - 4, c1 + HUMP + 4];
   const keepOut: [number, number][] = [];
-  if (otherAt !== null) keepOut.push(climbs ? climb(otherAt - AVENUE_W / 2 - 3, otherAt + AVENUE_W / 2 + 3) : [otherAt - AVENUE_W / 2 - 5, otherAt + AVENUE_W / 2 + 5]);
+  if (otherAt !== null) keepOut.push(climbs ? climb(otherAt - CORRIDOR_W / 2 - 3, otherAt + CORRIDOR_W / 2 + 3) : [otherAt - CORRIDOR_W / 2 - 5, otherAt + CORRIDOR_W / 2 + 5]);
   if (river) keepOut.push(climb(river[0], river[1]));
   const clashes = (a0: number, a1: number) => keepOut.some(([b0, b1]) => overlaps(a0, a1, b0, b1));
   const mains = all.filter((k) => k >= 1 && k <= cross.length - 2 && cross[k].arterial);

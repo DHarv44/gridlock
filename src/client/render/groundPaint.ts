@@ -2,11 +2,11 @@
 import { Rng } from '../../shared/rng';
 import { ZONES } from '../../shared/packs';
 import type { CityMap } from '../../shared/world/city';
-import { LAND0, LAND1, LANE_W, MAP_SIZE, type Segment } from '../../shared/world/cityTypes';
+import { LAND0, LAND1, LANE_W, MAP_SIZE, type Segment, SIDEWALK_W } from '../../shared/world/cityTypes';
 import { WORLD } from '../../shared/world/worldSpec';
 import { hasWild, paintRelief } from './groundRelief';
 import { boardwalk, grid, paintLot } from './lotPaint';
-import { AVENUE_W, wayPoint } from '../../shared/world/wayTypes';
+import { AVENUE_W, BULB_R, CORRIDOR_W, wayPoint } from '../../shared/world/wayTypes';
 import { trenchHoles } from '../../shared/world/ways';
 
 export const CHUNK = 128;
@@ -59,19 +59,32 @@ export function paintChunk(map: CityMap, cx: number, cy: number, canvas: HTMLCan
     rect(X0, r.y0, X1, r.y1, WATER);
   }
 
+  // A railway's own corridor (world/corridors.ts): a paved alley under the viaduct.
+  for (const [lines, v] of [[city.xs, true], [city.ys, false]] as const) {
+    for (const l of lines) {
+      if (!l.rail) continue;
+      const r = v ? { x0: l.pos - l.width / 2, x1: l.pos + l.width / 2, y0: LAND0, y1: LAND1 } : { x0: LAND0, x1: LAND1, y0: l.pos - l.width / 2, y1: l.pos + l.width / 2 };
+      if (!inView(r.x0, r.y0, r.x1, r.y1)) continue;
+      rect(r.x0, r.y0, r.x1, r.y1, WORLD.modern ? '#6f6c66' : '#6e5a40');
+      ctx.fillStyle = 'rgba(0,0,0,0.07)';
+      for (let a = Math.floor((v ? Math.max(r.y0, Y0) : Math.max(r.x0, X0)) / 2.4) * 2.4; a < (v ? Math.min(r.y1, Y1) : Math.min(r.x1, X1)); a += 2.4) {
+        if (v) ctx.fillRect(r.x0, a, r.x1 - r.x0, 0.12); else ctx.fillRect(a, r.y0, 0.12, r.y1 - r.y0);
+      }
+    }
+  }
   // A highway's corridor (no street along it): a grass verge, mown in stripes, with a gravel shoulder
   // at each edge; the cross streets are painted over it, and the trench is cut out below.
   for (const w of city.ways) {
     if (w.kind !== 'highway') continue;
-    const p = wayPoint(w, LAND0, -AVENUE_W / 2), q = wayPoint(w, LAND1, AVENUE_W / 2);
+    const p = wayPoint(w, LAND0, -CORRIDOR_W / 2), q = wayPoint(w, LAND1, CORRIDOR_W / 2);
     const x0 = Math.min(p.x, q.x), y0 = Math.min(p.y, q.y), x1 = Math.max(p.x, q.x), y1 = Math.max(p.y, q.y);
     if (!inView(x0, y0, x1, y1)) continue;
     rect(x0, y0, x1, y1, '#8a877e');
-    const g0 = wayPoint(w, LAND0, -AVENUE_W / 2 + 1.2), g1 = wayPoint(w, LAND1, AVENUE_W / 2 - 1.2);
+    const g0 = wayPoint(w, LAND0, -CORRIDOR_W / 2 + 1.2), g1 = wayPoint(w, LAND1, CORRIDOR_W / 2 - 1.2);
     rect(Math.min(g0.x, g1.x), Math.min(g0.y, g1.y), Math.max(g0.x, g1.x), Math.max(g0.y, g1.y), '#66734f');
     ctx.fillStyle = 'rgba(255,255,255,0.05)';
     for (let a = Math.floor(Math.max(LAND0, w.axis === 'h' ? X0 : Y0) / 6) * 6; a < Math.min(LAND1, w.axis === 'h' ? X1 : Y1); a += 12) {
-      const s = wayPoint(w, a, -AVENUE_W / 2 + 1.2), e = wayPoint(w, a + 6, AVENUE_W / 2 - 1.2);
+      const s = wayPoint(w, a, -CORRIDOR_W / 2 + 1.2), e = wayPoint(w, a + 6, CORRIDOR_W / 2 - 1.2);
       ctx.fillRect(Math.min(s.x, e.x), Math.min(s.y, e.y), Math.abs(e.x - s.x), Math.abs(e.y - s.y));
     }
     // Where it crosses the river, the river (the highway bridges it on its own).
@@ -113,6 +126,16 @@ export function paintChunk(map: CityMap, cx: number, cy: number, canvas: HTMLCan
     } else if (z.busy) boardwalk(ctx, br); // a town's plank walks; elsewhere bare ground
 
     for (const li of b.lots) paintLot(ctx, city.lots[li], z.ground);
+  }
+  // Side streets cut off by a highway end in a turning circle (world/roadgen.ts): a kerbed bulb.
+  for (const n of city.nodes) {
+    if (!n.end || !inView(n.x - BULB_R - 4, n.y - BULB_R - 4, n.x + BULB_R + 4, n.y + BULB_R + 4)) continue;
+    ctx.fillStyle = ZONES[map.zoneAt(n.x, n.y)]?.sidewalk ?? '#8c8a82';
+    ctx.beginPath(); ctx.arc(n.x, n.y, BULB_R + SIDEWALK_W, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = WORLD.modern ? ASPHALT : TRAIL();
+    ctx.beginPath(); ctx.arc(n.x, n.y, BULB_R, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 0.25;
+    ctx.beginPath(); ctx.arc(n.x, n.y, BULB_R + 0.12, 0, Math.PI * 2); ctx.stroke();
   }
   // Ponds, with a muddy shore.
   for (const p of city.ponds) {

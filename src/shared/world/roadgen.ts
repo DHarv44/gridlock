@@ -6,7 +6,9 @@ import { DISTRICTS, ZONES, zoneIndex } from '../packs';
 import type { Rng } from '../rng';
 import { LAND0, LAND1, LANE_W, MAP_SIZE, PARK_W, type RoadLine, type RoadNode, type Segment } from './cityTypes';
 import { WORLD } from './worldSpec';
-import { pickWayLines } from './waygen';
+import { planWays } from './waygen';
+import { insertCorridors } from './corridors';
+import { BULB_R } from './wayTypes';
 
 const MIN_GAP = 46;
 /** A trail: one lane each way of packed dirt. */
@@ -63,7 +65,10 @@ export interface RoadLayout {
 
 export function genLayout(rng: Rng): RoadLayout {
   const { lines: xs } = genLines(rng, null);
-  const { lines: ys, riverRow } = genLines(rng, WORLD.river ? MAP_SIZE * WORLD.river.at : null);
+  const g = genLines(rng, WORLD.river ? MAP_SIZE * WORLD.river.at : null);
+  const ys = g.lines;
+  // The highways' and an elevated railway's corridors through the blocks (world/corridors.ts).
+  const riverRow = insertCorridors(xs, ys, g.riverRow);
   const nx = xs.length - 1, ny = ys.length - 1;
   const cellZone = new Int16Array(nx * ny);
   const cellDistrict = new Int16Array(nx * ny);
@@ -140,8 +145,8 @@ export function genLayout(rng: Rng): RoadLayout {
     if (i !== 0 && i !== xs.length - 1 && bridgeLines.size > 4 && rng.chance(0.3)) bridgeLines.delete(i);
   }
   const L: RoadLayout = { xs, ys, riverRow, cellZone, cellDistrict, clusters, cellCluster, bridgeLines };
-  // Highways' avenues are widened for their ramp lanes before any block is laid out.
-  pickWayLines(L);
+  // Which streets pass each highway, its interchanges, its trench (world/waygen.ts).
+  planWays(L);
   return L;
 }
 
@@ -177,19 +182,20 @@ export function genGraph(L: RoadLayout): { nodes: RoadNode[]; segs: Segment[]; b
   const open = (z: number) => z < 0 || isWild(z);
   const wildPair = (za: number, zb: number) => (isWild(za) || isWild(zb)) && open(za) && open(zb);
 
-  // A highway's corridor (world/waygen.ts) is a line with no street along it. The streets its plan
-  // lets through pass under it (or over its trench); the rest end at its fence.
-  const passes = (corridor: RoadLine, k: number) => !corridor.plan || corridor.plan.cross.includes(k);
+  // Corridors (world/corridors.ts) have no street along them. Streets cross a railway's under its
+  // viaduct; a highway's only where its plan lets them pass (under its bridge, or over its trench):
+  // the rest end in a turning circle short of its corridor.
+  const passes = (corridor: RoadLine, k: number) => !corridor.highway || !corridor.plan || corridor.plan.cross.includes(k);
   const end = (i: number, j: number, x: number, y: number, v: boolean): RoadNode => {
     const n: RoadNode = { id: nodes.length, i, j, x, y, segs: [], lights: false, wv: v ? xs[i].width : 0, wh: v ? 0 : ys[j].width, end: true };
     nodes.push(n);
     return n;
   };
-  /** A street's node at (i, j), or its dead end short of the corridor there (toward `from`). */
-  const hEnd = (i: number, j: number, from: 1 | -1) => (xs[i].highway && !passes(xs[i], j) ? end(i, j, xs[i].pos + from * (xs[i].width / 2), ys[j].pos, false) : node(i, j));
-  const vEnd = (i: number, j: number, from: 1 | -1) => (ys[j].highway && !passes(ys[j], i) ? end(i, j, xs[i].pos, ys[j].pos + from * (ys[j].width / 2), true) : node(i, j));
+  /** A street's node at (i, j), or the turning circle it ends in short of the corridor there. */
+  const hEnd = (i: number, j: number, from: 1 | -1) => (xs[i].highway && !passes(xs[i], j) ? end(i, j, xs[i].pos + from * (xs[i].width / 2 + BULB_R), ys[j].pos, false) : node(i, j));
+  const vEnd = (i: number, j: number, from: 1 | -1) => (ys[j].highway && !passes(ys[j], i) ? end(i, j, xs[i].pos, ys[j].pos + from * (ys[j].width / 2 + BULB_R), true) : node(i, j));
   for (let j = 0; j <= ny; j++) {
-    if (ys[j].highway) continue;
+    if (ys[j].highway || ys[j].rail) continue;
     for (let i = 0; i < nx; i++) {
       const above = clusterAt(i, j - 1), below = clusterAt(i, j);
       if (above === below && above >= 0) continue;
@@ -199,7 +205,7 @@ export function genGraph(L: RoadLayout): { nodes: RoadNode[]; segs: Segment[]; b
     }
   }
   for (let i = 0; i <= nx; i++) {
-    if (xs[i].highway) continue;
+    if (xs[i].highway || xs[i].rail) continue;
     for (let j = 0; j < ny; j++) {
       if (j === riverRow) {
         if (!L.bridgeLines.has(i)) continue;

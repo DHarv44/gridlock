@@ -65,6 +65,7 @@ export class LotBuilder {
   build(L: RoadLayout): LotOutput {
     const { xs, ys, clusters } = L;
     const nx = xs.length - 1;
+    const corridor = (l: { highway?: boolean; rail?: boolean }) => !!l.highway || !!l.rail;
     clusters.forEach((c) => {
       const zi = L.cellZone[c.j0 * nx + c.i0];
       const rect: Rect = {
@@ -72,10 +73,53 @@ export class LotBuilder {
         y0: ys[c.j0].pos + ys[c.j0].width / 2, y1: ys[c.j1 + 1].pos - ys[c.j1 + 1].width / 2,
       };
       const block: Block = { id: this.out.blocks.length, rect, zone: zi, district: L.cellDistrict[c.j0 * nx + c.i0], lots: [] };
+      // Sides backing onto a corridor (world/corridors.ts): no street there, so no sidewalk and no fronts.
+      this.backs = new Set<Dir>([
+        ...(corridor(ys[c.j0]) ? [Dir.N] : []), ...(corridor(xs[c.i1 + 1]) ? [Dir.E] : []),
+        ...(corridor(ys[c.j1 + 1]) ? [Dir.S] : []), ...(corridor(xs[c.i0]) ? [Dir.W] : []),
+      ] as Dir[]);
       this.out.blocks.push(block);
       this.fillBlock(block, ZONES[zi]);
     });
+    this.backs = new Set();
     return this.out;
+  }
+
+  /** The block being filled: its sides that back onto a corridor. */
+  private backs = new Set<Dir>();
+
+  /** Side streets' turning circles (world/roadgen.ts), set before build(): lots stop short of them. */
+  bulbs: { x: number; y: number; r: number }[] = [];
+
+  /** A lot's rect cut back from any turning circle beside it (they sit in the street, beside the block). */
+  private clearOfBulbs(r: Rect): Rect {
+    const q = { ...r };
+    for (const b of this.bulbs) {
+      const R = b.r + SIDEWALK_W + 0.5;
+      const overX = b.x + R > q.x0 && b.x - R < q.x1, overY = b.y + R > q.y0 && b.y - R < q.y1;
+      if (!overX || !overY) continue;
+      if (b.x <= q.x0) q.x0 = Math.max(q.x0, b.x + R);
+      else if (b.x >= q.x1) q.x1 = Math.min(q.x1, b.x - R);
+      else if (b.y <= q.y0) q.y0 = Math.max(q.y0, b.y + R);
+      else if (b.y >= q.y1) q.y1 = Math.min(q.y1, b.y - R);
+    }
+    return q;
+  }
+
+  /** A side street's turning circle (world/roadgen.ts): the lots it cuts into become paved open
+   *  ground, nothing built or parked there, no trees in it. */
+  clearCircle(x: number, y: number, r: number): void {
+    const R = r + SIDEWALK_W;
+    const box = { x0: x - R, y0: y - R, x1: x + R, y1: y + R };
+    const hit = (q: Rect) => q.x0 < box.x1 && q.x1 > box.x0 && q.y0 < box.y1 && q.y1 > box.y0;
+    for (const lot of this.out.lots) {
+      if (lot.use === 'wild' || !hit(lot.rect)) continue;
+      if (lot.building) { const b = lot.building; this.out.buildings = this.out.buildings.filter((q) => q !== b); delete lot.building; }
+      this.out.parking = this.out.parking.filter((p) => p.lot !== lot.id);
+      this.out.obstacles = this.out.obstacles.filter((o) => !(o.rect.x0 >= lot.rect.x0 && o.rect.x1 <= lot.rect.x1 && o.rect.y0 >= lot.rect.y0 && o.rect.y1 <= lot.rect.y1));
+      lot.use = 'plaza';
+      this.keepClear(lot.id, box);
+    }
   }
 
   /** Trees go in last so they can avoid buildings and service pads. */
@@ -120,7 +164,9 @@ export class LotBuilder {
 
   private fillBlock(block: Block, z: ZoneSpec): void {
     if (z.layout === 'wild') { this.wild(block, z); return; }
-    const area = insetRect(block.rect, SIDEWALK_W);
+    // A sidewalk along the streets; none against a corridor's wall.
+    const b = this.backs, r = block.rect, s = SIDEWALK_W;
+    const area: Rect = { x0: r.x0 + (b.has(Dir.W) ? 0 : s), x1: r.x1 - (b.has(Dir.E) ? 0 : s), y0: r.y0 + (b.has(Dir.N) ? 0 : s), y1: r.y1 - (b.has(Dir.S) ? 0 : s) };
     if (rectW(area) < 8 || rectH(area) < 8) return;
     switch (z.layout) {
       case 'park': this.addLot(block, area, 'park', -1); break;
@@ -142,8 +188,10 @@ export class LotBuilder {
     return lot;
   }
 
-  private genericLot(block: Block, r: Rect, area: Rect, z: ZoneSpec): void {
-    const sides = touchingSides(r, area);
+  private genericLot(block: Block, r0: Rect, area: Rect, z: ZoneSpec): void {
+    const sides = touchingSides(r0, area).filter((d) => !this.backs.has(d));
+    const r = this.clearOfBulbs(r0);
+    if (rectW(r) < 4 || rectH(r) < 4) return;
     const front: Dir | -1 = sides.length ? this.rng.pick(sides) : -1;
     if (z.layout === 'docks' && this.rng.chance(0.5)) {
       const lot = this.addLot(block, r, 'containers', front);
@@ -174,7 +222,11 @@ export class LotBuilder {
     const alongX = w >= h;
     const depth = alongX ? h : w;
     const rows: { r: Rect; front: Dir }[] = [];
-    if (depth >= z.lot.min * 2) {
+    // Against a corridor: one row, facing the street, its back yards to the wall.
+    const [f0, f1] = alongX ? [Dir.N, Dir.S] : [Dir.W, Dir.E];
+    if (this.backs.has(f0) || this.backs.has(f1)) {
+      rows.push({ r: area, front: this.backs.has(f0) ? f1 : f0 });
+    } else if (depth >= z.lot.min * 2) {
       const mid = alongX ? (area.y0 + area.y1) / 2 : (area.x0 + area.x1) / 2;
       if (alongX) rows.push({ r: { ...area, y1: mid }, front: Dir.N }, { r: { ...area, y0: mid }, front: Dir.S });
       else rows.push({ r: { ...area, x1: mid }, front: Dir.W }, { r: { ...area, x0: mid }, front: Dir.E });
@@ -196,7 +248,9 @@ export class LotBuilder {
     }
   }
 
-  private house(block: Block, r: Rect, front: Dir, z: ZoneSpec): void {
+  private house(block: Block, r0: Rect, front: Dir, z: ZoneSpec): void {
+    const r = this.clearOfBulbs(r0);
+    if (rectW(r) < 9 || rectH(r) < 9) return;
     const lot = this.addLot(block, r, 'yard', front);
     const fs = this.rng.range(z.lot.setback[0], z.lot.setback[1]) + 3;
     const side = 2.5, back = 3;

@@ -13,6 +13,7 @@ import { buildWays } from './waygen';
 import { buildRailway } from './railgen';
 import { placeTables } from './tables';
 import { buildTerrain } from './terrain';
+import { BULB_R } from './wayTypes';
 
 const HALF_PI = Math.PI / 2;
 
@@ -47,7 +48,11 @@ export function generateCity(seed: number): City {
   // A railway (world/railgen.ts); an elevated one is a way too.
   const railway = buildRailway(layout, { nodes, segs }, ways);
   const lotBuilder = new LotBuilder(rng, seed);
+  // Side streets a highway cuts off end in a turning circle (world/roadgen.ts): the lots beside it
+  // stop short of it (and anything left in it is cleared).
+  lotBuilder.bulbs = nodes.filter((n) => n.end).map((n) => ({ x: n.x, y: n.y, r: BULB_R }));
   const lo = lotBuilder.build(layout);
+  for (const b of lotBuilder.bulbs) lotBuilder.clearCircle(b.x, b.y, b.r);
   const nx = layout.xs.length - 1, ny = layout.ys.length - 1;
   const cellBlock = new Int32Array(nx * ny).fill(-1);
   layout.clusters.forEach((c, ci) => {

@@ -18,8 +18,15 @@ export const DECK_HALF = 2 * LANE_W + 1.3;
 export const RAMP_W = 7.4;
 /** Ramp lane centre, out from the corridor's centre line. */
 export const RAMP_LAT = DECK_HALF + 0.1 + RAMP_W / 2;
-/** A highway's corridor, fence to fence: the deck, and the ramps outside it. */
+/** The highway and its ramps, fence to fence. */
 export const AVENUE_W = 2 * (DECK_HALF + 0.1 + RAMP_W);
+/** A planted verge each side of that, out to the sound walls the blocks back onto; the whole
+ *  corridor's width. */
+export const VERGE = 5;
+export const CORRIDOR_W = AVENUE_W + 2 * VERGE;
+/** A side street cut off by a highway ends in a turning circle this big (its centre is the street's
+ *  end node, world/roadgen.ts). */
+export const BULB_R = 10;
 /** How steeply the highway climbs to bridge a street, and the run that takes it up. */
 export const HUMP_GRADE = 0.06;
 export const HUMP = DECK_H / HUMP_GRADE;

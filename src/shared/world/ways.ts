@@ -9,7 +9,10 @@ import type { City } from './cityTypes';
 import { railColumns } from './railgen';
 import { groundAt } from './terrain';
 import { FLOOR_H, floorOf, isWayStrip, LEVEL_BAND, MAX_FLOORS } from './levels';
-import { AVENUE_W, CLEAR_S, DECK_H, DECK_HALF, inRamp, MERGE, profileZ, RAMP_LEN, RAMP_W, rampS, SWITCH_S, WALL_H, WALL_T, type Way, wayLocal, wayPoint } from './wayTypes';
+import { CLEAR_S, CORRIDOR_W, DECK_H, DECK_HALF, inRamp, MERGE, profileZ, RAMP_LEN, RAMP_W, rampS, SWITCH_S, WALL_H, WALL_T, type Way, wayLocal, wayPoint } from './wayTypes';
+
+/** A highway's sound walls, where the blocks back onto its corridor. */
+export const SOUND_WALL_H = 3.2;
 
 /** The client's city's ways, for drawing code that only has a position (installed once the city
  *  is built). */
@@ -35,12 +38,12 @@ export function surfaceZ(ways: Way[], x: number, y: number): number {
   return profileZ(w, a);
 }
 
-/** The street-side fences round a highway's corridor, as boxes along it [a0, a1] and across it
- *  [l0, l1]: down both edges, open where streets pass (a crossing, outside the highway's run any
- *  street); across the corridor at each crossing's kerbs, open for the ramps that start there. */
-export function corridorFences(city: City, w: Way): { a0: number; a1: number; l0: number; l1: number }[] {
-  const out: { a0: number; a1: number; l0: number; l1: number }[] = [];
-  const E = AVENUE_W / 2, T = 0.3;
+/** The walls round a highway's corridor, as boxes along it [a0, a1] and across it [l0, l1]: sound
+ *  walls (`tall`) down both edges, where the blocks back onto it, open where streets pass; a low
+ *  wall across the corridor at each crossing's kerbs, open for the ramps that start there. */
+export function corridorFences(city: City, w: Way): { a0: number; a1: number; l0: number; l1: number; tall: boolean }[] {
+  const out: { a0: number; a1: number; l0: number; l1: number; tall: boolean }[] = [];
+  const E = CORRIDOR_W / 2, T = 0.3;
   const along = (x: number, y: number) => (w.axis === 'h' ? x : y);
   const crossings = city.nodes.filter((n) => n.level === undefined && !n.end && (w.axis === 'h' ? n.j === w.line : n.i === w.line))
     .map((n) => { const a = along(n.x, n.y), h = (w.axis === 'h' ? n.wv : n.wh) / 2; return { n, a0: a - h, a1: a + h }; })
@@ -55,18 +58,18 @@ export function corridorFences(city: City, w: Way): { a0: number; a1: number; l0
   for (const [g0, g1] of gaps) {
     if (g1 <= from) continue;
     if (g0 > last) break;
-    if (g0 - from > 0.5) out.push({ a0: from, a1: g0, l0: -E, l1: -E + T }, { a0: from, a1: g0, l0: E - T, l1: E });
+    if (g0 - from > 0.5) out.push({ a0: from, a1: g0, l0: -E, l1: -E + T, tall: true }, { a0: from, a1: g0, l0: E - T, l1: E, tall: true });
     from = Math.max(from, g1);
   }
-  if (last - from > 0.5) out.push({ a0: from, a1: last, l0: -E, l1: -E + T }, { a0: from, a1: last, l0: E - T, l1: E });
+  if (last - from > 0.5) out.push({ a0: from, a1: last, l0: -E, l1: -E + T, tall: true }, { a0: from, a1: last, l0: E - T, l1: E, tall: true });
   // Across the corridor at each crossing's kerbs along the run, but for its ramps' feet.
   for (const c of crossings) {
     for (const [a, dir] of [[c.a0, -1], [c.a1, 1]] as const) {
       if (a < lo || a > hi) continue;
       const open = w.ramps.filter((r) => r.node === c.n.id && r.up === dir).map((r) => [r.lat - RAMP_W / 2, r.lat + RAMP_W / 2] as [number, number]).sort((p, q) => p[0] - q[0]);
       let from = -E;
-      for (const [o0, o1] of open) { if (o0 > from) out.push({ a0: a + (dir < 0 ? -T : 0), a1: a + (dir < 0 ? 0 : T), l0: from, l1: o0 }); from = o1; }
-      if (E > from) out.push({ a0: a + (dir < 0 ? -T : 0), a1: a + (dir < 0 ? 0 : T), l0: from, l1: E });
+      for (const [o0, o1] of open) { if (o0 > from) out.push({ a0: a + (dir < 0 ? -T : 0), a1: a + (dir < 0 ? 0 : T), l0: from, l1: o0, tall: false }); from = o1; }
+      if (E > from) out.push({ a0: a + (dir < 0 ? -T : 0), a1: a + (dir < 0 ? 0 : T), l0: from, l1: E, tall: false });
     }
   }
   return out;
@@ -145,7 +148,7 @@ export function wayCollision(city: City, isWater: (x: number, y: number) => bool
     };
     const T = WALL_T;
     // Street: the corridor's fences, wherever the highway's in it.
-    for (const f of corridorFences(city, w)) box(f.a0, f.a1, f.l0, f.l1, 1.2, false);
+    for (const f of corridorFences(city, w)) box(f.a0, f.a1, f.l0, f.l1, f.tall ? SOUND_WALL_H : 1.2, false);
     for (const r of w.ramps) {
       const at = (s: number) => r.foot + r.up * s;
       const lo = r.lat - RAMP_W / 2, hi = r.lat + RAMP_W / 2;
@@ -228,7 +231,7 @@ export function columnStations(city: City, w: Way): number[] {
   const crossings = city.nodes.filter((n) => n.level === undefined && !n.end && (w.axis === 'h' ? n.j === w.line : n.i === w.line))
     .map((n) => { const a = w.axis === 'h' ? n.x : n.y, h = (w.axis === 'h' ? n.wv : n.wh) / 2 + 2; return [a - h, a + h] as [number, number]; });
   // Nor in the other highway's corridor (it passes under the bridge there).
-  for (const o of city.ways) if (o.kind === 'highway' && o.axis !== w.axis) crossings.push([o.pos - AVENUE_W / 2 - 1, o.pos + AVENUE_W / 2 + 1]);
+  for (const o of city.ways) if (o.kind === 'highway' && o.axis !== w.axis) crossings.push([o.pos - CORRIDOR_W / 2 - 1, o.pos + CORRIDOR_W / 2 + 1]);
   const blocked = (a: number) => crossings.some(([c0, c1]) => a > c0 && a < c1)
     || w.sunk.some(([s0, s1]) => a > s0 - 4 && a < s1 + 4)
     || w.ramps.some((r) => { const s = rampS(r, a); return s > -2 && s < CLEAR_S + 2; });

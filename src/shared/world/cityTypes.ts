@@ -23,8 +23,10 @@ export interface RoadLine {
   lanes: number;        // per direction
   parking: boolean;     // parking lane on each curb
   arterial: boolean;
-  /** A highway runs along this line (world/waygen.ts): a fenced corridor as wide as it and its ramps. */
+  /** Not a street: a corridor through the middle of a row of blocks (world/corridors.ts), the
+   *  blocks either side backing onto it. A highway's (waygen.ts) or an elevated railway's (railgen.ts). */
   highway?: boolean;
+  rail?: boolean;
   /** The highway's plan, from the lines alone (waygen.ts planWay): the cross lines that pass it (the
    *  rest end at its fence), the ones with interchanges, and the ones bridging its trench. */
   plan?: { cross: number[]; exits: number[]; trench: number[] };

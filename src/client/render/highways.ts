@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { LANE_W, type City } from '../../shared/world/cityTypes';
 import { DECK_HALF, FOOT_GAP, MERGE, profileZ, type Ramp, RAMP_LEN, RAMP_W, WALL_H, WALL_T, type Way, wayPoint } from '../../shared/world/wayTypes';
-import { columnStations, corridorFences, trenchOpen } from '../../shared/world/ways';
+import { columnStations, corridorFences, SOUND_WALL_H, trenchOpen } from '../../shared/world/ways';
 
 const STEP = 3;
 /** Road surfaces sit this far over the ground they run on (no flicker where they're level with it). */
@@ -233,11 +233,12 @@ export class Highways {
     this.wall(w, walls, r.foot + r.up * RAMP_LEN, r.foot + r.up * reach, (a) => outer(a) - sd * (WALL_T / 2), WALL_T, WALL_H, flat);
   }
 
-  /** The corridor's fences on the street's side (world/ways.ts corridorFences): low concrete walls. */
+  /** The corridor's walls (world/ways.ts corridorFences): tall sound walls where the blocks back onto
+   *  it, low concrete walls across it at the crossings. */
   private fences(city: City, w: Way, walls: Mesher): void {
     for (const f of corridorFences(city, w)) {
       const c = (a: number, l: number, z: number) => { const p = wayPoint(w, a, l); return [p.x, z, p.y]; };
-      const { a0, a1, l0, l1 } = f, h = 1.1;
+      const { a0, a1, l0, l1 } = f, h = f.tall ? SOUND_WALL_H : 1.1;
       walls.quad([c(a0, l0, 0), c(a1, l0, 0), c(a1, l0, h), c(a0, l0, h)]);
       walls.quad([c(a0, l1, 0), c(a1, l1, 0), c(a1, l1, h), c(a0, l1, h)]);
       walls.quad([c(a0, l0, 0), c(a0, l1, 0), c(a0, l1, h), c(a0, l0, h)]);
