@@ -12,6 +12,7 @@ import { VEHICLES, vehicleIndex } from '../src/shared/packs';
 import { Mode, type YouState } from '../src/shared/protocol';
 import { type Body, type Controls, stepVehicle } from '../src/shared/sim/physics';
 import type { StaticWorld } from '../src/shared/world/collision';
+import { blockBy, obbVsObb } from '../src/shared/sim/dynamic';
 
 let failures = 0;
 const check = (ok: boolean, what: string) => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${what}`); if (!ok) failures++; };
@@ -68,6 +69,22 @@ for (const speed of [12, 20, 28]) {
   for (let i = 0; i < 30; i++) stepVehicle(b, spec, ctl({ throttle: 0.5, steer: 1 }), DT, open, true);
   const slip = Math.abs(-b.vx * Math.sin(b.angle) + b.vy * Math.cos(b.angle));
   check(slip < 1, `no handbrake: the tyres hold (sideways slip ${slip.toFixed(2)} m/s)`);
+}
+
+// Other cars in the way (client prediction, shared/sim/dynamic.ts): you stop at them, not in them.
+{
+  const parked = { x: 8, y: 0, angle: Math.PI / 2, hl: spec.length / 2, hw: spec.width / 2 };
+  const b = at(0, 15);
+  let overlap = 0;
+  for (let i = 0; i < 40; i++) {
+    stepVehicle(b, spec, ctl({ throttle: 1 }), DT, open, true);
+    blockBy(b, { hl: spec.length / 2, hw: spec.width / 2 }, [parked]);
+    overlap = Math.max(overlap, obbVsObb({ x: b.x, y: b.y, angle: b.angle, hl: spec.length / 2, hw: spec.width / 2 }, parked)?.depth ?? 0);
+  }
+  check(overlap < 0.01 && b.x < 8, `driving into a parked car: you stop against it (x ${b.x.toFixed(2)}), never inside it`);
+  const ped = { x: 8 - 3, y: 0, angle: 0, vx: 0, vy: 0, av: 0, alt: 0 };
+  for (let i = 0; i < 40; i++) { ped.x += 4 * DT; blockBy(ped, { r: 0.35 }, [parked]); }
+  check(ped.x < 8 - spec.width / 2 - 0.3, `walking into it: you stop at its side (x ${ped.x.toFixed(2)})`);
 }
 
 // Tyre marks: counted with a stand-in for the effects.

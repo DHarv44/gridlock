@@ -4,29 +4,12 @@ import { flies, floats } from '../../../shared/sim/kinds';
 import { FX } from '../../../shared/protocol';
 import { PED_RADIUS } from '../../../shared/sim/physics';
 import { obbVsCircle } from '../../../shared/world/collision';
+import { type Hit, type Obb, obbVsObb } from '../../../shared/sim/dynamic';
 import { damagePed, damageVehicle } from '../combat/damage';
 import type { Vehicle } from '../entities';
 import type { World } from '../world';
 
-interface Hit { nx: number; ny: number; depth: number }
-
-function obbVsObb(a: Vehicle, b: Vehicle): Hit | null {
-  const A = a.body, B = b.body;
-  const ca = Math.cos(A.angle), sa = Math.sin(A.angle), cb = Math.cos(B.angle), sb = Math.sin(B.angle);
-  const ahl = a.spec.length / 2, ahw = a.spec.width / 2, bhl = b.spec.length / 2, bhw = b.spec.width / 2;
-  const dx = A.x - B.x, dy = A.y - B.y;
-  const axes: [number, number][] = [[ca, sa], [-sa, ca], [cb, sb], [-sb, cb]];
-  let best = Infinity, nx = 0, ny = 0;
-  for (const [ax, ay] of axes) {
-    const ra = ahl * Math.abs(ca * ax + sa * ay) + ahw * Math.abs(-sa * ax + ca * ay);
-    const rb = bhl * Math.abs(cb * ax + sb * ay) + bhw * Math.abs(-sb * ax + cb * ay);
-    const d = dx * ax + dy * ay;
-    const o = ra + rb - Math.abs(d);
-    if (o <= 0) return null;
-    if (o < best) { best = o; const s = d < 0 ? -1 : 1; nx = ax * s; ny = ay * s; }
-  }
-  return { nx, ny, depth: best };
-}
+const box = (v: Vehicle): Obb => ({ x: v.body.x, y: v.body.y, angle: v.body.angle, hl: v.spec.length / 2, hw: v.spec.width / 2 });
 
 const flying = (v: Vehicle) => flies(v.spec) && v.body.alt > 2;
 /** Boats only meet boats (and swimmers): a boat passing under a bridge never touches the cars on it. */
@@ -39,7 +22,7 @@ export function resolveContacts(w: World): void {
     w.vehHash.query(A.x, A.y, reach, (b) => {
       if (b.id <= a.id || flying(a) !== flying(b) || afloat(a) !== afloat(b)) return;
       if (flying(a) && Math.abs(a.body.alt - b.body.alt) > 4) return;
-      const h = obbVsObb(a, b);
+      const h = obbVsObb(box(a), box(b));
       if (h) vehicleHit(w, a, b, h);
     });
     if (flying(a)) continue;

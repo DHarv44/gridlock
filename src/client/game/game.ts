@@ -16,7 +16,9 @@ import { Phone } from '../hud/phone';
 import { Talk } from '../hud/talk';
 import { Crosshair } from '../hud/crosshair';
 import { PaintGarage } from '../hud/paintGarage';
-import { cleanVoice, RULES, SERVICES } from '../../shared/packs';
+import { cleanVoice, RULES, SERVICES, VEHICLES } from '../../shared/packs';
+import { floats } from '../../shared/sim/kinds';
+import { vehicleObstacles } from './obstacles';
 import type { Place } from '../../shared/world/cityTypes';
 import { BigMap } from '../hud/bigMap';
 import { saveProgress } from '../lobby/characterStore';
@@ -282,6 +284,9 @@ export class Game {
       inp.takeButtons(),
       inp.takeWeaponWish(),
     ];
+    // Other vehicles where they're drawn: your car or ped stops at them instead of clipping in.
+    const vt = this.you.mode === Mode.Driver ? this.you.vt : -1;
+    this.predict.obstacles = vehicleObstacles(this.store, own.x, own.y, this.you.vid, vt >= 0 && floats(VEHICLES[vt]));
     this.predict.apply(msg);
     this.conn.send({ t: 'in', i: [msg] });
   }

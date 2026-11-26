@@ -1,7 +1,8 @@
 // Client-side prediction of the local avatar (on foot or driving) with server reconciliation.
 import { PEDS, PLAYER_ARCHETYPE, VEHICLES } from '../../shared/packs';
 import { BTN, type InputMsg, Mode, type YouState } from '../../shared/protocol';
-import { type Body, type Controls, copyBody, DT, emptyControls, newBody, SPRINT, stepFoot, stepTrailer, stepVehicle } from '../../shared/sim/physics';
+import { type Body, type Controls, copyBody, DT, emptyControls, newBody, PED_RADIUS, SPRINT, stepFoot, stepTrailer, stepVehicle } from '../../shared/sim/physics';
+import { blockBy, type Obb } from '../../shared/sim/dynamic';
 import type { CityMap } from '../../shared/world/city';
 import type { StaticWorld } from '../../shared/world/collision';
 
@@ -22,6 +23,10 @@ export class Predictor {
   errX = 0;
   errY = 0;
 
+  /** Other vehicles where they're drawn (set by the game each tick): the predicted car or ped stops
+   *  at them instead of running into them until the server pulls it back out. */
+  obstacles: Obb[] = [];
+
   private onRoad: (x: number, y: number) => boolean;
 
   constructor(private world: StaticWorld, private map: CityMap) {
@@ -40,11 +45,13 @@ export class Predictor {
     if (this.mode === Mode.Driver && this.vtype >= 0) {
       const spec = VEHICLES[this.vtype];
       stepVehicle(b, spec, c, DT, this.world, true, this.onRoad);
+      blockBy(b, { hl: spec.length / 2, hw: spec.width / 2 }, this.obstacles);
       // A rig's trailer is predicted with the cab, so it answers the steering without lag.
       this.trailer = spec.trailer ? stepTrailer(b, spec, this.trailer, DT) : b.angle;
     } else {
       const ox = b.x, oy = b.y;
       stepFoot(b, c, PEDS[PLAYER_ARCHETYPE].runSpeed * (c.sprint ? SPRINT : 1), DT, this.world);
+      blockBy(b, { r: PED_RADIUS }, this.obstacles);
       if (this.map.isWater(b.x, b.y) && !this.map.isWater(ox, oy)) { b.x = ox; b.y = oy; b.vx = 0; b.vy = 0; }
     }
   }
