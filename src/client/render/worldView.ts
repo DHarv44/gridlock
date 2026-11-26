@@ -6,7 +6,8 @@ import { astride } from '../../shared/sim/kinds';
 import { animateLegs } from './legs';
 import { materialOf } from '../../shared/materials';
 import type { EntityStore, ViewEntity } from '../net/entities';
-import { FLOOR_H, floorOf, groundOf } from '../../shared/world/levels';
+import { floorOf, groundOf, isWayStrip } from '../../shared/world/levels';
+import { heightAt } from '../../shared/world/ways';
 import { putCarLights } from './carLights';
 import type { Effects } from './effects';
 import { animatePed, HIP_H, makePed, muzzleOf, type PedView, ridePed, setPedWeapon, SWING_TIME } from './pedMesh';
@@ -121,6 +122,12 @@ export class WorldView {
     for (const [id, o] of this.objs) if (!seen.has(id)) { this.scene.remove(o); this.objs.delete(id); }
   }
 
+  /** Is something on strip f drawn? The street and the highways always; a building's upper floor
+   *  only when it's yours. */
+  private shows(f: number): boolean {
+    return f === 0 || isWayStrip(f) || f === this.myF;
+  }
+
   private dropTag(id: number): void {
     const l = this.labels.get(id);
     if (l) { l.removeFromParent(); (l.material as THREE.SpriteMaterial).map?.dispose(); l.material.dispose(); this.labels.delete(id); }
@@ -149,11 +156,12 @@ export class WorldView {
     if (flags & PF.jump && v.hop <= 0) v.hop = 0.5;
     v.hop = Math.max(0, v.hop - dt);
     const lift = v.hop > 0 ? Math.sin(Math.PI * (1 - v.hop / 0.5)) * 0.9 : 0;
-    // Upstairs (world/levels.ts): over the building, at the floor's height.
+    // Upstairs (world/levels.ts): over the building, at the floor's height; on a highway, over its
+    // avenue at the deck's height.
     const g = groundOf(x, y);
-    v.root.position.set(g.x, lift + g.f * FLOOR_H, g.y);
+    v.root.position.set(g.x, lift + heightAt(x, y), g.y);
     // Only your floor is drawn: people on another upper floor would float in mid-air.
-    v.root.visible = g.f === 0 || g.f === this.myF;
+    v.root.visible = this.shows(g.f);
     v.root.rotation.y = -a;
     setPedWeapon(v, d[7]);
     const speed = isMe ? Math.hypot(own!.vx, own!.vy) : Math.hypot(e.vx, e.vy);
@@ -250,7 +258,13 @@ export class WorldView {
       this.scene.add(v.root);
     }
     const mine = own && own.vid === e.id && own.driving;
-    const x = mine ? own!.x : e.x, y = mine ? own!.y : e.y, a = mine ? own!.angle : e.angle, alt = mine ? own!.alt : e.alt;
+    const rx = mine ? own!.x : e.x, ry = mine ? own!.y : e.y, a = mine ? own!.angle : e.angle;
+    // On a highway (world/ways.ts): over its avenue, at the deck's height, tilted up or down a ramp.
+    const g = groundOf(rx, ry), lift = heightAt(rx, ry);
+    const x = g.x, y = g.y, alt = (mine ? own!.alt : e.alt) + lift;
+    const cs = Math.cos(a) * 1.6, sn = Math.sin(a) * 1.6;
+    const pitch = lift > 0.02 || heightAt(rx + cs, ry + sn) > 0.02 || heightAt(rx - cs, ry - sn) > 0.02
+      ? Math.atan2(heightAt(rx + cs, ry + sn) - heightAt(rx - cs, ry - sn), 3.2) : 0;
     // Down for good (a horse, not a wagon in harness): on its side.
     const down = wreck && !!mat.liesDown && !spec.trailer;
     // Spooked: up on its hind legs (nose up about its middle, lifted so the hind feet stay down).
@@ -258,14 +272,15 @@ export class WorldView {
     v.rearing = (v.rearing ?? 0) + (rear - (v.rearing ?? 0)) * Math.min(1, dt * 10);
     v.root.position.set(x, alt + (down ? spec.width * 0.45 : 0) + Math.sin(v.rearing) * spec.length * 0.4, y);
     v.root.rotation.y = -a;
+    v.root.rotation.z = pitch;
     if (mat.liesDown || spec.temper) {
       v.root.rotation.x = down ? Math.PI / 2 : 0;
-      v.root.rotation.z = v.rearing;
+      v.root.rotation.z = v.rearing + pitch;
     }
     if (spec.movement === 'boat') {
       floatBoat(v.root, this.fx, spec, this.time + e.id * 1.7, dt, x, y, a, mine ? own!.vx : e.vx, mine ? own!.vy : e.vy, wreck, this.dryAt(x, y));
     }
-    v.root.visible = e.id !== this.hiddenVehicle;
+    v.root.visible = e.id !== this.hiddenVehicle && this.shows(g.f);
     if (mat.dents) showDamage(v, spec, e.id, dents);
     this.carLabel(e.id, v.root, spec.height);
     if (v.turret) v.turret.rotation.y = -(e.turret - e.angle);
@@ -311,8 +326,8 @@ export class WorldView {
       this.scene.add(o);
     }
     const g = groundOf(e.x, e.y);
-    o.position.set(g.x, Math.max(0.15, e.alt) + g.f * FLOOR_H, g.y);
-    o.visible = g.f === 0 || g.f === this.myF;
+    o.position.set(g.x, Math.max(0.15, e.alt) + heightAt(e.x, e.y), g.y);
+    o.visible = this.shows(g.f);
     o.rotation.y = -e.angle;
     if (!spec.projectile?.arc) {
       this.fx.alpha.spawn({ x: e.x, y: e.y, z: e.alt, size: 0.6, grow: 2.5, max: 1.2, r: 0.75, g: 0.75, b: 0.72, a: 0.5, drag: 1 });
@@ -330,8 +345,8 @@ export class WorldView {
       this.scene.add(o);
     }
     const g = groundOf(e.x, e.y);
-    o.position.set(g.x, 0.6 + Math.sin(this.time * 3 + e.id) * 0.15 + g.f * FLOOR_H, g.y);
-    o.visible = g.f === 0 || g.f === this.myF;
+    o.position.set(g.x, 0.6 + Math.sin(this.time * 3 + e.id) * 0.15 + heightAt(e.x, e.y), g.y);
+    o.visible = this.shows(g.f);
     o.rotation.y = this.time * 2 + e.id;
     const col = type === PK.cash ? [0.3, 1, 0.4] : [1, 0.85, 0.4];
     this.fx.glow.put(e.x, e.y, 0.07, 2.4, 1, 0, col[0], col[1], col[2], 0.35);

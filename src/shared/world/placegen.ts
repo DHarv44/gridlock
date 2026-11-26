@@ -1,6 +1,6 @@
 // Assigns services (shops, hospitals, precincts...) and purchasable properties to lots.
 import { dist2, rectH, rectW } from '../math';
-import { DISTRICTS, PROPERTIES, SERVICES, ZONES, zoneIndex } from '../packs';
+import { DISTRICTS, INTERIOR_PLANS, PROPERTIES, SERVICES, ZONES, zoneIndex } from '../packs';
 import type { Rng } from '../rng';
 import { type Block, DIR_VEC, Dir, type Lot, type Obstacle, type Place, SIDEWALK_W } from './cityTypes';
 import { GAS_MIN_DEPTH, GAS_MIN_FRONTAGE, gasLayout, KIOSK_DEPTH } from './gas';
@@ -75,7 +75,14 @@ export class PlaceBuilder {
     SERVICES.forEach((spec, si) => {
       const zones = new Set(spec.zones.map(zoneIndex));
       const t = VERBS[spec.verb];
-      const want = (l: Lot) => zones.has(l.zone) && this.free(l)
+      // A hand-made floor plan (the bank's vault, the precinct's cells) needs a building it fits.
+      const plan = spec.interior ? INTERIOR_PLANS[spec.interior] : undefined;
+      const fits = (l: Lot) => {
+        if (!plan || !l.building) return true;
+        const b = l.building.rect, ns = l.front === Dir.N || l.front === Dir.S;
+        return (ns ? rectW(b) : rectH(b)) >= plan.w + 0.6 && (ns ? rectH(b) : rectW(b)) >= plan.d + 0.6;
+      };
+      const want = (l: Lot) => zones.has(l.zone) && this.free(l) && fits(l)
         && (t.site === 'compound' ? l.use === 'pad' : t.site === 'clearing' ? l.use === 'building' && l.front >= 0
           : t.site === 'forecourt' ? l.use === 'building' && l.front >= 0 && frontDepth(l) >= GAS_MIN_DEPTH && frontage(l) >= GAS_MIN_FRONTAGE
           : l.use === 'building' && l.front >= 0 && (!t.pad || frontDepth(l) >= PAD_DEPTH + 12));

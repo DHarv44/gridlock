@@ -1,6 +1,7 @@
 // Instanced flat-quad particle layer (camera looks straight down, so ground-facing quads work).
 import * as THREE from 'three';
-import { FLOOR_H, LEVEL_BAND, groundOf } from '../../shared/world/levels';
+import { LEVEL_BAND, groundOf } from '../../shared/world/levels';
+import { heightAt } from '../../shared/world/ways';
 
 let softTex: THREE.Texture | null = null;
 export function softTexture(): THREE.Texture {
@@ -70,7 +71,7 @@ export class ParticleLayer {
     if (this.list.length >= this.cap) this.list.shift();
     const q: Particle = { z: 0.3, vx: 0, vy: 0, vz: 0, size: 1, grow: 0, life: 0, max: 1, r: 1, g: 1, b: 1, a: 1, rot: 0, stretch: 1, drag: 0, ...p };
     // Upstairs (world/levels.ts): drawn over the building, at that floor's height.
-    if (q.x >= LEVEL_BAND) { const g = groundOf(q.x, q.y); q.x = g.x; q.y = g.y; q.z += g.f * FLOOR_H; }
+    if (q.x >= LEVEL_BAND) { const g = groundOf(q.x, q.y); q.z += heightAt(q.x, q.y); q.x = g.x; q.y = g.y; }
     this.list.push(q);
   }
 

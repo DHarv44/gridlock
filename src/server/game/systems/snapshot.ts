@@ -8,7 +8,7 @@ import { EK, FULL_SNAP_EVERY, FX, Mode, PF, type PlayerInfo, type S2C, VF, type 
 import type { Ped, Player, Vehicle } from '../entities';
 import type { World } from '../world';
 import { isLame } from './spook';
-import { groundOf } from '../../../shared/world/levels';
+import { groundOf, isWayStrip, LEVEL_BAND } from '../../../shared/world/levels';
 
 const a2 = (v: number) => Math.round(v * 100) / 100;
 
@@ -47,13 +47,19 @@ function vehFlags(w: World, v: Vehicle): number {
 export function buildSnapshot(w: World, pl: Player): S2C {
   const me = w.peds.get(pl.pid);
   const center = me ? w.pedPos(me) : { x: 1000, y: 1000 };
-  // Upstairs (world/levels.ts) you also see the street round your building.
+  // Upstairs (world/levels.ts) you also see the street round your building; on the street or a
+  // highway's deck, everything on the street and the highways round you (they're drawn over it).
   const below = groundOf(center.x, center.y);
   const R = RULES.interestRadius;
   const R2 = R * R;
   const e: number[][] = [];
-  const near = (x: number, y: number, r2 = R2) => (x - center.x) ** 2 + (y - center.y) ** 2 < r2
-    || (below.f > 0 && (x - below.x) ** 2 + (y - below.y) ** 2 < r2);
+  const open = below.f === 0 || isWayStrip(below.f);
+  const near = (x: number, y: number, r2 = R2) => {
+    if ((x - center.x) ** 2 + (y - center.y) ** 2 < r2) return true;
+    if (x < LEVEL_BAND) return below.f > 0 && (x - below.x) ** 2 + (y - below.y) ** 2 < r2;
+    const g = groundOf(x, y);
+    return open && isWayStrip(g.f) && (g.x - below.x) ** 2 + (g.y - below.y) ** 2 < r2;
+  };
 
   const addPed = (p: Ped) => {
     if (p.vehicle || !near(p.body.x, p.body.y)) return;
@@ -62,6 +68,7 @@ export function buildSnapshot(w: World, pl: Player): S2C {
   };
   w.pedHash.query(center.x, center.y, R, addPed);
   if (below.f > 0) w.pedHash.query(below.x, below.y, R, addPed);
+  if (open) for (const way of w.city.ways) if (way.strip !== below.f) w.pedHash.query(below.x + way.strip * LEVEL_BAND, below.y, R, addPed);
   for (const v of w.vehicles.values()) {
     const air = flies(v.spec) && v.body.alt > 3;
     if (!near(v.body.x, v.body.y, air ? R2 * 1.7 : R2)) continue;
@@ -89,7 +96,7 @@ export function buildSnapshot(w: World, pl: Player): S2C {
   for (const f of w.fires.values()) {
     if (near(f.x, f.y)) e.push([f.id, EK.Fire, r2(f.x), r2(f.y), a2(f.r)]);
   }
-  const fx = w.fx.filter((ev) => fxNear(w, ev, center.x, center.y, R2));
+  const fx = w.fx.filter((ev) => ID_EVENTS.has(ev[0]) || near(ev[1], ev[2], R2 * 1.3));
   const { changed, kept } = delta(pl, e);
   return { t: 's', st: Math.round(w.time * 1000), ack: pl.ack, gt: Math.round(w.gameMinutes * 10) / 10, you: youState(w, pl, me), e: changed, k: kept, fx };
 }
@@ -109,14 +116,8 @@ function delta(pl: Player, all: number[][]): { changed: number[][]; kept: number
   return { changed, kept };
 }
 
+/** Events keyed by entity id are sent to everyone; the client ignores ids it doesn't know. */
 const ID_EVENTS = new Set<number>([FX.Swing, FX.Horn, FX.Throw]);
-
-function fxNear(w: World, ev: number[], cx: number, cy: number, R2: number): boolean {
-  // Events keyed by entity id are sent to everyone; the client ignores ids it doesn't know.
-  if (ID_EVENTS.has(ev[0])) return true;
-  void w;
-  return (ev[1] - cx) ** 2 + (ev[2] - cy) ** 2 < R2 * 1.3;
-}
 
 function youState(w: World, pl: Player, p: Ped | undefined): YouState {
   const v = p?.vehicle ? w.vehicles.get(p.vehicle) : undefined;

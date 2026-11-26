@@ -6,6 +6,7 @@ import { FLAT_PROPS } from './interiors';
 import { gangSpots } from './gangSpots';
 import { WORLD_X } from './levels';
 import { KIND, massesFor } from './massing';
+import { wayCollision } from './ways';
 
 /** `gate`: a box that can open (a vault door: its interior's index); open gates are passed through. */
 export interface Box2 { x0: number; y0: number; x1: number; y1: number; h: number; gate?: number }
@@ -65,6 +66,10 @@ export class StaticWorld {
     for (const t of city.trees) this.addCircle({ x: t.x, y: t.y, r: TRUNK_R, h: 7 });
     // Open country's rock: round columns, boulders (world/landforms.ts).
     for (const r of city.rocks) this.addCircle({ x: r.x, y: r.y, r: r.r, h: r.h });
+    // Highways (world/ways.ts): ramp walls and deck columns on the street, barriers on their strips.
+    const ways = wayCollision(city, (x, y) => this.boatWater(x, y));
+    for (const b of ways.boxes) this.addBox(b);
+    for (const c of ways.circles) this.addCircle(c);
     this.stamp = new Uint32Array(this.boxes.length);
     this.stampC = new Uint32Array(this.circles.length);
     // Roofs, by the blocks each building is drawn as (world/massing.ts: a tower's podium and shaft

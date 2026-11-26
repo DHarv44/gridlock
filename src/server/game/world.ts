@@ -4,7 +4,7 @@ import { Rng } from '../../shared/rng';
 import { CityMap, generateCity } from '../../shared/world/city';
 import type { City } from '../../shared/world/cityTypes';
 import { StaticWorld } from '../../shared/world/collision';
-import { groundOf } from '../../shared/world/levels';
+import { groundOf, isWayStrip } from '../../shared/world/levels';
 import { StairIndex } from '../../shared/world/stairs';
 import type { Fire, Pickup, Ped, Player, Projectile, Squad, Vehicle } from './entities';
 import { SpatialHash } from './spatial';
@@ -85,13 +85,16 @@ export class World {
 
   nearestPlayerDist2(x: number, y: number): number {
     let best = Infinity;
+    // A point on a highway's deck counts where it is over the avenue (world/ways.ts).
+    const q = groundOf(x, y);
+    const qx = isWayStrip(q.f) ? q.x : x;
     for (const pl of this.players.values()) {
       const p = this.peds.get(pl.pid);
       if (!p) continue;
       const pos = this.pedPos(p);
-      // Upstairs counts as over the building too, so the street round it stays alive.
+      // Upstairs (or up on a highway) counts as over the building too, so the street round it stays alive.
       const g = groundOf(pos.x, pos.y);
-      best = Math.min(best, dist2(x, y, pos.x, pos.y), dist2(x, y, g.x, g.y));
+      best = Math.min(best, dist2(x, y, pos.x, pos.y), dist2(qx, y, g.x, g.y));
     }
     return best;
   }

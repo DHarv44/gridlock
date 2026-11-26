@@ -3,16 +3,17 @@ import { angleDiff, clamp } from '../../../shared/math';
 import { flies } from '../../../shared/sim/kinds';
 import { forwardSpeed } from '../../../shared/sim/physics';
 import type { RoadNode } from '../../../shared/world/cityTypes';
+import { groundOf } from '../../../shared/world/levels';
 import { lightState } from '../../../shared/world/traffic';
 import type { DriveState, Ped, Vehicle } from '../entities';
 import type { World } from '../world';
 import { mayEnter, nextJunction } from './junctions';
-import { findRoute, laneOf, segBetween } from './route';
+import { canTake, findRoute, laneOf, segBetween } from './route';
 
 export function newDrive(w: World, v: Vehicle): DriveState {
   const { seg } = w.map.nearestSegment(v.body.x, v.body.y);
   const c = Math.cos(v.body.angle), s = Math.sin(v.body.angle);
-  const dir: 1 | -1 = (seg.axis === 'h' ? c : s) >= 0 ? 1 : -1;
+  const dir: 1 | -1 = seg.oneway ? 1 : (seg.axis === 'h' ? c : s) >= 0 ? 1 : -1;
   const lane = seg.lanes > 1 && w.rng.chance(0.5) ? 1 : 0;
   const L = laneOf(w, seg, dir, lane);
   return { pts: [{ x: L.ex, y: L.ey, stop: L.to.id, axis: seg.axis }], seg: seg.id, dir, lane, route: [], routeT: 0, stuckT: 0, reverseT: 0, honkT: 0, blockT: 0, bypassT: 0, yieldT: 0, pullT: 0, why: '' };
@@ -59,9 +60,12 @@ function extend(w: World, d: DriveState): void {
   const seg = w.city.segs[d.seg];
   const cur = laneOf(w, seg, d.dir, d.lane);
   const node = cur.to;
-  let options = node.segs.filter((s) => s !== seg.id);
+  // Not back the way we came, never the wrong way up a ramp, no U-turns on a highway.
+  let options = node.segs.filter((s) => s !== seg.id && canTake(w, w.city.segs[s], node.id, seg));
+  if (!options.length) options = node.segs.filter((s) => s !== seg.id && !w.city.segs[s].oneway);
   if (!options.length) options = [seg.id];
-  const weights = options.map((s) => (w.city.segs[s].axis === seg.axis ? 2.2 : 1));
+  // Straight on is likeliest; taking a ramp on or off a highway less so.
+  const weights = options.map((s) => { const o = w.city.segs[s]; return o.path ? 0.8 : o.axis === seg.axis ? 2.2 : 1; });
   let r = w.rng.next() * weights.reduce((a, b) => a + b, 0);
   let pick = options[0];
   for (let k = 0; k < options.length; k++) { r -= weights[k]; if (r <= 0) { pick = options[k]; break; } }
@@ -83,6 +87,8 @@ function extend(w: World, d: DriveState): void {
     d.pts.push({ x: a * cur.ex + b * cx + c * L.sx, y: a * cur.ey + b * cy + c * L.sy, axis: turn ? undefined : seg.axis });
   }
   d.pts.push({ x: L.sx, y: L.sy });
+  // A ramp's lane between its ends (ground coordinates: on the deck too, world/levels.ts).
+  if (next.path) for (const p of next.path.slice(1, -1)) d.pts.push({ x: p.x, y: p.y, axis: next.axis });
   d.pts.push({ x: L.ex, y: L.ey, stop: L.to.id, axis: next.axis });
   d.seg = next.id; d.dir = ndir; d.lane = nlane;
 }
@@ -142,9 +148,11 @@ function laneClear(w: World, v: Vehicle): boolean {
   return ok && !w.statics.raycast(b.x, b.y, lx, ly, 1);
 }
 
+/** Steers toward a ground point (on a highway's deck, measured over the avenue: world/levels.ts). */
 function steerTo(v: Vehicle, tx: number, ty: number, speed: number): void {
   const b = v.body;
-  const want = Math.atan2(ty - b.y, tx - b.x);
+  const P = groundOf(b.x, b.y);
+  const want = Math.atan2(ty - P.y, tx - P.x);
   let diff = angleDiff(b.angle, want);
   const vf = forwardSpeed(b);
   const backing = speed < 0;
@@ -185,13 +193,15 @@ export function cruise(w: World, v: Vehicle, p: Ped, dt: number, panic = false):
   if (!ai.drive) ai.drive = newDrive(w, v);
   const d = ai.drive;
   const b = v.body;
+  // The lane points are ground coordinates; up on a highway's deck we're over the avenue.
+  const P = groundOf(b.x, b.y);
   while (d.pts.length < 5) extend(w, d);
   const vf = forwardSpeed(b);
   // Drop points we've reached or passed, except a stop line whose light still says stop: a car
   // waiting a few metres short of it must not lose it and roll through the red.
   for (let k = 0; k < 3 && d.pts.length; k++) {
     const pt = d.pts[0];
-    const dx = pt.x - b.x, dy = pt.y - b.y;
+    const dx = pt.x - P.x, dy = pt.y - P.y;
     const dd = Math.hypot(dx, dy);
     const ahead = dx * Math.cos(b.angle) + dy * Math.sin(b.angle);
     // A stop line only counts as passed once you're clearly into the junction: a car stopped
@@ -202,7 +212,8 @@ export function cruise(w: World, v: Vehicle, p: Ped, dt: number, panic = false):
   }
   if (d.pts.length < 5) extend(w, d);
   const seg = w.city.segs[d.seg];
-  let target = panic ? 18 : seg.lanes > 1 ? 16 : 11.5;
+  // Highway speed up on a deck; easing up and down the ramps.
+  let target = seg.level !== undefined ? (panic ? 30 : 25) : seg.path ? 15 : panic ? 18 : seg.lanes > 1 ? 16 : 11.5;
   target = Math.min(target, v.spec.maxSpeed * 0.8);
   // Slow for turns ahead.
   if (d.pts.slice(0, 3).some((pt) => !pt.axis && pt.stop === undefined)) target = Math.min(target, panic ? 11 : 7.5);
@@ -213,7 +224,7 @@ export function cruise(w: World, v: Vehicle, p: Ped, dt: number, panic = false):
       if (pt.stop === undefined) continue;
       const node = w.city.nodes[pt.stop];
       // Distance to the line along your heading (lanes are offset sideways from the point).
-      const dist = Math.max(0, (pt.x - b.x) * Math.cos(b.angle) + (pt.y - b.y) * Math.sin(b.angle));
+      const dist = Math.max(0, (pt.x - P.x) * Math.cos(b.angle) + (pt.y - P.y) * Math.sin(b.angle));
       if (mustStop(node, pt.axis!, w.time, dist, vf)) {
         // Brake to stop on the line (5 m/s² comfortable), then hold.
         target = Math.min(target, Math.sqrt(2 * 5 * Math.max(0, dist - 1)));
@@ -227,7 +238,7 @@ export function cruise(w: World, v: Vehicle, p: Ped, dt: number, panic = false):
   if (!red) {
     const j = nextJunction(w, d);
     if (j) {
-      const dist = Math.hypot(j.at.x - b.x, j.at.y - b.y);
+      const dist = Math.hypot(j.at.x - P.x, j.at.y - P.y);
       if (dist < 16 && !mayEnter(w, v, j.node, j.axis, j.exit)) {
         target = Math.min(target, Math.sqrt(2 * 5 * Math.max(0, dist - 1.5)));
         yielding = target < 2;
@@ -273,7 +284,7 @@ export function cruise(w: World, v: Vehicle, p: Ped, dt: number, panic = false):
   const look = pulling ? 4 : 6 + Math.abs(vf) * 0.45;
   const pt = d.pts[0];
   let tx = pt.x, ty = pt.y;
-  const d0 = Math.hypot(pt.x - b.x, pt.y - b.y);
+  const d0 = Math.hypot(pt.x - P.x, pt.y - P.y);
   if (d0 < look && d.pts[1]) {
     const n = d.pts[1];
     const segLen = Math.hypot(n.x - pt.x, n.y - pt.y) || 1;
@@ -289,7 +300,7 @@ export function cruise(w: World, v: Vehicle, p: Ped, dt: number, panic = false):
     const ax = pt.axis === 'h' ? Math.sign(Math.cos(b.angle)) || 1 : pt.axis === 'v' ? 0 : Math.cos(b.angle);
     const ay = pt.axis === 'v' ? Math.sign(Math.sin(b.angle)) || 1 : pt.axis === 'h' ? 0 : Math.sin(b.angle);
     // A few metres ahead of where we are along the lane line (not its far end), then to the right.
-    const along = (b.x - pt.x) * ax + (b.y - pt.y) * ay;
+    const along = (P.x - pt.x) * ax + (P.y - pt.y) * ay;
     tx = pt.x + ax * (along + 6) - ay * PULL_OVER;
     ty = pt.y + ay * (along + 6) + ax * PULL_OVER;
   }
@@ -306,45 +317,59 @@ export function driveTo(w: World, v: Vehicle, p: Ped, tx: number, ty: number, dt
 /** driveTo for whatever holds the route state (an AI driver, or a riderless horse called home). */
 export function routeTo(w: World, v: Vehicle, d: DriveState, tx: number, ty: number, dt: number, opts: { stopAt: number; ram: boolean; speed?: number }): number {
   const b = v.body;
-  const dist = Math.hypot(tx - b.x, ty - b.y);
-  if (flies(v.spec)) return flyTo(w, v, tx, ty, opts.stopAt, dt);
+  // Positions compared over the ground (world/levels.ts): a highway's deck is over its avenue.
+  const P = groundOf(b.x, b.y), T = groundOf(tx, ty);
+  const dist = Math.hypot(T.x - P.x, T.y - P.y);
+  if (flies(v.spec)) return flyTo(w, v, T.x, T.y, opts.stopAt, dt);
   const fast = opts.speed ?? Math.min(v.spec.maxSpeed * 0.92, 30);
   const clear = clearance(w, v, true);
-  if (dist < 45 && !w.statics.raycast(b.x, b.y, tx, ty, 1)) {
+  if (dist < 45 && P.f === T.f && !w.statics.raycast(b.x, b.y, tx, ty, 1)) {
     let target = dist <= opts.stopAt ? 0 : opts.ram ? fast : Math.min(fast, Math.sqrt(2 * 8 * Math.max(0, dist - opts.stopAt)));
     if (!opts.ram) target = Math.min(target, clear.cap + 2);
     if (unstick(v, d, Math.max(target, 3), dt)) return dist;
-    steerTo(v, tx, ty, target);
+    steerTo(v, T.x, T.y, target);
     return dist;
   }
   d.routeT -= dt;
   if (d.routeT <= 0 || !d.route.length) {
     d.routeT = 2;
     const from = w.map.nearestNode(b.x, b.y), to = w.map.nearestNode(tx, ty);
+    const was = d.route[0];
     d.route = findRoute(w, from.id, to.id);
     // Skip the first node if we're already past it.
     if (d.route.length > 1) {
       const n0 = w.city.nodes[d.route[0]], n1 = w.city.nodes[d.route[1]];
-      const ahead = (n0.x - b.x) * Math.cos(b.angle) + (n0.y - b.y) * Math.sin(b.angle);
-      if (ahead < 0 && Math.hypot(n1.x - b.x, n1.y - b.y) < Math.hypot(n1.x - n0.x, n1.y - n0.y) + 10) d.route.shift();
+      const ahead = (n0.x - P.x) * Math.cos(b.angle) + (n0.y - P.y) * Math.sin(b.angle);
+      if (ahead < 0 && Math.hypot(n1.x - P.x, n1.y - P.y) < Math.hypot(n1.x - n0.x, n1.y - n0.y) + 10) d.route.shift();
     }
+    // Still on the way up (or down) a ramp to the same node: keep following it.
+    if (d.route[0] !== was) d.via = [];
   }
-  let gx = tx, gy = ty;
+  let gx = T.x, gy = T.y;
   if (d.route.length) {
     const n = w.city.nodes[d.route[0]];
-    if (Math.hypot(n.x - b.x, n.y - b.y) < 9 && d.route.length > 1) d.route.shift();
+    if (Math.hypot(n.x - P.x, n.y - P.y) < 9 && d.route.length > 1) {
+      // A ramp to the next node: drive its lane, not straight across.
+      const s = segBetween(w, d.route[0], d.route[1]);
+      d.route.shift();
+      d.via = s?.path ? s.path.map((p) => ({ x: p.x, y: p.y })) : [];
+    }
+    while (d.via?.length && Math.hypot(d.via[0].x - P.x, d.via[0].y - P.y) < 4.5) d.via.shift();
     const cur = w.city.nodes[d.route[0]];
     const nxt = d.route[1] !== undefined ? w.city.nodes[d.route[1]] : null;
     gx = cur.x; gy = cur.y;
-    // Keep to the right-hand lane of the segment ahead.
-    const seg = nxt ? segBetween(w, cur.id, nxt.id) : null;
-    if (seg && nxt) {
-      const hx = Math.sign(nxt.x - cur.x), hy = Math.sign(nxt.y - cur.y);
-      gx += -hy * 1.8; gy += hx * 1.8;
+    if (d.via?.length) { gx = d.via[0].x; gy = d.via[0].y; }
+    else {
+      // Keep to the right-hand lane of the segment ahead.
+      const seg = nxt ? segBetween(w, cur.id, nxt.id) : null;
+      if (seg && nxt) {
+        const hx = Math.sign(nxt.x - cur.x), hy = Math.sign(nxt.y - cur.y);
+        gx += -hy * 1.8; gy += hx * 1.8;
+      }
     }
   }
-  const turnAhead = Math.abs(angleDiff(b.angle, Math.atan2(gy - b.y, gx - b.x))) > 0.5;
-  let target = turnAhead && Math.hypot(gx - b.x, gy - b.y) < 30 ? 10 : fast;
+  const turnAhead = Math.abs(angleDiff(b.angle, Math.atan2(gy - P.y, gx - P.x))) > 0.5;
+  let target = turnAhead && Math.hypot(gx - P.x, gy - P.y) < 30 ? 10 : fast;
   target = Math.min(target, clear.cap + 4);
   // Lights and siren on: traffic pulls over to the right, so go by on the left when it's clear.
   if (v.siren && clear.cap < 10 && !turnAhead && laneClear(w, v)) {

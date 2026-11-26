@@ -2,7 +2,9 @@
 import { type BuyKind, type InputMsg, Mode, type PlayerInfo, type Profile, type S2C, TICK_HZ, type YouState } from '../../shared/protocol';
 import { CityMap, generateCity } from '../../shared/world/city';
 import { StaticWorld } from '../../shared/world/collision';
-import { FLOOR_H, groundOf } from '../../shared/world/levels';
+import { groundOf, isWayStrip } from '../../shared/world/levels';
+import { heightAt, installWays } from '../../shared/world/ways';
+import { Highways } from '../render/highways';
 import { Radio } from '../audio/radio';
 import { Sound } from '../audio/sound';
 import { Hud } from '../hud/hud';
@@ -99,6 +101,7 @@ export class Game {
 
   constructor(private conn: Connection, private myId: number, private myName: string, private code: string, seed: number, private onLeave: () => void) {
     const city = generateCity(seed);
+    installWays(city.ways);
     this.map = new CityMap(city);
     const statics = this.statics = new StaticWorld(city);
     const canvas = document.getElementById('view') as HTMLCanvasElement;
@@ -161,6 +164,7 @@ export class Game {
     this.buildingUniforms = meshes.uniforms;
     this.props = meshes.props;
     this.water = new Water(this.stage.scene, this.map);
+    this.highways = new Highways(this.stage.scene, city);
     this.storefronts = new Storefronts(this.stage.scene, city);
     addAtms(this.stage.scene, atmsOf(city));
     this.gas = new GasStations(this.stage.scene, city);
@@ -172,6 +176,7 @@ export class Game {
   }
 
   private buildingUniforms: { uNight: { value: number } };
+  private highways: Highways;
   private props: StreetProps;
   private furniture: StreetPropsView;
   private water: Water;
@@ -322,13 +327,15 @@ export class Game {
     if (this.you && !document.hidden) this.quality.sample(dt);
     this.store.update();
     const own = this.ownState(this.acc / STEP);
-    // Where you are over the map (upstairs, world/levels.ts: over your building, at your floor's height).
+    // Where you are over the map (upstairs, world/levels.ts: over your building, at your floor's
+    // height; on a highway, over its avenue at the deck's height: world/ways.ts).
     const up = own ? groundOf(own.x, own.y) : null;
+    const upH = own ? heightAt(own.x, own.y) : 0;
     const disp = own && up ? { ...own, x: up.x, y: up.y } : null;
     if (own && disp && up) {
       // GTA2: centred on you on foot; leads along travel in vehicles.
-      this.cam.update(dt, disp.x, disp.y, own.vx, own.vy, own.alt + up.f * FLOOR_H, disp.x, disp.y, !!own.vid, this.input.scoped, zoomFloor(this.input));
-      this.sound.listenerX = disp.x; this.sound.listenerY = disp.y; this.sound.listenerF = up.f;
+      this.cam.update(dt, disp.x, disp.y, own.vx, own.vy, own.alt + upH, disp.x, disp.y, !!own.vid, this.input.scoped, zoomFloor(this.input));
+      this.sound.listenerX = disp.x; this.sound.listenerY = disp.y; this.sound.listenerZ = upH;
     }
     const vr = this.cam.viewRect();
     this.ground.update(vr);
@@ -344,7 +351,8 @@ export class Game {
     const it = this.itSpot();
     if (it) this.fx.glow.put(it.x, it.y, 0.09, 3.2 + Math.sin(performance.now() / 160) * 0.7, 1, 0, 1, 0.12, 0.08, 0.7);
     this.gas.putGlows(this.fx.glow, night, vr);
-    if (own && up) this.interiors.update(up.x, up.y, !own.vid, up.f);
+    if (own && up) this.interiors.update(up.x, up.y, !own.vid, isWayStrip(up.f) ? 0 : up.f);
+    if (up) this.highways.update(up.x, up.y, up.f === 0);
     this.interiors.putGlows(this.fx.glow, night);
     this.view.carTags = this.carTags();
     this.view.sync(this.store, dt, own, this.tags(), night, vr);
@@ -359,9 +367,9 @@ export class Game {
     trafficEngines(this.store, disp, this.sound, dt);
     this.stage.render();
     // Call bubbles hang beside your head (upstairs: over your building, at your floor's height).
-    this.talk.update(this.stage.camera, own && up ? { x: up.x, h: up.f * FLOOR_H + own.alt + 2.9, y: up.y } : null);
+    this.talk.update(this.stage.camera, own && up ? { x: up.x, h: upH + own.alt + 2.9, y: up.y } : null);
     // Aim held: a crosshair out the way you're aiming.
-    this.crosshair.update(this.stage.camera, own && up ? { x: up.x, h: up.f * FLOOR_H + own.alt + 1.2, y: up.y } : null, this.input, this.cam.scope);
+    this.crosshair.update(this.stage.camera, own && up ? { x: up.x, h: upH + own.alt + 1.2, y: up.y } : null, this.input, this.cam.scope);
     this.offscreen.update(this.stage.camera, this.players, this.myId, (p) => this.playerSpot(p), this.jobs.it);
     this.updateHud(own, disp);
   }

@@ -22,6 +22,9 @@ const me = w.peds.get(pl.pid)!;
 me.wi = me.weapons.findIndex((h) => h.w === UNARMED);
 const fists = WEAPONS[UNARMED];
 const civ = PEDS.findIndex((p) => p.behaviour === 'civilian');
+// Out in the open (the middle of a wide street), not against whatever's by the spawn point.
+const open = w.city.segs.find((s) => s.way === undefined && s.axis === 'h' && s.lanes > 1 && s.x1 - s.x0 > 80 && s.x0 > 500)!;
+me.body.x = (open.x0 + open.x1) / 2; me.body.y = open.y0;
 const mark = spawnPed(w, civ, me.body.x + 1.1, me.body.y, Math.PI);
 mark.ai = null; // stands there and takes it
 const hp0 = mark.hp;

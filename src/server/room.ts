@@ -18,6 +18,7 @@ import { StreetFurniture } from './game/systems/breakables';
 import { Dispatch } from './game/systems/dispatch';
 import { Economy } from './game/systems/economy';
 import { updateNpcPeds, updateVehicles } from './game/systems/movement';
+import { devTeleport, wayCrossings } from './game/systems/ways';
 import { equipStart, makeAvatar, processPlayers } from './game/systems/players';
 import { updateFires, updateProjectiles } from './game/systems/projectiles';
 import { updateTrailers } from './game/systems/trailers';
@@ -190,6 +191,9 @@ export class Room {
       }
       case 'chat': {
         const text = String(msg.text ?? '').replace(/[\u0000-\u001f]/g, '').slice(0, 160).trim();
+        // Dev only (npm run dev sets GRIDLOCK_DEV): "/tp x y" puts you (and your vehicle) there.
+        const tp = process.env.GRIDLOCK_DEV ? /^\/tp\s+(-?[\d.]+)\s+(-?[\d.]+)$/.exec(text) : null;
+        if (tp) { devTeleport(this.world, pl, Number(tp[1]), Number(tp[2])); break; }
         if (text) this.world.broadcast({ t: 'msg', kind: 'chat', text: `${pl.name}: ${text}` } satisfies S2C);
         break;
       }
@@ -297,6 +301,7 @@ export class Room {
     updateNpcPeds(w, DT);
     updateMounts(w, DT);
     updateVehicles(w, DT);
+    wayCrossings(w);
     w.rebuildHashes();
     resolveContacts(w);
     this.furniture.update(DT);

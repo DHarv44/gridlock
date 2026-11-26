@@ -131,18 +131,24 @@ at an angle, a raised road's edge, a bridge hump. Today car physics is flat (alt
 - I3. The view and sound: shadow left on the ground under a car in the air, the camera pulling out
   with height, a landing thump; other players see it (alt in the snapshot, as helicopters do).
 
-## Monster truck (asked 2026-11-26)
-A monster truck: huge wheels and ride height, crushes cars it drives over (`crushes`, like the tank),
-bounces on its suspension, and is built for I (big launches, survives landings). A pack entry plus
-whatever wheel/suspension verbs it needs; where it's found (an arena lot, or a rare spawn) to decide.
+## Monster truck (asked 2026-11-26; done)
+The Earthshaker (packs `monster`, art/monster.py): a pickup shell on 1.7 m paddle tyres, coil-overs,
+roll bar; `crushes` like the tank (a sedan it rams is wrecked, it takes ~2%). Sold at the dealer,
+now and then parked in industrial lots. `npx tsx scripts/monster.ts`. Still to come with I: big
+launches and surviving landings, the body bouncing on its suspension.
 
-## J. Highways (asked 2026-11-26)
-Highways through the city: multi-lane roads on their own alignment above and below the street grid,
-with overpasses where they cross streets, underpasses where streets cross them, on and off ramps
-(exits) to the grid, and traffic that uses them. Needs height in the road network (today all roads
-are at ground level, bridges included), so it shares the vertical axis with I: driving up a ramp onto
-a deck, under a deck (hidden from above like a boat under a bridge), and AI routing on two levels.
-City generation stays deterministic.
+## J. Highways (asked 2026-11-26; done)
+Two highways over Bayhaven's avenues (WorldSpec.highways; world/waygen.ts, world/ways.ts,
+render/highways.ts): an east-west one and a north-south one that climbs to 11 m over it, and one
+rare stretch sunk in a trench (cross streets bridge it, 12% dives, 4.8 m deep). The avenues under
+them are widened (AVENUE_W) for ramp lanes. Interchanges are diamonds at cross streets: each way an
+exit that peels off the deck, comes down beside it and ends at the crossing's lights, and an
+on-ramp that starts past the crossing and merges in; the ends are half diamonds. A deck lives on
+its own strip off the map (world/levels.ts WAY0+), so collision, bullets and the spatial hash keep
+it apart; past the switch on a ramp you're moved between street and strip, and drawing maps it back
+over the avenue at the deck's height (heightAt), tilted on the ramps. Traffic spawns on the decks,
+AI takes ramps (one way, no U-turns across the median), routes prefer highways, police and on-foot
+AI follow you up and down. Standing under a deck, it thins out over you. `npx tsx scripts/highways.ts`.
 
 ## Casino (asked 2026-11-26)
 A walk-in casino (world/interiors.ts layout): gaming floor, cashier cage, security; games to play with

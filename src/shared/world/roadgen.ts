@@ -6,6 +6,7 @@ import { DISTRICTS, ZONES, zoneIndex } from '../packs';
 import type { Rng } from '../rng';
 import { LAND0, LAND1, LANE_W, MAP_SIZE, PARK_W, type RoadLine, type RoadNode, type Segment } from './cityTypes';
 import { WORLD } from './worldSpec';
+import { pickWayLines } from './waygen';
 
 const MIN_GAP = 46;
 /** A trail: one lane each way of packed dirt. */
@@ -138,7 +139,10 @@ export function genLayout(rng: Rng): RoadLayout {
   for (const i of [...bridgeLines]) {
     if (i !== 0 && i !== xs.length - 1 && bridgeLines.size > 4 && rng.chance(0.3)) bridgeLines.delete(i);
   }
-  return { xs, ys, riverRow, cellZone, cellDistrict, clusters, cellCluster, bridgeLines };
+  const L: RoadLayout = { xs, ys, riverRow, cellZone, cellDistrict, clusters, cellCluster, bridgeLines };
+  // Highways' avenues are widened for their ramp lanes before any block is laid out.
+  pickWayLines(L);
+  return L;
 }
 
 /** Builds the segment/node graph from a layout. */

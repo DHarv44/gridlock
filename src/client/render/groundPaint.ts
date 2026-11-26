@@ -5,6 +5,8 @@ import type { CityMap } from '../../shared/world/city';
 import { LAND0, LAND1, LANE_W, type Lot, MAP_SIZE, type Segment } from '../../shared/world/cityTypes';
 import { WORLD } from '../../shared/world/worldSpec';
 import { hasWild, paintRelief } from './groundRelief';
+import { AVENUE_W, wayPoint } from '../../shared/world/wayTypes';
+import { trenchHoles } from '../../shared/world/ways';
 
 export const CHUNK = 128;
 export const PX = 4; // pixels per metre
@@ -55,8 +57,17 @@ export function paintChunk(map: CityMap, cx: number, cy: number, canvas: HTMLCan
     rect(X0, r.y0, X1, r.y1, WATER);
   }
 
-  // Roads (trails: packed dirt).
+  // Where a highway's trench and its dives replace the avenue: concrete verges (the trench itself is
+  // cut out below).
+  for (const w of city.ways) {
+    for (const [a0, a1] of w.sunk) {
+      const p = wayPoint(w, a0, -AVENUE_W / 2), q = wayPoint(w, a1, AVENUE_W / 2);
+      if (inView(Math.min(p.x, q.x), Math.min(p.y, q.y), Math.max(p.x, q.x), Math.max(p.y, q.y))) rect(Math.min(p.x, q.x), Math.min(p.y, q.y), Math.max(p.x, q.x), Math.max(p.y, q.y), '#8d8a83');
+    }
+  }
+  // Roads (trails: packed dirt). Highway decks and ramps are drawn in 3D (render/highways.ts).
   for (const s of city.segs) {
+    if (s.way !== undefined) continue;
     const hw = s.width / 2;
     const x0 = Math.min(s.x0, s.x1) - (s.axis === 'v' ? hw : 0), x1 = Math.max(s.x0, s.x1) + (s.axis === 'v' ? hw : 0);
     const y0 = Math.min(s.y0, s.y1) - (s.axis === 'h' ? hw : 0), y1 = Math.max(s.y0, s.y1) + (s.axis === 'h' ? hw : 0);
@@ -68,10 +79,10 @@ export function paintChunk(map: CityMap, cx: number, cy: number, canvas: HTMLCan
     }
   }
   for (const n of city.nodes) {
-    if (!inView(n.x - n.wv, n.y - n.wh, n.x + n.wv, n.y + n.wh)) continue;
+    if (n.level !== undefined || !inView(n.x - n.wv, n.y - n.wh, n.x + n.wv, n.y + n.wh)) continue;
     rect(n.x - n.wv / 2, n.y - n.wh / 2, n.x + n.wv / 2, n.y + n.wh / 2, !WORLD.modern || n.segs.every((si) => city.segs[si].trail) ? TRAIL() : ASPHALT);
   }
-  if (WORLD.modern) for (const s of city.segs) if (!s.trail) roadWear(ctx, s, inView);
+  if (WORLD.modern) for (const s of city.segs) if (!s.trail && s.way === undefined) roadWear(ctx, s, inView);
 
   // Blocks and lots.
   for (const b of city.blocks) {
@@ -102,6 +113,10 @@ export function paintChunk(map: CityMap, cx: number, cy: number, canvas: HTMLCan
   ctx.fillRect(0, 0, size, size);
   ctx.globalAlpha = 1;
   ctx.globalCompositeOperation = 'source-over';
+  // A highway's trench is open to the sky: cut out of the ground (the chunk's material drops
+  // see-through pixels, render/ground.ts).
+  ctx.setTransform(PX, 0, 0, PX, -X0 * PX, -Y0 * PX);
+  for (const w of city.ways) for (const h of trenchHoles(w)) if (inView(h.x0, h.y0, h.x1, h.y1)) ctx.clearRect(h.x0, h.y0, h.x1 - h.x0, h.y1 - h.y0);
 }
 
 /** Deterministic per-segment asphalt wear: patches, oil drips down the lanes, manholes. */
@@ -290,7 +305,7 @@ function paintMarkings(ctx: CanvasRenderingContext2D, map: CityMap, inView: (a: 
   const city = map.city;
   ctx.lineCap = 'butt';
   for (const s of city.segs) {
-    if (s.trail) continue; // dirt: no paint
+    if (s.trail || s.way !== undefined) continue; // dirt: no paint; highways have their own
     const A = city.nodes[s.a], B = city.nodes[s.b];
     const hw = s.width / 2;
     if (!inView(Math.min(s.x0, s.x1) - hw, Math.min(s.y0, s.y1) - hw, Math.max(s.x0, s.x1) + hw, Math.max(s.y0, s.y1) + hw)) continue;
@@ -308,6 +323,8 @@ function paintMarkings(ctx: CanvasRenderingContext2D, map: CityMap, inView: (a: 
       line(0.2, LINE_Y, 0.15, []);
       line(-LANE_W, LINE_W, 0.15, [3, 6]);
       line(LANE_W, LINE_W, 0.15, [3, 6]);
+      // Under a highway: edge lines between the through lanes and the ramp lanes outside them.
+      if (s.width >= AVENUE_W - 0.1) { line(-2 * LANE_W, LINE_W, 0.15, []); line(2 * LANE_W, LINE_W, 0.15, []); }
     } else {
       line(0, LINE_Y, 0.15, [3, 4]);
       if (s.parking) { line(-LANE_W, 'rgba(232,230,223,0.5)', 0.12, []); line(LANE_W, 'rgba(232,230,223,0.5)', 0.12, []); }

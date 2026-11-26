@@ -403,6 +403,9 @@ export interface WorldSpec {
    *  hydrants, bins, shelters), rooftop machinery (AC units, tanks, vents, solar, helipads,
    *  antennas). Not modern: every road is dirt, and none of that. */
   modern: boolean;
+  /** Highways on decks over avenues (world/waygen.ts): how many (the first runs east-west, the
+   *  second north-south), and how many stretches of them may run sunken in a trench instead. */
+  highways?: { count: number; sunken: number };
 }
 
 /** What open country (zones with layout 'wild') is made of: scattered rock formations (solid,

@@ -73,6 +73,8 @@ export const BAYHAVEN: Universe = {
   },
   armorModel: ARMOR_MODEL,
   streetProps: STREET_PROPS,
+  // The island's map is the default (worldSpec.ts), plus two highways, one stretch of them sunk.
+  world: { highways: { count: 2, sunken: 1 } },
   cast,
   player: player as unknown as PlayerFile,
 };

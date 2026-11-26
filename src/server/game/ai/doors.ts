@@ -3,7 +3,7 @@
 // straight through it, then on. Drivers chasing someone indoors drive to the door and get out there.
 import { DIR_VEC, Dir } from '../../../shared/world/cityTypes';
 import type { Interior } from '../../../shared/world/interiors';
-import { groundOf, LEVEL_BAND } from '../../../shared/world/levels';
+import { groundOf, isWayStrip, LEVEL_BAND } from '../../../shared/world/levels';
 import type { Ped } from '../entities';
 import type { World } from '../world';
 
@@ -67,7 +67,9 @@ export function doorway(w: World, p: Ped, tx: number, ty: number): { x: number; 
  *  building, plus the climb, not across the off-map strips the upper floors live on. */
 export function reachDist(ax: number, ay: number, bx: number, by: number): { d: number; sameFloor: boolean } {
   const a = groundOf(ax, ay), b = groundOf(bx, by);
-  return { d: Math.hypot(a.x - b.x, a.y - b.y) + Math.abs(a.f - b.f) * 6, sameFloor: a.f === b.f };
+  // A highway's deck (world/ways.ts) is about two floors up.
+  const lvl = (f: number) => (isWayStrip(f) ? 2 : f);
+  return { d: Math.hypot(a.x - b.x, a.y - b.y) + Math.abs(lvl(a.f) - lvl(b.f)) * 6, sameFloor: a.f === b.f };
 }
 
 /** Where a driver should go to reach someone at (x, y): the street outside the door if they're

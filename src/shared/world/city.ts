@@ -5,9 +5,10 @@ import { type Block, type City, LAND0, LAND1, MAP_SIZE, type ParkSpot, type Road
 import { WORLD } from './worldSpec';
 import { LotBuilder } from './lotgen';
 import { interiorsOf } from './interiors';
-import { LEVEL_BAND } from './levels';
+import { floorOf, isWayStrip, LEVEL_BAND } from './levels';
 import { PlaceBuilder } from './placegen';
 import { genGraph, genLayout } from './roadgen';
+import { buildWays } from './waygen';
 
 const HALF_PI = Math.PI / 2;
 
@@ -37,6 +38,8 @@ export function generateCity(seed: number): City {
   const rng = new Rng(seed);
   const layout = genLayout(rng);
   const { nodes, segs, bridges } = genGraph(layout);
+  // Highways (world/waygen.ts): their decks and ramps join the road graph.
+  const ways = buildWays(layout, { nodes, segs });
   const lotBuilder = new LotBuilder(rng, seed);
   const lo = lotBuilder.build(layout);
   const nx = layout.xs.length - 1, ny = layout.ys.length - 1;
@@ -62,7 +65,7 @@ export function generateCity(seed: number): City {
     seed, xs: layout.xs, ys: layout.ys, riverRow: layout.riverRow, ponds: lo.ponds, edge: WORLD.edge,
     cellZone: layout.cellZone, cellDistrict: layout.cellDistrict, cellBlock,
     nodes, segs, blocks: lo.blocks, lots: lo.lots, buildings, obstacles: lo.obstacles, rocks: lo.rocks, trees: lo.trees,
-    parking, services: places.services, properties: places.properties, bridges, interiors: [],
+    parking, services: places.services, properties: places.properties, bridges, interiors: [], ways,
   };
   // Walk-in ground floors; their places do business at the counter inside.
   city.interiors = interiorsOf(city);
@@ -146,16 +149,31 @@ export class CityMap {
     return this.blockAt(x, y) === null;
   }
 
+  /** Nearest junction on the level a point is on: the street, or a way's deck (world/levels.ts; a
+   *  deck node's x, y are the ground point under it). */
   nearestNode(x: number, y: number): RoadNode {
+    const f = floorOf(x);
+    if (isWayStrip(f)) {
+      const gx = x - f * LEVEL_BAND;
+      let best: RoadNode | null = null, bd = Infinity;
+      for (const n of this.city.nodes) {
+        if (n.level !== f) continue;
+        const d = (n.x - gx) ** 2 + (n.y - y) ** 2;
+        if (d < bd) { bd = d; best = n; }
+      }
+      if (best) return best;
+      x = gx;
+    }
     let best = this.city.nodes[0], bd = Infinity;
     const i = Math.max(0, lowerIndex(this.city.xs, x)), j = Math.max(0, lowerIndex(this.city.ys, y));
     for (const n of this.city.nodes) {
-      if (Math.abs(n.i - i) > 3 || Math.abs(n.j - j) > 3) continue;
+      if (n.level !== undefined || Math.abs(n.i - i) > 3 || Math.abs(n.j - j) > 3) continue;
       const d = (n.x - x) ** 2 + (n.y - y) ** 2;
       if (d < bd) { bd = d; best = n; }
     }
     if (bd === Infinity) {
       for (const n of this.city.nodes) {
+        if (n.level !== undefined) continue;
         const d = (n.x - x) ** 2 + (n.y - y) ** 2;
         if (d < bd) { bd = d; best = n; }
       }
@@ -163,15 +181,25 @@ export class CityMap {
     return best;
   }
 
-  /** Nearest road segment and the distance along it, for snapping vehicles onto the network. */
+  /** Nearest road segment and the distance along it, for snapping vehicles onto the network: on the
+   *  street, the streets; on a way's strip, its deck and ramps (in ground coordinates). */
   nearestSegment(x: number, y: number): { seg: Segment; t: number; d: number } {
     let best = this.city.segs[0], bt = 0, bd = Infinity;
-    const n = this.nearestNode(x, y);
+    const f = floorOf(x);
+    const deck = isWayStrip(f);
     const near = new Set<number>();
-    for (const s of n.segs) {
-      near.add(s);
-      const s2 = this.city.segs[s];
-      for (const o of this.city.nodes[s2.a === n.id ? s2.b : s2.a].segs) near.add(o);
+    if (deck) {
+      x -= f * LEVEL_BAND;
+      const wi = this.city.ways.findIndex((w) => w.strip === f);
+      this.city.segs.forEach((s, i) => { if (s.way === wi && wi >= 0) near.add(i); });
+    } else {
+      const n = this.nearestNode(x, y);
+      for (const s of n.segs) {
+        near.add(s);
+        const s2 = this.city.segs[s];
+        for (const o of this.city.nodes[s2.a === n.id ? s2.b : s2.a].segs) near.add(o);
+      }
+      for (const si of near) if (this.city.segs[si].way !== undefined) near.delete(si);
     }
     for (const si of near) {
       const s = this.city.segs[si];

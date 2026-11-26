@@ -5,6 +5,7 @@ import { MAP_SIZE } from '../../shared/world/cityTypes';
 import { buildBrush } from './brush';
 import { CHUNK, paintChunk } from './groundPaint';
 import { hasWild } from './groundRelief';
+import { trenchHoles } from '../../shared/world/ways';
 
 /** `brush`: its bushes (brush.ts), built and dropped with it. */
 interface Chunk { mesh: THREE.Mesh; tex: THREE.CanvasTexture; used: number; brush: THREE.InstancedMesh[] }
@@ -23,8 +24,14 @@ export class Ground {
   constructor(private scene: THREE.Scene, private map: CityMap, private maxAniso: number) {
     // A huge plane under everything for areas outside the map: sea, or (landlocked) bare rock.
     const past = map.city.edge === 'sea' ? '#1f4250' : '#6e5440';
-    this.sea = new THREE.Mesh(new THREE.PlaneGeometry(8000, 8000).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: past }));
-    this.sea.position.set(MAP_SIZE / 2, -0.05, MAP_SIZE / 2);
+    // With a hole wherever a highway's trench is open, so you see down into it.
+    const c = MAP_SIZE / 2, R = 4000;
+    const shape = new THREE.Shape([new THREE.Vector2(c - R, c - R), new THREE.Vector2(c + R, c - R), new THREE.Vector2(c + R, c + R), new THREE.Vector2(c - R, c + R)]);
+    for (const w of map.city.ways) {
+      for (const h of trenchHoles(w)) shape.holes.push(new THREE.Path([new THREE.Vector2(h.x0, h.y0), new THREE.Vector2(h.x0, h.y1), new THREE.Vector2(h.x1, h.y1), new THREE.Vector2(h.x1, h.y0)]));
+    }
+    this.sea = new THREE.Mesh(new THREE.ShapeGeometry(shape).rotateX(Math.PI / 2), new THREE.MeshLambertMaterial({ color: past, side: THREE.DoubleSide }));
+    this.sea.position.set(0, -0.05, 0);
     this.sea.receiveShadow = true;
     scene.add(this.sea);
   }
@@ -61,7 +68,8 @@ export class Ground {
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = this.maxAniso;
     tex.generateMipmaps = true;
-    const mat = new THREE.MeshLambertMaterial({ map: tex });
+    // alphaTest: a trench's cut-out (groundPaint.ts) shows through.
+    const mat = new THREE.MeshLambertMaterial({ map: tex, alphaTest: 0.5 });
     const mesh = new THREE.Mesh(this.geo, mat);
     mesh.position.set((i + 0.5) * CHUNK, 0, (j + 0.5) * CHUNK);
     mesh.receiveShadow = true;

@@ -82,7 +82,10 @@ function interpolate(e: ViewEntity, rt: number): void {
     b = s[i];
   }
   const span = b.t - a.t;
-  const t = span > 0 ? Math.max(0, Math.min(1, (rt - a.t) / span)) : 1;
+  let t = span > 0 ? Math.max(0, Math.min(1, (rt - a.t) / span)) : 1;
+  // Between the street and a highway's strip (or a lift's floors: world/levels.ts) there's no
+  // in-between: take one side or the other.
+  if (Math.abs(b.d[L.x] - a.d[L.x]) > 1000) t = t < 0.5 ? 0 : 1;
   const ox = e.x, oy = e.y;
   e.x = lerp(a.d[L.x], b.d[L.x], t);
   e.y = lerp(a.d[L.y], b.d[L.y], t);
@@ -90,7 +93,9 @@ function interpolate(e: ViewEntity, rt: number): void {
   if (L.alt !== undefined) e.alt = lerp(a.d[L.alt], b.d[L.alt], t);
   if (L.turret !== undefined) e.turret = lerpAngle(a.d[L.turret], b.d[L.turret], t);
   if (L.trailer !== undefined) e.trailer = lerpAngle(a.d[L.trailer] ?? a.d[L.a], b.d[L.trailer] ?? b.d[L.a], t);
-  if (span > 0) {
+  if (span > 0 && Math.abs(b.d[L.x] - a.d[L.x]) > 1000) {
+    // Keep the speed it had (the jump between strips isn't motion).
+  } else if (span > 0) {
     e.vx = (b.d[L.x] - a.d[L.x]) / (span / 1000);
     e.vy = (b.d[L.y] - a.d[L.y]) / (span / 1000);
   } else if (ox || oy) {

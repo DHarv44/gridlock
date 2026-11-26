@@ -1,7 +1,8 @@
 // Game sounds: CC0 recordings from Freesound (ASSETS.md), prepared by tools/blender/prep_audio.py
 // into src/client/sfx/ and all levelled alike, so the mix lives in VOICES below. Distance-attenuated.
 // The siren is one looping voice that follows the nearest siren; engines are in engines.ts.
-import { FLOOR_H, groundOf } from '../../shared/world/levels';
+import { groundOf, isWayStrip } from '../../shared/world/levels';
+import { heightAt } from '../../shared/world/ways';
 import { ENGINES, EngineVoice, TRAFFIC } from './engines';
 import { playTune } from './handset';
 import { type Line, playOnLine } from './phoneVoice';
@@ -63,8 +64,8 @@ export class Sound {
   private muted: boolean;
   listenerX = 0;
   listenerY = 0;
-  /** The floor you're on (0 = the street). */
-  listenerF = 0;
+  /** How high you are: an upper floor, a highway's deck (0 = the street). */
+  listenerZ = 0;
 
   /** Music (radio) volume, 1–100, separate from the game's sounds. */
   private music: number;
@@ -120,10 +121,12 @@ export class Sound {
   /** Distance gain for a world position (null = at the listener). */
   private falloff(x: number | null, y: number | null): number {
     if (x === null || y === null) return 1;
-    // Upper floors sit off the map (world/levels.ts): back over the street, and each floor between
-    // you and the sound muffles it like a good stretch of distance.
+    // Upper floors and highways sit off the map (world/levels.ts): back over the street, and the
+    // height between you and the sound muffles it like a good stretch of distance (floors and walls
+    // more than a highway's open air).
     const g = groundOf(x, y);
-    const d = Math.hypot(g.x - this.listenerX, g.y - this.listenerY, (g.f - this.listenerF) * FLOOR_H * 4);
+    const k = isWayStrip(g.f) ? 1.5 : 4;
+    const d = Math.hypot(g.x - this.listenerX, g.y - this.listenerY, (heightAt(x, y) - this.listenerZ) * k);
     return 1 / (1 + (d / 30) ** 2);
   }
 
