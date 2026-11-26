@@ -55,18 +55,20 @@ export class Water {
       scene.add(m);
     };
     const far = 6000, e = 1.5;
-    plane(-far, -far, far, LAND0 - e);
-    plane(-far, LAND1 + e, far, far);
-    plane(-far, LAND0 - e, LAND0 - e, LAND1 + e);
-    plane(LAND1 + e, LAND0 - e, far, LAND1 + e);
+    if (map.city.edge === 'sea') {
+      plane(-far, -far, far, LAND0 - e);
+      plane(-far, LAND1 + e, far, far);
+      plane(-far, LAND0 - e, LAND0 - e, LAND1 + e);
+      plane(LAND1 + e, LAND0 - e, far, LAND1 + e);
+    }
     const r = map.river;
-    plane(LAND0, r.y0, LAND1, r.y1);
-    this.bridges(scene, map);
+    if (r) plane(LAND0, r.y0, LAND1, r.y1);
+    for (const p of map.city.ponds) plane(p.x0, p.y0, p.x1, p.y1);
+    if (r) this.bridges(scene, map, r);
   }
 
-  private bridges(scene: THREE.Scene, map: CityMap): void {
+  private bridges(scene: THREE.Scene, map: CityMap, r: { y0: number; y1: number }): void {
     const deck = new Batch(UNIT.box(), lambert());
-    const r = map.river;
     for (const b of map.city.bridges) {
       const w = b.x1 - b.x0, len = b.y1 - b.y0 + 2, cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
       deck.add(cx, -1.4, cy, w + 0.6, 1.5, len, '#5d5f62');

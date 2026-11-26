@@ -12,6 +12,7 @@ export interface LotOutput {
   trees: Tree[];
   obstacles: Obstacle[];
   parking: ParkSpot[];
+  ponds: Rect[];
 }
 
 const CONTAINER_COLORS = ['#a8432f', '#2f6a8a', '#8a7a2f', '#3f7a4a', '#7a3f6a', '#c06a2a', '#5a6a7a'];
@@ -45,7 +46,7 @@ function touchingSides(r: Rect, area: Rect): Dir[] {
 }
 
 export class LotBuilder {
-  readonly out: LotOutput = { blocks: [], lots: [], buildings: [], trees: [], obstacles: [], parking: [] };
+  readonly out: LotOutput = { blocks: [], lots: [], buildings: [], trees: [], obstacles: [], parking: [], ponds: [] };
 
   constructor(private rng: Rng) {}
 
@@ -68,12 +69,58 @@ export class LotBuilder {
   /** Trees go in last so they can avoid buildings and service pads. */
   plantTrees(): void {
     for (const lot of this.out.lots) {
-      if (lot.use !== 'park' && lot.use !== 'plaza' && lot.use !== 'yard') continue;
+      if (lot.use !== 'park' && lot.use !== 'plaza' && lot.use !== 'yard' && lot.use !== 'wild') continue;
       this.scatterTrees(lot, ZONES[lot.zone].trees * (lot.use === 'plaza' ? 0.5 : 1));
     }
   }
 
+  /** Open country: one lot of ground with rock formations (solid, a few overlapping boxes: buttes
+   *  and outcrops) and ponds, clear of the trails round it. */
+  private wild(block: Block, z: ZoneSpec): void {
+    const lot = this.addLot(block, block.rect, 'wild', -1);
+    const spec = z.wild;
+    if (!spec) return;
+    const clear: Rect[] = [];
+    this.wildClear.set(lot.id, clear);
+    const area = insetRect(block.rect, 10);
+    const w = rectW(area), h = rectH(area);
+    if (w < 20 || h < 20) return;
+    const per = (w * h) / 10_000;
+    const fits = (r: Rect) => r.x0 >= area.x0 && r.x1 <= area.x1 && r.y0 >= area.y0 && r.y1 <= area.y1
+      && !clear.some((c) => r.x0 < c.x1 + 6 && r.x1 > c.x0 - 6 && r.y0 < c.y1 + 6 && r.y1 > c.y0 - 6);
+    const nPonds = Math.floor(per * spec.ponds + this.rng.next());
+    for (let k = 0; k < nPonds; k++) {
+      const pw = this.rng.range(spec.pondSize[0], spec.pondSize[1]), ph = this.rng.range(spec.pondSize[0], spec.pondSize[1]);
+      const x = this.rng.range(area.x0, area.x1 - pw), y = this.rng.range(area.y0, area.y1 - ph);
+      const r = { x0: x, y0: y, x1: x + pw, y1: y + ph };
+      if (!fits(r)) continue;
+      clear.push(r);
+      this.out.ponds.push(r);
+    }
+    const nRocks = Math.floor(per * spec.rocks + this.rng.next());
+    for (let k = 0; k < nRocks; k++) {
+      const s = this.rng.range(spec.rockSize[0], spec.rockSize[1]);
+      const x = this.rng.range(area.x0, area.x1 - s), y = this.rng.range(area.y0, area.y1 - s);
+      const outline = { x0: x, y0: y, x1: x + s, y1: y + s };
+      if (!fits(outline)) continue;
+      clear.push(outline);
+      const top = this.rng.range(spec.rockHeight[0], spec.rockHeight[1]);
+      const color = this.rng.pick(spec.rockColor);
+      // A core and a couple of lower shoulders: reads as a butte from above, not a crate.
+      this.out.obstacles.push({ rect: insetRect(outline, s * 0.18), h: top, color, kind: 'rock' });
+      for (let p = 0; p < 2; p++) {
+        const a = this.rng.range(0.15, 0.55) * s, b = this.rng.range(0.15, 0.55) * s;
+        const px = this.rng.range(x, x + s - a), py = this.rng.range(y, y + s - b);
+        this.out.obstacles.push({ rect: { x0: px, y0: py, x1: px + a, y1: py + b }, h: top * this.rng.range(0.35, 0.7), color, kind: 'rock' });
+      }
+    }
+  }
+
+  /** Open-country features trees keep clear of, by lot. */
+  private wildClear = new Map<number, Rect[]>();
+
   private fillBlock(block: Block, z: ZoneSpec): void {
+    if (z.layout === 'wild') { this.wild(block, z); return; }
     const area = insetRect(block.rect, SIDEWALK_W);
     if (rectW(area) < 8 || rectH(area) < 8) return;
     switch (z.layout) {
@@ -252,6 +299,7 @@ export class LotBuilder {
       const x = this.rng.range(r.x0, r.x1), y = this.rng.range(r.y0, r.y1);
       // Keep the park's cross paths and the lot middle clear.
       if (lot.use === 'park' && (Math.abs(x - cx) < 4 || Math.abs(y - cy) < 4)) continue;
+      if (this.wildClear.get(lot.id)?.some((c) => x > c.x0 - 2 && x < c.x1 + 2 && y > c.y0 - 2 && y < c.y1 + 2)) continue;
       const b = lot.building?.rect;
       if (b && x > b.x0 - 2.5 && x < b.x1 + 2.5 && y > b.y0 - 2.5 && y < b.y1 + 2.5) continue;
       if (lot.pad && Math.abs(x - lot.pad.x) < 6 && Math.abs(y - lot.pad.y) < 6) continue;

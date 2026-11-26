@@ -35,7 +35,7 @@ check(moored.length >= 8, `${moored.length} moorings along the river and the coa
 check(moored.every((m) => afloat({ x: m.x, y: m.y, angle: m.angle, vx: 0, vy: 0, av: 0, alt: 0 }, VEHICLES[m.type], w.statics)), 'every moored boat is afloat');
 
 // Walk up to one on the river and the boat is there when you arrive.
-const river = w.map.river;
+const river = w.map.river!; // Bayhaven has its river
 const m = moored.find((q) => q.y > river.y0 - 5 && q.y < river.y1 + 5)!;
 const bankY = m.y < (river.y0 + river.y1) / 2 ? river.y0 - 1.2 : river.y1 + 1.2;
 p.body.x = m.x; p.body.y = bankY + (m.y < (river.y0 + river.y1) / 2 ? -80 : 80);

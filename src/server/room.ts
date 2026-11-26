@@ -146,8 +146,15 @@ export class Room {
     const home = pl.owned.map((id) => w.city.properties[id]).find((p) => p.verb === 'home');
     if (home) return home;
     const hospitals = w.city.services.filter((s) => s.verb === 'hospital');
-    hospitals.sort((a, b) => Math.hypot(a.x - 1024, a.y - 1024) - Math.hypot(b.x - 1024, b.y - 1024));
-    return hospitals[0] ?? { x: 1024, y: 1024 };
+    const c = MAP_SIZE / 2;
+    hospitals.sort((a, b) => Math.hypot(a.x - c, a.y - c) - Math.hypot(b.x - c, b.y - c));
+    return hospitals[0] ?? this.anyRoad(c);
+  }
+
+  /** A universe with no hospital: the road junction nearest the middle of the map. */
+  private anyRoad(c: number): { x: number; y: number } {
+    const n = this.world.map.nearestNode(c, c);
+    return { x: n.x, y: n.y };
   }
 
   leave(pl: Player): void {

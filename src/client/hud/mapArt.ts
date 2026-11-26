@@ -5,7 +5,7 @@ import type { CityMap } from '../../shared/world/city';
 import { LAND0, LAND1, MAP_SIZE } from '../../shared/world/cityTypes';
 import { turfGang } from '../../shared/world/gangTurf';
 
-export const MAP_COLORS = { water: '#0e2431', land: '#15181d', road: '#3a404a', arterial: '#4b525e' };
+export const MAP_COLORS = { water: '#0e2431', land: '#15181d', road: '#3a404a', arterial: '#4b525e', rock: '#3a2a22' };
 
 /** Blends a hex colour toward another (t = share of `b`). */
 function mix(a: string, b: string, t: number): string {
@@ -32,20 +32,26 @@ export function bakeCityMap(map: CityMap, scale: number): HTMLCanvasElement {
   const c = document.createElement('canvas');
   c.width = c.height = Math.round(MAP_SIZE * scale);
   const ctx = c.getContext('2d')!;
-  ctx.fillStyle = MAP_COLORS.water;
+  // Past the land: sea, or (a landlocked map) the cliffs, drawn like rock.
+  ctx.fillStyle = city.edge === 'sea' ? MAP_COLORS.water : MAP_COLORS.rock;
   ctx.fillRect(0, 0, c.width, c.height);
   ctx.save();
   ctx.scale(scale, scale);
   ctx.fillStyle = MAP_COLORS.land;
   ctx.fillRect(LAND0, LAND0, LAND1 - LAND0, LAND1 - LAND0);
   ctx.fillStyle = MAP_COLORS.water;
-  ctx.fillRect(0, map.river.y0, MAP_SIZE, map.river.y1 - map.river.y0);
+  if (map.river) ctx.fillRect(0, map.river.y0, MAP_SIZE, map.river.y1 - map.river.y0);
   for (const b of city.blocks) {
     ctx.fillStyle = mix(ZONES[b.zone].mapColor, MAP_COLORS.land, 0.4);
     ctx.fillRect(b.rect.x0, b.rect.y0, b.rect.x1 - b.rect.x0, b.rect.y1 - b.rect.y0);
   }
   ctx.fillStyle = 'rgba(0,0,0,0.28)';
   for (const bd of city.buildings) ctx.fillRect(bd.rect.x0, bd.rect.y0, bd.rect.x1 - bd.rect.x0, bd.rect.y1 - bd.rect.y0);
+  // Open country: ponds and rock formations.
+  ctx.fillStyle = MAP_COLORS.water;
+  for (const p of city.ponds) ctx.fillRect(p.x0, p.y0, p.x1 - p.x0, p.y1 - p.y0);
+  ctx.fillStyle = MAP_COLORS.rock;
+  for (const o of city.obstacles) if (o.kind === 'rock') ctx.fillRect(o.rect.x0, o.rect.y0, o.rect.x1 - o.rect.x0, o.rect.y1 - o.rect.y0);
   // Streets on top of the land between blocks, wider and brighter for arterials.
   for (const s of city.segs) {
     ctx.fillStyle = s.lanes > 1 ? MAP_COLORS.arterial : MAP_COLORS.road;

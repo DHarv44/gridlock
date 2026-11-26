@@ -5,6 +5,7 @@
 import { DEFAULT_UNIVERSE } from '../../universes';
 import { installCalls } from './calls';
 import { installLooks } from './characters';
+import { installWorld } from '../world/worldSpec';
 import { DEFAULT_RESPECT, DEFAULT_RULES, type Respect, type Rules } from './defaults';
 import type {
   Behaviour, CrimeKind, CrimeSpec, DistrictSpec, FactionSpec, GameMode, InteriorLayout, InteriorPlan, MissionSpec, PedArchetype,
@@ -109,6 +110,7 @@ export function installUniverse(u: Universe): void {
   WITNESS_FACTIONS.clear(); for (const f of FACTIONS) if (f.witness) WITNESS_FACTIONS.add(f.id);
   installCalls(u);
   installLooks(u);
+  installWorld(u.world);
   if (PLAYER_ARCHETYPE < 0) throw new Error(`universe ${u.id}: no ped archetype with behaviour 'player'`);
   if (UNARMED < 0) throw new Error(`universe ${u.id}: no unarmed weapon (melee, price 0)`);
 }

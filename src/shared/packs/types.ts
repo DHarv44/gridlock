@@ -235,7 +235,10 @@ export interface ZoneSpec {
   ground: string;               // lot ground colour
   sidewalk: string;
   lot: { min: number; max: number; setback: [number, number]; height: [number, number]; coverage: number };
-  layout: 'buildings' | 'houses' | 'park' | 'docks' | 'compound';
+  /** `wild`: open country (no sidewalks; roads only along arterial lines, as trails; `wild` says
+   *  what the ground holds). */
+  layout: 'buildings' | 'houses' | 'park' | 'docks' | 'compound' | 'wild';
+  wild?: WildSpec;
   wall: string[];               // building wall colours
   roof: string[];
   trees: number;                // trees per 1000 m2 of open ground
@@ -349,6 +352,42 @@ export interface ServiceCall { squad: Squad; maxActive: number }
 export type CrimeKind = 'gunfire' | 'assault' | 'assaultLaw' | 'murder' | 'murderLaw' | 'vehicularHomicide'
   | 'carjack' | 'vehicleTheft' | 'explosion' | 'trespass' | 'bankRobbery' | 'robbery';
 
+/**
+ * The map a universe plays on: the engine's grid generator (GTA2-style: straight roads between
+ * blocks) shaped by these settings. Defaults (shared/world/worldSpec.ts) are Bayhaven's island.
+ */
+export interface WorldSpec {
+  /** Side of the square map, metres. */
+  size: number;
+  /** Width of the border outside the land: sea (boats, swimming) or cliffs (solid). */
+  margin: number;
+  edge: 'sea' | 'cliffs';
+  /** A river across the map at this fraction of its height (one row of the grid), or none. */
+  river: { at: number; width: number } | null;
+  /** Gap between road lines, metres: near the centre and toward the edges (scaled ±15%). */
+  spacing: { near: number; far: number };
+  /** Every n-th road line is an arterial (two lanes each way; the trails in open country). */
+  arterialEvery: number;
+  /** Colour of bare land where nothing else is drawn (between open-country blocks). */
+  ground: string;
+}
+
+/** What open country (zones with layout 'wild') is made of: scattered rock formations (solid,
+ *  drawn as buttes and outcrops) and ponds (water), per 10,000 m² of open ground. */
+export interface WildSpec {
+  rocks: number;
+  /** Rock size range (m) and height range (m). */
+  rockSize: [number, number];
+  rockHeight: [number, number];
+  rockColor: string[];
+  ponds: number;
+  pondSize: [number, number];
+  /** Ground colours, blended in patches. */
+  ground: string[];
+  /** The colour of trails (dirt roads) through it. */
+  trail: string;
+}
+
 /** A radio station: its folder under the universe's `<contentDir>/radio/`, the name players see,
  *  and `font`, the name's typeface (a CSS font family, bundled by client/audio/radioFonts.ts). */
 export interface RadioStation { id: string; name: string; color: string; font: string }
@@ -397,6 +436,8 @@ export interface Universe {
   blurb: string;
   /** Folder (from the project root) holding its content: characters/, player/, radio/. */
   contentDir: string;
+  /** Its map; anything left out keeps the engine default (shared/world/worldSpec.ts). */
+  world?: Partial<WorldSpec>;
   vehicles: VehicleSpec[];
   weapons: WeaponSpec[];
   peds: PedArchetype[];

@@ -1,14 +1,14 @@
 // Paints a square chunk of the city ground (roads, markings, sidewalks, lots, water) to a canvas.
 import { Rng } from '../../shared/rng';
-import { SERVICES, ZONES } from '../../shared/packs';
+import { SERVICES, ZONES, type ZoneSpec } from '../../shared/packs';
 import type { CityMap } from '../../shared/world/city';
-import { LAND0, LAND1, LANE_W, type Lot, type Segment } from '../../shared/world/cityTypes';
+import { LAND0, LAND1, LANE_W, type Lot, MAP_SIZE, type Segment } from '../../shared/world/cityTypes';
+import { WORLD } from '../../shared/world/worldSpec';
 
 export const CHUNK = 128;
 export const PX = 4; // pixels per metre
 const ASPHALT = '#3b3e43';
 const ASPHALT_ART = '#36393e';
-const CURB = '#b7b4ab';
 const WATER = '#1f4250';
 const LINE_W = '#e8e6df';
 const LINE_Y = '#e2b93b';
@@ -40,23 +40,25 @@ export function paintChunk(map: CityMap, cx: number, cy: number, canvas: HTMLCan
   const inView = (x0: number, y0: number, x1: number, y1: number) => x1 >= X0 && x0 <= X1 && y1 >= Y0 && y0 <= Y1;
   const rect = (x0: number, y0: number, x1: number, y1: number, c: string) => { ctx.fillStyle = c; ctx.fillRect(x0, y0, x1 - x0, y1 - y0); };
 
-  rect(X0, Y0, X1, Y1, WATER);
-  // Shoreline: a lighter shallow band, then land.
-  rect(LAND0 - 3, LAND0 - 3, LAND1 + 3, LAND1 + 3, '#2c5866');
-  rect(LAND0, LAND0, LAND1, LAND1, CURB);
+  if (city.edge === 'sea') {
+    rect(X0, Y0, X1, Y1, WATER);
+    // Shoreline: a lighter shallow band, then land.
+    rect(LAND0 - 3, LAND0 - 3, LAND1 + 3, LAND1 + 3, '#2c5866');
+  }
+  rect(LAND0, LAND0, LAND1, LAND1, WORLD.ground);
   const r = map.river;
-  if (inView(0, r.y0, 4096, r.y1)) {
+  if (r && inView(0, r.y0, MAP_SIZE, r.y1)) {
     rect(X0, r.y0 - 1.5, X1, r.y1 + 1.5, '#8c8a82');
     rect(X0, r.y0, X1, r.y1, WATER);
   }
 
-  // Roads.
+  // Roads (trails: packed dirt).
   for (const s of city.segs) {
     const hw = s.width / 2;
     const x0 = Math.min(s.x0, s.x1) - (s.axis === 'v' ? hw : 0), x1 = Math.max(s.x0, s.x1) + (s.axis === 'v' ? hw : 0);
     const y0 = Math.min(s.y0, s.y1) - (s.axis === 'h' ? hw : 0), y1 = Math.max(s.y0, s.y1) + (s.axis === 'h' ? hw : 0);
     if (!inView(x0, y0, x1, y1)) continue;
-    rect(x0, y0, x1, y1, s.lanes > 1 ? ASPHALT_ART : ASPHALT);
+    rect(x0, y0, x1, y1, s.trail ? TRAIL() : s.lanes > 1 ? ASPHALT_ART : ASPHALT);
     if (s.bridge) {
       rect(x0 - 1.2, y0, x0, y1, '#9a978e');
       rect(x1, y0, x1 + 1.2, y1, '#9a978e');
@@ -64,15 +66,16 @@ export function paintChunk(map: CityMap, cx: number, cy: number, canvas: HTMLCan
   }
   for (const n of city.nodes) {
     if (!inView(n.x - n.wv, n.y - n.wh, n.x + n.wv, n.y + n.wh)) continue;
-    rect(n.x - n.wv / 2, n.y - n.wh / 2, n.x + n.wv / 2, n.y + n.wh / 2, ASPHALT);
+    rect(n.x - n.wv / 2, n.y - n.wh / 2, n.x + n.wv / 2, n.y + n.wh / 2, n.segs.every((si) => city.segs[si].trail) ? TRAIL() : ASPHALT);
   }
-  for (const s of city.segs) roadWear(ctx, s, inView);
+  for (const s of city.segs) if (!s.trail) roadWear(ctx, s, inView);
 
   // Blocks and lots.
   for (const b of city.blocks) {
     const br = b.rect;
     if (!inView(br.x0, br.y0, br.x1, br.y1)) continue;
     const z = ZONES[b.zone];
+    if (z.layout === 'wild') { paintWild(ctx, b.id, br, z); continue; }
     rect(br.x0, br.y0, br.x1, br.y1, z.sidewalk);
     grid(ctx, { x0: br.x0 + 0.4, y0: br.y0 + 0.4, x1: br.x1 - 0.4, y1: br.y1 - 0.4 }, 1.5, 'rgba(0,0,0,0.08)');
     // Curb edge.
@@ -80,6 +83,12 @@ export function paintChunk(map: CityMap, cx: number, cy: number, canvas: HTMLCan
     ctx.lineWidth = 0.25;
     ctx.strokeRect(br.x0 + 0.12, br.y0 + 0.12, br.x1 - br.x0 - 0.24, br.y1 - br.y0 - 0.24);
     for (const li of b.lots) paintLot(ctx, city.lots[li], z.ground);
+  }
+  // Ponds, with a muddy shore.
+  for (const p of city.ponds) {
+    if (!inView(p.x0 - 2, p.y0 - 2, p.x1 + 2, p.y1 + 2)) continue;
+    rect(p.x0 - 1.4, p.y0 - 1.4, p.x1 + 1.4, p.y1 + 1.4, '#6a5a44');
+    rect(p.x0, p.y0, p.x1, p.y1, WATER);
   }
 
   paintMarkings(ctx, map, inView);
@@ -123,6 +132,34 @@ function roadWear(ctx: CanvasRenderingContext2D, s: Segment, inView: (a: number,
     ctx.beginPath(); ctx.arc(x, y, 0.45, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = 'rgba(160,160,160,0.35)'; ctx.lineWidth = 0.06;
     ctx.beginPath(); ctx.arc(x, y, 0.32, 0, Math.PI * 2); ctx.stroke();
+  }
+}
+
+/** Trails' dirt colour: the open country's (the first wild zone's), else a plain dirt brown. */
+let trailColor: string | null = null;
+const TRAIL = (): string => (trailColor ??= ZONES.find((z) => z.wild)?.wild?.trail ?? '#8a7356');
+
+/** Open country: its ground in drifting patches of the zone's colours, scrub dotted over it. The
+ *  pattern comes from the block's id, so it lines up across chunk edges. */
+function paintWild(ctx: CanvasRenderingContext2D, id: number, r: { x0: number; y0: number; x1: number; y1: number }, z: ZoneSpec): void {
+  const w = r.x1 - r.x0, h = r.y1 - r.y0;
+  ctx.fillStyle = z.ground;
+  ctx.fillRect(r.x0, r.y0, w, h);
+  const colors = z.wild?.ground ?? [];
+  const rng = new Rng(id * 7907 + 3);
+  const n = Math.min(700, Math.floor((w * h) / 500));
+  ctx.globalAlpha = 0.35;
+  for (let k = 0; k < n && colors.length; k++) {
+    ctx.fillStyle = colors[Math.floor(rng.next() * colors.length)];
+    const rx = rng.range(5, 26), ry = rng.range(4, 18);
+    ctx.beginPath(); ctx.ellipse(rng.range(r.x0, r.x1), rng.range(r.y0, r.y1), rx, ry, rng.range(0, 3.14), 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  const scrub = Math.min(2500, Math.floor((w * h) / 60));
+  for (let k = 0; k < scrub; k++) {
+    ctx.fillStyle = rng.chance(0.6) ? 'rgba(70,80,45,0.55)' : 'rgba(90,70,45,0.4)';
+    const s = rng.range(0.4, 1.3);
+    ctx.fillRect(rng.range(r.x0, r.x1), rng.range(r.y0, r.y1), s, s);
   }
 }
 
@@ -258,6 +295,7 @@ function paintMarkings(ctx: CanvasRenderingContext2D, map: CityMap, inView: (a: 
   const city = map.city;
   ctx.lineCap = 'butt';
   for (const s of city.segs) {
+    if (s.trail) continue; // dirt: no paint
     const A = city.nodes[s.a], B = city.nodes[s.b];
     const hw = s.width / 2;
     if (!inView(Math.min(s.x0, s.x1) - hw, Math.min(s.y0, s.y1) - hw, Math.max(s.x0, s.x1) + hw, Math.max(s.y0, s.y1) + hw)) continue;

@@ -1,9 +1,8 @@
 import type { Rect } from '../math';
 import type { Interior } from './interiors';
 
-export const MAP_SIZE = 2048;
-export const LAND0 = 80;
-export const LAND1 = 1968;
+/** Map size and the land's edges come from the installed universe (worldSpec.ts). */
+export { LAND0, LAND1, MAP_SIZE } from './worldSpec';
 export const LANE_W = 3.6;
 export const PARK_W = 2.4;
 export const SIDEWALK_W = 3;
@@ -41,9 +40,12 @@ export interface Segment {
   lanes: number;
   parking: boolean;
   bridge: boolean;
+  /** A trail through open country: a dirt road, no markings (roadgen.ts). */
+  trail?: boolean;
 }
 
-export type LotUse = 'building' | 'parking' | 'plaza' | 'yard' | 'park' | 'containers' | 'pad';
+/** `wild`: open country (zone layout 'wild'): ground, rock formations, ponds. */
+export type LotUse = 'building' | 'parking' | 'plaza' | 'yard' | 'park' | 'containers' | 'pad' | 'wild';
 
 export interface Building {
   rect: Rect;
@@ -86,7 +88,8 @@ export interface Obstacle {
   rect: Rect;
   h: number;
   color: string;
-  kind: 'container' | 'fence' | 'wall' | 'crane' | 'pump' | 'pole'; // pump islands, sign poles: gas stations
+  // pump islands, sign poles: gas stations; rock: open country's buttes and outcrops, cliffs at the edge
+  kind: 'container' | 'fence' | 'wall' | 'crane' | 'pump' | 'pole' | 'rock';
 }
 
 export interface ParkSpot { x: number; y: number; angle: number; zone: number; lot?: number }
@@ -107,7 +110,11 @@ export interface City {
   seed: number;
   xs: RoadLine[];       // vertical roads (pos = x)
   ys: RoadLine[];       // horizontal roads (pos = y)
-  riverRow: number;     // cell row index that is river
+  riverRow: number;     // cell row index that is river (-1: no river)
+  /** Still water in open country (ponds): water like the river. */
+  ponds: Rect[];
+  /** What lies past the land: sea all round, or cliffs (solid). */
+  edge: 'sea' | 'cliffs';
   cellZone: Int16Array; // zone per cell, -1 water
   cellDistrict: Int16Array;
   cellBlock: Int32Array;

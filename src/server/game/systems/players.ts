@@ -191,7 +191,8 @@ function respawn(w: World, pl: Player, old: Ped): void {
   const pos = old.vehicle ? w.pedPos(old) : old.body;
   const candidates = w.city.services.filter((s) => s.verb === (busted ? 'police' : 'hospital')).map((s) => ({ x: s.x, y: s.y }));
   if (!busted) for (const id of pl.owned) { const pr = w.city.properties[id]; if (pr.verb === 'home') candidates.push({ x: pr.x, y: pr.y }); }
-  let at = candidates[0] ?? { x: 1000, y: 1000 }, bd = Infinity;
+  // Nowhere to go (a universe without the place): where they fell.
+  let at = candidates[0] ?? { x: pos.x, y: pos.y }, bd = Infinity;
   for (const c of candidates) { const d = dist(pos.x, pos.y, c.x, c.y); if (d < bd) { bd = d; at = c; } }
   if (!busted) pl.cash = Math.max(0, pl.cash - RULES.hospitalFee);
   const weapons = old.weapons;

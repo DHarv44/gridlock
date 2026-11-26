@@ -1,11 +1,15 @@
-// Road network generation: road lines, districts per cell, merged blocks, river and bridges.
+// Road network generation: road lines, districts per cell, merged blocks, river and bridges. The
+// map's shape comes from the installed universe (worldSpec.ts). Open country (zones with layout
+// 'wild') merges into big blocks between arterial lines, which run through it as trails.
 import { clamp, type Rect } from '../math';
 import { DISTRICTS, ZONES, zoneIndex } from '../packs';
 import type { Rng } from '../rng';
-import { LAND0, LAND1, LANE_W, MAP_SIZE, PARK_W, RIVER_W, type RoadLine, type RoadNode, type Segment } from './cityTypes';
+import { LAND0, LAND1, LANE_W, MAP_SIZE, PARK_W, type RoadLine, type RoadNode, type Segment } from './cityTypes';
+import { WORLD } from './worldSpec';
 
-const ARTERIAL_EVERY = 4;
 const MIN_GAP = 46;
+/** A trail: one lane each way of packed dirt. */
+const TRAIL_W = 2 * LANE_W + 1.2;
 
 function makeLine(pos: number, arterial: boolean): RoadLine {
   return arterial
@@ -15,8 +19,11 @@ function makeLine(pos: number, arterial: boolean): RoadLine {
 
 function spacingAt(pos: number, rng: Rng): number {
   const t = clamp(Math.abs(pos - MAP_SIZE / 2) / (MAP_SIZE * 0.42), 0, 1);
-  return (74 + 60 * t) * rng.range(0.85, 1.18);
+  const { near, far } = WORLD.spacing;
+  return (near + (far - near) * t) * rng.range(0.85, 1.18);
 }
+
+const isWild = (z: number) => z >= 0 && ZONES[z].layout === 'wild';
 
 /** Generates road line positions along one axis; optionally inserts a river row. */
 export function genLines(rng: Rng, riverAt: number | null): { lines: RoadLine[]; riverRow: number } {
@@ -28,7 +35,7 @@ export function genLines(rng: Rng, riverAt: number | null): { lines: RoadLine[];
     if (riverAt !== null && riverRow < 0 && next >= riverAt - 40) {
       const start = Math.max(riverAt, last + MIN_GAP);
       riverRow = pos.length;
-      pos.push(start, start + RIVER_W);
+      pos.push(start, start + WORLD.river!.width);
       continue;
     }
     if (next > LAND1 - 8 - MIN_GAP) break;
@@ -36,7 +43,7 @@ export function genLines(rng: Rng, riverAt: number | null): { lines: RoadLine[];
   }
   pos.push(LAND1 - 8);
   const n = pos.length;
-  const lines = pos.map((p, i) => makeLine(p, i === 0 || i === n - 1 || i % ARTERIAL_EVERY === 0));
+  const lines = pos.map((p, i) => makeLine(p, i === 0 || i === n - 1 || i % WORLD.arterialEvery === 0));
   return { lines, riverRow };
 }
 
@@ -55,7 +62,7 @@ export interface RoadLayout {
 
 export function genLayout(rng: Rng): RoadLayout {
   const { lines: xs } = genLines(rng, null);
-  const { lines: ys, riverRow } = genLines(rng, MAP_SIZE * 0.6);
+  const { lines: ys, riverRow } = genLines(rng, WORLD.river ? MAP_SIZE * WORLD.river.at : null);
   const nx = xs.length - 1, ny = ys.length - 1;
   const cellZone = new Int16Array(nx * ny);
   const cellDistrict = new Int16Array(nx * ny);
@@ -89,6 +96,19 @@ export function genLayout(rng: Rng): RoadLayout {
   const canCutV = (i: number) => !xs[i].arterial;
   const canCutH = (j: number) => !ys[j].arterial && j !== riverRow && j !== riverRow + 1;
 
+  // Open country: as big a rectangle of one wild zone as fits between arterials (trails).
+  for (let j = 0; j < ny; j++) {
+    for (let i = 0; i < nx; i++) {
+      const z = cellZone[j * nx + i];
+      if (!isWild(z) || !free(i, j, z)) continue;
+      let i1 = i;
+      while (free(i1 + 1, j, z) && canCutV(i1 + 1)) i1++;
+      let j1 = j;
+      const rowFree = (jj: number) => { for (let ii = i; ii <= i1; ii++) if (!free(ii, jj, z)) return false; return true; };
+      while (canCutH(j1 + 1) && rowFree(j1 + 1)) j1++;
+      claim({ i0: i, j0: j, i1, j1 });
+    }
+  }
   const bigLayouts = new Set(['park', 'compound']);
   for (let j = 0; j < ny; j++) {
     for (let i = 0; i < nx; i++) {
@@ -139,35 +159,49 @@ export function genGraph(L: RoadLayout): { nodes: RoadNode[]; segs: Segment[]; b
     }
     return nodes[nodeId[k]];
   };
-  const add = (axis: 'h' | 'v', a: RoadNode, b: RoadNode, line: RoadLine, bridge: boolean) => {
+  const add = (axis: 'h' | 'v', a: RoadNode, b: RoadNode, line: RoadLine, bridge: boolean, trail = false) => {
     const s: Segment = { id: segs.length, axis, a: a.id, b: b.id, x0: a.x, y0: a.y, x1: b.x, y1: b.y,
-      width: line.width, lanes: line.lanes, parking: line.parking && !bridge, bridge };
+      width: trail ? TRAIL_W : line.width, lanes: trail ? 1 : line.lanes, parking: line.parking && !bridge && !trail, bridge,
+      ...(trail ? { trail } : {}) };
     segs.push(s);
     a.segs.push(s.id);
     b.segs.push(s.id);
   };
+  // Open country: between two wild cells (or wild and the river or the map's edge) there's only a
+  // road along an arterial line, and it's a trail.
+  const zoneAt = (i: number, j: number) => (i < 0 || j < 0 || i >= nx || j >= ny ? -2 : L.cellZone[j * nx + i]);
+  const open = (z: number) => z < 0 || isWild(z);
+  const wildPair = (za: number, zb: number) => (isWild(za) || isWild(zb)) && open(za) && open(zb);
 
   for (let j = 0; j <= ny; j++) {
     for (let i = 0; i < nx; i++) {
       const above = clusterAt(i, j - 1), below = clusterAt(i, j);
       if (above === below && above >= 0) continue;
-      add('h', node(i, j), node(i + 1, j), ys[j], false);
+      const trail = wildPair(zoneAt(i, j - 1), zoneAt(i, j));
+      if (trail && !ys[j].arterial) continue;
+      add('h', node(i, j), node(i + 1, j), ys[j], false, trail);
     }
   }
   for (let i = 0; i <= nx; i++) {
     for (let j = 0; j < ny; j++) {
       if (j === riverRow) {
         if (!L.bridgeLines.has(i)) continue;
-        add('v', node(i, j), node(i, j + 1), xs[i], true);
+        add('v', node(i, j), node(i, j + 1), xs[i], true, wildPair(zoneAt(i - 1, j - 1), zoneAt(i, j - 1)));
         bridges.push({ x0: xs[i].pos - xs[i].width / 2, x1: xs[i].pos + xs[i].width / 2,
           y0: ys[j].pos + ys[j].width / 2, y1: ys[j + 1].pos - ys[j + 1].width / 2 });
         continue;
       }
       const left = clusterAt(i - 1, j), right = clusterAt(i, j);
       if (left === right && left >= 0) continue;
-      add('v', node(i, j), node(i, j + 1), xs[i], false);
+      const trail = wildPair(zoneAt(i - 1, j), zoneAt(i, j));
+      if (trail && !xs[i].arterial) continue;
+      add('v', node(i, j), node(i, j + 1), xs[i], false, trail);
     }
   }
-  for (const n of nodes) n.lights = n.segs.length >= 3 && (xs[n.i].arterial || ys[n.j].arterial);
+  for (const n of nodes) {
+    n.lights = n.segs.length >= 3 && (xs[n.i].arterial || ys[n.j].arterial);
+    // Where only trails meet, the crossing is trail-sized and has no lights.
+    if (n.segs.every((s) => segs[s].trail)) { n.wv = Math.min(n.wv, TRAIL_W); n.wh = Math.min(n.wh, TRAIL_W); n.lights = false; }
+  }
   return { nodes, segs, bridges };
 }

@@ -34,8 +34,12 @@ export class StaticWorld {
 
   constructor(city: City) {
     const r = city.riverRow;
-    this.riverY0 = city.ys[r].pos + city.ys[r].width / 2;
-    this.riverY1 = city.ys[r + 1].pos - city.ys[r + 1].width / 2;
+    if (r >= 0) {
+      this.riverY0 = city.ys[r].pos + city.ys[r].width / 2;
+      this.riverY1 = city.ys[r + 1].pos - city.ys[r + 1].width / 2;
+    }
+    this.sea = city.edge === 'sea';
+    this.ponds = city.ponds;
     // Walk-in buildings: their room's walls (with the door gap), furniture and the solid rest,
     // instead of one solid box.
     const open = new Set(city.interiors.map((i) => i.building));
@@ -74,16 +78,20 @@ export class StaticWorld {
     });
   }
 
-  /** The river's banks (y): set in the constructor. */
+  /** The river's banks (y; none: 0, 0), whether sea lies round the land, the ponds: set in the
+   *  constructor. */
   private riverY0 = 0;
   private riverY1 = 0;
+  private sea = true;
+  private ponds: { x0: number; y0: number; x1: number; y1: number }[] = [];
 
-  /** Water a boat can be on: the sea round the island and the whole river, under the bridges too (a
-   *  boat goes under the deck: from above, the bridge hides it). Upper-floor strips are dry. */
+  /** Water a boat can be on: the sea round the island, the whole river, under the bridges too (a
+   *  boat goes under the deck: from above, the bridge hides it), and ponds. Upper-floor strips are dry. */
   boatWater(x: number, y: number): boolean {
     if (x >= MAP_SIZE || y >= MAP_SIZE || x < -SEA_MARGIN || y < -SEA_MARGIN) return false; // the edge of the world
-    if (x < LAND0 || x > LAND1 || y < LAND0 || y > LAND1) return true;
-    return y > this.riverY0 && y < this.riverY1;
+    if (x < LAND0 || x > LAND1 || y < LAND0 || y > LAND1) return this.sea;
+    if (y > this.riverY0 && y < this.riverY1) return true;
+    return this.ponds.some((p) => x > p.x0 && x < p.x1 && y > p.y0 && y < p.y1);
   }
 
   private roofs: (Box2 & { bi: number })[] = [];

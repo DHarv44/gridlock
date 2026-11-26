@@ -18,8 +18,9 @@ export class Ground {
   private frame = 0;
 
   constructor(private scene: THREE.Scene, private map: CityMap, private maxAniso: number) {
-    // A huge sea plane under everything for areas outside the map.
-    this.sea = new THREE.Mesh(new THREE.PlaneGeometry(8000, 8000).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: '#1f4250' }));
+    // A huge plane under everything for areas outside the map: sea, or (landlocked) bare rock.
+    const past = map.city.edge === 'sea' ? '#1f4250' : '#6e5440';
+    this.sea = new THREE.Mesh(new THREE.PlaneGeometry(8000, 8000).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: past }));
     this.sea.position.set(MAP_SIZE / 2, -0.05, MAP_SIZE / 2);
     this.sea.receiveShadow = true;
     scene.add(this.sea);

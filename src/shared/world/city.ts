@@ -1,7 +1,8 @@
 // City assembly plus spatial lookups used by physics, AI and rendering.
 import type { Rect } from '../math';
 import { Rng } from '../rng';
-import { type Block, type City, LAND0, LAND1, type ParkSpot, type RoadNode, type Segment } from './cityTypes';
+import { type Block, type City, LAND0, LAND1, MAP_SIZE, type ParkSpot, type RoadNode, type Segment } from './cityTypes';
+import { WORLD } from './worldSpec';
 import { LotBuilder } from './lotgen';
 import { interiorsOf } from './interiors';
 import { LEVEL_BAND } from './levels';
@@ -50,8 +51,15 @@ export function generateCity(seed: number): City {
   const serviceLots = new Set(places.services.map((p) => p.lot));
   // Parking stalls on lots turned into services/pads are dropped.
   const parking = [...lo.parking.filter((p) => p.lot === undefined || !serviceLots.has(p.lot)), ...curbSpots(segs, nodes)];
+  // A landlocked map ends in cliffs all round: solid rock over the margin.
+  if (WORLD.edge === 'cliffs') {
+    const M = MAP_SIZE, a = LAND0, b = LAND1, rock = '#8a6a4f', h = 26;
+    for (const rect of [{ x0: 0, y0: 0, x1: M, y1: a }, { x0: 0, y0: b, x1: M, y1: M }, { x0: 0, y0: a, x1: a, y1: b }, { x0: b, y0: a, x1: M, y1: b }]) {
+      lo.obstacles.push({ rect, h, color: rock, kind: 'rock' });
+    }
+  }
   const city: City = {
-    seed, xs: layout.xs, ys: layout.ys, riverRow: layout.riverRow,
+    seed, xs: layout.xs, ys: layout.ys, riverRow: layout.riverRow, ponds: lo.ponds, edge: WORLD.edge,
     cellZone: layout.cellZone, cellDistrict: layout.cellDistrict, cellBlock,
     nodes, segs, blocks: lo.blocks, lots: lo.lots, buildings, obstacles: lo.obstacles, trees: lo.trees,
     parking, services: places.services, properties: places.properties, bridges, interiors: [],
@@ -78,13 +86,14 @@ function lowerIndex(lines: { pos: number }[], v: number): number {
 export class CityMap {
   readonly nx: number;
   readonly ny: number;
-  readonly river: Rect;
+  /** The river between its banks (null: no river). */
+  readonly river: Rect | null;
 
   constructor(readonly city: City) {
     this.nx = city.xs.length - 1;
     this.ny = city.ys.length - 1;
     const r = city.riverRow;
-    this.river = { x0: 0, x1: 4096, y0: city.ys[r].pos + city.ys[r].width / 2, y1: city.ys[r + 1].pos - city.ys[r + 1].width / 2 };
+    this.river = r < 0 ? null : { x0: 0, x1: MAP_SIZE * 2, y0: city.ys[r].pos + city.ys[r].width / 2, y1: city.ys[r + 1].pos - city.ys[r + 1].width / 2 };
   }
 
   cellAt(x: number, y: number): number {
@@ -119,12 +128,13 @@ export class CityMap {
 
   isWater(x: number, y: number): boolean {
     if (x >= LEVEL_BAND) return false; // an upper floor: dry
-    if (x < LAND0 || x > LAND1 || y < LAND0 || y > LAND1) return true;
+    if (x < LAND0 || x > LAND1 || y < LAND0 || y > LAND1) return this.city.edge === 'sea';
     const r = this.river;
-    if (y > r.y0 && y < r.y1) {
+    if (r && y > r.y0 && y < r.y1) {
       for (const b of this.city.bridges) if (x >= b.x0 && x <= b.x1) return false;
       return true;
     }
+    for (const p of this.city.ponds) if (x > p.x0 && x < p.x1 && y > p.y0 && y < p.y1) return true;
     return false;
   }
 

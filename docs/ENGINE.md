@@ -43,11 +43,18 @@ film's names, characters, story, map or look).
 4. **Start screen** (done 2026-11-27). The lobby card shows a Universe selector (with its blurb)
    once there's more than one; changing it stores the choice and reloads. Characters and open rooms
    are listed for the current universe only.
-5. **Maps as data.** The engine reads a general world: ground surfaces (road, grass, sand, rock,
-   water), collision, a road/trail network at any angle, places and zones. Bayhaven's grid city
-   becomes one generator; a universe picks a generator + settings or supplies a hand-made map file.
-   Traffic AI, routing, spawning, ground paint, street props and the map screen move onto the
-   general network. Mountains keep GTA2 movement: impassable rock with passes; height is drawn only.
+5. **Maps as data** (done 2026-11-27). Decided while building it: roads stay axis-aligned. GTA2's
+   own world is a tile grid, the feel must stay GTA2's, and keeping the grid means traffic AI,
+   routing, GPS and signals work unchanged in every universe. What became data instead:
+   `Universe.world` (packs/types.ts WorldSpec; defaults in shared/world/worldSpec.ts = Bayhaven):
+   map size, margin, edge (`sea` | `cliffs`: solid rock walls, no coast), a river or none, road
+   spacing near the centre / edges, arterial frequency, bare-land colour. MAP_SIZE / LAND0 / LAND1
+   are live values from it. Open country: zones with `layout: 'wild'` merge into big blocks between
+   arterials; between wild cells there's only a road on arterial lines, drawn as a dirt trail
+   (`Segment.trail`, trail-sized crossings, no lights or markings); `ZoneSpec.wild` scatters rock
+   formations (`Obstacle.kind 'rock'`, solid: buttes and outcrops) and ponds (`City.ponds`, water
+   for isWater / boats) and tints the ground. A hand-made map file and an in-game editor are not
+   built; a universe shapes its map with these settings and its districts.
 6. **Second universe: an original western.** A frontier generator (prairie, trails, towns from the
    lot/place builders); horses as a movement kind (gaits, stamina, calling your horse); hitching for
    wagons on the existing trailer physics; era weapons; posses instead of patrol cars. Done when

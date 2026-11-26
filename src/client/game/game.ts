@@ -19,7 +19,7 @@ import { PaintGarage } from '../hud/paintGarage';
 import { cleanVoice, RULES, SERVICES, VEHICLES } from '../../shared/packs';
 import { floats } from '../../shared/sim/kinds';
 import { vehicleObstacles } from './obstacles';
-import type { Place } from '../../shared/world/cityTypes';
+import { MAP_SIZE, type Place } from '../../shared/world/cityTypes';
 import { BigMap } from '../hud/bigMap';
 import { saveProgress } from '../lobby/characterStore';
 import { Minimap } from '../hud/minimap';
@@ -196,7 +196,7 @@ export class Game {
         break;
       case 'map': {
         const o = this.ownState(1);
-        if (this.bigMap.isOpen) this.bigMap.close(); else this.bigMap.open(o?.x ?? 1024, o?.y ?? 1024);
+        if (this.bigMap.isOpen) this.bigMap.close(); else this.bigMap.open(o?.x ?? MAP_SIZE / 2, o?.y ?? MAP_SIZE / 2);
         break;
       }
       case 'phone': if (RULES.cellPhone && !this.garage.isOpen && !this.shop.isOpen) this.phone.button(); break;
