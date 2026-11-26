@@ -8,8 +8,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import dracoWasm from 'three/examples/jsm/libs/draco/gltf/draco_decoder.wasm?url';
 import dracoWrapper from 'three/examples/jsm/libs/draco/gltf/draco_wasm_wrapper.js?url';
-import vehiclesUrl from '../models/vehicles.glb?url';
-import weaponsUrl from '../models/weapons.glb?url';
+import { ASSETS } from '../assets';
 
 /** One material's worth of a model: geometry in the model's own space (metres, x forward, y up). */
 export interface ModelPart { role: string; material: string; color: THREE.Color; geometry: THREE.BufferGeometry }
@@ -73,5 +72,9 @@ export async function loadModels(): Promise<void> {
   const one = async (url: string, into: Map<string, Model>) => {
     try { index((await loader.loadAsync(url)).scene, into); } catch (e) { console.warn('models: could not load', url, e); }
   };
-  await Promise.all([one(vehiclesUrl, vehicles), one(weaponsUrl, weapons)]);
+  // The installed universe's models (client/assets.ts); a universe without them draws box models.
+  await Promise.all([
+    ASSETS.vehiclesGlb ? one(ASSETS.vehiclesGlb, vehicles) : undefined,
+    ASSETS.weaponsGlb ? one(ASSETS.weaponsGlb, weapons) : undefined,
+  ]);
 }

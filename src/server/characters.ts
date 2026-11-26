@@ -1,6 +1,6 @@
 // Characters live in the players' browsers (local storage) and come along when they join. The
 // server only checks what it's handed is sane before playing it, and sends progress back.
-import { CALLERS, type CharacterLast, type CharacterProgress, type CharacterSave, CRIMES, cleanLook, cleanName, GANGS, PALETTE, UNIVERSE_ID, VEHICLES } from '../shared/packs';
+import { CALLERS, type CharacterLast, type CharacterProgress, type CharacterSave, CRIMES, cleanLook, cleanName, GANGS, PALETTE, UNIVERSE, VEHICLES } from '../shared/packs';
 import { MAP_SIZE } from '../shared/world/cityTypes';
 import type { Player } from './game/entities';
 
@@ -26,12 +26,12 @@ export function sanitizeCharacter(raw: unknown): CharacterSave | null {
   const c = raw as Record<string, unknown>;
   const name = cleanName(c.name);
   const id = String(c.id ?? '').replace(/[^\w-]/g, '').slice(0, 40);
-  if (!name || !id || c.universe !== UNIVERSE_ID) return null; // another universe's character
+  if (!name || !id || c.universe !== UNIVERSE.id) return null; // another universe's character
   // Unknown vehicle types are dropped, not clamped (clamping would hand out a real car).
   const garage = (Array.isArray(c.garage) ? c.garage : []).map(Number)
     .filter((v) => Number.isInteger(v) && v >= 0 && v < VEHICLES.length).slice(0, MAX_CARS);
   return {
-    id, universe: UNIVERSE_ID, name, look: cleanLook(c.look),
+    id, universe: UNIVERSE.id, name, look: cleanLook(c.look),
     created: int(c.created, 0, 8.64e15), lastPlayed: int(c.lastPlayed, 0, 8.64e15),
     cash: int(c.cash, 0, MAX_CASH), bank: int(c.bank, 0, MAX_CASH), garage,
     felonies: tally(c.felonies, Object.keys(CRIMES), 0, 1_000_000),

@@ -9,7 +9,8 @@ rmSync('data-smoke/rooms', { recursive: true, force: true });
 const { Lobby } = await import('../src/server/lobby');
 const { loadRoom, saveRoom, SAVE_VERSION } = await import('../src/server/persist');
 const { PROTOCOL_VERSION } = await import('../src/shared/protocol');
-const { RULES, UNIVERSE_ID } = await import('../src/shared/packs');
+const { RULES, UNIVERSE } = await import('../src/shared/packs');
+const UNIVERSE_ID = UNIVERSE.id;
 
 let failures = 0;
 const check = (ok: boolean, what: string) => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${what}`); if (!ok) failures++; };

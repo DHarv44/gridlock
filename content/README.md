@@ -5,7 +5,7 @@ Everything the game says and plays that isn't code: the nouns. The engine reads 
 
 ```
 content/
-  radio/<station id>/          songs, commercials/ and tracks.json (titles), per station in packs/radio.ts
+  radio/<station id>/          songs, commercials/ and tracks.json (titles), per station in src/universes/bayhaven/radio.ts
   characters/<folder>/
     <folder>.json              who they are, their voice, every conversation they're in
     voice/<clip>.m4a           your recordings of their lines (npm run voices)
@@ -59,4 +59,6 @@ Recordings no line uses (spare takes) are left alone. The player's clips are
 Lines nobody has recorded can be filled in with Chatterbox: `npx tsx scripts/voice-calls.ts`
 (never while the Chatterbox page is open).
 
-A new character needs its folder and one import line in `src/shared/packs/calls.ts`.
+A new character needs its folder and one import line (plus its entry in `cast`) in
+`src/universes/bayhaven/index.ts`. This folder is Bayhaven's content (`contentDir: 'content'`); another
+universe keeps the same layout under its own `contentDir`.

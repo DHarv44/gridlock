@@ -4,6 +4,7 @@ import { createServer } from 'node:http';
 import { networkInterfaces } from 'node:os';
 import { extname, join, normalize, resolve } from 'node:path';
 import { WebSocketServer } from 'ws';
+import { loadAllUniverses } from '../universes';
 import { Lobby } from './lobby';
 import { radioRoutes } from './radio';
 
@@ -16,6 +17,8 @@ const MIME: Record<string, string> = {
   '.ogg': 'audio/ogg', '.glb': 'model/gltf-binary', '.wasm': 'application/wasm',
 };
 
+/** Every universe's manifest (radio folders, names); rooms install their own. */
+const UNIVERSES = await loadAllUniverses();
 const lobby = new Lobby();
 
 const server = createServer((req, res) => {
@@ -25,7 +28,7 @@ const server = createServer((req, res) => {
     res.end(JSON.stringify(lobby.list()));
     return;
   }
-  if (radioRoutes(req, res, url.pathname)) return;
+  if (radioRoutes(req, res, url, UNIVERSES)) return;
   if (url.pathname === '/api/health') {
     res.writeHead(200, { 'content-type': 'application/json' });
     // Memory in use (MB): what an always-on host bills for.

@@ -18,6 +18,7 @@ export type Paint = 'body' | 'glass' | 'dark' | 'chrome' | 'trim' | 'headlight' 
 export type Movement = 'wheels' | 'bike' | 'tracks' | 'rotor' | 'boat';
 
 export interface CrimeSpec {
+  /** Heat added when a lawful unit sees it (civilian witnesses report half). */
   heat: number;
   /** Label on the offender's felony record; crimes without one (gunfire) only add heat. */
   felony?: string;
@@ -343,3 +344,95 @@ export interface WantedLevel {
 }
 
 export interface ServiceCall { squad: Squad; maxActive: number }
+
+/** Crimes the engine reports (its verbs); a universe gives each its heat and felony label. */
+export type CrimeKind = 'gunfire' | 'assault' | 'assaultLaw' | 'murder' | 'murderLaw' | 'vehicularHomicide'
+  | 'carjack' | 'vehicleTheft' | 'explosion' | 'trespass' | 'bankRobbery' | 'robbery';
+
+/** A radio station: its folder under the universe's `<contentDir>/radio/`, the name players see,
+ *  and `font`, the name's typeface (a CSS font family, bundled by client/audio/radioFonts.ts). */
+export interface RadioStation { id: string; name: string; color: string; font: string }
+
+/** Parts of a player character's look (the renderer draws each); a universe lists the choices. */
+export type LookPart = 'skin' | 'hair' | 'hairStyle' | 'top' | 'bottom' | 'hat';
+
+// Call scripts as written in a universe's content (see content/README.md).
+/** `answer`: they pick up when you ring them; `refuse`: they pick up and won't deal with you (too
+ *  many blown jobs); `nudge`: there's work if you want it (said after their job-result call, on
+ *  its own when you've been idle); `tip`: after picking up, there's a payphone ringing for you;
+ *  `hello`: how they open a call they make to you; `voicemail`: the message they leave when you
+ *  miss it (falls back to a nudge). */
+export type CallSituation = 'intro' | 'hit' | 'torch' | 'steal' | 'courier' | 'frenzy' | 'pass' | 'fail' | 'busy' | 'nothing'
+  | 'answer' | 'refuse' | 'nudge' | 'tip' | 'hello' | 'voicemail';
+/** What you say on your own in a call the server puts together: `pickup` answering your cell,
+ *  `payphone` picking up a ringing payphone, `ask` asking for work when you ring someone, `on_it`
+ *  after being sent to a payphone. */
+export type PlayerSituation = 'pickup' | 'payphone' | 'ask' | 'on_it';
+/** A turn as written: the caller's lines (or a version for a male and a female character), or
+ *  the key of your line in player.json. A line's breaks are how it's read and shown. */
+export interface TurnFile { say?: string[]; male?: string[]; female?: string[]; you?: string; tone?: string; clip?: string }
+export interface VoiceFile { model: string; exaggeration: number; cfg: number }
+export interface CharacterFile {
+  id: string; name: string; fullName: string; role: string; about: string;
+  crew?: string; boss?: boolean; welcome?: boolean; mentor?: boolean; contact?: boolean;
+  voice: VoiceFile;
+  calls: Partial<Record<CallSituation, TurnFile[][]>>;
+}
+export interface PlayerFile {
+  about: string; default: string;
+  voices: ({ id: string; name: string; who: 'man' | 'woman'; about: string } & VoiceFile)[];
+  says: Record<PlayerSituation, string[]>;
+  lines: Record<string, { say: string[]; tone?: string }>;
+}
+
+/**
+ * A universe: one whole setting the engine can run (Bayhaven, a western, ...). Every noun the game
+ * uses comes from here; the engine installs one per process (packs/index.ts installUniverse) before
+ * any game code runs. Lists are in wire order: their indices go over the network and into saves.
+ */
+export interface Universe {
+  id: string;
+  name: string;
+  /** One line for the universe picker. */
+  blurb: string;
+  /** Folder (from the project root) holding its content: characters/, player/, radio/. */
+  contentDir: string;
+  vehicles: VehicleSpec[];
+  weapons: WeaponSpec[];
+  peds: PedArchetype[];
+  factions: FactionSpec[];
+  zones: ZoneSpec[];
+  districts: DistrictSpec[];
+  services: ServiceSpec[];
+  properties: PropertySpec[];
+  interiorPlans: Partial<Record<InteriorLayout, InteriorPlan>>;
+  missions: MissionSpec[];
+  modes: GameMode[];
+  /** Names jobs give their marks. */
+  markNames: string[];
+  wanted: WantedLevel[];
+  crimes: Record<CrimeKind, CrimeSpec>;
+  serviceCalls: { medic: ServiceCall; fire: ServiceCall };
+  roleCrews: Record<string, RoleCrew>;
+  /** Overrides of the engine's defaults (packs/defaults.ts). */
+  rules: Partial<import('./defaults').Rules>;
+  respect: Partial<import('./defaults').Respect>;
+  radio: RadioStation[];
+  /** Vehicle paint (index = colour id on the wire), its names, and the groups VehicleSpec.colors names. */
+  palette: { colors: string[]; names: string[]; civil: number[]; bright: number[]; dull: number[] };
+  /** Colours NPCs are dressed in beyond their archetype's look. */
+  pedColors: { hair: string[]; shoes: string[] };
+  /** Player characters: choices per look part (hat 0 = none, hairStyle names), the default look,
+   *  and the parts random names are rolled from. */
+  looks: Record<LookPart, string[]>;
+  defaultLook: Record<LookPart, number>;
+  nameParts: { first: string[]; last: string[] };
+  /** Body armour's model in the gun shop. */
+  armorModel: WeaponPart[];
+  /** Street furniture vehicles can knock over (none: bare streets). */
+  streetProps: StreetPropSpec[];
+  /** Call scripts: each character's file with its folder under `<contentDir>/characters/`, and the
+   *  player's file (`<contentDir>/player/player.json`). */
+  cast: [string, CharacterFile][];
+  player: PlayerFile;
+}

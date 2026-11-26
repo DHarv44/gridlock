@@ -12,7 +12,7 @@
 //
 // Getting out fades the sound but keeps it running for a few seconds, so hopping into another car
 // on the same station carries straight on.
-import { RADIO } from '../../shared/packs';
+import { RADIO, UNIVERSE } from '../../shared/packs';
 import { onAir, type OnAir, type RadioListing, type StationList } from '../../shared/radioSchedule';
 import { RadioClock } from './radioClock';
 import { RadioDisplay } from './radioDisplay';
@@ -38,7 +38,7 @@ function carStation(vid: number): number {
 interface Item { station: string; file: string; ad: boolean; start: number; endsAt: number }
 const itemOf = (station: string, a: OnAir): Item => ({ station, file: a.file, ad: a.ad, start: a.endsAt - a.dur, endsAt: a.endsAt });
 // Songs are `file`, commercials `commercials/file`: encode each path segment.
-const srcOf = (it: Item) => `/radio/${encodeURIComponent(it.station)}/${it.file.split('/').map(encodeURIComponent).join('/')}`;
+const srcOf = (it: Item) => `/radio/${encodeURIComponent(UNIVERSE.id)}/${encodeURIComponent(it.station)}/${it.file.split('/').map(encodeURIComponent).join('/')}`;
 
 export class Radio {
   private decks = [new Audio(), new Audio()];
@@ -93,7 +93,7 @@ export class Radio {
 
   /** Fetches the playlists and lines our clock up with the server's. */
   private async load(): Promise<void> {
-    try { this.stations = ((await (await fetch('/api/radio')).json()) as RadioListing).stations; } catch { /* offline: no radio */ }
+    try { this.stations = ((await (await fetch(`/api/radio?u=${encodeURIComponent(UNIVERSE.id)}`)).json()) as RadioListing).stations; } catch { /* offline: no radio */ }
     await this.clock.sync();
   }
 

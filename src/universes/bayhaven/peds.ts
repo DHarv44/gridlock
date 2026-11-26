@@ -1,4 +1,4 @@
-import type { FactionSpec, PedArchetype } from './types';
+import type { FactionSpec, PedArchetype } from '../../shared/packs/types';
 
 export const SKIN = ['#f1c9a5', '#e0ac69', '#c68642', '#8d5524', '#5c3a21', '#ffdbac', '#a5704a'];
 // Civilian clothes stay clear of the gang colours (lime, red, yellow) so gangs read at a glance.

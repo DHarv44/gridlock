@@ -1,4 +1,4 @@
-import type { PropertySpec, ServiceSpec } from './types';
+import type { PropertySpec, ServiceSpec } from '../../shared/packs/types';
 
 const ALL_GUNS = ['knife', 'bat', 'machete', 'pistol', 'revolver', 'smg', 'tac_smg', 'shotgun', 'sawnoff', 'auto_shotgun',
   'carbine', 'rifle', 'sniper', 'lmg', 'flamethrower', 'grenade', 'molotov', 'grenade_launcher', 'rpg', 'minigun'];

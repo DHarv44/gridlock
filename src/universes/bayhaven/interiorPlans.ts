@@ -1,4 +1,4 @@
-import type { InteriorLayout, InteriorPlan } from './types';
+import type { InteriorLayout, InteriorPlan } from '../../shared/packs/types';
 
 // Hand-made ground floors (shared/world/interiors.ts places them behind the street door). Metres:
 // `a` across from the left, `d` in from the front wall (its outside face); rects are [a0, a1, d0, d1].

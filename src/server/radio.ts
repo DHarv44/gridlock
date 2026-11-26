@@ -1,19 +1,21 @@
 // Radio: lists each station's tracks with their lengths (the broadcast schedule in
 // shared/radioSchedule.ts is built from them) and serves the files with range requests. A station's
-// folder is content/radio/<station id>/ in the project. Folders are read on each request, so
-// dropping a new song in is enough.
+// folder is <universe contentDir>/radio/<station id>/ in the project (Bayhaven: content/radio/).
+// Folders are read on each request, so dropping a new song in is enough. One server hosts every
+// universe, so the universe comes with each request (?u= / the path).
 import { createReadStream, readdirSync, readFileSync, statSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { basename, extname, join, resolve } from 'node:path';
-import { RADIO } from '../shared/packs';
+import type { Universe } from '../shared/packs';
 import type { RadioListing, RadioTrack, StationList } from '../shared/radioSchedule';
 import { audioDuration } from './audioDuration';
 
-const ROOT = resolve(process.cwd(), 'content/radio');
 const TYPES: Record<string, string> = { '.m4a': 'audio/mp4', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav' };
 
-function folders(): Record<string, string> {
-  return Object.fromEntries(RADIO.map((s) => [s.id, join(ROOT, s.id)]));
+const rootOf = (u: Universe) => resolve(process.cwd(), u.contentDir, 'radio');
+
+function folders(u: Universe): Record<string, string> {
+  return Object.fromEntries(u.radio.map((s) => [s.id, join(rootOf(u), s.id)]));
 }
 
 function tracks(dir: string): string[] {
@@ -44,15 +46,15 @@ function listed(dir: string, prefix: string): RadioTrack[] {
   });
 }
 
-/** Song names: content/radio/<station>/tracks.json (file → { title, artist }). */
-function names(station: string): Record<string, { title?: string; artist?: string }> {
-  try { return JSON.parse(readFileSync(join(ROOT, station, 'tracks.json'), 'utf8')) as Record<string, { title?: string; artist?: string }>; } catch { return {}; }
+/** Song names: <radio>/<station>/tracks.json (file → { title, artist }). */
+function names(dir: string): Record<string, { title?: string; artist?: string }> {
+  try { return JSON.parse(readFileSync(join(dir, 'tracks.json'), 'utf8')) as Record<string, { title?: string; artist?: string }>; } catch { return {}; }
 }
 
 /** Every station's songs (named) and commercials with lengths: what the broadcast is built from. */
-function playlists(): Record<string, StationList> {
-  return Object.fromEntries(Object.entries(folders()).map(([id, dir]) => {
-    const meta = names(id);
+function playlists(u: Universe): Record<string, StationList> {
+  return Object.fromEntries(Object.entries(folders(u)).map(([id, dir]) => {
+    const meta = names(dir);
     const songs = listed(dir, '').map((t) => {
       const m = meta[t.file];
       return { ...t, title: typeof m?.title === 'string' ? m.title : t.file.replace(/\.[^.]+$/, ''), ...(typeof m?.artist === 'string' ? { artist: m.artist } : {}) };
@@ -61,8 +63,9 @@ function playlists(): Record<string, StationList> {
   }));
 }
 
-/** Handles /api/radio and /radio/<station>/<file>; false if not ours. */
-export function radioRoutes(req: IncomingMessage, res: ServerResponse, path: string): boolean {
+/** Handles /api/radio?u=<universe> and /radio/<universe>/<station>/<file>; false if not ours. */
+export function radioRoutes(req: IncomingMessage, res: ServerResponse, url: URL, universes: Map<string, Universe>): boolean {
+  const path = url.pathname;
   if (path === '/api/radio/now') {
     // Tiny on purpose: clients time a few of these round trips to line their clocks up.
     res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
@@ -71,17 +74,20 @@ export function radioRoutes(req: IncomingMessage, res: ServerResponse, path: str
   }
   if (path === '/api/radio') {
     // `now` lets clients line their clocks up with the server's, so everyone hears the same moment.
-    const body: RadioListing = { now: Date.now(), stations: playlists() };
+    const u = universes.get(url.searchParams.get('u') ?? '');
+    if (!u) { res.writeHead(404).end(); return true; }
+    const body: RadioListing = { now: Date.now(), stations: playlists(u) };
     res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
     res.end(JSON.stringify(body));
     return true;
   }
   if (!path.startsWith('/radio/')) return false;
-  // /radio/<station>/<file> or /radio/<station>/commercials/<file>
+  // /radio/<universe>/<station>/<file> or /radio/<universe>/<station>/commercials/<file>
   const parts = path.split('/');
-  const station = folders()[parts[2] ?? ''];
-  const ad = parts.length === 5 && parts[3] === ADS;
-  const dir = station && (ad ? join(station, ADS) : parts.length === 4 ? station : '');
+  const u = universes.get(parts[2] ?? '');
+  const station = u && folders(u)[parts[3] ?? ''];
+  const ad = parts.length === 6 && parts[4] === ADS;
+  const dir = station && (ad ? join(station, ADS) : parts.length === 5 ? station : '');
   const file = basename(decodeURIComponent(parts[parts.length - 1] ?? ''));
   // Only files the listing would show: no paths outside the station's folders.
   if (!dir || !tracks(dir).includes(file)) { res.writeHead(404).end(); return true; }

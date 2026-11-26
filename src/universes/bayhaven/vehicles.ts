@@ -1,4 +1,4 @@
-import type { VehicleSpec } from './types';
+import type { VehicleSpec } from '../../shared/packs/types';
 import * as M from './vehicleModels';
 
 type Base = Omit<VehicleSpec, 'id' | 'name' | 'model' | 'colors' | 'roles' | 'price'>;

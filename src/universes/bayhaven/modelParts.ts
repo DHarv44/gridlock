@@ -1,4 +1,4 @@
-import type { Paint, Part } from './types';
+import type { Paint, Part } from '../../shared/packs/types';
 
 // Model building blocks. Coordinates are fractions: x along length (+front), y across width
 // (+right), z of height. Wheels are added by the renderer from the movement type.

@@ -1,5 +1,5 @@
 import { b, lights, p } from './modelParts';
-import type { Paint, Part } from './types';
+import type { Paint, Part } from '../../shared/packs/types';
 
 // Trucks, bikes, tanks and aircraft. Passenger cars live in carModels.ts.
 export * from './carModels';

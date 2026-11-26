@@ -1,4 +1,4 @@
-import type { GameMode, MissionSpec } from './types';
+import type { GameMode, MissionSpec } from '../../shared/packs/types';
 
 // Jobs offered on gang payphones and by kill-frenzy crates. The engine knows the five kinds;
 // everything a job says, pays and asks for lives here.
@@ -52,25 +52,3 @@ export const MODES: GameMode[] = [
   { id: 'money', name: 'Money race', score: 'earned', target: 50000, blurb: 'First to earn $50,000 this round wins.' },
 ];
 
-export const RESPECT = {
-  min: -100,
-  max: 100,
-  hostileBelow: -40,         // the gang attacks you on sight
-  noWorkBelow: -20,          // their phones stop ringing for you
-  killMember: -3,            // killing one of theirs
-  killRival: 1,              // ...and their rivals like it
-  phoneCooldown: 45,         // seconds before the same booth rings again for you
-  frenzyRespawn: 240,        // seconds before a used crate comes back
-  phonesPerGang: 5,
-  frenzyCrates: 8,
-  // Cell phone: a gang that respects you this much texts you its number and calls with work.
-  cellAt: 25,
-  cellCallEvery: [120, 240] as [number, number], // seconds between calls while you're free
-  cellRing: 20,              // seconds a call rings before it's missed
-  cellPay: 1.25,             // jobs by phone pay this much more than payphone work
-  cellDialCooldown: 90,      // seconds before the same contact has work for you again
-  // The mentor (packs/calls.ts MENTOR_CALLER): rings with a nudge after this long free while no
-  // crew has your number, and stops dealing with you after this many blown jobs in a row.
-  mentorNudgeAfter: 240,
-  mentorFedUpAfter: 3,
-};

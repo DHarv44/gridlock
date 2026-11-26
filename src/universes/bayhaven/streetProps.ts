@@ -1,7 +1,7 @@
 // Street furniture a vehicle can knock over: what it's like (size, how it's drawn), how hard it is
 // to knock down, what it does to the car, and where the city puts it (world/breakables.ts reads
 // `along`: lamp posts down the roads, the rest on the kerbs of each block).
-import type { StreetPropSpec } from './types';
+import type { StreetPropSpec } from '../../shared/packs/types';
 
 export const STREET_PROPS: StreetPropSpec[] = [
   {

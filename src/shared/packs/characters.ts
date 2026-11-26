@@ -1,39 +1,30 @@
-// Player characters: how many a player may keep and what their look can be made of.
-// A look stores indices into these palettes, so changing a colour here restyles everyone using it.
-import { HAIR, SKIN } from './peds';
+// Player characters: how many a player may keep and what their look can be made of (the choices
+// come from the installed universe). A look stores indices into those lists, so changing a colour
+// there restyles everyone using it.
+import type { LookPart, Universe } from './types';
+
+export type { LookPart };
 
 export const MAX_CHARACTERS = 5;
 
-/** This pack set's universe: room saves and characters are tagged with it and only load where it
- *  matches. (Engine phase 2 moves it to the universe manifest as UNIVERSE.id.) */
-export const UNIVERSE_ID = 'bayhaven';
-
-export const CHARACTER_LOOKS = {
-  skin: SKIN,
-  hair: HAIR,
-  /** Hair styles: short, long, shaved. */
-  hairStyle: ['Short', 'Long', 'Shaved'],
-  top: ['#f2f2ee', '#16171a', '#c62a22', '#1f5bff', '#2bb34a', '#e3b30c', '#8a6db0', '#e04e8c', '#d9661b', '#5c7fa3', '#6b5a45', '#9aa5ad'],
-  bottom: ['#2c3e57', '#16171a', '#3a3a3a', '#6b5a45', '#e8e2d0', '#25324a', '#7a7466', '#5a1e14'],
-  /** Hat colours; index 0 is no hat. */
-  hat: ['', '#16171a', '#c62a22', '#1f5bff', '#e8e2d0', '#e3b30c', '#3c3f2e'],
-};
-
-/** Parts the creator's random names are rolled from (kept short: names cap at 16 characters). */
-export const NAME_PARTS = {
-  first: ['Ace', 'Benny', 'Carmen', 'Dax', 'Eddie', 'Frankie', 'Gigi', 'Hector', 'Ivy', 'Jojo', 'Kat', 'Lou', 'Mack', 'Nico',
-    'Ozzy', 'Pia', 'Quinn', 'Rocco', 'Sal', 'Tess', 'Vinnie', 'Wren', 'Yuri', 'Zed', 'Remy', 'Lola', 'Marco', 'Dina', 'Tito', 'Bea'],
-  last: ['Moretti', 'Kane', 'Vega', 'Doyle', 'Sloane', 'Petrov', 'Reyes', 'Malone', 'Okafor', 'Brandt', 'Falco', 'Quill', 'Hale',
-    'Navarro', 'Cruz', 'Byrne', 'Kovac', 'Laine', 'Price', 'Russo', 'Stone', 'Tran', 'Voss', 'Wilde', 'Ziegler', 'Marsh'],
-};
-
-export type LookPart = keyof typeof CHARACTER_LOOKS;
-export const LOOK_PARTS = Object.keys(CHARACTER_LOOKS) as LookPart[];
+/** Choices per look part (filled by installUniverse). */
+export const CHARACTER_LOOKS = {} as Record<LookPart, string[]>;
+export const LOOK_PARTS: LookPart[] = ['skin', 'hair', 'hairStyle', 'top', 'bottom', 'hat'];
 
 /** Indices into CHARACTER_LOOKS, one per part. */
 export type CharLook = Record<LookPart, number>;
 
-export const DEFAULT_LOOK: CharLook = { skin: 0, hair: 1, hairStyle: 0, top: 0, bottom: 0, hat: 0 };
+export const DEFAULT_LOOK: CharLook = { skin: 0, hair: 0, hairStyle: 0, top: 0, bottom: 0, hat: 0 };
+
+/** Parts the creator's random names are rolled from (kept short: names cap at 16 characters). */
+export const NAME_PARTS: { first: string[]; last: string[] } = { first: [], last: [] };
+
+export function installLooks(u: Universe): void {
+  for (const k of LOOK_PARTS) CHARACTER_LOOKS[k] = u.looks[k];
+  Object.assign(DEFAULT_LOOK, u.defaultLook);
+  NAME_PARTS.first = u.nameParts.first;
+  NAME_PARTS.last = u.nameParts.last;
+}
 
 /** Clamps untrusted look data to valid palette indices. */
 export function cleanLook(raw: unknown): CharLook {
@@ -77,7 +68,7 @@ export interface CharacterProgress {
 /** A character as the player's browser keeps it (local storage); brought along to every game. */
 export interface CharacterSave extends CharacterProgress {
   id: string;
-  /** The universe (pack set and city) the character lives in: UNIVERSE_ID. Characters from another
+  /** The universe (pack set and city) the character lives in: UNIVERSE.id. Characters from another
    *  universe aren't listed or let into this one's rooms. */
   universe: string;
   name: string;

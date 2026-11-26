@@ -1,4 +1,4 @@
-import type { WeaponMat, WeaponPart } from './types';
+import type { WeaponMat, WeaponPart } from '../../shared/packs/types';
 
 // Weapon models, at real size in metres. x runs along the barrel (+ = muzzle) with the hand's grip at
 // 0, y is up, z to the right. Built from boxes and cylinders; keep each one recognisable from above

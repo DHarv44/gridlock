@@ -1,5 +1,5 @@
 import { b, carBits, lights, p, pair } from './modelParts';
-import type { Part } from './types';
+import type { Part } from '../../shared/packs/types';
 
 // Passenger car models. Seen from above the roof, glass and hood proportions are what tell cars
 // apart, so each body style places its windscreen, roof and tail differently. The spec's `shape`

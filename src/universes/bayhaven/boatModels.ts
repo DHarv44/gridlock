@@ -1,5 +1,5 @@
 import { b, p } from './modelParts';
-import type { Part } from './types';
+import type { Part } from '../../shared/packs/types';
 
 // Boats. Side profiles run from the stern (x -0.5) to a raked bow (+0.5), z from the keel (0) up;
 // the plan-view shape (vehicles.ts) draws the bow to a point. The renderer sits each hull down in

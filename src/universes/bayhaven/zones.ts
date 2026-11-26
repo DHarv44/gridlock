@@ -1,4 +1,4 @@
-import type { DistrictSpec, ZoneSpec } from './types';
+import type { DistrictSpec, ZoneSpec } from '../../shared/packs/types';
 
 const civTraffic = [
   { id: 'sedan', weight: 10 }, { id: 'compact', weight: 6 }, { id: 'hatchback', weight: 6 }, { id: 'wagon', weight: 3 },

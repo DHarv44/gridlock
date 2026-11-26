@@ -22,10 +22,15 @@ film's names, characters, story, map or look).
    - Feature switches: `RULES.cellPhone` (without it, texts are notices and work comes from
      payphones); radio is on when packs/radio.ts lists stations; ATMs where specs say `atm`;
      payphones per `RESPECT.phonesPerGang`.
-2. **Universe folders.** `universes/<id>/` holds packs, `content/`, models, sounds, radio, plus a
-   manifest (id, name, blurb, rules, world generator + settings, features). The pack lists that
-   84 files import stay where they are and are filled when a universe is installed, so call sites
-   don't change. Vite splits assets per universe.
+2. **Universe folders** (done 2026-11-27). `src/universes/<id>/index.ts` exports a `Universe`
+   (packs/types.ts): every noun list, rule overrides (engine defaults in packs/defaults.ts), radio,
+   looks, call scripts and its `contentDir`; `client.ts` its browser assets (models, voices), a
+   chunk of their own. `src/universes/index.ts` / `client.ts` list them. The registry
+   (packs/index.ts) keeps the names the engine imports and `installUniverse` fills them in place,
+   so call sites didn't change; the default universe is installed until another is. Rule: install
+   before importing game code (client/main.ts boots the universe, then imports the lobby). Radio
+   routes carry the universe (`/api/radio?u=`, `/radio/<universe>/<station>/<file>`). Bayhaven's
+   assets stay where they were (content/, src/client/models, src/client/voice).
 3. **Universe per room.** Each room's sim runs in a worker thread with its universe installed
    (module state is per worker; rooms also spread over CPU cores). Rooms, saves and characters
    belong to one universe; the lobby lists rooms with theirs.

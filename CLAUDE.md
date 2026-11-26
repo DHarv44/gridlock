@@ -13,13 +13,20 @@ Server-authoritative Node simulation + three.js browser client. Read `docs/STATU
 - Dev hooks in the browser: `window.__game` (client Game), `window.__forceTime = minutes` (local time of day).
 
 ## Architecture rules
-- **Nouns and verbs.** `src/shared/packs/*` hold all content (weapons, vehicles + box models, ped archetypes,
-  factions, zones, districts, services, properties, wanted levels, rules). Engine code never names a pack id;
-  it reads fields (`behaviour`, `verb`, `roles`, `movement`, ...). Add content by editing packs only.
+- **Universes.** The engine runs one "universe" per process (docs/ENGINE.md). Each is a folder
+  `src/universes/<id>/` whose `index.ts` exports a `Universe` (types in `src/shared/packs/types.ts`):
+  weapons, vehicles + box models, ped archetypes, factions, zones, districts, services, properties,
+  wanted levels, crimes, missions, radio, looks, call scripts; `client.ts` its browser assets.
+  Bayhaven (`src/universes/bayhaven/`) keeps its content in the top-level `content/`, models in
+  `src/client/models`, voices in `src/client/voice`. A new universe is listed in `src/universes/index.ts`
+  and `client.ts`. `src/shared/packs/index.ts` is the registry the engine imports (`VEHICLES`, `RULES`,
+  ...), filled in place by `installUniverse` (the default universe until something else is installed);
+  `packs/defaults.ts` holds the engine's default rules, which a universe overrides.
+- **Nouns and verbs.** Universes hold all content. Engine code never names a pack id;
+  it reads fields (`behaviour`, `verb`, `roles`, `movement`, ...). Add content by editing a universe only.
   What a verb or movement kind *does* lives in one engine table each: `src/shared/verbs.ts` (service
   verbs: site, pad, garage door, automatic, shop) and `src/shared/sim/kinds.ts` (movement kinds:
   `flies`, `skids`, `floats`). Ask the table (`flies(spec)`), never compare against a kind or verb in a system.
-  GRIDLOCK is becoming a shared engine for several "universes" (docs/ENGINE.md).
 - **Shared determinism.** `generateCity(seed)` runs on server and every client and must stay bit-identical:
   generation uses only `Rng` and arithmetic (no trig). `src/shared/sim/physics.ts` movement is shared so the
   client can predict its own avatar; keep it pure.

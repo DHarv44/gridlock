@@ -1,5 +1,5 @@
-// The voiced lines (src/client/voice/*.ogg, made by scripts/voice-calls.ts): their URLs by line id.
+// The voiced lines of the installed universe (client/assets.ts): their URLs by line id.
 // Only the URLs are bundled; each clip is fetched the first time it's played.
-const CLIPS = import.meta.glob('../voice/*.ogg', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+import { ASSETS } from '../assets';
 
-export const clipOf = (id: string): string | undefined => CLIPS[`../voice/${id}.ogg`];
+export const clipOf = (id: string): string | undefined => ASSETS.voice.get(id);

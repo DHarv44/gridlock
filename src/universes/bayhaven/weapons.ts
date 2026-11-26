@@ -1,4 +1,4 @@
-import type { WeaponSpec } from './types';
+import type { WeaponSpec } from '../../shared/packs/types';
 import { WEAPON_MODELS } from './weaponModels';
 
 /** Each weapon picks up its model (packs/weaponModels.ts) by id. */
