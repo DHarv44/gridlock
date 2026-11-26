@@ -1,0 +1,25 @@
+{
+  "id": "settler",
+  "name": "Settler",
+  "fullName": "Settler",
+  "role": "Ranch hands and homesteaders in from their claims",
+  "about": "Sun-worn working people, slow to talk and slower to trust. Talk about land, weather and stock.",
+  "calls": {
+    "greet": [
+      [{ "say": ["Rain's late again.", "Creek's down to a trickle."], "tone": "weary" }],
+      [{ "say": ["Come in for supplies myself.", "Prices in this town would make a mule weep."], "tone": "grumbling" }],
+      [{ "say": ["You ain't from the cattle company, are you?", "Good."], "tone": "suspicious, then easing" }],
+      [{ "say": ["Howdy."], "tone": "short" }]
+    ],
+    "rumour": [
+      [{ "say": ["There's claims for sale out past the homesteads,", "if you got the money and the nerve."], "tone": "matter of fact" }],
+      [{ "say": ["Somebody's been riding off with good horses.", "Thoroughbreds, mostly. Dry Creek, I'd wager."], "tone": "bitter" }],
+      [{ "say": ["The Lantern Men burn out whoever won't pay.", "Saw the smoke from my porch last week."], "tone": "quiet" }],
+      [{ "say": ["Livery'll sell you a horse,", "but a draft won't outrun nothing."], "tone": "advice" }]
+    ],
+    "scared": [
+      [{ "say": ["Easy now. Easy."], "tone": "slow, hands up" }],
+      [{ "say": ["Take what you want, just leave me be!"], "tone": "frightened" }]
+    ]
+  }
+}

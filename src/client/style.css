@@ -160,6 +160,11 @@ button:disabled { opacity: 0.4; cursor: default; }
 .talk .tb-you::before, .talk .tb-you::after { content: ''; position: absolute; width: 0; height: 0; border-style: solid; }
 .talk .tb-you::before { right: 18px; bottom: -22px; border-width: 22px 0 0 18px; border-color: #121417 transparent transparent transparent; }
 .talk .tb-you::after { right: 21px; bottom: -15px; border-width: 15px 0 0 12px; border-color: #fbf8ef transparent transparent transparent; }
+/* Said in person (systems/faceTalk.ts): over the speaker, the same plain tail on the other side. */
+.talk .tb-face { left: 18px; }
+.talk .tb-face::before, .talk .tb-face::after { content: ''; position: absolute; width: 0; height: 0; border-style: solid; }
+.talk .tb-face::before { left: 18px; bottom: -22px; border-width: 22px 18px 0 0; border-color: #121417 transparent transparent transparent; }
+.talk .tb-face::after { left: 21px; bottom: -15px; border-width: 15px 12px 0 0; border-color: #fbf8ef transparent transparent transparent; }
 .op-mark { position: absolute; left: 0; top: 0; width: 0; height: 0; }
 .op-arrow { position: absolute; left: 0; top: -9px; width: 0; height: 0; border-left: 15px solid var(--op); border-top: 9px solid transparent; border-bottom: 9px solid transparent;
   filter: drop-shadow(0 0 1.5px #000) drop-shadow(1px 2px 0 rgba(0,0,0,0.8)); transform-origin: 0 50%; }

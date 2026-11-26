@@ -201,6 +201,9 @@ export interface PedArchetype {
   loadout: LoadoutEntry[];
   cash: [number, number];
   look: { skin: string[]; top: string[]; bottom: string[]; hat?: string[]; hatChance?: number; build?: number };
+  /** Who they speak as when you walk up and talk to them (a cast id; systems/faceTalk.ts). One of a
+   *  gang's people can give you its work face to face. */
+  talker?: string;
 }
 
 export interface FactionSpec {
@@ -430,9 +433,13 @@ export type LookPart = 'skin' | 'hair' | 'hairStyle' | 'top' | 'bottom' | 'hat';
  *  many blown jobs); `nudge`: there's work if you want it (said after their job-result call, on
  *  its own when you've been idle); `tip`: after picking up, there's a payphone ringing for you;
  *  `hello`: how they open a call they make to you; `voicemail`: the message they leave when you
- *  miss it (falls back to a nudge). */
+ *  miss it (falls back to a nudge).
+ *  Face to face (systems/faceTalk.ts): `greet` what they say when you walk up and talk to them;
+ *  `rumour` what they've heard (sometimes said after a greeting); `scared` when you're wanted or
+ *  have a gun out. A gang's people brief their work with the job kinds, and use `busy`, `nothing`
+ *  and `refuse` as on the phone. */
 export type CallSituation = 'intro' | 'hit' | 'torch' | 'steal' | 'courier' | 'frenzy' | 'pass' | 'fail' | 'busy' | 'nothing'
-  | 'answer' | 'refuse' | 'nudge' | 'tip' | 'hello' | 'voicemail';
+  | 'answer' | 'refuse' | 'nudge' | 'tip' | 'hello' | 'voicemail' | 'greet' | 'rumour' | 'scared';
 /** What you say on your own in a call the server puts together: `pickup` answering your cell,
  *  `payphone` picking up a ringing payphone, `ask` asking for work when you ring someone, `on_it`
  *  after being sent to a payphone. */
@@ -444,7 +451,8 @@ export interface VoiceFile { model: string; exaggeration: number; cfg: number }
 export interface CharacterFile {
   id: string; name: string; fullName: string; role: string; about: string;
   crew?: string; boss?: boolean; welcome?: boolean; mentor?: boolean; contact?: boolean;
-  voice: VoiceFile;
+  /** Their reference voice; without one their lines are shown, not spoken. */
+  voice?: VoiceFile;
   calls: Partial<Record<CallSituation, TurnFile[][]>>;
 }
 export interface PlayerFile {

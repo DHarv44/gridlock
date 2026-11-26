@@ -3,7 +3,7 @@
 // line. A gang's boss makes its first call (and introduces themselves, once per character); after
 // that whoever at the gang has lines for the situation may call.
 import { CALLS, type CallSituation, GANG_CALLERS, PLAYER_SAYS, type PlayerSituation, YOU } from '../../../shared/packs';
-import type { S2C } from '../../../shared/protocol';
+import type { S2C, TalkVia } from '../../../shared/protocol';
 import type { Player } from '../entities';
 import type { World } from '../world';
 
@@ -34,10 +34,10 @@ export function pickParts(w: World, pl: Player, parts: Part[]): [string, string,
   return out;
 }
 
-/** Plays an exchange (or several in a row) to a player. */
-export function talk(w: World, pl: Player, via: 'payphone' | 'cell', parts: Part[]): void {
+/** Plays an exchange (or several in a row) to a player; face to face, `ped` is who's speaking. */
+export function talk(w: World, pl: Player, via: TalkVia, parts: Part[], ped?: number): void {
   const out = pickParts(w, pl, parts);
-  if (out.length) pl.send({ t: 'talk', via, parts: out } satisfies S2C);
+  if (out.length) pl.send({ t: 'talk', via, parts: out, ped } satisfies S2C);
 }
 
 /** A gang hands you a job: the boss's introduction the first time, then the brief for the job.

@@ -1,0 +1,22 @@
+{
+  "id": "gambler",
+  "name": "Gambler",
+  "fullName": "Card Sharp",
+  "role": "Professional gamblers working the saloons",
+  "about": "Smooth, amused, always selling. Knows everybody's business and charges for it.",
+  "calls": {
+    "greet": [
+      [{ "say": ["Feeling lucky, friend?", "The table's always open."], "tone": "smooth" }],
+      [{ "say": ["A man who doesn't play cards", "is a man who's already lost his money some other way."], "tone": "amused" }],
+      [{ "say": ["Careful. I don't lose,", "and I don't lose gracefully either."], "tone": "smiling threat" }]
+    ],
+    "rumour": [
+      [{ "say": ["The outfits pay well for a fella who can ride and shoot.", "Find one of their riders in town and ask."], "tone": "knowing" }],
+      [{ "say": ["Dry Creek, Vulture Ridge, the Lantern Men.", "Work for one and the other two will remember it."], "tone": "friendly warning" }],
+      [{ "say": ["That bank vault's a fine piece of iron.", "Not so fine it'd stand up to a stick of dynamite, mind."], "tone": "sly" }]
+    ],
+    "scared": [
+      [{ "say": ["Now let's not be hasty. We can deal."], "tone": "nervous charm" }]
+    ]
+  }
+}

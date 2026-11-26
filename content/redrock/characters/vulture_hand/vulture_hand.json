@@ -1,0 +1,31 @@
+{
+  "id": "vulture_hand",
+  "name": "Vulture Ridge rider",
+  "fullName": "Vulture Ridge Gang rider",
+  "role": "Gives the Vulture Ridge Gang's work in person",
+  "about": "Badlands killers: few words, menace in all of them.",
+  "calls": {
+    "greet": [
+      [{ "say": ["What."], "tone": "dead flat" }]
+    ],
+    "refuse": [
+      [{ "say": ["Walk away while you still can."], "tone": "quiet menace" }],
+      [{ "say": ["The Ridge remembers you.", "Not kindly."], "tone": "cold" }]
+    ],
+    "busy": [
+      [{ "say": ["You took our job.", "Do it."], "tone": "hard" }]
+    ],
+    "nothing": [
+      [{ "say": ["Nothing for you today."], "tone": "dismissive" }]
+    ],
+    "hit": [
+      [{ "say": ["There's a man needs burying.", "You'll find him. Then you'll get paid."], "tone": "calm" }]
+    ],
+    "torch": [
+      [{ "say": ["A rival's wagon is standing out there.", "Make it ashes."], "tone": "cold" }]
+    ],
+    "courier": [
+      [{ "say": ["Carry this.", "Lose it and you answer to us."], "tone": "threatening" }]
+    ]
+  }
+}

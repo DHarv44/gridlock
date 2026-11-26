@@ -1,0 +1,35 @@
+{
+  "id": "dry_creek_hand",
+  "name": "Dry Creek rider",
+  "fullName": "Dry Creek Outfit rider",
+  "role": "Gives the Dry Creek Outfit's work in person",
+  "about": "Horse thieves and rustlers: easygoing, joking, never quite friendly. Talk money first.",
+  "calls": {
+    "greet": [
+      [{ "say": ["Nice animal you rode in on.", "Be a shame if it wandered off."], "tone": "grinning" }]
+    ],
+    "refuse": [
+      [{ "say": ["You got a lot of gall walking up to me.", "Git, before I change my mind about shooting you."], "tone": "cold" }],
+      [{ "say": ["Dry Creek don't do business with you no more."], "tone": "flat" }]
+    ],
+    "busy": [
+      [{ "say": ["You already got a job of ours.", "Finish it."], "tone": "impatient" }]
+    ],
+    "nothing": [
+      [{ "say": ["Nothing doing right now.", "Come back later."], "tone": "lazy" }],
+      [{ "say": ["Boss ain't said nothing new.", "Go get a drink."], "tone": "shrug" }]
+    ],
+    "hit": [
+      [{ "say": ["Fella's been talking about us to the law.", "See that he stops."], "tone": "low and even" }]
+    ],
+    "torch": [
+      [{ "say": ["One of the other outfits keeps a wagon out yonder.", "I'd like to see it burn."], "tone": "relishing it" }]
+    ],
+    "courier": [
+      [{ "say": ["Take this where you're told.", "Don't open it, don't dawdle."], "tone": "businesslike" }]
+    ],
+    "steal": [
+      [{ "say": ["There's a horse I've had my eye on.", "Bring it to us and there's money in it."], "tone": "eager" }]
+    ]
+  }
+}

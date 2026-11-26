@@ -98,5 +98,16 @@ film's names, characters, story, map or look).
    (a share of hp) it limps: no gallop, no faster than a trot, the near foreleg favoured; it heals
    slowly. Hot thoroughbreds spook far more than drafts or army horses. Sent as `VF.rearing`,
    `VF.lame` and `YouState.ml` so prediction holds the reins too. Protocol 21.
-   Not yet: its own cast and voiced calls (job posts give briefs only), era sounds (a bell,
-   hooves, whinnies); the gatling gun doesn't traverse (trailer parts don't animate).
+   Face to face (2026-11-26): on foot, E next to someone talks to them (client game/faceTalk.ts
+   finds the nearest talker nearer than any vehicle; server systems/faceTalk.ts). Who they speak as
+   is a noun, `PedArchetype.talker` (a cast id); their lines are the cast's call scripts under the
+   situations `greet`, `rumour`, `scared`, plus the job kinds, `busy`, `nothing` and `refuse` for a
+   gang's people. They stop and face you (AI task `chat`); wanted or aiming, frightened folk say so
+   and run; one of a gang's riders gives you its work in person, on the job posts' terms (no work
+   below `noWorkBelow`, a wait between jobs). Bubbles are drawn over the speaker with a plain tail
+   (`talk` with `via: 'face'` and `ped`). A cast member's `voice` is optional: unvoiced lines show
+   for as long as they take to read. Redrock's cast: townsfolk, settlers, prospectors,
+   storekeepers, the bank guard, lawmen, troopers, gamblers and a rider for each outfit.
+   Protocol 22.
+   Not yet: voices for its cast (lines show in bubbles), your own side of a conversation, era
+   sounds (a bell, hooves, whinnies); the gatling gun doesn't traverse (trailer parts don't animate).

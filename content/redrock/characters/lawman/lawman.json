@@ -1,0 +1,15 @@
+{
+  "id": "lawman",
+  "name": "Lawman",
+  "fullName": "Lawman",
+  "role": "County deputies and federal marshals",
+  "about": "Flat, unimpressed lawmen. Short sentences, an eye on your gun hand.",
+  "calls": {
+    "greet": [
+      [{ "say": ["Keep moving."], "tone": "flat" }],
+      [{ "say": ["Town ordinance says no shooting inside the limits.", "I'd mind it."], "tone": "level warning" }],
+      [{ "say": ["I know every face in this county.", "Yours is new."], "tone": "cold" }],
+      [{ "say": ["You got business here, or just loitering?"], "tone": "impatient" }]
+    ]
+  }
+}

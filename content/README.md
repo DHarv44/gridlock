@@ -36,6 +36,7 @@ content/
                                  number yet, when they have lines for it (one character)
   "about": "How they talk",
   "voice": { "model": "model/benny.wav", "exaggeration": 0.6, "cfg": 0.45 },
+                                 (leave out: not voiced yet, the bubbles stay up to be read)
   "glossary": { "órale": "alright" },   foreign words in their lines, for whoever records them
   "calls": {
     "intro": [ [ turn, turn, ... ] ],    situations: intro, hit, torch, steal, courier, frenzy,
@@ -43,6 +44,12 @@ content/
   }
 }
 ```
+
+People you walk up to and talk to are cast members too: a ped archetype's `talker` names whose
+lines they speak (a universe's `peds`). Face to face they use `greet` (walking up to them),
+`rumour` (sometimes after a greeting), `scared` (you're wanted or aiming at them); a gang's people
+also brief its jobs by kind and say `busy`, `nothing` or `refuse`. Redrock's are under
+`content/redrock/characters/`.
 
 A turn is one of:
 - `{ "say": ["line", "line", "", "line"], "tone": "...", "clip": "do_better" }`: the caller speaks.

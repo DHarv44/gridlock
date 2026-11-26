@@ -1,0 +1,22 @@
+{
+  "id": "prospector",
+  "name": "Prospector",
+  "fullName": "Prospector",
+  "role": "Old diggers down from the badlands",
+  "about": "Talkative, half-cracked from years alone with a mule; sly about where the colour is.",
+  "calls": {
+    "greet": [
+      [{ "say": ["You ain't following me, are ya?", "Heh. Just funnin'."], "tone": "cackling" }],
+      [{ "say": ["Forty years with a pan", "and all I got is a bad back and a worse mule."], "tone": "cheerful complaint" }],
+      [{ "say": ["Spare a dollar for an old man?", "No? Didn't figure."], "tone": "wheedling" }]
+    ],
+    "rumour": [
+      [{ "say": ["There's crates of blasting powder out in them red rocks.", "Don't ask me who leaves 'em."], "tone": "conspiratorial" }],
+      [{ "say": ["Vulture Ridge boys camp up in the badlands.", "I give 'em a wide berth and so should you."], "tone": "serious for once" }],
+      [{ "say": ["River's only crossable at the two bridges.", "Tried fording it once. Lost the mule. Got him back."], "tone": "rambling" }]
+    ],
+    "scared": [
+      [{ "say": ["I ain't got no gold! I swear it!"], "tone": "panicked" }]
+    ]
+  }
+}

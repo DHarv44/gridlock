@@ -1,0 +1,23 @@
+{
+  "id": "storekeeper",
+  "name": "Storekeeper",
+  "fullName": "Storekeeper",
+  "role": "Behind the counter of any shop in town",
+  "about": "Brisk shopkeepers: courteous to a paying customer, sharp about credit, nervous of guns.",
+  "calls": {
+    "greet": [
+      [{ "say": ["Help you?", "Everything's marked. Cash only, no credit."], "tone": "brisk" }],
+      [{ "say": ["Take your time.", "Just don't handle what you ain't buying."], "tone": "watchful" }],
+      [{ "say": ["Wipe your boots, friend."], "tone": "tired" }],
+      [{ "say": ["Freight wagon's late again,", "so what's on the shelf is what there is."], "tone": "apologetic" }]
+    ],
+    "rumour": [
+      [{ "say": ["Had a Lantern Man in here asking what I pay for protection.", "Told him I pay the sheriff."], "tone": "proud, a little shaken" }],
+      [{ "say": ["Folks with money keep it at the bank.", "Folks with sense keep it under the floor."], "tone": "dry" }]
+    ],
+    "scared": [
+      [{ "say": ["Take the till! Just take it!"], "tone": "terrified" }],
+      [{ "say": ["Now hold on, hold on, I got a family!"], "tone": "pleading" }]
+    ]
+  }
+}

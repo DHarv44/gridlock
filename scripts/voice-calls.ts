@@ -25,6 +25,7 @@ const add = (id: string, text: string, v: Voice, takes: number) => {
 
 for (const [who, situations] of Object.entries(CALLS)) {
   const caller = CALLERS.find((c) => c.id === who)!;
+  if (!caller.voice) continue;
   for (const exchanges of Object.values(situations)) {
     for (const t of exchanges!.flat()) {
       if (t.by !== 'caller') continue;

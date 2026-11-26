@@ -4,7 +4,7 @@ import type { CharacterProgress, CharacterSave, CharLook } from './packs/charact
 export const TICK_HZ = 30;
 export const SNAP_EVERY = 2;             // snapshots at 15 Hz
 export const INTERP_DELAY_MS = 120;
-export const PROTOCOL_VERSION = 21;
+export const PROTOCOL_VERSION = 22;
 /** Every Nth snapshot carries every entity in full (others list unchanged ones in `k`). */
 export const FULL_SNAP_EVERY = 30;
 
@@ -37,9 +37,13 @@ export type C2S =
   | { t: 'chat'; text: string }
   | { t: 'call'; accept: boolean }        // answer / decline the call that's ringing
   | { t: 'dial'; gang: string }           // ring a contact to ask for work
+  | { t: 'talk'; ped: number }            // talk to someone you're standing next to
   | { t: 'radio'; station: number }       // retune the radio of the car you're in (-1 off)
   | { t: 'waypoint'; at: [number, number] | null } // your map waypoint (shared with whoever rides with you)
   | { t: 'ping'; ts: number };
+
+/** How a spoken exchange reaches you: down a payphone's line, a cell's, or face to face. */
+export type TalkVia = 'payphone' | 'cell' | 'face';
 
 export const EK = { Ped: 0, Veh: 1, Proj: 2, Pickup: 3, Fire: 4 } as const;
 
@@ -136,8 +140,9 @@ export type S2C =
   /** A text message to the phone. */
   | { t: 'text'; from: string; body: string }
   /** A spoken exchange on the phone (packs/calls.ts): each part is [caller, situation, exchange
-   *  index], played in order; `via` sets how it sounds (a payphone's line, or a cell's). */
-  | { t: 'talk'; via: 'payphone' | 'cell'; parts: [string, string, number][] }
+   *  index], played in order; `via` sets how it sounds (a payphone's line, or a cell's), or
+   *  `face`: in person with `ped`, whose bubbles are drawn over them (systems/faceTalk.ts). */
+  | { t: 'talk'; via: TalkVia; parts: [string, string, number][]; ped?: number }
   /** People (packs/calls.ts PEOPLE_CONTACTS) whose number you have. */
   | { t: 'people'; ids: string[] }
   /** A car's radio was retuned (by anyone riding in it), or you got into a car someone retuned:

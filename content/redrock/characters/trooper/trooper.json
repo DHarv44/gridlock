@@ -1,0 +1,14 @@
+{
+  "id": "trooper",
+  "name": "Trooper",
+  "fullName": "Cavalry Trooper",
+  "role": "Fort Garnet's cavalry",
+  "about": "Young soldiers, bored and saddle-sore, proud of the regiment.",
+  "calls": {
+    "greet": [
+      [{ "say": ["Move along, civilian."], "tone": "clipped" }],
+      [{ "say": ["Fourteen hours in the saddle.", "Don't talk to me about horses."], "tone": "worn out" }],
+      [{ "say": ["Captain says we ride out at the first sign of trouble.", "Don't be the sign."], "tone": "half joking" }]
+    ]
+  }
+}

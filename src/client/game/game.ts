@@ -47,6 +47,7 @@ import { makeAimAssist } from './aimAssist';
 import { Steering } from './steering';
 import { Input } from './input';
 import { lawUnits, nearestSiren, ownEngine, signalGlows, trafficEngines } from './ambient';
+import { FaceTalk } from './faceTalk';
 import { Interact } from './interact';
 import { Jobs } from './jobs';
 import { Predictor } from './predict';
@@ -72,6 +73,7 @@ export class Game {
   private offscreen: OffscreenPlayers;
   private phone: Phone;
   private talk: Talk;
+  private faceTalk: FaceTalk;
   private crosshair: Crosshair;
   private gas: GasStations;
   private interiors: Interiors;
@@ -117,6 +119,7 @@ export class Game {
     this.offscreen = new OffscreenPlayers(this.hud.root);
     this.phone = new Phone(this.hud.root);
     this.talk = new Talk(this.hud.root, this.sound);
+    this.faceTalk = new FaceTalk(this.store, this.talk);
     this.crosshair = new Crosshair(this.hud.root);
     // A call on your cell: the handset shows who's on the line while they talk.
     this.talk.onLine = (who, via) => { if (via === 'cell') this.phone.line(who); };
@@ -183,6 +186,7 @@ export class Game {
         // One key for everything: a shop/property door (or the dealer lot) opens its menu,
         // otherwise get into the nearest car or out of this one.
         if (this.pane.isOpen) { this.pane.close(); break; }
+        if (!this.interact.current && this.faceTalk.ped) { this.conn.send({ t: 'talk', ped: this.faceTalk.ped }); break; }
         if (!this.interact.current) { this.input.pressEnter(); break; }
         if (!this.interact.current.property && verbOf(this.interact.current.place.verb)?.shop) { this.openShop(this.interact.current.place); break; } // shop counter (hud/showroom.ts)
         if (this.you) this.interact.toggle(() => this.you!, () => this.profile, this.owners, this.myName, (kind, id, place) => this.conn.send({ t: 'buy', kind, id, place }));
@@ -416,7 +420,9 @@ export class Game {
     this.interact.current = spot;
     const ring = this.jobs.touch(you, own);
     if (ring) this.conn.send({ t: 'job', booth: ring.id });
-    this.hud.setPrompt(this.pane.isOpen ? null : this.interact.promptText(spot, this.owners, this.myName));
+    // No door or counter here: someone to talk to, if they're the nearest thing (client/game/faceTalk.ts).
+    const chat = spot || you.mode !== Mode.Foot ? null : this.faceTalk.find(own, own.alt + 2.9);
+    this.hud.setPrompt(this.pane.isOpen ? null : this.interact.promptText(spot, this.owners, this.myName) ?? chat);
     this.interact.tick(own.x, own.y);
     this.interact.paintShop(own.x, own.y, Math.hypot(own.vx, own.vy), you, (place) => this.openPaint(place));
     this.pane.refresh();

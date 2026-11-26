@@ -5,7 +5,7 @@
 // comes in during another waits its turn.
 import * as THREE from 'three';
 import { CALLERS, CALLS, type CallSituation, DEFAULT_VOICE, FACTIONS, GANG_CALLERS, genderOf, PLAYER_LINES, PLAYER_SAYS, type PlayerSituation, YOU, youLineId } from '../../shared/packs';
-import type { S2C } from '../../shared/protocol';
+import type { S2C, TalkVia } from '../../shared/protocol';
 import type { Line } from '../audio/phoneVoice';
 import type { Sound } from '../audio/sound';
 import { clipOf } from '../audio/voiceClips';
@@ -28,13 +28,22 @@ function colorOf(who: string): string {
 
 const BOLT = '<svg class="tb-bolt" viewBox="0 0 40 46" aria-hidden="true"><path d="M13 0 L30 0 L21 13 L29 14 L13 29 L19 30 L0 46 L7 27 L1 26 L11 12 L5 11 Z"/></svg>';
 
+/** An exchange waiting to play: how it reaches you, and face to face whose ped is speaking. */
+interface Exchange { via: TalkVia; ped: number; steps: Step[] }
+
 export class Talk {
   private root = document.createElement('div');
-  private queue: { via: Line; steps: Step[] }[] = [];
+  private queue: Exchange[] = [];
   private busy = false;
   private v = new THREE.Vector3();
+  /** Face to face: who's speaking now (their ped), so their bubble is drawn over them; 0 you. */
+  private speaker = 0;
   /** A call is on the line (who's speaking, and how it came in), or it's over (null). */
-  onLine: (who: string | null, via: Line) => void = () => {};
+  onLine: (who: string | null, via: TalkVia) => void = () => {};
+  /** Where a ped's head is (world x, height, y), for bubbles said face to face. */
+  locate: (ped: number) => { x: number; h: number; y: number } | null = () => null;
+  /** The colour of a ped's side (their faction), for their name face to face. */
+  pedColor: (ped: number) => string = () => '#5a6470';
   /** Your character's voice (packs/calls.ts PLAYER_VOICES). */
   voice = DEFAULT_VOICE;
 
@@ -67,7 +76,7 @@ export class Talk {
       }
     }
     if (!steps.length) return;
-    this.queue.push({ via: m.via, steps });
+    this.queue.push({ via: m.via, ped: m.ped ?? 0, steps });
     if (!this.busy) void this.run();
   }
 
@@ -77,9 +86,11 @@ export class Talk {
       const call = this.queue.shift()!;
       this.onLine(call.steps.find((s) => s.who)?.who ?? null, call.via);
       for (const s of call.steps) {
-        this.show(s);
-        // The caller comes down the line; you're speaking where you stand.
-        const spoke = await this.sound.line(s.id ? clipOf(s.id) : undefined, s.who ? call.via : 'local');
+        const face = call.via === 'face';
+        this.speaker = face && s.who ? call.ped : 0;
+        this.show(s, face ? this.pedColor(call.ped) : null);
+        // The caller comes down the line; you're speaking where you stand, as is anyone in person.
+        const spoke = await this.sound.line(s.id ? clipOf(s.id) : undefined, s.who && !face ? call.via as Line : 'local');
         await sleep(spoke > 0 ? 0.45 : readTime(s.text));
       }
       this.hide();
@@ -89,11 +100,15 @@ export class Talk {
     this.busy = false;
   }
 
-  private show(s: Step): void {
+  /** `face`: said in person (a plain tail, over them), in their side's colour; null on the phone. */
+  private show(s: Step, face: string | null): void {
     const name = s.who ? CALLERS.find((c) => c.id === s.who)?.name ?? s.who : '';
-    this.root.innerHTML = s.who
-      ? `<div class="tb tb-them">${BOLT}<b class="tb-name" style="color:${colorOf(s.who)}">${esc(name)}</b><span>${esc(s.text)}</span></div>`
-      : `<div class="tb tb-you"><span>${esc(s.text)}</span></div>`;
+    this.root.innerHTML = !s.who
+      ? `<div class="tb tb-you"><span>${esc(s.text)}</span></div>`
+      : face !== null
+        // Side colours can be pale (townsfolk's tan): darkened so the name reads on the bubble.
+        ? `<div class="tb tb-face"><b class="tb-name" style="color:color-mix(in srgb, ${face} 60%, #121417)">${esc(name)}</b><span>${esc(s.text)}</span></div>`
+        : `<div class="tb tb-them">${BOLT}<b class="tb-name" style="color:${colorOf(s.who)}">${esc(name)}</b><span>${esc(s.text)}</span></div>`;
     this.root.classList.add('on');
   }
 
@@ -101,8 +116,10 @@ export class Talk {
     this.root.classList.remove('on');
   }
 
-  /** Every frame: keeps the bubbles beside your character's head (`at`: world x, height, y). */
-  update(camera: THREE.Camera, at: { x: number; h: number; y: number } | null): void {
+  /** Every frame: keeps the bubbles beside your character's head (`you`: world x, height, y), or
+   *  over whoever's talking to you face to face. */
+  update(camera: THREE.Camera, you: { x: number; h: number; y: number } | null): void {
+    const at = (this.speaker && this.locate(this.speaker)) || you;
     if (!this.busy || !at) return;
     this.v.set(at.x, at.h, at.y).project(camera);
     const w = window.innerWidth, h = window.innerHeight;

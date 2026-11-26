@@ -12,6 +12,9 @@ import { briefCall, gangCaller, type Part, talk } from './talk';
 
 const clampR = (v: number) => Math.max(RESPECT.min, Math.min(RESPECT.max, v));
 
+/** A job given in person: who the giver speaks as, and their ped. */
+export interface Face { who: string; ped: number }
+
 export class Missions {
   readonly booths: Booth[];
   readonly crates: CrateSpot[];
@@ -67,20 +70,21 @@ export class Missions {
   }
 
   /** A gang gives the player a job over the phone (missions/cell.ts), from where they stand.
-   *  `lead`: what's said before the brief (you picking up, or asking for work). */
-  offer(pl: Player, gang: string, payMul: number, lead: Part[] = []): void {
+   *  `lead`: what's said before the brief (you picking up, or asking for work). `face`: one of
+   *  theirs gives it in person instead (systems/faceTalk.ts): who they speak as, and their ped. */
+  offer(pl: Player, gang: string, payMul: number, lead: Part[] = [], face?: Face): void {
     const w = this.w;
     const p = w.peds.get(pl.pid);
     if (!p || pl.mission) return;
     const pool = MISSIONS.map((m, i) => ({ m, i })).filter(({ m }) => m.giver === gang || m.giver === 'gang');
     const { i } = pool[Math.floor(w.rng.next() * pool.length)];
     const rivals = faction(gang).hostile.filter((f) => GANGS.includes(f));
-    this.begin(pl, i, gang, rivals[Math.floor(w.rng.next() * rivals.length)] ?? '', w.pedPos(p), payMul, 'cell', lead);
+    this.begin(pl, i, gang, rivals[Math.floor(w.rng.next() * rivals.length)] ?? '', w.pedPos(p), payMul, 'cell', lead, face);
   }
 
   /** `via`: how the job was given, if by phone: the giver's voice briefs you down that line
-   *  (after `lead`). */
-  private begin(pl: Player, specIndex: number, giver: string, rival: string, from: { x: number; y: number }, payMul = 1, via?: 'payphone' | 'cell', lead: Part[] = []): void {
+   *  (after `lead`); `face`: in person, by whoever gave it. */
+  private begin(pl: Player, specIndex: number, giver: string, rival: string, from: { x: number; y: number }, payMul = 1, via?: 'payphone' | 'cell', lead: Part[] = [], face?: Face): void {
     const w = this.w;
     const spec = MISSIONS[specIndex];
     const r = (spec.reward[0] + w.rng.next() * (spec.reward[1] - spec.reward[0])) * payMul;
@@ -98,7 +102,8 @@ export class Missions {
     }
     pl.mission = st;
     this.send(pl, true);
-    if (via && GANGS.includes(giver)) briefCall(w, pl, giver, spec.kind, via, lead);
+    if (face) talk(w, pl, 'face', [...lead, [face.who, spec.kind]], face.ped);
+    else if (via && GANGS.includes(giver)) briefCall(w, pl, giver, spec.kind, via, lead);
   }
 
   private info(st: MissionState): MissionInfo {

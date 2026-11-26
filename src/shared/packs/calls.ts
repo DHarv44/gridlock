@@ -16,7 +16,8 @@ export interface Caller {
   crew?: string;
   /** Their folder, from the project root. */
   dir: string;
-  voice: Voice;
+  /** None yet: their lines are shown, not spoken. */
+  voice?: Voice;
 }
 
 /** A turn, ready to play: the caller's line (with its clip id; a gendered line's clip is
@@ -71,7 +72,7 @@ export function installCalls(u: Universe): void {
   }
   for (const [folder, c] of u.cast) {
     const dir = `${u.contentDir}/characters/${folder}`;
-    CALLERS.push({ id: c.id, name: c.name, fullName: c.fullName, role: c.role, about: c.about, crew: c.crew, dir, voice: voiceOf(dir, c.voice) });
+    CALLERS.push({ id: c.id, name: c.name, fullName: c.fullName, role: c.role, about: c.about, crew: c.crew, dir, voice: c.voice && voiceOf(dir, c.voice) });
     CALLS[c.id] = Object.fromEntries(Object.entries(c.calls).map(([situation, exchanges]) => [situation, exchanges!.map((turns, x) => {
       let n = 0;
       return turns.map((t): Turn => {

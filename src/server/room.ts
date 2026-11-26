@@ -7,6 +7,7 @@ import { updateAi } from './game/ai/brain';
 import type { Player } from './game/entities';
 import { removeVehicle, unseatPed } from './game/factory';
 import { Missions } from './game/missions/engine';
+import { faceTalk } from './game/systems/faceTalk';
 import { Cell, newCell } from './game/missions/cell';
 import { Business } from './game/systems/business';
 import { Robberies } from './game/systems/robbery';
@@ -200,6 +201,11 @@ export class Room {
       case 'call':
         if (RULES.cellPhone) this.cell.answer(pl, !!msg.accept);
         break;
+      case 'talk': {
+        const err = faceTalk(this.world, this.missions, pl, Number(msg.ped));
+        if (err) pl.send({ t: 'msg', kind: 'info', text: err } satisfies S2C);
+        break;
+      }
       case 'dial': {
         if (!RULES.cellPhone) break;
         const err = this.cell.dial(pl, String(msg.gang));

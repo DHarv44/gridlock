@@ -49,6 +49,15 @@ function footTask(w: World, p: Ped, dt: number): void {
       if (t) p.aim = Math.atan2(t.body.y - p.body.y, t.body.x - p.body.x);
       return;
     }
+    // Talking with someone (systems/faceTalk.ts): stood facing them for `tx` seconds, or until
+    // they walk off.
+    case 'chat': {
+      p.ctl.mx = 0; p.ctl.my = 0;
+      const t = w.peds.get(ai.target);
+      if (t) p.aim = Math.atan2(t.body.y - p.body.y, t.body.x - p.body.x);
+      done = !t || t.dead || ai.t > ai.tx || dist(p.body.x, p.body.y, t.body.x, t.body.y) > 6;
+      break;
+    }
     case 'attack': done = attack(w, p, dt); break;
     case 'arrest': done = arrest(w, p, dt); break;
     case 'revive': done = revive(w, p, dt); break;

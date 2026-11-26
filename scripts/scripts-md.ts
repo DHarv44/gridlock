@@ -37,7 +37,8 @@ const out: string[] = [
 
 for (const c of CALLERS) {
   const calls = CALLS[c.id] ?? {};
-  out.push('---', '', `## ${c.fullName}: ${c.role}`, `Folder \`${c.dir}\` · reference \`${c.voice.model.split('/').slice(-2).join('/')}\` · Exaggeration **${c.voice.ex}** · CFG/Pace **${c.voice.cfg}**`, '', c.about, '');
+  const voice = c.voice ? `reference \`${c.voice.model.split('/').slice(-2).join('/')}\` · Exaggeration **${c.voice.ex}** · CFG/Pace **${c.voice.cfg}**` : 'not voiced yet';
+  out.push('---', '', `## ${c.fullName}: ${c.role}`, `Folder \`${c.dir}\` · ${voice}`, '', c.about, '');
   const glossary = file(c).glossary;
   if (glossary) {
     out.push('| Word | Means |', '|---|---|', ...Object.entries(glossary).map(([w, m]) => `| ${w} | ${m} |`), '');

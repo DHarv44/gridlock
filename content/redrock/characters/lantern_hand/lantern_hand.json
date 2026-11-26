@@ -1,0 +1,33 @@
+{
+  "id": "lantern_hand",
+  "name": "Lantern Man",
+  "fullName": "Lantern Men",
+  "role": "Gives the Lantern Men's work in person",
+  "about": "Protection racketeers and arsonists: courteous as undertakers, fond of fire.",
+  "calls": {
+    "greet": [
+      [{ "say": ["Evening, friend.", "Dark nights out here. A man ought to have a light."], "tone": "oily courtesy" }]
+    ],
+    "refuse": [
+      [{ "say": ["We've nothing to say to you.", "Mind your roof."], "tone": "pleasant threat" }]
+    ],
+    "busy": [
+      [{ "say": ["You've work of ours already.", "We'd like to see it finished."], "tone": "polite but firm" }]
+    ],
+    "nothing": [
+      [{ "say": ["Nothing tonight.", "Do call again."], "tone": "courteous" }]
+    ],
+    "hit": [
+      [{ "say": ["A gentleman has declined to pay us.", "Make an example of him."], "tone": "regretful" }]
+    ],
+    "torch": [
+      [{ "say": ["There's a wagon that's not paid its dues.", "Light it up."], "tone": "warm, almost fond" }]
+    ],
+    "courier": [
+      [{ "say": ["A package wants delivering.", "Promptly, if you please."], "tone": "formal" }]
+    ],
+    "steal": [
+      [{ "say": ["A coach is standing unattended.", "Bring it round to us, quiet as you like."], "tone": "smooth" }]
+    ]
+  }
+}

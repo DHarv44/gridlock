@@ -1,0 +1,16 @@
+{
+  "id": "bank_guard",
+  "name": "Bank Guard",
+  "fullName": "Bank Guard",
+  "role": "The shotgun at the Territorial Bank",
+  "about": "Gruff and bored, takes the job very seriously out loud.",
+  "calls": {
+    "greet": [
+      [{ "say": ["Deposits at the window.", "Nobody goes past the rail."], "tone": "gruff" }],
+      [{ "say": ["I see you looking at that vault.", "Don't."], "tone": "warning" }]
+    ],
+    "scared": [
+      [{ "say": ["Put it down! Put it down!"], "tone": "shouting" }]
+    ]
+  }
+}

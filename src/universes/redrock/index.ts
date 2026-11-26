@@ -1,11 +1,28 @@
 // Redrock Territory: an original frontier territory in the 1870s. Three timber towns on wide dirt
 // streets, homesteads, open prairie and red badlands walled in by cliffs, a river with two
 // crossings; horses and wagons; three outlaw outfits; deputies, marshals and the cavalry.
-// No cast of its own yet: the outfits post their work on job posts (with a brief, no voiced call),
-// and the player's own lines are the shared ones.
+// No phones: the outfits post their work on job posts (a brief, no call), and their riders in town
+// give it face to face. Its cast (content/redrock/characters) is the people you can walk up and
+// talk to, shown in bubbles, not voiced yet; the player's own lines are the shared ones.
 import player from '../../../content/player/player.json';
+import bankGuard from '../../../content/redrock/characters/bank_guard/bank_guard.json';
+import dryCreek from '../../../content/redrock/characters/dry_creek_hand/dry_creek_hand.json';
+import gambler from '../../../content/redrock/characters/gambler/gambler.json';
+import lantern from '../../../content/redrock/characters/lantern_hand/lantern_hand.json';
+import lawman from '../../../content/redrock/characters/lawman/lawman.json';
+import prospector from '../../../content/redrock/characters/prospector/prospector.json';
+import settler from '../../../content/redrock/characters/settler/settler.json';
+import storekeeper from '../../../content/redrock/characters/storekeeper/storekeeper.json';
+import townsfolk from '../../../content/redrock/characters/townsfolk/townsfolk.json';
+import trooper from '../../../content/redrock/characters/trooper/trooper.json';
+import vulture from '../../../content/redrock/characters/vulture_hand/vulture_hand.json';
 import { INTERIOR_PLANS } from '../bayhaven/interiorPlans';
-import type { PlayerFile, Universe, WeaponPart } from '../../shared/packs/types';
+import type { CharacterFile, PlayerFile, Universe, WeaponPart } from '../../shared/packs/types';
+
+const CAST = Object.entries({
+  townsfolk, settler, prospector, storekeeper, lawman, trooper, gambler, bank_guard: bankGuard,
+  dry_creek_hand: dryCreek, vulture_hand: vulture, lantern_hand: lantern,
+}).map(([folder, json]): [string, CharacterFile] => [folder, json as CharacterFile]);
 import { MARK_NAMES, MISSIONS, MODES } from './missions';
 import { FACTIONS, HAIR, PEDS, SHOES, SKIN } from './peds';
 import { PROPERTIES, SERVICES } from './places';
@@ -81,6 +98,6 @@ export const REDROCK: Universe = {
   },
   armorModel: VEST,
   streetProps: STREET_PROPS,
-  cast: [],
+  cast: CAST,
   player: player as unknown as PlayerFile,
 };

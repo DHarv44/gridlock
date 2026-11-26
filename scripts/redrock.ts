@@ -8,7 +8,8 @@ const { installUniverse } = await import('../src/shared/packs');
 const { loadUniverse } = await import('../src/universes');
 installUniverse(await loadUniverse('redrock'));
 const { Room } = await import('../src/server/room');
-const { RULES, UNIVERSE, VEHICLES, vehicleIndex } = await import('../src/shared/packs');
+const { MISSIONS, RULES, UNIVERSE, VEHICLES, pedIndex, vehicleIndex } = await import('../src/shared/packs');
+const { faceTalk } = await import('../src/server/game/systems/faceTalk');
 const { stepVehicle } = await import('../src/shared/sim/physics');
 const { onLegs } = await import('../src/shared/sim/kinds');
 const { materialOf } = await import('../src/shared/materials');
@@ -192,6 +193,37 @@ for (let t = 0; t < 40 * 30 && mine.calledBy; t++) {
 }
 check(close <= 5 && mine.calledBy === 0, `whistled for, the horse comes to its rider (${close.toFixed(1)} m away)`);
 if (close > 5) console.log('  horse:', { calledBy: mine.calledBy, seats: mine.seats, wrecked: mine.wrecked, idleT: mine.idleT, hp: mine.hp, texDead: tex.dead, texVeh: tex.vehicle });
+
+// Face to face: walk up to someone and they talk; frightened if you're wanted; an outfit's rider
+// gives you its work in person.
+const heard: { t: string; via?: string; ped?: number; parts?: [string, string, number][] }[] = [];
+pl.send = (m) => { heard.push(m as (typeof heard)[number]); };
+const missions = (room as unknown as { missions: Parameters<typeof faceTalk>[1] }).missions;
+const said = (ped: number) => {
+  pl.talkT = 0; heard.length = 0;
+  const err = faceTalk(w, missions, pl, ped);
+  const m = heard.find((h) => h.t === 'talk');
+  return { err, via: m?.via, ped: m?.ped, who: m?.parts?.[0]?.[0], s: m?.parts?.map((p) => p[1]) ?? [] };
+};
+const beside = (arch: string, dx = 1.5) => spawnPed(w, pedIndex(arch), tex.body.x + dx, tex.body.y);
+const folk = beside('townsfolk');
+const hi = said(folk.id);
+check(hi.via === 'face' && hi.ped === folk.id && hi.who === 'townsfolk' && hi.s[0] === 'greet' && folk.ai!.task === 'chat', `a stranger stops to talk (${hi.s.join(', ')}; ${folk.ai!.task})`);
+const far = beside('townsfolk', 9);
+check(!said(far.id).who, 'someone across the street is too far to talk to');
+pl.wanted = 2;
+const fright = said(beside('homesteader', -1.5).id);
+pl.wanted = 0;
+check(fright.s[0] === 'scared', `wanted, folk are frightened of you (${fright.s.join(', ')})`);
+const rider = beside('dry_creek_rider', 0.5);
+const job = said(rider.id);
+check(!!pl.mission && job.who === 'dry_creek_hand' && job.s[0] === MISSIONS[pl.mission.spec].kind, `a Dry Creek rider gives you a job in person (${job.s.join(', ')})`);
+check(said(rider.id).s[0] === 'busy', 'ask again while on it and he says finish it');
+pl.mission = null;
+pl.respect.lantern = -30;
+check(said(beside('lantern_man', -0.5).id).s[0] === 'refuse', 'an outfit you\'ve crossed won\'t deal with you');
+for (const p of [folk, far, rider]) p.dead = true;
+
 addHeat(pl, 45);
 for (let t = 0; t < 30 * 30; t++) room.tick();
 const lawRides = [...w.vehicles.values()].filter((v) => v.spec.roles.includes('police'));

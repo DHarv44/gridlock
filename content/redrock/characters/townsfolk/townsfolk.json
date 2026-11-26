@@ -1,0 +1,27 @@
+{
+  "id": "townsfolk",
+  "name": "Townsfolk",
+  "fullName": "Townsfolk",
+  "role": "Anybody on the boardwalk",
+  "about": "Ordinary town people: polite to a stranger, curious, quick to fright. Plain frontier speech.",
+  "calls": {
+    "greet": [
+      [{ "say": ["Afternoon.", "Don't believe I know your face."], "tone": "polite, wary" }],
+      [{ "say": ["Mind the horse apples,", "the street ain't been swept since spring."], "tone": "friendly" }],
+      [{ "say": ["If you're looking for the stage,", "it don't keep to any schedule I ever saw."], "tone": "dry" }],
+      [{ "say": ["New in town?", "Well. Keep your iron holstered and you'll do fine."], "tone": "measuring you up" }],
+      [{ "say": ["Can't stop, I'm late as it is."], "tone": "hurried" }]
+    ],
+    "rumour": [
+      [{ "say": ["They say the bank's holding the railroad payroll this month.", "Wouldn't want to be the fella guarding it."], "tone": "lowered voice" }],
+      [{ "say": ["The Dry Creek boys and the Vulture Ridge bunch", "are at each other's throats again."], "tone": "gossiping" }],
+      [{ "say": ["Make enough trouble and it won't be the sheriff who comes.", "It'll be the cavalry out of Fort Garnet."], "tone": "warning" }],
+      [{ "say": ["The doc'll patch up anybody who can pay.", "Don't ask him where he learned."], "tone": "wry" }]
+    ],
+    "scared": [
+      [{ "say": ["Lord, don't shoot!"], "tone": "terrified" }],
+      [{ "say": ["I don't want no trouble, mister!"], "tone": "backing away" }],
+      [{ "say": ["Somebody fetch the sheriff!"], "tone": "shouting, running" }]
+    ]
+  }
+}

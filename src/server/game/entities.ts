@@ -6,7 +6,7 @@ import type { Body, Controls } from '../../shared/sim/physics';
 export interface HeldWeapon { w: number; ammo: number; clip: number }
 
 export type TaskName = 'wander' | 'stand' | 'flee' | 'attack' | 'arrest' | 'drive' | 'pursue' | 'respond'
-  | 'revive' | 'extinguish' | 'return' | 'cower' | 'guard' | 'surrender' | 'none';
+  | 'revive' | 'extinguish' | 'return' | 'cower' | 'guard' | 'surrender' | 'chat' | 'none';
 
 export interface DriveState {
   pts: { x: number; y: number; stop?: number; axis?: 'h' | 'v' }[];
@@ -194,6 +194,10 @@ export interface Player {
   radioVid?: number;
   mission: MissionState | null;
   boothCd: Map<number, number>;   // booth id -> world time it may ring again
+  /** Face to face (systems/faceTalk.ts): when you can talk to someone again, and each gang's wait
+   *  before its people have work for you again. */
+  talkT?: number;
+  talkCd?: Map<string, number>;
   /** Jobs blown in a row (a pass resets it): the mentor stops dealing with you past a point. */
   blownRun: number;
   /** Cell phone (missions/cell.ts): when the next call comes, who's ringing and until when, each
