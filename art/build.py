@@ -111,7 +111,8 @@ def build_vehicles(only):
             continue
         st = merged(styles[look["style"]], look.get("over", {})) if "style" in look else look
         # Trucks: the cab is a car style. Teams and buggies: the horse in harness is a horse style.
-        for sub in ("cab", "horse"):
+        # A monster truck's shell is a car style.
+        for sub in ("cab", "horse", "shell"):
             if isinstance(st.get(sub), dict) and "style" in st[sub]:
                 st[sub] = merged(styles[st[sub]["style"]], st[sub])
         kind = st.get("kind", "car")

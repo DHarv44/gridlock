@@ -87,7 +87,7 @@ export const ZONES: ZoneSpec[] = [
     trees: 0.05, parkingChance: 0.3, plazaChance: 0, pedDensity: 1.2,
     peds: [{ id: 'worker', weight: 8 }, { id: 'civilian', weight: 2 }, { id: 'dealer', weight: 0.3 }],
     trafficDensity: 0.6, traffic: [{ id: 'boxtruck', weight: 5 }, { id: 'semi', weight: 4 }, { id: 'pickup', weight: 4 }, { id: 'van', weight: 4 }, { id: 'sedan', weight: 3 }, { id: 'garbage', weight: 1 }],
-    parked: [{ id: 'boxtruck', weight: 3 }, { id: 'semi', weight: 2 }, { id: 'pickup', weight: 4 }, { id: 'van', weight: 4 }, { id: 'sedan', weight: 2 }, { id: 'dirtbike', weight: 0.5 }],
+    parked: [{ id: 'boxtruck', weight: 3 }, { id: 'semi', weight: 2 }, { id: 'pickup', weight: 4 }, { id: 'van', weight: 4 }, { id: 'sedan', weight: 2 }, { id: 'dirtbike', weight: 0.5 }, { id: 'monster', weight: 0.15 }],
     parkedDensity: 0.8, roadDrop: 0.15, windows: 0.1, warehouses: true,
   },
   {

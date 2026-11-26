@@ -103,4 +103,9 @@ export const VEHICLES: VehicleSpec[] = [
     saddles: [{ x: -1.55, z: 0.72, lean: -0.05 }, { x: -0.3, z: 0.72, lean: -0.05 }, { x: 0.9, z: 0.72, lean: -0.05 }] },
   { ...boat, engine: 'engine_diesel', horn: 'horn_air', id: 'cruiser', name: 'Harbourmaster Cruiser', length: 9.5, width: 3.1, height: 2.6, mass: 9000, maxSpeed: 18, accel: 3.5, brake: 4, reverse: 3, grip: 1.6, turnRate: 0.95, hp: 900, seats: 6, colors: 'dull', model: M.cruiser(),
     shape: { nose: 0.8, tail: 0.06, tumble: 0.12, round: 0.32 } },
+
+  // Monster truck: a pickup shell on 1.7 m tyres. It rolls over cars like the tank does (`crushes`),
+  // shrugs off crashes, and is quick but tall and wide, so it corners like a truck. Sold at the
+  // dealer; now and then one sits parked somewhere.
+  { ...car, horn: 'horn_air', engine: 'engine_muscle', id: 'monster', name: 'Earthshaker', shape: undefined, turnIn: 0.3, length: 5.8, width: 3.3, height: 3.4, mass: 4800, maxSpeed: 36, accel: 11, brake: 18, reverse: 8, grip: 9, turnRate: 2.1, hp: 1400, seats: 2, crushes: true, price: 120000, colors: 'bright', roles: ['parked'], model: M.monster() },
 ];

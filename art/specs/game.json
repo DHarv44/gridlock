@@ -467,6 +467,50 @@
    "siren": true,
    "openTop": true,
    "armored": false
+  },
+  "speedboat": {
+   "name": "Riptide Speedboat",
+   "length": 6.4,
+   "width": 2.3,
+   "height": 1.4,
+   "movement": "boat",
+   "paint": null,
+   "siren": false,
+   "openTop": true,
+   "armored": false
+  },
+  "skiff": {
+   "name": "Gull Skiff",
+   "length": 4.2,
+   "width": 1.7,
+   "height": 0.9,
+   "movement": "boat",
+   "paint": null,
+   "siren": false,
+   "openTop": true,
+   "armored": false
+  },
+  "cruiser": {
+   "name": "Harbourmaster Cruiser",
+   "length": 9.5,
+   "width": 3.1,
+   "height": 2.6,
+   "movement": "boat",
+   "paint": null,
+   "siren": false,
+   "openTop": false,
+   "armored": false
+  },
+  "monster": {
+   "name": "Earthshaker",
+   "length": 5.8,
+   "width": 3.3,
+   "height": 3.4,
+   "movement": "wheels",
+   "paint": null,
+   "siren": false,
+   "openTop": false,
+   "armored": false
   }
  },
  "weapons": {
