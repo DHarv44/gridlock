@@ -1,5 +1,5 @@
 // WebSocket connection to the game server.
-import type { CharacterSave } from '../../shared/packs';
+import { type CharacterSave, UNIVERSE } from '../../shared/packs';
 import { type C2S, PROTOCOL_VERSION, type S2C } from '../../shared/protocol';
 
 export class Connection {
@@ -14,7 +14,7 @@ export class Connection {
     this.ws = new WebSocket(`${proto}//${location.host}/ws`);
     this.ws.onopen = () => {
       const id = typeof who === 'string' ? { name: who } : { name: who.name, char: who };
-      this.send({ t: 'hello', v: PROTOCOL_VERSION, room, create, mode, resume, ...id });
+      this.send({ t: 'hello', v: PROTOCOL_VERSION, universe: UNIVERSE.id, room, create, mode, resume, ...id });
       setInterval(() => this.send({ t: 'ping', ts: performance.now() }), 2000);
     };
     this.ws.onmessage = (ev) => {

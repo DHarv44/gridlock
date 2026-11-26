@@ -19,7 +19,7 @@ const MIME: Record<string, string> = {
 
 /** Every universe's manifest (radio folders, names); rooms install their own. */
 const UNIVERSES = await loadAllUniverses();
-const lobby = new Lobby();
+const lobby = new Lobby({ universes: UNIVERSES });
 
 const server = createServer((req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost');

@@ -31,11 +31,18 @@ film's names, characters, story, map or look).
    before importing game code (client/main.ts boots the universe, then imports the lobby). Radio
    routes carry the universe (`/api/radio?u=`, `/radio/<universe>/<station>/<file>`). Bayhaven's
    assets stay where they were (content/, src/client/models, src/client/voice).
-3. **Universe per room.** Each room's sim runs in a worker thread with its universe installed
-   (module state is per worker; rooms also spread over CPU cores). Rooms, saves and characters
-   belong to one universe; the lobby lists rooms with theirs.
-4. **Start screen.** Pick a universe, then a character in it, then a room. A plain list/selector in
-   the house style.
+3. **Universe per room** (done 2026-11-27). The server (`new Lobby({ universes })`) runs each room
+   in a worker thread of its own (server/workerRoom.ts proxy, server/roomWorker.ts entry) that
+   installs the room's universe before loading the game; sockets stay on the main thread and the
+   room's messages cross as strings. A room's universe is the running room's, else its save's
+   (persist.ts savedUniverse), else the creator's; a page from another universe is refused with
+   `reject.universe` and switches to it. Characters are fully checked inside the room's thread; the
+   lobby only peeks at id/name/universe. Headless scripts keep in-process rooms (roomHost.ts
+   LocalRoom). Hello carries `universe`, listings carry it (protocol 17). `scripts/rooms.ts`
+   covers both.
+4. **Start screen** (done 2026-11-27). The lobby card shows a Universe selector (with its blurb)
+   once there's more than one; changing it stores the choice and reloads. Characters and open rooms
+   are listed for the current universe only.
 5. **Maps as data.** The engine reads a general world: ground surfaces (road, grass, sand, rock,
    water), collision, a road/trail network at any angle, places and zones. Bayhaven's grid city
    becomes one generator; a universe picks a generator + settings or supplies a hand-made map file.

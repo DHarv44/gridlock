@@ -38,6 +38,22 @@ export function loadRoom(code: string): RoomSave | null {
   }
 }
 
+/** The universe a room's save belongs to (any universe; null when there's no readable save of
+ *  this version). The lobby reads it before choosing where the room runs. */
+export function savedUniverse(code: string): string | null {
+  try {
+    const f = file(code);
+    if (!existsSync(f)) return null;
+    const data = JSON.parse(readFileSync(f, 'utf8')) as Partial<RoomSave>;
+    return data.version === SAVE_VERSION && typeof data.universe === 'string' ? data.universe : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Whether any save file uses this code (so a new room never takes it). */
+export const codeTaken = (code: string): boolean => existsSync(file(code));
+
 export function saveRoom(code: string, save: RoomSave): void {
   try {
     mkdirSync(DIR, { recursive: true });

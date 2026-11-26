@@ -4,7 +4,7 @@ import type { CharacterProgress, CharacterSave, CharLook } from './packs/charact
 export const TICK_HZ = 30;
 export const SNAP_EVERY = 2;             // snapshots at 15 Hz
 export const INTERP_DELAY_MS = 120;
-export const PROTOCOL_VERSION = 18;
+export const PROTOCOL_VERSION = 19;
 /** Every Nth snapshot carries every entity in full (others list unchanged ones in `k`). */
 export const FULL_SNAP_EVERY = 30;
 
@@ -27,7 +27,8 @@ export type BuyKind = 'weapon' | 'ammo' | 'armor' | 'heal' | 'vehicle' | 'proper
 
 export type C2S =
   /** `char`: the player's character from their browser; without it `name` plays an unsaved guest. */
-  | { t: 'hello'; v: number; name: string; room: string; create: boolean; mode?: string; char?: CharacterSave; resume?: boolean }
+  /** `universe`: the one this page runs (a new room is made in it; a room in another is refused). */
+  | { t: 'hello'; v: number; universe: string; name: string; room: string; create: boolean; mode?: string; char?: CharacterSave; resume?: boolean }
   | { t: 'in'; i: InputMsg[] }
   | { t: 'job'; booth: number }
   | { t: 'buy'; kind: BuyKind; id: string; place: number }
@@ -112,7 +113,8 @@ export interface Profile {
 
 export type S2C =
   | { t: 'welcome'; id: number; room: string; seed: number; maxPlayers: number }
-  | { t: 'reject'; reason: string }
+  /** `universe`: the room is in that universe (the page switches to it and asks again). */
+  | { t: 'reject'; reason: string; universe?: string }
   /** e: changed/new entities; k: ids still in view and unchanged since the last snapshot. */
   | { t: 's'; st: number; ack: number; gt: number; you: YouState; e: number[][]; k: number[]; fx: number[][] }
   | { t: 'players'; list: PlayerInfo[] }
@@ -146,6 +148,6 @@ export type S2C =
   /** The character's progress, for the browser to save (sent every few seconds and after buys). */
   | { t: 'save'; id: string; p: CharacterProgress };
 
-export interface RoomListing { code: string; players: number; max: number; names: string[] }
+export interface RoomListing { code: string; universe: string; players: number; max: number; names: string[] }
 
 export const PLAYER_COLORS = ['#ff5a4f', '#4fa3ff', '#ffd34f', '#5fe07a', '#c77dff', '#ff9a3c', '#3ce0e0', '#ff6ec7'];

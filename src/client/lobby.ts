@@ -1,7 +1,9 @@
 // Lobby screen (universe, character, create/join, open rooms), then hands the connection to the
 // game. Loaded by the boot (main.ts) once the universe is installed.
-import { MODES } from '../shared/packs';
+import { MODES, RULES, UNIVERSE } from '../shared/packs';
 import type { RoomListing } from '../shared/protocol';
+import { isUniverse, UNIVERSE_INFO } from '../universes';
+import { UNIVERSE_KEY } from './assets';
 import { Game } from './game/game';
 import { CharacterPicker } from './lobby/characters';
 import { Connection } from './net/connection';
@@ -15,6 +17,35 @@ const codeInput = $<HTMLInputElement>('code');
 const errorEl = $('lobby-error');
 const lobby = $('lobby');
 const loading = $('loading');
+$('sub').textContent = `${UNIVERSE.name} · up to ${RULES.maxPlayers} players`;
+loading.textContent = `Loading ${UNIVERSE.name}…`;
+
+/** Plays in another universe: its packs load with the page, so remember it and reload. */
+function switchUniverse(id: string, note?: string): void {
+  localStorage.setItem(UNIVERSE_KEY, id);
+  if (note) sessionStorage.setItem(NOTE_KEY, note);
+  const url = new URL(location.href);
+  url.searchParams.delete('u');
+  location.replace(url.toString());
+}
+const NOTE_KEY = 'gridlock.lobbyNote';
+
+// Universe picker: only when this build has more than one.
+if (UNIVERSE_INFO.length > 1) {
+  const sel = $<HTMLSelectElement>('universe');
+  for (const u of UNIVERSE_INFO) {
+    const o = document.createElement('option');
+    o.value = u.id;
+    o.textContent = u.name;
+    sel.appendChild(o);
+  }
+  sel.value = UNIVERSE.id;
+  $('universe-row').hidden = false;
+  const blurb = $('universe-blurb');
+  blurb.hidden = false;
+  blurb.textContent = UNIVERSE.blurb;
+  sel.addEventListener('change', () => switchUniverse(sel.value));
+}
 
 const picker = new CharacterPicker($('chars'));
 picker.onMode = (creating) => {
@@ -67,7 +98,16 @@ function start(create: boolean, room: string, resume = false): void {
     errorEl.textContent = reason;
   };
   const off = conn.on((m) => {
-    if (m.t === 'reject') { errorEl.textContent = m.reason; busy = false; conn.close(); off(); }
+    if (m.t === 'reject') {
+      busy = false; conn.close(); off();
+      // The room is a game in another universe: switch to it (the code stays in the address).
+      if (m.universe && m.universe !== UNIVERSE.id && isUniverse(m.universe) && /^[A-Z]{4}$/.test(room)) {
+        history.replaceState(null, '', `#${room}`);
+        switchUniverse(m.universe, `${room} is a game in ${UNIVERSE_INFO.find((u) => u.id === m.universe)?.name ?? m.universe}: pick a character there and join.`);
+        return;
+      }
+      errorEl.textContent = m.reason;
+    }
     if (m.t === 'welcome') {
       started = true;
       off();
@@ -97,7 +137,7 @@ async function refreshRooms(): Promise<void> {
     const list = (await (await fetch('/api/rooms')).json()) as RoomListing[];
     const box = $('rooms');
     box.innerHTML = '';
-    for (const r of list) {
+    for (const r of list.filter((l) => l.universe === UNIVERSE.id)) {
       const row = document.createElement('div');
       row.className = 'room';
       row.innerHTML = `<div><b></b> <span></span></div>`;
@@ -112,6 +152,9 @@ async function refreshRooms(): Promise<void> {
     }
   } catch { /* server not reachable yet */ }
 }
+// A note carried over a universe switch.
+const note = sessionStorage.getItem(NOTE_KEY);
+if (note) { errorEl.textContent = note; sessionStorage.removeItem(NOTE_KEY); }
 // ?play=Name joins the room in the hash straight away (or creates one) as a guest.
 if (guest) {
   if (/^[A-Z]{4}$/.test(codeInput.value)) start(false, codeInput.value); else start(true, '');

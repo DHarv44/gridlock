@@ -12,7 +12,9 @@
   <div id="lobby">
     <div class="lobby-card">
       <h1>GRIDLOCK</h1>
-      <p class="sub">Bayhaven · up to 6 players</p>
+      <p class="sub" id="sub"></p>
+      <label id="universe-row" hidden>Universe <select id="universe"></select></label>
+      <p class="mode-blurb" id="universe-blurb" hidden></p>
       <div id="chars"></div>
       <div id="play">
         <button id="continue" class="primary" hidden></button>
@@ -30,7 +32,7 @@
       <p id="lobby-error" class="error"></p>
     </div>
   </div>
-  <div id="loading" hidden>Loading Bayhaven…</div>
+  <div id="loading" hidden>Loading…</div>
   <script type="module" src="./main.ts"></script>
 </body>
 </html>
