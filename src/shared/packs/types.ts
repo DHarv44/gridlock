@@ -66,8 +66,9 @@ export interface VehicleSpec {
    *  moves as a mount, not a car. */
   gaits?: { walk: number; trot: number; canter: number; gallop: number; accel: number; slow: number; turnSlow: number; turnFast: number; back: number };
   /** A mount's wind: it can gallop for up to `gallop` seconds, then has to canter while it gets its
-   *  wind back (half as fast as it spends it). */
-  stamina?: { gallop: number };
+   *  wind back, `recover` seconds of gallop per second off it (default 0.5: half as fast as it
+   *  spends it). */
+  stamina?: { gallop: number; recover?: number };
   /** A mount's temperament (server/game/systems/mounts.ts): `nerve` 0..1, how often it holds steady
    *  when a gun goes off or something blows up near it (else it rears, then bolts if nobody holds
    *  it); `buck` 0..1, how readily a rearing horse throws its rider; `lame`, the share of its health

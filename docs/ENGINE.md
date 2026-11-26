@@ -150,5 +150,9 @@ film's names, characters, story, map or look).
    driven rider or wagon holds short of the track while a train is within 70 m of the crossing
    (ai/crossings.ts). Blender models for the locomotive and coach (art/rail.py) and the Longhorn
    (art/cow.py: the horse body with a cow's proportions as spec overrides, plus horns).
+   Wind (VehicleSpec.stamina.recover): Redrock's saddle horses gallop 25-80 s by breed (most about
+   a minute) and get it back about as fast. Card games in the saloons (redrock/tables.ts): draw
+   poker from $1/$2 to $10/$25, stud, twenty-one, faro and hazard, each saloon its own mix; an
+   outfit's back room plays outlaws' draw; caught cheating, you're shot.
    Not yet: voices for its cast and your lines (they show in bubbles), era
    sounds (a bell, hooves, whinnies); the gatling gun doesn't traverse (trailer parts don't animate).

@@ -29,6 +29,7 @@ import { PROPERTIES, SERVICES } from './places';
 import { CRIMES, RESPECT, ROLE_CREWS, RULES, SERVICE_CALLS, WANTED } from './rules';
 import { STREET_PROPS } from './streetProps';
 import { FIXTURES } from './fixtures';
+import { TABLES, VENUES } from './tables';
 import { VEHICLES } from './vehicles';
 import { WEAPONS } from './weapons';
 import { DISTRICTS, ZONES } from './zones';
@@ -106,6 +107,8 @@ export const REDROCK: Universe = {
   armorModel: VEST,
   streetProps: STREET_PROPS,
   fixtures: FIXTURES,
+  tables: TABLES,
+  venues: VENUES,
   cast: CAST,
   player: player as unknown as PlayerFile,
 };

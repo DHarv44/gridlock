@@ -62,6 +62,15 @@ check(fx('church') >= 2 && fx('gallows') >= 1 && fx('barn') > 10 && fx('corral')
 const saloons = city.interiors.filter((i) => i.layout === 'saloon');
 check(saloons.length > 0 && saloons.every((s) => s.props.some((p) => p.kind === 'bar') && s.props.some((p) => p.kind === 'table')),
   `saloons are bar-rooms inside (${saloons.length}: ${saloons[0]?.props.filter((p) => p.kind === 'table').length ?? 0} card tables, ${saloons.some((s) => s.props.some((p) => p.kind === 'piano')) ? 'a piano' : 'no piano'})`);
+// Card tables in the saloons (world/tables.ts): each saloon its own few games, draw poker most.
+const { TABLES } = await import('../src/shared/packs');
+const salTables = city.tables.filter((t) => t.host === 'house');
+const games = (s: (typeof saloons)[number]) => salTables.filter((t) => Math.hypot(t.at.x - s.counter.x, t.at.y - s.counter.y) < 25).map((t) => TABLES[t.spec].id).sort().join(',');
+const mixes = new Set(saloons.map(games));
+check(salTables.length >= saloons.length * 2 && salTables.some((t) => TABLES[t.spec].game === 'draw') && salTables.some((t) => TABLES[t.spec].game === 'faro'),
+  `the saloons deal cards and faro (${salTables.length} tables: ${[...new Set(salTables.map((t) => TABLES[t.spec].id))].join(', ')})`);
+check(mixes.size > 1, `not every saloon has the same games (${mixes.size} different mixes over ${saloons.length} saloons)`);
+check(TABLES.filter((t) => t.players).every((t) => t.caught === 'shoot'), 'caught cheating at a western card table, you get shot');
 check(!!city.railway && fx('depot') >= 1 && city.railway.stations.length >= 2, `a railroad runs through, ${city.railway?.stations.length ?? 0} stations, ${fx('depot')} depots`);
 // Level crossings: a rider coming up to the track waits while a train is near it.
 if (city.railway?.crossings.length) {
@@ -206,8 +215,10 @@ const run = (secs: number, sprint: boolean) => {
 const canterTop = run(5, false).top;
 const gallop = run(4, true);
 check(gallop.top > canterTop * 1.4, `a canter tops out at ${canterTop.toFixed(1)} m/s, a gallop at ${gallop.top.toFixed(1)} m/s`);
-// The quarter horse is a sprinter: blown within ~5 s more, it canters a few seconds before it can go again.
-const blown = run(8, true);
+// A good horse gallops for the best part of a minute; the quarter horse, a sprinter, about half that.
+const still = run(20, true);
+check(!gait.blown && still.now > canterTop * 1.4, `it's still galloping after 24 s (${still.now.toFixed(1)} m/s, ${gait.stamina.toFixed(0)} s of wind left)`);
+const blown = run(10, true);
 check(gait.blown && blown.now < gallop.top * 0.7, `held to a gallop it's blown and drops back to a canter (${blown.now.toFixed(1)} m/s)`);
 const rested = run(6, false);
 check(gait.stamina > 2, `cantering it gets its wind back (${gait.stamina.toFixed(1)} s of gallop after 6 s)`);

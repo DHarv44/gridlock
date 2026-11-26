@@ -100,10 +100,11 @@ type Gaits = NonNullable<VehicleSpec['gaits']>;
 const G = (walk: number, trot: number, canter: number, gallop: number, accel: number, slow: number, turnSlow: number, turnFast: number, back: number): { gaits: Gaits; maxSpeed: number } =>
   ({ gaits: { walk, trot, canter, gallop, accel, slow, turnSlow, turnFast, back }, maxSpeed: gallop });
 
-// A saddle horse: a canter on the throttle, a gallop on Sprint for ~12 s, then twice that to get
-// its wind back. Turns on the spot standing, wide at a gallop. It comes to its rider's whistle.
+// A saddle horse: a canter on the throttle, a gallop on Sprint for the best part of a minute (more
+// for a mustang or an Arabian, less for a sprinter or a draft), its wind back about as fast off it.
+// Turns on the spot standing, wide at a gallop. It comes to its rider's whistle.
 const mount = { movement: 'legs' as const, material: 'flesh' as const, openTop: true, mass: 500,
-  stamina: { gallop: 12 }, comesWhenCalled: true, temper: { nerve: 0.55, buck: 0.3, lame: 0.4 }, ...G(1.7, 3.8, 6.5, 14, 4.5, 5, 3.0, 1.5, 1.2),
+  stamina: { gallop: 45, recover: 1.0 }, comesWhenCalled: true, temper: { nerve: 0.55, buck: 0.3, lame: 0.4 }, ...G(1.7, 3.8, 6.5, 14, 4.5, 5, 3.0, 1.5, 1.2),
   accel: 4.5, brake: 14, reverse: 1.2, grip: 10, turnRate: 3.0, seats: 2 };
 /** A saddle horse's size (m: nose to tail, across, to the ears), with the saddle and the seat
  *  behind it placed to match (a pony's rider sits lower, a draft's higher). */
@@ -115,7 +116,7 @@ const horses = [0, 1, 2, 3, 5, 6, 7]; // coat colours (palette.ts)
 
 // A team in harness: slow to pick up and to turn (it can't pivot with a wagon behind), a short
 // burst at the whip (Sprint), mostly a steady canter.
-const teamBase = { movement: 'legs' as const, material: 'flesh' as const, stamina: { gallop: 8 },
+const teamBase = { movement: 'legs' as const, material: 'flesh' as const, stamina: { gallop: 30, recover: 0.8 },
   // A team in harness can't rear free or throw a driver off the box, but it can bolt with the wagon.
   temper: { nerve: 0.6, buck: 0, lame: 0.35 }, length: 2.8, width: 1.7, height: 1.7, mass: 1800,
   ...G(1.6, 3.5, 5.5, 10, 2.5, 4, 0.9, 0.5, 0.8), accel: 2.5, brake: 9, reverse: 0.8, grip: 9, turnRate: 1.8 };
@@ -146,10 +147,10 @@ export const VEHICLES: VehicleSpec[] = [
   // and nothing frightens it (it kicks, though).
   // Temperament: the trained law and army horses, the draft and the mule hold steady under fire; the
   // thoroughbred and the Arabian are hot and throw riders; the mustang has spirit.
-  { ...mount, id: 'mustang', name: 'Mustang', ...size(2.4, 0.74, 1.62), temper: { nerve: 0.55, buck: 0.4, lame: 0.4 }, ...G(1.8, 4, 6.8, 14.5, 4.8, 5, 3.2, 1.6, 1.2), hp: 180, price: 120, stamina: { gallop: 15 }, colors: horses, roles: ['traffic', 'parked'], model: horse() },
-  { ...mount, id: 'quarter_horse', name: 'Quarter Horse', ...size(2.45, 0.8, 1.64), mass: 530, temper: { nerve: 0.65, buck: 0.25, lame: 0.4 }, ...G(1.7, 3.8, 6.5, 15, 6.5, 6, 3.4, 1.8, 1.4), hp: 220, price: 90, stamina: { gallop: 9 }, colors: horses, roles: ['traffic', 'parked'], model: horse() },
-  { ...mount, id: 'draft_horse', name: 'Draft Horse', ...size(2.8, 0.9, 1.85), mass: 800, temper: { nerve: 0.85, buck: 0.1, lame: 0.3 }, ...G(1.5, 3.2, 5, 10, 2.8, 4, 2.3, 1.0, 1.0), hp: 380, price: 70, stamina: { gallop: 8 }, colors: [2, 3, 6], roles: ['parked'], model: horse('#3a2a1a') },
-  { ...mount, id: 'thoroughbred', name: 'Thoroughbred', ...size(2.65, 0.72, 1.76), mass: 520, temper: { nerve: 0.3, buck: 0.55, lame: 0.45 }, ...G(1.8, 4.2, 7.2, 17, 5, 5, 2.7, 1.2, 1.1), hp: 160, price: 400, stamina: { gallop: 10 }, colors: [0, 1, 2], roles: ['parked'], model: horse('#2a1a12') },
+  { ...mount, id: 'mustang', name: 'Mustang', ...size(2.4, 0.74, 1.62), temper: { nerve: 0.55, buck: 0.4, lame: 0.4 }, ...G(1.8, 4, 6.8, 14.5, 4.8, 5, 3.2, 1.6, 1.2), hp: 180, price: 120, stamina: { gallop: 60, recover: 1.1 }, colors: horses, roles: ['traffic', 'parked'], model: horse() },
+  { ...mount, id: 'quarter_horse', name: 'Quarter Horse', ...size(2.45, 0.8, 1.64), mass: 530, temper: { nerve: 0.65, buck: 0.25, lame: 0.4 }, ...G(1.7, 3.8, 6.5, 15, 6.5, 6, 3.4, 1.8, 1.4), hp: 220, price: 90, stamina: { gallop: 32, recover: 1.2 }, colors: horses, roles: ['traffic', 'parked'], model: horse() },
+  { ...mount, id: 'draft_horse', name: 'Draft Horse', ...size(2.8, 0.9, 1.85), mass: 800, temper: { nerve: 0.85, buck: 0.1, lame: 0.3 }, ...G(1.5, 3.2, 5, 10, 2.8, 4, 2.3, 1.0, 1.0), hp: 380, price: 70, stamina: { gallop: 25, recover: 0.8 }, colors: [2, 3, 6], roles: ['parked'], model: horse('#3a2a1a') },
+  { ...mount, id: 'thoroughbred', name: 'Thoroughbred', ...size(2.65, 0.72, 1.76), mass: 520, temper: { nerve: 0.3, buck: 0.55, lame: 0.45 }, ...G(1.8, 4.2, 7.2, 17, 5, 5, 2.7, 1.2, 1.1), hp: 160, price: 400, stamina: { gallop: 38, recover: 1.0 }, colors: [0, 1, 2], roles: ['parked'], model: horse('#2a1a12') },
   // The law's and the army's horses don't come to a stranger's whistle.
   { ...mount, id: 'law_horse', name: "Lawman's Horse", ...size(2.5, 0.75, 1.7), temper: { nerve: 0.88, buck: 0.1, lame: 0.35 }, ...G(1.8, 4, 6.8, 15, 5, 5, 3.1, 1.5, 1.2), hp: 240, price: 0, colors: [2, 0], roles: ['police'], comesWhenCalled: false, model: horse('#1a1612') },
   { ...mount, id: 'cavalry_horse', name: 'Cavalry Horse', ...size(2.55, 0.76, 1.72), temper: { nerve: 0.9, buck: 0.08, lame: 0.35 }, ...G(1.8, 4, 6.8, 15, 5, 5, 3.1, 1.5, 1.2), hp: 260, price: 0, colors: [0, 1], roles: ['military'], comesWhenCalled: false, model: horse('#28324a') },
@@ -180,14 +181,14 @@ export const VEHICLES: VehicleSpec[] = [
     trailer: { length: 3.6, width: 1.7, height: 1.6, hitch: 1.2, model: [...wagon('#28324a'), b(-0.3, 0.2, -0.12, 0.12, 0.5, 0.75, 'chrome')] } },
 
   // More saddle breeds (at the end: saves keep vehicles by their place in this list).
-  { ...mount, id: 'morgan', name: 'Morgan', ...size(2.35, 0.78, 1.58), mass: 480, temper: { nerve: 0.7, buck: 0.2, lame: 0.4 }, ...G(1.8, 4.1, 6.8, 14.5, 5.5, 5.5, 3.3, 1.7, 1.3), hp: 210, price: 150, stamina: { gallop: 13 }, colors: [0, 1, 2], roles: ['traffic', 'parked'], model: horse('#3a2a1a') },
-  { ...mount, id: 'arabian', name: 'Arabian', ...size(2.35, 0.68, 1.58), mass: 420, temper: { nerve: 0.35, buck: 0.45, lame: 0.45 }, ...G(1.9, 4.2, 7, 16, 5.5, 5, 3.1, 1.5, 1.2), hp: 150, price: 320, stamina: { gallop: 18 }, colors: [3, 4, 1], roles: ['parked'], model: horse('#7a2a20') },
-  { ...mount, id: 'indian_pony', name: 'Indian Pony', ...size(2.1, 0.66, 1.42), mass: 360, temper: { nerve: 0.6, buck: 0.35, lame: 0.4 }, ...G(1.7, 3.8, 6.2, 12.5, 5.5, 6, 3.8, 2.1, 1.3), hp: 150, price: 60, stamina: { gallop: 14 }, colors: [7, 6, 5, 4], roles: ['traffic', 'parked'], model: horse('#8a4a24') },
-  { ...mount, id: 'mule', name: 'Mule', ...size(2.35, 0.7, 1.56), mass: 430, temper: { nerve: 0.92, buck: 0.35, lame: 0.3 }, ...G(1.6, 3.4, 5.2, 10.5, 3.5, 5, 2.9, 1.5, 1.2), hp: 260, price: 50, stamina: { gallop: 20 }, colors: [6, 7, 2], roles: ['traffic', 'parked'], model: horse('#4a3424') },
+  { ...mount, id: 'morgan', name: 'Morgan', ...size(2.35, 0.78, 1.58), mass: 480, temper: { nerve: 0.7, buck: 0.2, lame: 0.4 }, ...G(1.8, 4.1, 6.8, 14.5, 5.5, 5.5, 3.3, 1.7, 1.3), hp: 210, price: 150, stamina: { gallop: 52, recover: 1.1 }, colors: [0, 1, 2], roles: ['traffic', 'parked'], model: horse('#3a2a1a') },
+  { ...mount, id: 'arabian', name: 'Arabian', ...size(2.35, 0.68, 1.58), mass: 420, temper: { nerve: 0.35, buck: 0.45, lame: 0.45 }, ...G(1.9, 4.2, 7, 16, 5.5, 5, 3.1, 1.5, 1.2), hp: 150, price: 320, stamina: { gallop: 70, recover: 1.2 }, colors: [3, 4, 1], roles: ['parked'], model: horse('#7a2a20') },
+  { ...mount, id: 'indian_pony', name: 'Indian Pony', ...size(2.1, 0.66, 1.42), mass: 360, temper: { nerve: 0.6, buck: 0.35, lame: 0.4 }, ...G(1.7, 3.8, 6.2, 12.5, 5.5, 6, 3.8, 2.1, 1.3), hp: 150, price: 60, stamina: { gallop: 55, recover: 1.2 }, colors: [7, 6, 5, 4], roles: ['traffic', 'parked'], model: horse('#8a4a24') },
+  { ...mount, id: 'mule', name: 'Mule', ...size(2.35, 0.7, 1.56), mass: 430, temper: { nerve: 0.92, buck: 0.35, lame: 0.3 }, ...G(1.6, 3.4, 5.2, 10.5, 3.5, 5, 2.9, 1.5, 1.2), hp: 260, price: 50, stamina: { gallop: 80, recover: 1.0 }, colors: [6, 7, 2], roles: ['traffic', 'parked'], model: horse('#4a3424') },
 
   // Livestock: nobody rides it; it grazes the range and the homesteads, and scatters at gunfire.
   { ...mount, id: 'cattle', name: 'Longhorn', length: 2.3, width: 0.85, height: 1.45, mass: 550, seats: 0, comesWhenCalled: false, grazes: true,
-    temper: { nerve: 0.35, buck: 0, lame: 0.4 }, ...G(1.3, 2.6, 4.5, 8.5, 2.5, 4, 2.0, 1.0, 0.8), hp: 300, price: 0, stamina: { gallop: 10 },
+    temper: { nerve: 0.35, buck: 0, lame: 0.4 }, ...G(1.3, 2.6, 4.5, 8.5, 2.5, 4, 2.0, 1.0, 0.8), hp: 300, price: 0, stamina: { gallop: 20 },
     colors: [1, 2, 4, 6, 7], roles: ['parked'], model: cow() },
 
   // The railroad (world.railway, systems/trains.ts moves them; never spawned by role): a locomotive

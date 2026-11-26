@@ -13,7 +13,7 @@ import { bolting, isLame, updateSpook } from './spook';
 
 /** Tasks an AI rider gallops for. */
 const HURRY = new Set<TaskName>(['pursue', 'respond', 'flee', 'attack']);
-/** Wind comes back at this share of the rate it's spent. */
+/** Wind comes back at this share of the rate it's spent, unless the mount says (stamina.recover). */
 const RECOVER = 0.5;
 /** A called horse stops this close (m). */
 const ARRIVE = 4;
@@ -30,7 +30,7 @@ export function updateMounts(w: World, dt: number): void {
     if (grazing(v) && v.rearT <= 0 && !bolting(v)) graze(w, v, dt);
     updateSpook(w, v, dt); // rearing, bolting, limping (systems/spook.ts) override the above
     if (galloping(v.body, v.spec, v.ctl.sprint)) v.stamina = Math.max(0, v.stamina - dt);
-    else v.stamina = Math.min(st.gallop, v.stamina + dt * RECOVER);
+    else v.stamina = Math.min(st.gallop, v.stamina + dt * (st.recover ?? RECOVER));
     if (v.stamina <= 0) v.blown = true;
     else if (v.blown && v.stamina >= st.gallop * WINDED) v.blown = false;
   }
