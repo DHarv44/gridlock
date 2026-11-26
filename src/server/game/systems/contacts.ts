@@ -1,5 +1,6 @@
 // Dynamic contacts: vehicle-vehicle, vehicle-ped and ped-ped.
 import { clamp } from '../../../shared/math';
+import { flies, floats } from '../../../shared/sim/kinds';
 import { FX } from '../../../shared/protocol';
 import { PED_RADIUS } from '../../../shared/sim/physics';
 import { obbVsCircle } from '../../../shared/world/collision';
@@ -27,9 +28,9 @@ function obbVsObb(a: Vehicle, b: Vehicle): Hit | null {
   return { nx, ny, depth: best };
 }
 
-const flying = (v: Vehicle) => v.spec.movement === 'rotor' && v.body.alt > 2;
+const flying = (v: Vehicle) => flies(v.spec) && v.body.alt > 2;
 /** Boats only meet boats (and swimmers): a boat passing under a bridge never touches the cars on it. */
-const afloat = (v: Vehicle) => v.spec.movement === 'boat';
+const afloat = (v: Vehicle) => floats(v.spec);
 
 export function resolveContacts(w: World): void {
   for (const a of w.vehicles.values()) {

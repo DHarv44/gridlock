@@ -112,7 +112,7 @@ export class LotBuilder {
     if (rectW(b) < 6 || rectH(b) < 6) { this.addLot(block, r, 'plaza', front); return; }
     const lot = this.addLot(block, r, 'building', front);
     const h = this.rng.range(z.lot.height[0], z.lot.height[1]);
-    const kind: Building['kind'] = z.layout === 'docks' || z.id === 'industrial' ? 'warehouse' : h > 21 ? 'tower' : 'block';
+    const kind: Building['kind'] = z.layout === 'docks' || z.warehouses ? 'warehouse' : h > 21 ? 'tower' : 'block';
     this.addBuilding(lot, b, h, z, kind);
   }
 

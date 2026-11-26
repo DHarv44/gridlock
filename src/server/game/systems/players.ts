@@ -1,6 +1,7 @@
 // Applies player inputs (movement, weapons, vehicles) and handles death/busted/respawn.
 import { dist } from '../../../shared/math';
 import { PLAYER_ARCHETYPE, RULES, UNARMED, WEAPONS, weaponIndex } from '../../../shared/packs';
+import { flies, floats } from '../../../shared/sim/kinds';
 import { BTN, EDGE_BUTTONS, type InputMsg, Mode, type S2C } from '../../../shared/protocol';
 import { SPRINT, stepVehicle } from '../../../shared/sim/physics';
 import { damagePed, killPed, wallCrash } from '../combat/damage';
@@ -100,7 +101,7 @@ function cycleWeapon(p: Ped, dir: number): void {
 function nearestVehicle(w: World, p: Ped): Vehicle | null {
   let best: Vehicle | null = null, bd = Infinity;
   w.vehiclesNear(p.body.x, p.body.y, 9, (v) => {
-    if (v.wrecked || v.burning >= 0 || (v.spec.movement === 'rotor' && v.body.alt > 1)) return;
+    if (v.wrecked || v.burning >= 0 || (flies(v.spec) && v.body.alt > 1)) return;
     const d = dist(p.body.x, p.body.y, v.body.x, v.body.y) - Math.max(v.spec.length, v.spec.width) / 2;
     if (d < 1.8 && d < bd) { bd = d; best = v; }
   });
@@ -110,7 +111,7 @@ function nearestVehicle(w: World, p: Ped): Vehicle | null {
 function toggleVehicle(w: World, pl: Player, p: Ped): void {
   if (p.vehicle) {
     const v = w.vehicles.get(p.vehicle);
-    if (v && v.spec.movement === 'rotor') {
+    if (v && flies(v.spec)) {
       const floor = w.statics.floorAt(v.body.x, v.body.y);
       if (v.body.alt > floor + 1) return; // still in the air
       if (floor > 0) { // set down on a roof
@@ -122,7 +123,7 @@ function toggleVehicle(w: World, pl: Player, p: Ped): void {
     }
     // Out of a boat: onto the shore beside it, or not at all out on open water. Slow enough to step
     // off (no bailing out of a boat at speed).
-    if (v && v.spec.movement === 'boat') {
+    if (v && floats(v.spec)) {
       const at = Math.hypot(v.body.vx, v.body.vy) < 3 ? shoreBeside(w, v) : null;
       if (!at) { w.notify('info', 'Pull up to the shore to get out.', pl); return; }
       unseatPed(w, p, false);

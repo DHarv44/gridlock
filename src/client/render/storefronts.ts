@@ -5,9 +5,9 @@ import * as THREE from 'three';
 import { PROPERTIES, SERVICES } from '../../shared/packs';
 import { signWidth } from '../../shared/world/atms';
 import { type City, DIR_VEC, type Lot, type Place } from '../../shared/world/cityTypes';
+import { VERBS } from '../../shared/verbs';
 import type { ParticleLayer } from './particles';
 
-const DRIVE_IN = new Set(['dealer', 'respray', 'chopshop', 'fire', 'police']);
 const texCache = new Map<string, THREE.CanvasTexture>();
 
 function signTexture(text: string, bg: string, fg: string): THREE.CanvasTexture {
@@ -56,8 +56,9 @@ export class Storefronts {
   constructor(private scene: THREE.Scene, city: City) {
     for (const s of city.services) {
       const spec = SERVICES[s.spec];
-      if (spec.verb === 'military' || spec.verb === 'helipad') continue;
-      this.front(s, city.lots[s.lot], spec.signText, spec.sign, DRIVE_IN.has(spec.verb));
+      const t = VERBS[spec.verb];
+      if (t.site === 'compound' || t.site === 'clearing') continue;
+      this.front(s, city.lots[s.lot], spec.signText, spec.sign, !!t.garage);
     }
     for (const p of city.properties) {
       const spec = PROPERTIES[p.spec];

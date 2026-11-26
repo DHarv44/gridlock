@@ -1,6 +1,7 @@
 // Moves NPC peds and all vehicles not stepped by a player's input; handles water,
 // burning wrecks, turrets and horns.
 import { angleDiff, approach } from '../../../shared/math';
+import { flies, floats } from '../../../shared/sim/kinds';
 import { FX } from '../../../shared/protocol';
 import { stepFoot, stepVehicle } from '../../../shared/sim/physics';
 import { killPed, wallCrash, wreckVehicle } from '../combat/damage';
@@ -79,8 +80,8 @@ export function updateVehicles(w: World, dt: number): void {
     }
     if (v.wrecked) {
       v.wreckT += dt;
-      if (v.spec.movement === 'rotor') v.body.alt = approach(v.body.alt, 0, 14 * dt);
-      if (v.spec.movement === 'boat') sink(w, v, dt); // a burnt-out boat goes down
+      if (flies(v.spec)) v.body.alt = approach(v.body.alt, 0, 14 * dt);
+      if (floats(v.spec)) sink(w, v, dt); // a burnt-out boat goes down
       continue;
     }
     sink(w, v, dt);
@@ -88,8 +89,8 @@ export function updateVehicles(w: World, dt: number): void {
 }
 
 function sink(w: World, v: Vehicle, dt: number): void {
-  if (v.spec.movement === 'rotor' && v.body.alt > 0.5) { v.sinkT = 0; return; }
-  if (v.spec.movement === 'boat' && !v.wrecked) { v.sinkT = 0; return; } // it floats
+  if (flies(v.spec) && v.body.alt > 0.5) { v.sinkT = 0; return; }
+  if (floats(v.spec) && !v.wrecked) { v.sinkT = 0; return; } // it floats
   if (!w.map.isWater(v.body.x, v.body.y)) { v.sinkT = 0; return; }
   if (v.sinkT === 0) w.emit(FX.Splash, Math.round(v.body.x), Math.round(v.body.y));
   v.sinkT += dt;

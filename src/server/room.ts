@@ -186,9 +186,10 @@ export class Room {
         break;
       }
       case 'call':
-        this.cell.answer(pl, !!msg.accept);
+        if (RULES.cellPhone) this.cell.answer(pl, !!msg.accept);
         break;
       case 'dial': {
+        if (!RULES.cellPhone) break;
         const err = this.cell.dial(pl, String(msg.gang));
         if (err) pl.send({ t: 'msg', kind: 'warn', text: err } satisfies S2C);
         break;
@@ -287,7 +288,7 @@ export class Room {
     this.pop.update(DT);
     this.econ.update();
     this.missions.update();
-    this.cell.update();
+    if (RULES.cellPhone) this.cell.update();
     this.business.update();
     this.vaults.update();
     this.robberies.update();

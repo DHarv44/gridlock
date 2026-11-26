@@ -152,6 +152,8 @@ export interface FactionSpec {
   color: string;
   hostile: string[];      // factions attacked on sight
   lawful?: boolean;       // reports/punishes crime
+  /** Its members report crimes they see (at half the heat a lawful unit adds). */
+  witness?: boolean;
   gang?: boolean;         // has respect, payphones and missions
   carColor?: number;      // palette index gang cars are painted on their turf
   /** Gang brand: the symbol they spray (a kind the renderer knows how to draw) and a second colour. */
@@ -217,6 +219,10 @@ export interface ZoneSpec {
   roadDrop: number;             // chance a minor road segment is removed
   fenced?: boolean;
   windows: number;              // 0 no windows .. 1 glass towers
+  /** Its buildings are warehouses (big sheds) rather than blocks and towers. */
+  warehouses?: boolean;
+  /** Busy streets: bins, mailboxes, newspaper boxes and bus shelters along the curb. */
+  busy?: boolean;
 }
 
 export interface DistrictSpec {
@@ -291,6 +297,10 @@ export interface PropertySpec {
 }
 
 export interface Squad { vehicle: string; crew: string[] }
+
+/** Who drives a vehicle that spawns in traffic with this role (a ped archetype), and an optional
+ *  partner riding along. `crew`: they get out together and go back to the vehicle (patrols). */
+export interface RoleCrew { driver: string; partner?: string; partnerChance?: number; crew?: boolean }
 
 export interface WantedLevel {
   heat: number;                 // heat needed to reach this level

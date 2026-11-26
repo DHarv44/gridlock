@@ -8,7 +8,7 @@ export const SHOES = ['#141414', '#2b2018', '#e8e6e0', '#3a3a40', '#5a3a24'];
 const CIV_BOTTOM =['#2c3e57', '#3a3a3a', '#6b5a45', '#25324a', '#7a7466', '#1f1f22'];
 
 export const FACTIONS: FactionSpec[] = [
-  { id: 'civ', name: 'Civilians', color: '#9aa5ad', hostile: [] },
+  { id: 'civ', name: 'Civilians', color: '#9aa5ad', hostile: [], witness: true },
   { id: 'player', name: 'Players', color: '#ffffff', hostile: [] },
   { id: 'police', name: 'Bayhaven PD', color: '#2f6fb3', hostile: [], lawful: true },
   { id: 'military', name: 'National Guard', color: '#5d7a3a', hostile: [], lawful: true },

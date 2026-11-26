@@ -1,6 +1,7 @@
 // Firing weapons: cooldowns, ammo and reloads; melee, hitscan, flame and projectiles.
 import { angleDiff, r2 } from '../../../shared/math';
 import { VEHICLES, WEAPONS, type WeaponSpec, weaponIndex } from '../../../shared/packs';
+import { flies } from '../../../shared/sim/kinds';
 import { FX, HIT } from '../../../shared/protocol';
 import { rayAabb, rayCircle } from '../../../shared/world/collision';
 import { onNoise } from '../ai/reactions';
@@ -110,7 +111,7 @@ function muzzle(w: World, p: Ped, mounted: Vehicle | null, spec: WeaponSpec): { 
     const v = w.vehicles.get(p.vehicle)!;
     const b = v.body;
     if (mounted) {
-      const isHeli = mounted.spec.movement === 'rotor';
+      const isHeli = flies(mounted.spec);
       // Helicopter guns fire within a cone around the nose; turrets use their own angle.
       const angle = isHeli ? b.angle + Math.max(-0.5, Math.min(0.5, angleDiff(b.angle, p.aim))) : mounted.turret;
       const reach = isHeli ? mounted.spec.length * 0.45 : mounted.spec.length * 0.55;
@@ -224,7 +225,7 @@ function launch(w: World, p: Ped, x: number, y: number, z: number, angle: number
   const arc = !!pr.arc;
   // Thrown objects are lobbed to land around 80% of their range.
   const flight = arc ? (spec.range * 0.8) / pr.speed : 0;
-  const isHeli = p.vehicle && VEHICLES[w.vehicles.get(p.vehicle)!.type].movement === 'rotor';
+  const isHeli = p.vehicle && flies(VEHICLES[w.vehicles.get(p.vehicle)!.type]);
   const vz = arc ? (9.8 * flight) / 2 : isHeli ? -z / ((spec.range * 0.6) / pr.speed) : 0;
   w.projectiles.set(id, {
     id, kind: 'proj', weapon: wIndex, owner: p.id, x, y, z: arc ? 1.4 : z,

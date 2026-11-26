@@ -12,7 +12,7 @@ export function routeFx(events: number[][], fx: Effects, sound: Sound, store: En
       case FX.Shot: {
         const [, x0, y0, x1, y1, wi, hit] = e;
         fx.shot(x0, y0, x1, y1, wi, hit);
-        sound.play(WEAPONS[wi]?.sound ?? 'pistol', x0, y0);
+        if (WEAPONS[wi]) sound.play(WEAPONS[wi].sound, x0, y0);
         break;
       }
       case FX.Boom: {

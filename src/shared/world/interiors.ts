@@ -4,7 +4,7 @@
 // with a gap at the door (people fit, cars don't), partitions, solid furniture, the counter where you
 // do business and the spot where the clerk stands.
 import type { Rect } from '../math';
-import { INTERIOR_PLANS, type InteriorLayout, PROPERTIES, SERVICES } from '../packs';
+import { INTERIOR_PLANS, type InteriorLayout, PROPERTIES, RULES, SERVICES } from '../packs';
 import { DIR_VEC, Dir, type Lot, type Place } from './cityTypes';
 import { CORR, floorsFor, type UpperFloor, upperFloors } from './floors';
 import { type Stairwell, stairPlan, stairwell } from './stairs';
@@ -111,7 +111,7 @@ function build(place: Place, property: boolean, building: number, lot: Lot, layo
     for (const p of plan.props) props.push({ kind: p.kind, rect: R(p.r), h: p.h });
     return {
       place, property, building, layout, room: F.rect(ia0, ia1, T, iD), wallH: WALL_H, walls, rest, props,
-      counter: P(plan.counter, F.inward), clerk: P(plan.clerk, front), clerkArch: plan.clerkArch ?? 'clerk',
+      counter: P(plan.counter, F.inward), clerk: P(plan.clerk, front), clerkArch: plan.clerkArch ?? RULES.clerk,
       guards: (plan.guards ?? []).map((g) => ({ spot: P(g.at, front), arch: g.arch })),
       ...(plan.vault ? { vault: { door: R(plan.vault.door), room: R(plan.vault.room), cash: plan.vault.cash.map((c) => F.point(a0 + c[0], c[1])) } } : {}),
       floors: [],
@@ -141,7 +141,7 @@ function build(place: Place, property: boolean, building: number, lot: Lot, layo
     }
     return {
       place, property, building, layout, room: F.rect(ia0, ia1, T, iD), wallH: WALL_H, walls, rest, props, counter, clerk,
-      clerkArch: tower ? 'clerk' : '', guards: [],
+      clerkArch: tower ? RULES.clerk : '', guards: [],
       lift: tower || !stairs ? at(am, iD - 1.8, front) : stairs.landing,
       floors: upperFloors(layout, n, ia0, ia1, T, iD, F.rect, F.point, front, plan, F.inward),
       ...(tower || !stairs ? { elevator: true } : {}),
@@ -197,7 +197,7 @@ function build(place: Place, property: boolean, building: number, lot: Lot, layo
     counter = at(ia0 + 1.6, 3.0, front + Math.PI);
     clerk = at(ia0 + 1.6, 0.9 + T, F.inward);
   }
-  return { place, property, building, layout, room: F.rect(ia0, ia1, T, iD), wallH: WALL_H, walls, rest, props, counter, clerk, clerkArch: 'clerk', guards: [], floors: [] };
+  return { place, property, building, layout, room: F.rect(ia0, ia1, T, iD), wallH: WALL_H, walls, rest, props, counter, clerk, clerkArch: RULES.clerk, guards: [], floors: [] };
 }
 
 /** Every walk-in place in the city. */

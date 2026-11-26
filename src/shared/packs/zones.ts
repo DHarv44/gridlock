@@ -25,7 +25,7 @@ export const ZONES: ZoneSpec[] = [
     trees: 0.05, parkingChance: 0.05, plazaChance: 0.12, pedDensity: 9,
     peds: [{ id: 'business', weight: 8 }, { id: 'civilian', weight: 6 }, { id: 'tourist', weight: 2 }, { id: 'guard', weight: 0.4 }, { id: 'cop', weight: 1.2 }],
     trafficDensity: 1.4, traffic: [...civTraffic, { id: 'limo', weight: 1.5 }, { id: 'bus', weight: 1.2 }, { id: 'taxi', weight: 6 }],
-    parked: civParked, parkedDensity: 0.4, roadDrop: 0.02, windows: 1,
+    parked: civParked, parkedDensity: 0.4, roadDrop: 0.02, windows: 1, busy: true,
   },
   {
     id: 'midtown', name: 'Midtown', mapColor: '#5b5560', ground: '#8f8c88', sidewalk: '#a8a6a2',
@@ -34,7 +34,7 @@ export const ZONES: ZoneSpec[] = [
     trees: 0.1, parkingChance: 0.08, plazaChance: 0.08, pedDensity: 7,
     peds: [...civPeds, { id: 'streetwalker', weight: 0.4 }, { id: 'cop', weight: 0.9 }],
     trafficDensity: 1.2, traffic: [...civTraffic, { id: 'bus', weight: 1 }, { id: 'boxtruck', weight: 1 }],
-    parked: civParked, parkedDensity: 0.6, roadDrop: 0.04, windows: 0.8,
+    parked: civParked, parkedDensity: 0.6, roadDrop: 0.04, windows: 0.8, busy: true,
   },
   {
     id: 'commercial', name: 'Commercial', mapColor: '#6a5d4a', ground: '#8e8a82', sidewalk: '#aaa69c',
@@ -43,7 +43,7 @@ export const ZONES: ZoneSpec[] = [
     trees: 0.15, parkingChance: 0.22, plazaChance: 0.04, pedDensity: 5,
     peds: [...civPeds, { id: 'worker', weight: 1 }, { id: 'streetwalker', weight: 0.5 }, { id: 'dealer', weight: 0.15 }, { id: 'cop', weight: 0.7 }],
     trafficDensity: 1.0, traffic: [...civTraffic, { id: 'icecream', weight: 0.4 }, { id: 'boxtruck', weight: 1.5 }, { id: 'garbage', weight: 0.5 }],
-    parked: civParked, parkedDensity: 0.8, roadDrop: 0.06, windows: 0.5,
+    parked: civParked, parkedDensity: 0.8, roadDrop: 0.06, windows: 0.5, busy: true,
   },
   {
     id: 'residential', name: 'Residential', mapColor: '#6e5048', ground: '#7d8b6a', sidewalk: '#a8a69e',
@@ -88,7 +88,7 @@ export const ZONES: ZoneSpec[] = [
     peds: [{ id: 'worker', weight: 8 }, { id: 'civilian', weight: 2 }, { id: 'dealer', weight: 0.3 }],
     trafficDensity: 0.6, traffic: [{ id: 'boxtruck', weight: 5 }, { id: 'semi', weight: 4 }, { id: 'pickup', weight: 4 }, { id: 'van', weight: 4 }, { id: 'sedan', weight: 3 }, { id: 'garbage', weight: 1 }],
     parked: [{ id: 'boxtruck', weight: 3 }, { id: 'semi', weight: 2 }, { id: 'pickup', weight: 4 }, { id: 'van', weight: 4 }, { id: 'sedan', weight: 2 }, { id: 'dirtbike', weight: 0.5 }],
-    parkedDensity: 0.8, roadDrop: 0.15, windows: 0.1,
+    parkedDensity: 0.8, roadDrop: 0.15, windows: 0.1, warehouses: true,
   },
   {
     id: 'docks', name: 'Docks', mapColor: '#4a5560', ground: '#77746e', sidewalk: '#8f8c86',

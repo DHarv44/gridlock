@@ -1,6 +1,7 @@
 // Per-player snapshots with interest management.
 import { r2 } from '../../../shared/math';
 import { GANGS, RULES } from '../../../shared/packs';
+import { flies } from '../../../shared/sim/kinds';
 import { objectivePoint } from '../missions/kinds';
 import { damageLevels } from '../combat/damage';
 import { EK, FULL_SNAP_EVERY, FX, Mode, PF, type PlayerInfo, type S2C, VF, type YouState } from '../../../shared/protocol';
@@ -59,7 +60,7 @@ export function buildSnapshot(w: World, pl: Player): S2C {
   w.pedHash.query(center.x, center.y, R, addPed);
   if (below.f > 0) w.pedHash.query(below.x, below.y, R, addPed);
   for (const v of w.vehicles.values()) {
-    const air = v.spec.movement === 'rotor' && v.body.alt > 3;
+    const air = flies(v.spec) && v.body.alt > 3;
     if (!near(v.body.x, v.body.y, air ? R2 * 1.7 : R2)) continue;
     // Overall state in the low 2 bits, then each side's dent level (front, rear, left, right), 2 bits each.
     const overall = v.wrecked ? 3 : v.hp < v.spec.hp * 0.35 ? 2 : v.hp < v.spec.hp * 0.7 ? 1 : 0;

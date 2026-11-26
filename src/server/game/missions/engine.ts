@@ -154,7 +154,7 @@ export class Missions {
     // Somebody rings to say so: the gang, or, while it doesn't trust you with its number yet, the
     // mentor (packs MENTOR_CALLER) if they have something to say about it, ending on a nudge
     // about the next job when a payphone is waiting for you.
-    if (GANGS.includes(st.giver)) {
+    if (RULES.cellPhone && GANGS.includes(st.giver)) {
       const s = passed ? 'pass' : 'fail';
       const stranger = this.respectOf(pl, st.giver) < RESPECT.cellAt;
       const mentor = stranger && MENTOR_CALLER && CALLS[MENTOR_CALLER]?.[s]?.length ? MENTOR_CALLER : null;

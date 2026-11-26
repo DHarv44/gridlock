@@ -7,6 +7,7 @@
 // frame (for the tyre sound).
 import { angleDiff } from '../../shared/math';
 import type { VehicleSpec } from '../../shared/packs';
+import { skids } from '../../shared/sim/kinds';
 import type { Effects } from './effects';
 
 /** Tyre load (m/s²) where tyres start to mark, where they smoke, and as hard as it gets. Game cars
@@ -40,7 +41,7 @@ export class Skids {
     if (dt <= 0) return;
     // Cornering (turn rate x speed) or braking, smoothed so one jumpy frame doesn't mark.
     const slip = Math.abs(-vx * Math.sin(a) + vy * Math.cos(a));
-    const raw = spec.movement === 'wheels' && alt < 0.2 && speed > MIN_SPEED
+    const raw = skids(spec) && alt < 0.2 && speed > MIN_SPEED
       ? Math.max(Math.abs(angleDiff(t.a, a) / dt) * speed, ((t.speed - speed) / dt / spec.brake) * BRAKE_LOAD, slip * SLIP_LOAD) : 0;
     t.load += (raw - t.load) * Math.min(1, dt * 12);
     t.a = a; t.speed = speed;

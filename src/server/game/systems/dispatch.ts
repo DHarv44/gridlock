@@ -1,6 +1,7 @@
 // Response squads: police/military for wanted players, ambulances for bodies, fire trucks for fires.
 import { dist2 } from '../../../shared/math';
 import { SERVICE_CALLS, type Squad as SquadSpec, VEHICLES, WANTED, pedIndex, vehicleIndex } from '../../../shared/packs';
+import { flies } from '../../../shared/sim/kinds';
 import { Mode } from '../../../shared/protocol';
 import { BEHAVIOURS } from '../ai/behaviours';
 import { setTask } from '../ai/tasks';
@@ -39,7 +40,7 @@ export class Dispatch {
     const type = vehicleIndex(spec.vehicle);
     const vs = VEHICLES[type];
     let x: number, y: number, angle: number, alt = 0;
-    if (vs.movement === 'rotor') {
+    if (flies(vs)) {
       const a = w.rng.next() * Math.PI * 2;
       x = near.x + Math.cos(a) * 170; y = near.y + Math.sin(a) * 170;
       angle = a + Math.PI; alt = 30;

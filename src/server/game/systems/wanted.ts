@@ -1,14 +1,14 @@
 // Crime, heat and wanted levels.
 import { dist2 } from '../../../shared/math';
-import { CRIMES, type CrimeKind, type CrimeSpec, FACTIONS, RULES, WANTED } from '../../../shared/packs';
+import { flies } from '../../../shared/sim/kinds';
+import { CRIMES, type CrimeKind, type CrimeSpec, lawfulFaction, RULES, WANTED, witnessFaction } from '../../../shared/packs';
 import { Mode } from '../../../shared/protocol';
 import type { Ped, Player } from '../entities';
 import type { World } from '../world';
 
-const LAWFUL = new Set(FACTIONS.filter((f) => f.lawful).map((f) => f.id));
 const MAX_HEAT = WANTED[WANTED.length - 1].heat * 1.4;
 
-export const isLawful = (p: Ped): boolean => LAWFUL.has(p.faction);
+export const isLawful = (p: Ped): boolean => lawfulFaction(p.faction);
 
 /** Is any lawful unit able to see (x,y)? Helicopters see over buildings. */
 export function lawCanSee(w: World, x: number, y: number, range = RULES.heatSightRange): boolean {
@@ -19,7 +19,7 @@ export function lawCanSee(w: World, x: number, y: number, range = RULES.heatSigh
   });
   if (seen) return true;
   for (const v of w.vehicles.values()) {
-    if (v.spec.movement !== 'rotor' || v.body.alt < 8 || v.wrecked) continue;
+    if (!flies(v.spec) || v.body.alt < 8 || v.wrecked) continue;
     const d = v.seats[0] ? w.peds.get(v.seats[0]) : undefined;
     if (d && isLawful(d) && dist2(v.body.x, v.body.y, x, y) < 140 * 140) return true;
   }
@@ -35,7 +35,7 @@ export function lawCanSee(w: World, x: number, y: number, range = RULES.heatSigh
 function civilianWitness(w: World, x: number, y: number, offender: Ped): boolean {
   let seen = false;
   w.pedsNear(x, y, RULES.witnessRange, (p) => {
-    if (!seen && !p.dead && !p.player && p !== offender && p.faction === 'civ') seen = true;
+    if (!seen && !p.dead && !p.player && p !== offender && witnessFaction(p.faction)) seen = true;
   });
   return seen;
 }

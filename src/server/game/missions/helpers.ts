@@ -1,5 +1,5 @@
 // Mission helpers: picking places, spawning marks and rides, briefs, cleanup.
-import { DISTRICTS, FACTIONS, MARK_NAMES, MISSIONS, PEDS, VEHICLES, pedIndex, vehicleIndex } from '../../../shared/packs';
+import { DISTRICTS, FACTIONS, MARK_NAMES, MISSIONS, PEDS, VEHICLES, pedWith, vehicleIndex } from '../../../shared/packs';
 import type { MissionState, Ped, Vehicle } from '../entities';
 import { setTask } from '../ai/tasks';
 import { spawnPed, spawnVehicle } from '../factory';
@@ -39,13 +39,13 @@ export const factionName = (id: string): string => FACTIONS.find((f) => f.id ===
 /** A gang member archetype for a faction. */
 export const archetypeOf = (faction: string): number => {
   const i = PEDS.findIndex((p) => p.faction === faction && p.behaviour === 'gang');
-  return i >= 0 ? i : pedIndex('dealer');
+  return i >= 0 ? i : Math.max(0, pedWith('gang'));
 };
 
-/** The faction's street car: a vehicle with the 'gang' role. */
+/** The faction's street car: a vehicle with the 'gang' role (else any traffic car). */
 export const gangCar = (): number => {
   const i = VEHICLES.findIndex((v) => v.roles.includes('gang'));
-  return i >= 0 ? i : vehicleIndex('sedan');
+  return i >= 0 ? i : Math.max(0, VEHICLES.findIndex((v) => v.roles.includes('traffic')));
 };
 
 export function spawnMark(w: World, st: MissionState, faction: string, s: Spot, hpMul: number): Ped {

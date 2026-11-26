@@ -1,15 +1,14 @@
 // Finds the shop/property the player is standing at and drives its pane.
 import { PROPERTIES, SERVICES } from '../../shared/packs';
 import { Mode, type Profile, type YouState } from '../../shared/protocol';
+import { VERBS, verbOf } from '../../shared/verbs';
 import { atmsOf } from '../../shared/world/atms';
 import type { City, Place } from '../../shared/world/cityTypes';
 import type { Pane } from '../hud/pane';
 import { type Buy, propertyContent, serviceContent } from '../hud/places';
 
-// Respray and chop shop work like GTA2 garages: just drive in (handled by the server).
-const DRIVE_IN = new Set(['dealer']);
-// Gas kiosks and police front desks have nothing to sell (yet); the kiosk's ATM works.
-const AUTOMATIC = new Set(['respray', 'chopshop', 'military', 'helipad', 'gas', 'police']);
+// Respray and chop shop work like GTA2 garages: just drive in (handled by the server). Gas kiosks
+// and police front desks have nothing to sell (yet); the kiosk's ATM works. (shared/verbs.ts)
 
 export interface Spot { place: Place; property: boolean }
 
@@ -46,11 +45,12 @@ export class Interact {
       const dPad = place.pad ? Math.hypot(place.pad.x - x, place.pad.y - y) : Infinity;
       let d = Infinity;
       if (!driving && dDoor < 3.2) d = dDoor;
-      if (driving && DRIVE_IN.has(verb) && dPad < 8) d = dPad;
-      if (!driving && verb === 'dealer' && dPad < 5) d = dPad;
+      const driveUp = !property && verbOf(verb)?.driveUp;
+      if (driving && driveUp && dPad < 8) d = dPad;
+      if (!driving && driveUp && dPad < 5) d = dPad;
       if (d < bd) { bd = d; best = { place, property }; }
     };
-    for (const s of this.city.services) if (!AUTOMATIC.has(SERVICES[s.spec].verb)) consider(s, false);
+    for (const s of this.city.services) if (!VERBS[SERVICES[s.spec].verb].automatic) consider(s, false);
     for (const p of this.city.properties) consider(p, true);
     for (const a of this.atms) consider(a, false);
     for (const l of this.lifts) if (Math.hypot(l.x - x, l.y - y) < 2.3) consider(l, false);

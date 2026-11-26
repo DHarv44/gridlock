@@ -10,14 +10,12 @@ import { openMenu } from '../hud/menu';
 import { dealerShop } from '../hud/dealerShop';
 import { gunShop } from '../hud/gunShop';
 import { Showroom } from '../hud/showroom';
-
-/** Places whose door opens a shop counter (hud/showroom.ts) instead of the side pane. */
-const SHOWROOMS = new Set(['gunshop', 'dealer']);
+import { verbOf } from '../../shared/verbs';
 import { OffscreenPlayers } from '../hud/offscreenPlayers';
 import { Phone } from '../hud/phone';
 import { Talk } from '../hud/talk';
 import { PaintGarage } from '../hud/paintGarage';
-import { cleanVoice, SERVICES } from '../../shared/packs';
+import { cleanVoice, RULES, SERVICES } from '../../shared/packs';
 import type { Place } from '../../shared/world/cityTypes';
 import { BigMap } from '../hud/bigMap';
 import { saveProgress } from '../lobby/characterStore';
@@ -177,7 +175,7 @@ export class Game {
         // otherwise get into the nearest car or out of this one.
         if (this.pane.isOpen) { this.pane.close(); break; }
         if (!this.interact.current) { this.input.pressEnter(); break; }
-        if (!this.interact.current.property && SHOWROOMS.has(this.interact.current.place.verb)) { this.openShop(this.interact.current.place); break; }
+        if (!this.interact.current.property && verbOf(this.interact.current.place.verb)?.shop) { this.openShop(this.interact.current.place); break; } // shop counter (hud/showroom.ts)
         if (this.you) this.interact.toggle(() => this.you!, () => this.profile, this.owners, this.myName, (kind, id, place) => this.conn.send({ t: 'buy', kind, id, place }));
         break;
       case 'chat':
@@ -192,7 +190,7 @@ export class Game {
         if (this.bigMap.isOpen) this.bigMap.close(); else this.bigMap.open(o?.x ?? 1024, o?.y ?? 1024);
         break;
       }
-      case 'phone': if (!this.garage.isOpen && !this.shop.isOpen) this.phone.button(); break;
+      case 'phone': if (RULES.cellPhone && !this.garage.isOpen && !this.shop.isOpen) this.phone.button(); break;
       case 'menu':
         if (this.garage.isOpen) { this.garage.leave(); return; }
         if (this.shop.isOpen) { this.shop.leave(); return; }
@@ -214,6 +212,8 @@ export class Game {
 
   private onMessage(m: S2C): void {
     if (m.t === 'talk') { this.talk.play(m); return; }
+    // No cell phone in this pack: texts are just notices.
+    if (m.t === 'text' && !RULES.cellPhone) { this.hud.notify(`${m.from}: ${m.body}`, 'info'); return; }
     if (this.jobs.onMessage(m) || this.phone.onMessage(m)) return;
     switch (m.t) {
       case 's':

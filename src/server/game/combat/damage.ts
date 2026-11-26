@@ -1,6 +1,6 @@
 // Applying damage, deaths, drops and explosions.
 import { dist } from '../../../shared/math';
-import { RULES, UNARMED, WEAPONS } from '../../../shared/packs';
+import { lawfulFaction, RULES, UNARMED, WEAPONS } from '../../../shared/packs';
 import { FX, Mode, PK } from '../../../shared/protocol';
 import { onAttacked, onNoise } from '../ai/reactions';
 import type { Ped, Vehicle } from '../entities';
@@ -24,8 +24,7 @@ export function damagePed(w: World, v: Ped, amount: number, attackerId: number, 
   v.lastHitT = w.time;
   if (attacker && attacker.id !== v.id) {
     if (fresh && attacker.player) {
-      const law = v.faction === 'police' || v.faction === 'military';
-      crime(w, attacker, law ? 'assaultLaw' : 'assault', v.body.x, v.body.y);
+      crime(w, attacker, lawfulFaction(v.faction) ? 'assaultLaw' : 'assault', v.body.x, v.body.y);
     }
     onAttacked(w, v, attacker);
   }
@@ -52,8 +51,7 @@ export function killPed(w: World, v: Ped, killer: Ped | null, byVehicle = false)
 
   const kp = killer?.player;
   if (kp && killer!.id !== v.id) {
-    const law = v.faction === 'police' || v.faction === 'military';
-    crime(w, killer!, law ? 'murderLaw' : byVehicle ? 'vehicularHomicide' : 'murder', pos.x, pos.y);
+    crime(w, killer!, lawfulFaction(v.faction) ? 'murderLaw' : byVehicle ? 'vehicularHomicide' : 'murder', pos.x, pos.y);
   }
   if (v.player) {
     const pl = v.player;

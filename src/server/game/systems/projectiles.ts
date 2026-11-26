@@ -1,5 +1,6 @@
 // Projectile flight, impacts, grenade fuses, molotov fires and burning.
 import { WEAPONS } from '../../../shared/packs';
+import { flies } from '../../../shared/sim/kinds';
 import { FX } from '../../../shared/protocol';
 import { damagePed, damageVehicle, explode, spawnFire } from '../combat/damage';
 import { rayVehicle } from '../combat/fire';
@@ -58,7 +59,7 @@ function contact(w: World, pr: Projectile): boolean {
     // High-flying rockets can still hit helicopters.
     let hit = false;
     w.vehiclesNear(pr.x, pr.y, 8, (v) => {
-      if (v.id !== w.peds.get(pr.owner)?.vehicle && v.spec.movement === 'rotor' && Math.abs(v.body.alt - pr.z) < 3
+      if (v.id !== w.peds.get(pr.owner)?.vehicle && flies(v.spec) && Math.abs(v.body.alt - pr.z) < 3
         && rayVehicle(pr.x - pr.vx * 0.05, pr.y - pr.vy * 0.05, pr.vx * 0.1, pr.vy * 0.1, v) !== null) hit = true;
     });
     return hit;
@@ -68,7 +69,7 @@ function contact(w: World, pr: Projectile): boolean {
   if (hit) return true;
   const ownVeh = w.peds.get(pr.owner)?.vehicle ?? 0;
   w.vehiclesNear(pr.x, pr.y, 8, (v) => {
-    if (v.id === ownVeh || (v.spec.movement === 'rotor' && v.body.alt > 3)) return;
+    if (v.id === ownVeh || (flies(v.spec) && v.body.alt > 3)) return;
     if (rayVehicle(pr.x - pr.vx * 0.05, pr.y - pr.vy * 0.05, pr.vx * 0.1, pr.vy * 0.1, v) !== null) hit = true;
   });
   return hit;
@@ -101,7 +102,7 @@ export function updateFires(w: World, dt: number): void {
       damagePed(w, p, 4, f.owner, { fire: true });
     });
     w.vehiclesNear(f.x, f.y, f.r + 3, (v) => {
-      if (v.spec.movement === 'rotor' && v.body.alt > 2) return;
+      if (flies(v.spec) && v.body.alt > 2) return;
       if (Math.hypot(v.body.x - f.x, v.body.y - f.y) < f.r + v.spec.width) damageVehicle(w, v, 9, f.owner);
     });
   }

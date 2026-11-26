@@ -1,4 +1,5 @@
 // Articulated trailers: swing behind the tractor, scrape off buildings, shove cars, flatten people.
+import { flies } from '../../../shared/sim/kinds';
 import { PED_RADIUS, stepTrailer, trailerCentre } from '../../../shared/sim/physics';
 import { obbVsAabb, obbVsCircle } from '../../../shared/world/collision';
 import { damagePed } from '../combat/damage';
@@ -49,7 +50,7 @@ function blocked(w: World, v: Vehicle, angle: number): boolean {
 function shove(w: World, v: Vehicle, x: number, y: number, c: number, s: number, hl: number, hw: number): void {
   const speed = Math.hypot(v.body.vx, v.body.vy);
   w.vehHash.query(x, y, hl + 6, (o) => {
-    if (o === v || (o.spec.movement === 'rotor' && o.body.alt > 2)) return;
+    if (o === v || (flies(o.spec) && o.body.alt > 2)) return;
     // Treat the other vehicle as a circle of its half-width at a few points along its length.
     const oc = Math.cos(o.body.angle), os = Math.sin(o.body.angle);
     for (const k of [-0.35, 0, 0.35]) {

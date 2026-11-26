@@ -4,6 +4,7 @@
 // right stick points where you aim (on foot, out of a car window, or a turret), triggers for fire
 // or gas and brake. Weapons fire the way you aim, with auto-aim onto the nearest target in a cone.
 import { VEHICLES } from '../../shared/packs';
+import { flies } from '../../shared/sim/kinds';
 import { Mode, type YouState } from '../../shared/protocol';
 import type { Input } from './input';
 
@@ -35,7 +36,7 @@ export class Steering {
     const pad = input.pad;
     input.triggerFires = !inCar;
     // Each kind of moving has its own keys: on foot, driving, flying.
-    const air = inCar && you.vt >= 0 && VEHICLES[you.vt].movement === 'rotor';
+    const air = inCar && you.vt >= 0 && flies(VEHICLES[you.vt]);
     const turn = !inCar ? input.axis('footLeft', 'footRight') : air ? input.axis('heliLeft', 'heliRight') : input.axis('steerLeft', 'steerRight');
     const fwd = !inCar ? input.axis('footDown', 'footUp') : air ? input.axis('heliBack', 'heliForward') : input.axis('brake', 'gas');
     const firing = input.held('fire');

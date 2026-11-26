@@ -1,5 +1,6 @@
 // NPC driving: lane-following traffic with lights, and routed/direct pursuit driving.
 import { angleDiff, clamp } from '../../../shared/math';
+import { flies } from '../../../shared/sim/kinds';
 import { forwardSpeed } from '../../../shared/sim/physics';
 import type { RoadNode } from '../../../shared/world/cityTypes';
 import { lightState } from '../../../shared/world/traffic';
@@ -28,7 +29,7 @@ function sirens(w: World): Vehicle[] {
   let c = sirenCache.get(w);
   if (!c || c.t !== w.time) {
     c = { t: w.time, list: [] };
-    for (const o of w.vehicles.values()) if (o.siren && !o.wrecked && !(o.spec.movement === 'rotor' && o.body.alt > 2)) c.list.push(o);
+    for (const o of w.vehicles.values()) if (o.siren && !o.wrecked && !(flies(o.spec) && o.body.alt > 2)) c.list.push(o);
     sirenCache.set(w, c);
   }
   return c.list;
@@ -96,7 +97,7 @@ function clearance(w: World, v: Vehicle, aggressive: boolean, keepGap = false): 
   let cap = Infinity, ped = false, still = false, stalled = false;
   const look = 14 + Math.abs(forwardSpeed(b)) * 1.1;
   w.vehiclesNear(b.x + c * look / 2, b.y + s * look / 2, look / 2 + 10, (o) => {
-    if (o === v || (o.spec.movement === 'rotor' && o.body.alt > 2)) return;
+    if (o === v || (flies(o.spec) && o.body.alt > 2)) return;
     const rx = o.body.x - b.x, ry = o.body.y - b.y;
     const f = rx * c + ry * s, l = -rx * s + ry * c;
     if (f <= 0 || f > look + o.spec.length || Math.abs(l) > hw + o.spec.width / 2 + 0.6) return;
@@ -302,7 +303,7 @@ export function driveTo(w: World, v: Vehicle, p: Ped, tx: number, ty: number, dt
   const d = ai.drive;
   const b = v.body;
   const dist = Math.hypot(tx - b.x, ty - b.y);
-  if (v.spec.movement === 'rotor') return flyTo(w, v, tx, ty, opts.stopAt, dt);
+  if (flies(v.spec)) return flyTo(w, v, tx, ty, opts.stopAt, dt);
   const fast = opts.speed ?? Math.min(v.spec.maxSpeed * 0.92, 30);
   const clear = clearance(w, v, true);
   if (dist < 45 && !w.statics.raycast(b.x, b.y, tx, ty, 1)) {

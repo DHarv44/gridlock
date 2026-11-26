@@ -1,4 +1,4 @@
-import type { CrimeSpec, ServiceCall, Squad, WantedLevel } from './types';
+import type { CrimeSpec, RoleCrew, ServiceCall, Squad, WantedLevel } from './types';
 
 const patrol: Squad = { vehicle: 'police', crew: ['cop', 'cop'] };
 const motor: Squad = { vehicle: 'police_bike', crew: ['cop'] };
@@ -50,7 +50,23 @@ export const SERVICE_CALLS: { medic: ServiceCall; fire: ServiceCall } = {
   fire: { squad: { vehicle: 'firetruck', crew: ['firefighter', 'firefighter'] }, maxActive: 2 },
 };
 
+/** Traffic drivers by vehicle role (first matching role wins); everything else is driven by a
+ *  civilian of the zone. */
+export const ROLE_CREWS: Record<string, RoleCrew> = {
+  police: { driver: 'cop', partner: 'cop', partnerChance: 0.5, crew: true },
+  military: { driver: 'soldier' },
+};
+
 export const RULES = {
+  /** Players carry a cell phone (hud/phone.ts, server/game/missions/cell.ts): gangs ring with work,
+   *  texts arrive in its inbox. Without one, texts show as notices and work comes from payphones
+   *  only. (Radio is on when packs/radio.ts lists stations; ATMs where specs say `atm`; payphones
+   *  per RESPECT.phonesPerGang.) */
+  cellPhone: true,
+  /** Who works a walk-in counter when the layout doesn't name someone (a ped archetype). */
+  clerk: 'clerk',
+  /** What a clerk who fights back pulls from under the counter if they carry no gun. */
+  counterGun: { weapon: 'shotgun', ammo: 24 },
   maxPlayers: 6,
   /** Every room is the same city, so a character's last spot means the same place in any room. */
   citySeed: 1337,

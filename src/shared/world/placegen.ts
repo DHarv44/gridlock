@@ -4,8 +4,8 @@ import { DISTRICTS, PROPERTIES, SERVICES, ZONES, zoneIndex } from '../packs';
 import type { Rng } from '../rng';
 import { type Block, DIR_VEC, Dir, type Lot, type Obstacle, type Place, SIDEWALK_W } from './cityTypes';
 import { GAS_MIN_DEPTH, GAS_MIN_FRONTAGE, gasLayout, KIOSK_DEPTH } from './gas';
+import { VERBS } from '../verbs';
 
-const DRIVE_IN = new Set(['dealer', 'respray', 'chopshop', 'hospital', 'police', 'fire']);
 const INWARD = [Math.PI / 2, Math.PI, -Math.PI / 2, 0];
 const PAD_DEPTH = 10;
 
@@ -74,18 +74,19 @@ export class PlaceBuilder {
   build(): void {
     SERVICES.forEach((spec, si) => {
       const zones = new Set(spec.zones.map(zoneIndex));
+      const t = VERBS[spec.verb];
       const want = (l: Lot) => zones.has(l.zone) && this.free(l)
-        && (spec.verb === 'military' ? l.use === 'pad' : spec.verb === 'helipad' ? l.use === 'building' && l.front >= 0
-          : spec.verb === 'gas' ? l.use === 'building' && l.front >= 0 && frontDepth(l) >= GAS_MIN_DEPTH && frontage(l) >= GAS_MIN_FRONTAGE
-          : l.use === 'building' && l.front >= 0 && (!DRIVE_IN.has(spec.verb) || frontDepth(l) >= PAD_DEPTH + 12));
+        && (t.site === 'compound' ? l.use === 'pad' : t.site === 'clearing' ? l.use === 'building' && l.front >= 0
+          : t.site === 'forecourt' ? l.use === 'building' && l.front >= 0 && frontDepth(l) >= GAS_MIN_DEPTH && frontage(l) >= GAS_MIN_FRONTAGE
+          : l.use === 'building' && l.front >= 0 && (!t.pad || frontDepth(l) >= PAD_DEPTH + 12));
       for (const lot of this.choose(want, spec.count, 260)) {
-        if (DRIVE_IN.has(spec.verb) && !carvePad(lot)) continue;
-        if (spec.verb === 'gas') makeGasStation(lot, this.obstacles);
+        if (t.pad && !carvePad(lot)) continue;
+        if (t.site === 'forecourt') makeGasStation(lot, this.obstacles);
         lot.service = si;
         const name = `${spec.name}, ${this.districtOf(lot)}`;
         lot.name = name;
-        if (spec.verb === 'military' || spec.verb === 'helipad') {
-          if (spec.verb === 'helipad') { lot.building = undefined; lot.use = 'pad'; }
+        if (t.site === 'compound' || t.site === 'clearing') {
+          if (t.site === 'clearing') { lot.building = undefined; lot.use = 'pad'; }
           const cx = (lot.rect.x0 + lot.rect.x1) / 2, cy = (lot.rect.y0 + lot.rect.y1) / 2;
           this.services.push({ id: this.services.length, lot: lot.id, verb: spec.verb, spec: si, x: cx, y: cy, pad: { x: cx, y: cy, angle: 0 }, name });
           lot.pad = { x: cx, y: cy, angle: 0 };
@@ -93,7 +94,7 @@ export class PlaceBuilder {
         }
         lot.building!.sign = spec.sign;
         const p = frontPoints(lot);
-        if (spec.verb === 'gas') {
+        if (t.site === 'forecourt') {
           // Cars pull up at the pumps: the pad is the canopy's middle.
           const c = gasLayout(lot).canopy;
           p.pad = { x: (c.x0 + c.x1) / 2, y: (c.y0 + c.y1) / 2, angle: INWARD[lot.front] };

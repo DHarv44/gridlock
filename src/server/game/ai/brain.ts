@@ -1,6 +1,7 @@
 // Per-tick AI update: perception, then the current task for every NPC.
 import { angleDiff, dist } from '../../../shared/math';
 import { WEAPONS } from '../../../shared/packs';
+import { flies } from '../../../shared/sim/kinds';
 import { Mode } from '../../../shared/protocol';
 import { forwardSpeed } from '../../../shared/sim/physics';
 import type { Ped, Vehicle } from '../entities';
@@ -80,7 +81,7 @@ function vehicleTask(w: World, p: Ped, dt: number): void {
       if (ai.task !== 'drive') setTask(p, 'drive');
       if (ai.panicT > 0) ai.panicT -= dt;
       v.siren = false;
-      if (v.spec.movement === 'rotor') { v.ctl.down = true; v.ctl.throttle = 0; v.ctl.steer = 0; break; }
+      if (flies(v.spec)) { v.ctl.down = true; v.ctl.throttle = 0; v.ctl.steer = 0; break; }
       cruise(w, v, p, dt, ai.panicT > 0);
     }
   }
@@ -109,7 +110,7 @@ function pursue(w: World, p: Ped, v: Vehicle, dt: number): void {
   v.siren = !!v.spec.siren;
   const pos = w.pedPos(t!);
   const tv = t!.vehicle ? w.vehicles.get(t!.vehicle) : undefined;
-  if (v.spec.movement === 'rotor') {
+  if (flies(v.spec)) {
     driveTo(w, v, p, pos.x, pos.y, dt, { stopAt: 22, ram: false });
     gunner(w, p, v, pos, lethal);
     return;
@@ -131,7 +132,7 @@ function gunner(w: World, p: Ped, v: Vehicle, pos: { x: number; y: number }, let
   const want = Math.atan2(pos.y - v.body.y, pos.x - v.body.x);
   p.aim = want;
   const d = dist(v.body.x, v.body.y, pos.x, pos.y);
-  const aligned = v.spec.movement === 'rotor' ? Math.abs(angleDiff(v.body.angle, want)) < 0.5 : Math.abs(angleDiff(v.turret, want)) < 0.08;
+  const aligned = flies(v.spec) ? Math.abs(angleDiff(v.body.angle, want)) < 0.5 : Math.abs(angleDiff(v.turret, want)) < 0.08;
   p.trigger = lethal && aligned && d < 85 && d > 8 && !p.triggerPrev;
   if (v.spec.weapons && v.spec.weapons.length > 1) v.vw = d < 45 ? 0 : 1;
 }

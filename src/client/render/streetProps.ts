@@ -9,7 +9,6 @@ import { Batch, lambert, UNIT } from './instancing';
 interface Signal { node: RoadNode; axis: 'h' | 'v'; x: number; y: number }
 
 const SIG_COLORS = [new THREE.Color('#ff2a1f'), new THREE.Color('#ffb21f'), new THREE.Color('#2bff6a')];
-const BUSY = new Set(['downtown', 'midtown', 'commercial']);
 
 export class StreetProps {
   readonly lamps: { x: number; y: number }[] = [];
@@ -95,7 +94,7 @@ export class StreetProps {
       const z = ZONES[b.zone];
       if (z.layout === 'park' || z.layout === 'compound') continue;
       const r = b.rect;
-      const busy = BUSY.has(z.id);
+      const busy = !!z.busy;
       const edge = (inset: number) => {
         const side = Math.floor(rng.next() * 4), t = rng.range(0.15, 0.85);
         const x = side === 1 ? r.x1 - inset : side === 3 ? r.x0 + inset : r.x0 + (r.x1 - r.x0) * t;

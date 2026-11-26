@@ -1,7 +1,8 @@
 // Keeps the streets alive around players: ambient peds, traffic, parked cars, and
 // the fixed vehicles/guards at services. Despawns what nobody can see.
 import { dist2 } from '../../../shared/math';
-import { type PedArchetype, PEDS, RULES, SERVICES, VEHICLES, ZONES, pedIndex, vehicleIndex } from '../../../shared/packs';
+import { flies } from '../../../shared/sim/kinds';
+import { type PedArchetype, PEDS, ROLE_CREWS, RULES, SERVICES, VEHICLES, ZONES, pedIndex, pedWith, vehicleIndex } from '../../../shared/packs';
 import type { Ped } from '../entities';
 import { removePed, removeVehicle, seatPed, spawnPed, spawnVehicle } from '../factory';
 import { setTask } from '../ai/tasks';
@@ -19,6 +20,12 @@ interface FixedSpawn { x: number; y: number; angle: number; type: number; veh: n
 interface FixedGuard { x: number; y: number; angle: number; arch: number; ped: number; readyAt: number; indoor?: boolean }
 
 const STANDERS = new Set(['dealer', 'streetwalker', 'guard', 'gang']);
+
+/** The pack's crew for a vehicle type: the first of its roles that ROLE_CREWS lists. */
+const roleCrew = (type: number) => {
+  const role = VEHICLES[type].roles.find((r) => ROLE_CREWS[r]);
+  return role ? ROLE_CREWS[role] : undefined;
+};
 const BUCKET = 64;
 
 export class Population {
@@ -74,7 +81,7 @@ export class Population {
       let k = 0;
       for (const s of spec.spawns ?? []) {
         for (let n = 0; n < s.count; n++, k++) {
-          const off = (k - ((spec.spawns!.reduce((a, b) => a + b.count, 0) - 1) / 2)) * (VEHICLES[vehicleIndex(s.vehicle)].movement === 'rotor' ? 14 : 4.5);
+          const off = (k - ((spec.spawns!.reduce((a, b) => a + b.count, 0) - 1) / 2)) * (flies(VEHICLES[vehicleIndex(s.vehicle)]) ? 14 : 4.5);
           this.fixed.push({ x: pad.x + rx * off, y: pad.y + ry * off, angle: pad.angle, type: vehicleIndex(s.vehicle), veh: 0, readyAt: 0 });
         }
       }
@@ -158,12 +165,12 @@ export class Population {
 
   private driverFor(vehicleType: number, zone: number, gang: string | null): number {
     const spec = VEHICLES[vehicleType];
-    if (spec.roles.includes('police')) return pedIndex('cop');
-    if (spec.roles.includes('military')) return pedIndex('soldier');
+    const rc = roleCrew(vehicleType);
+    if (rc) return pedIndex(rc.driver);
     const z = ZONES[zone];
     if (gang && spec.roles.includes('gang')) return gangMember(gang);
     const civs = z.peds.filter((e) => PEDS[pedIndex(e.id)].behaviour === 'civilian');
-    return pedIndex(civs.length ? this.w.rng.weighted(civs).id : 'civilian');
+    return civs.length ? pedIndex(this.w.rng.weighted(civs).id) : Math.max(0, pedWith('civilian'));
   }
 
   private traffic(x: number, y: number): void {
@@ -190,13 +197,14 @@ export class Population {
       const d = spawnPed(w, this.driverFor(type, zone, gang), s.x, s.y, s.angle);
       seatPed(w, d, v, 0);
       setTask(d, 'drive');
-      if (sp.roles.includes('police') && v.seats.length > 1 && w.rng.chance(0.5)) {
-        const partner = spawnPed(w, pedIndex('cop'), s.x, s.y);
+      const rc = roleCrew(type);
+      if (rc?.partner && v.seats.length > 1 && w.rng.chance(rc.partnerChance ?? 1)) {
+        const partner = spawnPed(w, pedIndex(rc.partner), s.x, s.y);
         seatPed(w, partner, v, 1);
         setTask(partner, 'none');
-        partner.ai!.crew = v.id;
+        partner.ai!.crew = rc.crew ? v.id : 0;
       }
-      d.ai!.crew = sp.roles.includes('police') ? v.id : 0;
+      d.ai!.crew = rc?.crew ? v.id : 0;
     }
   }
 

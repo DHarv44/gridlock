@@ -1,5 +1,6 @@
 // Junction right-of-way for AI traffic: don't enter a box that crossing traffic is using, yield to
 // whoever reaches an unsignalled junction first, and don't enter unless there's room on the far side.
+import { flies } from '../../../shared/sim/kinds';
 import type { RoadNode } from '../../../shared/world/cityTypes';
 import type { DriveState, Vehicle } from '../entities';
 import type { World } from '../world';
@@ -25,7 +26,7 @@ export function mayEnter(w: World, v: Vehicle, node: RoadNode, axis: 'h' | 'v', 
   const r = Math.max(node.wv, node.wh) / 2 + 22;
   let ok = true;
   w.vehiclesNear(node.x, node.y, r, (o) => {
-    if (!ok || o === v || o.wrecked || (o.spec.movement === 'rotor' && o.body.alt > 2)) return;
+    if (!ok || o === v || o.wrecked || (flies(o.spec) && o.body.alt > 2)) return;
     const crossing = axisOf(o.body.angle) !== axis;
     const moving = Math.hypot(o.body.vx, o.body.vy) > 0.5;
     // Crossing traffic inside the box (moving or stuck there): wait for it to clear.

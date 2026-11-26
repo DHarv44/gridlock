@@ -3,6 +3,7 @@
 // stairs a floor at a time; AI chasing someone on another floor of the same building walks to the
 // lift (in an apartment block, the stairwell's landing) and comes up after them (`route`).
 import { dist } from '../../../shared/math';
+import { flies } from '../../../shared/sim/kinds';
 import type { Interior } from '../../../shared/world/interiors';
 import { floorOf, groundOf } from '../../../shared/world/levels';
 import { StairIndex, stairwellOn } from '../../../shared/world/stairs';
@@ -68,7 +69,7 @@ export function toRoof(w: World, pl: Player, k: number): string | null {
 function boardRoofHeli(w: World, p: Ped, i: Interior): string | null {
   let heli: Vehicle | undefined;
   for (const v of w.vehicles.values()) {
-    if (v.spec.movement !== 'rotor' || v.wrecked || v.burning >= 0 || w.statics.roofAt(v.body.x, v.body.y) !== i.building) continue;
+    if (!flies(v.spec) || v.wrecked || v.burning >= 0 || w.statics.roofAt(v.body.x, v.body.y) !== i.building) continue;
     if (v.body.alt > w.statics.floorAt(v.body.x, v.body.y) + 1) continue; // still in the air
     heli = v;
     break;

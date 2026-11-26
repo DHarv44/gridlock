@@ -101,7 +101,7 @@ export class Robberies {
       if (owner && owner === pl.name.toLowerCase()) continue; // your own staff
       // Some clerks keep a gun under the counter.
       if (w.rng.next() < this.spec(i)!.fightBack) {
-        if (!c.weapons.some((wh) => WEAPONS[wh.w].kind !== 'melee')) c.wi = giveWeapon(c, weaponIndex('shotgun'), 24);
+        if (!c.weapons.some((wh) => WEAPONS[wh.w].kind !== 'melee')) c.wi = giveWeapon(c, weaponIndex(RULES.counterGun.weapon), RULES.counterGun.ammo);
         setTask(c, 'attack', p.id);
         this.alarm(p, i);
         w.notify('warn', 'The clerk goes for a gun!', pl);

@@ -16,6 +16,10 @@ Server-authoritative Node simulation + three.js browser client. Read `docs/STATU
 - **Nouns and verbs.** `src/shared/packs/*` hold all content (weapons, vehicles + box models, ped archetypes,
   factions, zones, districts, services, properties, wanted levels, rules). Engine code never names a pack id;
   it reads fields (`behaviour`, `verb`, `roles`, `movement`, ...). Add content by editing packs only.
+  What a verb or movement kind *does* lives in one engine table each: `src/shared/verbs.ts` (service
+  verbs: site, pad, garage door, automatic, shop) and `src/shared/sim/kinds.ts` (movement kinds:
+  `flies`, `skids`, `floats`). Ask the table (`flies(spec)`), never compare against a kind or verb in a system.
+  GRIDLOCK is becoming a shared engine for several "universes" (docs/ENGINE.md).
 - **Shared determinism.** `generateCity(seed)` runs on server and every client and must stay bit-identical:
   generation uses only `Rng` and arithmetic (no trig). `src/shared/sim/physics.ts` movement is shared so the
   client can predict its own avatar; keep it pure.

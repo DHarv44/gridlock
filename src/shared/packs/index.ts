@@ -2,12 +2,12 @@
 import { FACTIONS, PEDS } from './peds';
 export { HAIR, SHOES } from './peds';
 import { PROPERTIES, SERVICES } from './places';
-import type { FactionSpec, PedArchetype, PropertySpec, ServiceSpec, VehicleSpec, WeaponSpec, ZoneSpec } from './types';
+import type { Behaviour, FactionSpec, PedArchetype, PropertySpec, ServiceSpec, VehicleSpec, WeaponSpec, ZoneSpec } from './types';
 import { VEHICLES } from './vehicles';
 import { WEAPONS } from './weapons';
 import { DISTRICTS, ZONES } from './zones';
 
-export { CRIMES, type CrimeKind, FELONIES, RULES, SERVICE_CALLS, WANTED } from './rules';
+export { CRIMES, type CrimeKind, FELONIES, ROLE_CREWS, RULES, SERVICE_CALLS, WANTED } from './rules';
 export { MARK_NAMES, MISSIONS, MODES, RESPECT } from './missions';
 export { CALLERS, CALLS, type Caller, type CallSituation, cleanVoice, MENTOR_CALLER, namedClip, PEOPLE_CONTACTS, DEFAULT_VOICE, GANG_CALLERS, genderOf, PLAYER_LINES, PLAYER_SAYS, PLAYER_VOICES, type PlayerSituation, type Turn, type Voice, VOICE_SAMPLE, WELCOME_CALLER, YOU, youLineId } from './calls';
 export { PALETTE, PALETTE_NAMES, paletteFor } from './palette';
@@ -54,6 +54,15 @@ export const GANGS = FACTIONS.filter((f) => f.gang).map((f) => f.id);
 export const PLAYER_ARCHETYPE = PEDS.findIndex((p) => p.behaviour === 'player');
 /** Weapon a ped always has (melee, no ammo, price 0). */
 export const UNARMED = WEAPONS.findIndex((w) => w.kind === 'melee' && w.price === 0);
+
+/** The first ped archetype with this behaviour (-1 if the pack has none). */
+export const pedWith = (b: Behaviour): number => PEDS.findIndex((p) => p.behaviour === b);
+
+/** Factions whose members enforce the law (`lawful`). */
+const LAWFUL_FACTIONS = new Set(FACTIONS.filter((f) => f.lawful).map((f) => f.id));
+export const lawfulFaction = (id: string): boolean => LAWFUL_FACTIONS.has(id);
+const WITNESS_FACTIONS = new Set(FACTIONS.filter((f) => f.witness).map((f) => f.id));
+export const witnessFaction = (id: string): boolean => WITNESS_FACTIONS.has(id);
 
 export function hostile(a: string, b: string): boolean {
   return faction(a).hostile.includes(b) || faction(b).hostile.includes(a);
