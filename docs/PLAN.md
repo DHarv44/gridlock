@@ -168,6 +168,19 @@ riders other than players.
 A walk-in casino (world/interiors.ts layout): gaming floor, cashier cage, security; games to play with
 your money (cards, wheel, slots, kept simple and readable from the top-down view), house edge in the
 pack's numbers; a heist hook later (the cage and the vault, like the bank).
+Decided with the user (2026-11-26), in progress (engine: shared/games, scripts/cards.ts):
+- Games open in the slide-in pane, the same pattern as the shops.
+- Bayhaven's casino: craps, slots, roulette, blackjack, Texas hold'em.
+- Redrock's saloons (the casino of the western): 5-card draw, 5-card stud, twenty-one, faro,
+  hazard; not every saloon has every game, a bigger saloon more of them (mix and match).
+- Bayhaven: gang-run poker games, mob style, high stakes, invite only the first time.
+- Bayhaven: house games with civilian friends (buddies in a garage, not gangsters): you meet them,
+  call them up for a game, or they invite you.
+- Poker AI gets better as the stakes rise: a garage game isn't hard but doesn't pay much.
+- Cheating (a pack switch, on in the western, switchable in Bayhaven): slip in an ace, stack the
+  deck on your own deal, peek at the cards of the players next to you. Caught: the man across stands,
+  draws and shoots you dead. AI cheats too, rarely; call one out: right, you draw and kill him, no
+  shootout; wrong, a shootout. Cheating mustn't be rampant.
 
 ## Scopes decide the aim zoom (asked 2026-11-26)
 Holding Aim zooms the camera in (render/camera.ts SCOPE_ZOOM, one fixed amount today). Make the zoom
