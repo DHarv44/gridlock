@@ -507,9 +507,6 @@ export interface WorldSpec {
    *  hydrants, bins, shelters), rooftop machinery (AC units, tanks, vents, solar, helipads,
    *  antennas). Not modern: every road is dirt, and none of that. */
   modern: boolean;
-  /** Highways on decks over avenues (world/waygen.ts): how many (the first runs east-west, the
-   *  second north-south), and how many stretches of them may run sunken in a trench instead. */
-  highways?: { count: number; sunken: number };
   /** A railway (world/railgen.ts, systems/trains.ts). */
   railway?: RailSpec;
   /** How large people are drawn against life (default 1.55: larger than life, so they read from
@@ -527,8 +524,7 @@ export interface WorldSpec {
  *  a train comes gets hit. */
 export interface RailSpec {
   style: 'elevated' | 'grade';
-  /** The line it follows: 'h' east-west, 'v' north-south, nearest this fraction across the map
-   *  (never a highway's avenue). */
+  /** The line it follows: 'h' east-west, 'v' north-south, nearest this fraction across the map. */
   axis: 'h' | 'v';
   at: number;
   offset?: number;

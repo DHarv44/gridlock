@@ -124,7 +124,7 @@ export class WorldView {
     for (const [id, o] of this.objs) if (!seen.has(id)) { this.scene.remove(o); this.objs.delete(id); }
   }
 
-  /** Is something on strip f drawn? The street and the highways always; a building's upper floor
+  /** Is something on strip f drawn? The street and the railway's viaduct always; a building's upper floor
    *  only when it's yours. */
   private shows(f: number): boolean {
     return f === 0 || isWayStrip(f) || f === this.myF;
@@ -158,8 +158,8 @@ export class WorldView {
     if (flags & PF.jump && v.hop <= 0) v.hop = 0.5;
     v.hop = Math.max(0, v.hop - dt);
     const lift = v.hop > 0 ? Math.sin(Math.PI * (1 - v.hop / 0.5)) * 0.9 : 0;
-    // Upstairs (world/levels.ts): over the building, at the floor's height; on a highway, over its
-    // avenue at the deck's height.
+    // Upstairs (world/levels.ts): over the building, at the floor's height; on a train's viaduct,
+    // over its corridor at the track's height.
     const g = groundOf(x, y);
     v.root.position.set(g.x, lift + heightAt(x, y), g.y);
     // Only your floor is drawn: people on another upper floor would float in mid-air.
@@ -261,11 +261,11 @@ export class WorldView {
     }
     const mine = own && own.vid === e.id && own.driving;
     const rx = mine ? own!.x : e.x, ry = mine ? own!.y : e.y, a = mine ? own!.angle : e.angle;
-    // On a highway (world/ways.ts): over its avenue, at the deck's height, tilted up or down a ramp;
-    // out in the hills (world/terrain.ts), on the slope and tilted with it.
+    // On a train's viaduct (world/ways.ts): over its corridor at the track's height; out in the
+    // hills (world/terrain.ts), on the slope and tilted with it.
     const g = groundOf(rx, ry), lift = heightAt(rx, ry);
     const x = g.x, y = g.y, alt = (mine ? own!.alt : e.alt) + lift;
-    // Its height over the hillside under it (decks and ramps still count as up, as before).
+    // Its height over the hillside under it (a viaduct still counts as up).
     const above = alt - groundAt(x, y);
     const cs = Math.cos(a) * 1.6, sn = Math.sin(a) * 1.6;
     const pitch = Math.atan2(heightAt(rx + cs, ry + sn) - heightAt(rx - cs, ry - sn), 3.2);

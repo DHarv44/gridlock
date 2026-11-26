@@ -5,7 +5,6 @@ import { MAP_SIZE } from '../../shared/world/cityTypes';
 import { buildBrush } from './brush';
 import { CHUNK, paintChunk } from './groundPaint';
 import { hasWild } from './groundRelief';
-import { trenchHoles } from '../../shared/world/ways';
 import { groundAt } from '../../shared/world/terrain';
 
 /** `brush`: its bushes (brush.ts), built and dropped with it. */
@@ -25,12 +24,8 @@ export class Ground {
   constructor(private scene: THREE.Scene, private map: CityMap, private maxAniso: number) {
     // A huge plane under everything for areas outside the map: sea, or (landlocked) bare rock.
     const past = map.city.edge === 'sea' ? '#1f4250' : '#6e5440';
-    // With a hole wherever a highway's trench is open, so you see down into it.
     const c = MAP_SIZE / 2, R = 4000;
     const shape = new THREE.Shape([new THREE.Vector2(c - R, c - R), new THREE.Vector2(c + R, c - R), new THREE.Vector2(c + R, c + R), new THREE.Vector2(c - R, c + R)]);
-    for (const w of map.city.ways) {
-      for (const h of trenchHoles(w)) shape.holes.push(new THREE.Path([new THREE.Vector2(h.x0, h.y0), new THREE.Vector2(h.x0, h.y1), new THREE.Vector2(h.x1, h.y1), new THREE.Vector2(h.x1, h.y0)]));
-    }
     this.sea = new THREE.Mesh(new THREE.ShapeGeometry(shape).rotateX(Math.PI / 2), new THREE.MeshLambertMaterial({ color: past, side: THREE.DoubleSide }));
     // Below the lowest wash (world/terrain.ts), or it would show through wherever the land dips.
     const t = map.city.terrain;

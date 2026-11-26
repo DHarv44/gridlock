@@ -1,11 +1,11 @@
 // A railway along one road line (WORLD.railway): its tracks, stations and where it crosses streets.
-// An elevated one also becomes a way (world/wayTypes.ts) so its strip, height and the street-level
-// rules for decks apply to it; trains run on it (server systems/trains.ts). Deterministic.
+// An elevated one also becomes a way (world/wayTypes.ts) with its own strip and height; trains run
+// on it (server systems/trains.ts). Deterministic.
 import { DISTRICTS } from '../packs';
 import type { RailSpec } from '../packs/types';
 import { MAP_SIZE, type RoadNode, type Segment } from './cityTypes';
 import type { RoadLayout } from './roadgen';
-import { CORRIDOR_W, DECK_H, profileZ, WAY0, type Way } from './wayTypes';
+import { WAY0, type Way } from './wayTypes';
 import { WORLD } from './worldSpec';
 
 /** Track height on a viaduct, the gap between its two tracks, a car's length plus coupling. */
@@ -45,10 +45,9 @@ export interface Railway {
   /** The road line's width (for columns at its kerbs). */
   width: number;
   /** On a corridor of its own through the blocks (world/corridors.ts), not over a street: its
-   *  columns stand in that strip, and none where a highway's corridor crosses it (`clear`). */
+   *  columns stand in that strip. */
   own?: boolean;
-  clear?: [number, number][];
-  /** Track height along the line: [along, z] (the viaduct climbs over highways). */
+  /** Track height along the line: [along, z]. */
   profile: [number, number][];
 }
 
@@ -65,7 +64,7 @@ export function buildRailway(L: RoadLayout, g: { nodes: RoadNode[]; segs: Segmen
   // An elevated railway has its own corridor through the blocks; one at grade runs along a street.
   let line = lines.findIndex((l) => l.rail), bd = Infinity;
   if (line < 0) lines.forEach((l, i) => {
-    if (l.highway || l.rail || i < 2 || i > n - 2 || (spec.axis === 'h' && rr >= 0 && (i === rr || i === rr + 1))) return;
+    if (l.rail || i < 2 || i > n - 2 || (spec.axis === 'h' && rr >= 0 && (i === rr || i === rr + 1))) return;
     const d = Math.abs(l.pos / MAP_SIZE - spec.at) - (l.arterial ? 0.02 : 0);
     if (d < bd) { bd = d; line = i; }
   });
@@ -74,31 +73,14 @@ export function buildRailway(L: RoadLayout, g: { nodes: RoadNode[]; segs: Segmen
   const pos = lines[line].pos;
   const along = (q: RoadNode) => (spec.axis === 'h' ? q.x : q.y);
   const hw = (q: RoadNode) => (spec.axis === 'h' ? q.wv : q.wh) / 2;
-  const ln = g.nodes.filter((q) => q.level === undefined && (spec.axis === 'h' ? q.j === line : q.i === line)).sort((p, q) => along(p) - along(q));
+  const ln = g.nodes.filter((q) => (spec.axis === 'h' ? q.j === line : q.i === line)).sort((p, q) => along(p) - along(q));
   if (ln.length < 5) return undefined;
   const elevated = spec.style === 'elevated';
   const strip = elevated ? WAY0 + ways.length : 0;
   const off = spec.offset ?? 0;
   const tracks = spec.trains > 1 ? [off - TRACK_GAP / 2, off + TRACK_GAP / 2] : [off];
   const width = lines[line].width;
-  const r: Railway = { spec, axis: spec.axis, line, pos, strip, z: elevated ? RAIL_H : 0, a0: along(ln[1]), a1: along(ln[ln.length - 2]), tracks, stations: [], crossings: [], width, profile: [[0, elevated ? RAIL_H : 0], [MAP_SIZE, elevated ? RAIL_H : 0]], ...(own ? { own, clear: [] } : {}) };
-  // Raised, it spans any highway it crosses, climbing (at a train's gentle grade) only if that's up
-  // on a bridge there; no station on it, no columns in its corridor.
-  const humps: [number, number][] = [];
-  if (elevated) {
-    for (const w of ways) {
-      if (w.kind !== 'highway' || w.axis === spec.axis) continue;
-      const c = w.pos, half = CORRIDOR_W / 2 + 2;
-      r.clear?.push([c - half, c + half]);
-      humps.push([c - half - 10, c + half + 10]);
-      const hi = Math.max(0, ...[-half, 0, half].map((d) => profileZ(w, pos + d))) + DECK_H + 0.8;
-      if (hi <= RAIL_H) continue;
-      const rise = (hi - RAIL_H) / 0.06;
-      r.profile.push([c - half - rise, RAIL_H], [c - half, hi], [c + half, hi], [c + half + rise, RAIL_H]);
-      humps.push([c - half - rise, c + half + rise]);
-    }
-    r.profile.sort((p, q) => p[0] - q[0]);
-  }
+  const r: Railway = { spec, axis: spec.axis, line, pos, strip, z: elevated ? RAIL_H : 0, a0: along(ln[1]), a1: along(ln[ln.length - 2]), tracks, stations: [], crossings: [], width, profile: [[0, elevated ? RAIL_H : 0], [MAP_SIZE, elevated ? RAIL_H : 0]], ...(own ? { own } : {}) };
   // Stations mid-block, every few blocks and in the end blocks, where the platform fits.
   const need = (spec.cars * CAR_PITCH) / 2 + 3;
   const ks: number[] = [];
@@ -110,7 +92,6 @@ export function buildRailway(L: RoadLayout, g: { nodes: RoadNode[]; segs: Segmen
     const room = (along(q) - hw(q) - along(p) - hw(p)) / 2 - 2;
     if (room < need) continue;
     const a = (along(p) + hw(p) + along(q) - hw(q)) / 2;
-    if (humps.some(([h0, h1]) => a + need > h0 && a - need < h1)) continue;
     const name = `${districtName(L, pt(a, 0))} ${spec.stationName}`;
     const st: Station = { a, half: need, name, exits: [], towers: [] };
     if (elevated) {
@@ -142,8 +123,7 @@ export function buildRailway(L: RoadLayout, g: { nodes: RoadNode[]; segs: Segmen
   r.a1 = r.stations[r.stations.length - 1].a;
   r.crossings = ln.filter((q) => along(q) > r.a0 - 30 && along(q) < r.a1 + 30).map(along);
   if (elevated) {
-    ways.push({ kind: 'rail', axis: spec.axis, line, pos, strip, a0: r.a0 - need - 8, a1: r.a1 + need + 8,
-      profile: r.profile, sunk: [], bridges: [], ramps: [] });
+    ways.push({ kind: 'rail', axis: spec.axis, line, pos, strip, a0: r.a0 - need - 8, a1: r.a1 + need + 8, profile: r.profile });
   }
   return r;
 }
@@ -158,9 +138,8 @@ function districtName(L: RoadLayout, p: { x: number; y: number }): string {
 /** Where along the viaduct columns stand (at the kerbs): clear of crossings and the river. */
 export function railColumns(r: Railway, nodes: RoadNode[], isWater: (x: number, y: number) => boolean): { x: number; y: number }[] {
   const out: { x: number; y: number }[] = [];
-  const cross = nodes.filter((q) => q.level === undefined && (r.axis === 'h' ? q.j === r.line : q.i === r.line))
+  const cross = nodes.filter((q) => (r.axis === 'h' ? q.j === r.line : q.i === r.line))
     .map((q) => { const a = r.axis === 'h' ? q.x : q.y, h = (r.axis === 'h' ? q.wv : q.wh) / 2 + 1.5; return [a - h, a + h] as [number, number]; });
-  cross.push(...(r.clear ?? []));
   // On its own corridor, under the viaduct's edges; over a street, on the sidewalk just behind the
   // kerb, clear of the traffic lanes.
   const half = r.own ? VIADUCT_HALF - 0.6 : r.width / 2 + 0.45;

@@ -23,13 +23,9 @@ export interface RoadLine {
   lanes: number;        // per direction
   parking: boolean;     // parking lane on each curb
   arterial: boolean;
-  /** Not a street: a corridor through the middle of a row of blocks (world/corridors.ts), the
-   *  blocks either side backing onto it. A highway's (waygen.ts) or an elevated railway's (railgen.ts). */
-  highway?: boolean;
+  /** Not a street: an elevated railway's corridor through the middle of a row of blocks (world/
+   *  corridors.ts, railgen.ts), the blocks either side backing onto it. */
   rail?: boolean;
-  /** The highway's plan, from the lines alone (waygen.ts planWay): the cross lines that pass it (the
-   *  rest end at its fence), the ones with interchanges, and the ones bridging its trench. */
-  plan?: { cross: number[]; exits: number[]; trench: number[] };
 }
 
 export interface RoadNode {
@@ -40,11 +36,6 @@ export interface RoadNode {
   lights: boolean;
   wv: number;           // width of the vertical road through this node
   wh: number;           // width of the horizontal road through this node
-  /** On a way's deck (its strip, world/levels.ts); x, y are still the ground point under it. */
-  level?: number;
-  /** A side street's dead end at a highway's fence (roadgen.ts): i, j are the street's line and the
-   *  highway's. */
-  end?: boolean;
 }
 
 export interface Segment {
@@ -58,12 +49,6 @@ export interface Segment {
   bridge: boolean;
   /** A trail through open country: a dirt road, no markings (roadgen.ts). */
   trail?: boolean;
-  /** Part of a way (world/waygen.ts): its index. A deck segment has `level` (the way's strip); a
-   *  ramp has a `path` (its lane, in driving order, ground coordinates) and runs one way, a to b. */
-  way?: number;
-  level?: number;
-  oneway?: boolean;
-  path?: { x: number; y: number }[];
 }
 
 /** `wild`: open country (zone layout 'wild'): ground, rock formations, ponds. */
@@ -165,7 +150,7 @@ export interface City {
   bridges: Rect[];
   /** Walk-in ground floors (world/interiors.ts). */
   interiors: Interior[];
-  /** Raised and sunken ways: highways (world/waygen.ts), and an elevated railway's viaduct. */
+  /** Raised ways: an elevated railway's viaduct (world/railgen.ts). */
   ways: Way[];
   /** The railway, if the universe has one (world/railgen.ts). */
   railway?: Railway;

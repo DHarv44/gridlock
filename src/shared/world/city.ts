@@ -6,14 +6,13 @@ import { WORLD } from './worldSpec';
 import { LotBuilder } from './lotgen';
 import { placeFixtures } from './fixtures';
 import { interiorsOf } from './interiors';
-import { floorOf, isWayStrip, LEVEL_BAND } from './levels';
+import { floorOf, LEVEL_BAND } from './levels';
 import { PlaceBuilder } from './placegen';
 import { genGraph, genLayout } from './roadgen';
-import { buildWays } from './waygen';
 import { buildRailway } from './railgen';
 import { placeTables } from './tables';
 import { buildTerrain } from './terrain';
-import { BULB_R } from './wayTypes';
+import type { Way } from './wayTypes';
 
 const HALF_PI = Math.PI / 2;
 
@@ -43,16 +42,11 @@ export function generateCity(seed: number): City {
   const rng = new Rng(seed);
   const layout = genLayout(rng);
   const { nodes, segs, bridges } = genGraph(layout);
-  // Highways (world/waygen.ts): their decks and ramps join the road graph.
-  const ways = buildWays(layout, { nodes, segs });
-  // A railway (world/railgen.ts); an elevated one is a way too.
+  // A railway (world/railgen.ts); an elevated one is a way.
+  const ways: Way[] = [];
   const railway = buildRailway(layout, { nodes, segs }, ways);
   const lotBuilder = new LotBuilder(rng, seed);
-  // Side streets a highway cuts off end in a turning circle (world/roadgen.ts): the lots beside it
-  // stop short of it (and anything left in it is cleared).
-  lotBuilder.bulbs = nodes.filter((n) => n.end).map((n) => ({ x: n.x, y: n.y, r: BULB_R }));
   const lo = lotBuilder.build(layout);
-  for (const b of lotBuilder.bulbs) lotBuilder.clearCircle(b.x, b.y, b.r);
   const nx = layout.xs.length - 1, ny = layout.ys.length - 1;
   const cellBlock = new Int32Array(nx * ny).fill(-1);
   layout.clusters.forEach((c, ci) => {
@@ -170,31 +164,19 @@ export class CityMap {
     return this.blockAt(x, y) === null;
   }
 
-  /** Nearest junction on the level a point is on: the street, or a way's deck (world/levels.ts; a
-   *  deck node's x, y are the ground point under it). */
+  /** Nearest street junction to a point (on a way's strip or an upper floor, to the point over the
+   *  map: world/levels.ts). */
   nearestNode(x: number, y: number): RoadNode {
-    const f = floorOf(x);
-    if (isWayStrip(f)) {
-      const gx = x - f * LEVEL_BAND;
-      let best: RoadNode | null = null, bd = Infinity;
-      for (const n of this.city.nodes) {
-        if (n.level !== f) continue;
-        const d = (n.x - gx) ** 2 + (n.y - y) ** 2;
-        if (d < bd) { bd = d; best = n; }
-      }
-      if (best) return best;
-      x = gx;
-    }
+    x -= floorOf(x) * LEVEL_BAND;
     let best = this.city.nodes[0], bd = Infinity;
     const i = Math.max(0, lowerIndex(this.city.xs, x)), j = Math.max(0, lowerIndex(this.city.ys, y));
     for (const n of this.city.nodes) {
-      if (n.level !== undefined || Math.abs(n.i - i) > 3 || Math.abs(n.j - j) > 3) continue;
+      if (Math.abs(n.i - i) > 3 || Math.abs(n.j - j) > 3) continue;
       const d = (n.x - x) ** 2 + (n.y - y) ** 2;
       if (d < bd) { bd = d; best = n; }
     }
     if (bd === Infinity) {
       for (const n of this.city.nodes) {
-        if (n.level !== undefined) continue;
         const d = (n.x - x) ** 2 + (n.y - y) ** 2;
         if (d < bd) { bd = d; best = n; }
       }
@@ -202,25 +184,16 @@ export class CityMap {
     return best;
   }
 
-  /** Nearest road segment and the distance along it, for snapping vehicles onto the network: on the
-   *  street, the streets; on a way's strip, its deck and ramps (in ground coordinates). */
+  /** Nearest road segment and the distance along it, for snapping vehicles onto the network. */
   nearestSegment(x: number, y: number): { seg: Segment; t: number; d: number } {
     let best = this.city.segs[0], bt = 0, bd = Infinity;
-    const f = floorOf(x);
-    const deck = isWayStrip(f);
+    x -= floorOf(x) * LEVEL_BAND;
     const near = new Set<number>();
-    if (deck) {
-      x -= f * LEVEL_BAND;
-      const wi = this.city.ways.findIndex((w) => w.strip === f);
-      this.city.segs.forEach((s, i) => { if (s.way === wi && wi >= 0) near.add(i); });
-    } else {
-      const n = this.nearestNode(x, y);
-      for (const s of n.segs) {
-        near.add(s);
-        const s2 = this.city.segs[s];
-        for (const o of this.city.nodes[s2.a === n.id ? s2.b : s2.a].segs) near.add(o);
-      }
-      for (const si of near) if (this.city.segs[si].way !== undefined) near.delete(si);
+    const n = this.nearestNode(x, y);
+    for (const s of n.segs) {
+      near.add(s);
+      const s2 = this.city.segs[s];
+      for (const o of this.city.nodes[s2.a === n.id ? s2.b : s2.a].segs) near.add(o);
     }
     for (const si of near) {
       const s = this.city.segs[si];

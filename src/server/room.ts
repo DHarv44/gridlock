@@ -18,7 +18,7 @@ import { StreetFurniture } from './game/systems/breakables';
 import { Dispatch } from './game/systems/dispatch';
 import { Economy } from './game/systems/economy';
 import { updateNpcPeds, updateVehicles } from './game/systems/movement';
-import { devTeleport, wayCrossings } from './game/systems/ways';
+import { devTeleport } from './game/systems/ways';
 import { updateTrains } from './game/systems/trains';
 import { CardTables } from './game/systems/cardTables';
 import { dialFriend, meetFriend, sendFriends, updateInvites } from './game/systems/cardInvites';
@@ -317,7 +317,6 @@ export class Room {
     updateMounts(w, DT);
     updateVehicles(w, DT);
     updateTrains(w, DT);
-    wayCrossings(w);
     w.rebuildHashes();
     resolveContacts(w);
     this.furniture.update(DT);

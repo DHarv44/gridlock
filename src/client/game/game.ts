@@ -5,7 +5,6 @@ import { StaticWorld } from '../../shared/world/collision';
 import { groundOf, isWayStrip } from '../../shared/world/levels';
 import { heightAt, installWays } from '../../shared/world/ways';
 import { installTerrain } from '../../shared/world/terrain';
-import { Highways } from '../render/highways';
 import { RailwayView } from '../render/railway';
 import { joinScreen, tableScreen, type TableSend } from '../hud/cardTable';
 import { TableRoom } from '../hud/tableRoom';
@@ -180,7 +179,6 @@ export class Game {
     this.buildingUniforms = meshes.uniforms;
     this.props = meshes.props;
     this.water = new Water(this.stage.scene, this.map);
-    this.highways = new Highways(this.stage.scene, city);
     new RailwayView(this.stage.scene, city, (x, y) => this.map.isWater(x, y));
     this.storefronts = new Storefronts(this.stage.scene, city);
     addAtms(this.stage.scene, atmsOf(city));
@@ -193,7 +191,6 @@ export class Game {
   }
 
   private buildingUniforms: { uNight: { value: number } };
-  private highways: Highways;
   /** The table you're sat at, as the server shows it; friends whose number you have. */
   private tableView: TableView | null = null;
   private friends = new Set<string>();
@@ -393,7 +390,7 @@ export class Game {
     this.store.update();
     const own = this.ownState(this.acc / STEP);
     // Where you are over the map (upstairs, world/levels.ts: over your building, at your floor's
-    // height; on a highway, over its avenue at the deck's height: world/ways.ts).
+    // height; on a train's viaduct, over its corridor at the track's height: world/ways.ts).
     const up = own ? groundOf(own.x, own.y) : null;
     const upH = own ? heightAt(own.x, own.y) : 0;
     const disp = own && up ? { ...own, x: up.x, y: up.y } : null;
@@ -418,7 +415,6 @@ export class Game {
     if (it) this.fx.glow.put(it.x, it.y, 0.09, 3.2 + Math.sin(performance.now() / 160) * 0.7, 1, 0, 1, 0.12, 0.08, 0.7);
     this.gas.putGlows(this.fx.glow, night, vr);
     if (own && up) this.interiors.update(up.x, up.y, !own.vid, isWayStrip(up.f) ? 0 : up.f);
-    if (up) this.highways.update(up.x, up.y, up.f === 0);
     this.interiors.putGlows(this.fx.glow, night);
     this.view.carTags = this.carTags();
     this.view.sync(this.store, dt, own, this.tags(), night, vr);

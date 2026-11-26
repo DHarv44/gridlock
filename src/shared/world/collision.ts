@@ -80,7 +80,7 @@ export class StaticWorld {
       else if (spec.solid === 'ring') for (const s of ringSides(f)) this.addBox({ ...s, h: Math.min(h, 1.6) });
       else if (typeof spec.solid === 'number') this.addCircle({ x: f.x, y: f.y, r: spec.solid, h });
     }
-    // Highways (world/ways.ts): ramp walls and deck columns on the street, barriers on their strips.
+    // An elevated railway (world/ways.ts): its columns and stair towers on the street.
     const ways = wayCollision(city, (x, y) => this.boatWater(x, y));
     for (const b of ways.boxes) this.addBox(b);
     for (const c of ways.circles) this.addCircle(c);
