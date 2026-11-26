@@ -149,6 +149,13 @@ A walk-in casino (world/interiors.ts layout): gaming floor, cashier cage, securi
 your money (cards, wheel, slots, kept simple and readable from the top-down view), house edge in the
 pack's numbers; a heist hook later (the cage and the vault, like the bank).
 
+## Scopes decide the aim zoom (asked 2026-11-26)
+Holding Aim zooms the camera in (render/camera.ts SCOPE_ZOOM, one fixed amount today). Make the zoom
+come from the weapon in hand: a scope attachment (a pack noun: its magnification, the reticle it
+shows) sets how far the view closes in and how far out you can aim; no scope, a small zoom or
+none. Needs weapon attachments: which weapons take a scope, buying or finding one, fitting it, and
+the scope showing on the weapon model and the HUD.
+
 ## G. Mobile (parked, 2026-11-23)
 The user wants the website usable on a phone: not a mobile port (no touch-control scheme, app install
 or radio re-encodes unless asked). Parked for now; when it comes back, keep it to that.
