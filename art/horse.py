@@ -118,13 +118,16 @@ class Horse:
     # ------------------------------------------------------------ the horse
     def build(self):
         st, col = self.st, self.col
-        self.add(loft_path("barrel", [(x, zc, hu, hs) for x, zc, hu, hs in self.barrel], col, "paint", y=self.ay, n=16, e=2.2, sharp=85))
+        # Barrel, neck and head lofted apart, then fused into one skin so the neck flows out of the
+        # shoulders and the head out of the throat, with no creases where they meet.
         neck = self.path(st["neck"], self.b["neck"])
-        self.add(loft_path("neck", neck, col, "paint", y=self.ay, n=12, sharp=85))
-        self.add(loft_path("head", self.path(st["head"], self.b["head"]), col, "paint", y=self.ay, n=12))
+        parts = [loft_path("barrel", [(x, zc, hu, hs) for x, zc, hu, hs in self.barrel], col, "paint", y=self.ay, n=24, e=2.2),
+                 loft_path("neck", neck, col, "paint", y=self.ay, n=16),
+                 loft_path("head", self.path(st["head"], self.b["head"]), col, "paint", y=self.ay, n=16)]
+        self.add(kit.fuse("body", parts, col, voxel=0.016 * self.su, tris_to=st.get("body_tris", 3400), smooth=4))
         self.mane(neck)
         self.face()
-        self.add(loft_path("tail", self.path(st["tail"]), col, "hair", y=self.ay, n=8, sharp=85))
+        self.tail()
         for front, path, pivot in ((True, st["leg_front"], st["pivot_front"]), (False, st["leg_hind"], st["pivot_hind"])):
             for sd in (1, -1):
                 self.leg(front, sd, path, pivot)
@@ -149,6 +152,11 @@ class Horse:
         tx, ty, tz = self.head_point(0.3, 1.05)
         self.add(kit.tube("forelock", [(fx - 0.01, fy, fz + 0.03), ((fx + tx) / 2, fy, (fz + tz) / 2 + 0.01), (tx, ty, tz)], 0.03 * self.su, self.col, M.get("hair"), n=6))
 
+    def tail(self):
+        """The dock set high on the croup, then the hair hanging to about the hocks: round, fuller
+        toward the end and a little swept back, so from above it's a tuft trailing the rump."""
+        self.add(loft_path("tail", self.path(self.st["tail"]), self.col, "hair", y=self.ay, n=10, e=1.8))
+
     def face(self):
         """Ears, eyes, nostrils."""
         col, su = self.col, self.su
@@ -171,7 +179,7 @@ class Horse:
         pts = [(*self.P(x, z), hu * self.su * lg, hs * self.su * lg) for x, z, hu, hs in path]
         px, pz = self.P(*pivot)
         pv = (px, y, pz)
-        self.add(loft_path(tag, pts, self.col, "paint", y=y, n=10 if not front else 8, sharp=85), tag, pv)
+        self.add(loft_path(tag, pts, self.col, "paint", y=y, n=14, sharp=180), tag, pv)
         hx, hz = pts[-1][0], pts[-1][1]
         r0, r1, hh = self.st["hoof"]
         r0, r1, hh = r0 * self.su * lg, r1 * self.su * lg, hh * self.sz

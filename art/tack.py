@@ -99,13 +99,20 @@ def _bedroll(h, xc, zc, col, look):
 
 
 def _saddlebags(h, xc, zc, col, look):
+    """A pair of bags behind the cantle, slung over the loins by a strap across the back: each
+    hangs flat against the flank from high on the side, so from above they hug the horse."""
     out = []
-    x = xc - 0.33 * h.sx
+    x = xc - 0.3 * h.sx
+    bags, lea = M.get(look.get("bags", "leather_dark")), M.get(look.get("leather", "leather"))
+    top = h.top(x)
     for sd in (1, -1):
-        p = h.on_barrel(x, sd * 1.25, 0.05)
-        y0, y1 = sorted((p[1], p[1] + sd * 0.09))
-        out.append(kit.box("bag", x - 0.14, x + 0.14, y0, y1, p[2] - 0.3, p[2] - 0.02, col, M.get(look.get("bags", "leather_dark")), bev=0.03, seg=2))
-        out.append(kit.box("flap", x - 0.145, x + 0.145, min(y0, y1) - 0.006, max(y0, y1) + 0.006, p[2] - 0.12, p[2] - 0.01, col, M.get(look.get("leather", "leather")), bev=0.02))
+        p = h.on_barrel(x, sd * 0.95, 0.0)
+        y0, y1 = sorted((p[1], p[1] + sd * 0.07))
+        out.append(kit.box("bag", x - 0.13, x + 0.13, y0, y1, p[2] - 0.26, p[2] + 0.01, col, bags, bev=0.025, seg=2))
+        out.append(kit.box("flap", x - 0.135, x + 0.135, y0 - 0.005, y1 + 0.005, p[2] - 0.1, p[2] + 0.02, col, lea, bev=0.015))
+    # The strap joining them over the back.
+    w = h.section(x)[2]
+    out.append(kit.box("bag_strap", x - 0.05, x + 0.05, h.ay - w * 0.85, h.ay + w * 0.85, top - 0.01, top + 0.012, col, lea))
     return out
 
 

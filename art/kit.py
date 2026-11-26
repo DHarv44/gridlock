@@ -272,6 +272,29 @@ def join(name, obs, collection):
     return ob
 
 
+def fuse(name, obs, collection, voxel=0.02, tris_to=2000, smooth=2):
+    """Overlapping parts of one material become one seamless skin (a horse's barrel, neck and head):
+    joined, voxel-remeshed so the joins flow into each other, relaxed a little, then decimated to
+    about `tris_to` triangles and shaded smooth. Takes the first part's material."""
+    ob = join(name, obs, collection)
+    r = ob.modifiers.new("Remesh", 'REMESH')
+    r.mode, r.voxel_size, r.use_smooth_shade = 'VOXEL', voxel, True
+    if smooth:
+        # Laplacian with volume kept: a plain smooth shrinks the skin away from what sits on it
+        # (saddle, saddlebags, harness).
+        s = ob.modifiers.new("Smooth", 'LAPLACIANSMOOTH')
+        s.iterations, s.lambda_factor, s.use_volume_preserve = smooth, 0.5, True
+    bake(ob)
+    n = sum(len(p.vertices) - 2 for p in ob.data.polygons)
+    if n > tris_to:
+        d = ob.modifiers.new("Decimate", 'DECIMATE')
+        d.ratio = tris_to / n
+        bake(ob)
+    ob.data.polygons.foreach_set("use_smooth", [True] * len(ob.data.polygons))
+    ob.data.update()
+    return ob
+
+
 def tris(obs):
     """Triangle count after modifiers."""
     dg = bpy.context.evaluated_depsgraph_get()
