@@ -24,8 +24,9 @@ const MODERN_PROP: Record<PropKind, string> = {
   counter: '#6e5136', shelf: '#b9bdc2', table: '#7a5a3a', booth: '#a63a3a', bar: '#4a2a1a',
   rack: '#a9773d', desk: '#5f6368', stool: '#2a2a2a', dance: '#7a3aa0', bench: '#7a5a3a', bars: '#4a4e54',
   lift: '#8d949b', stairs: '#6d6a64', bed: '#d9d2c4',
-  // Stairwells (world/stairs.ts): pale treads going up, dark ones going down, a steel rail between.
-  step: '#a29d93', stepDown: '#47443f', rail: '#5d6166',
+  // Stairwells (world/stairs.ts): pale treads going up, dark ones going down, a steel rail between,
+  // a bright nosing on every tread so the flights read from above.
+  step: '#9c968b', stepDown: '#3a3733', rail: '#5d6166', nosing: '#f1ede4', nosingDown: '#77726a',
 };
 // An older era (WORLD.modern off): plank floors, whitewashed or board walls, wooden fittings; the
 // saloon's dance floor is boards too, the hotel's booths are wooden settles.
@@ -41,7 +42,7 @@ const OLD_PROP: Record<PropKind, string> = {
   counter: '#5a3a22', shelf: '#7a5a3a', table: '#6a4a2e', booth: '#5a3e26', bar: '#4a2a16',
   rack: '#8a6a40', desk: '#5a3e26', stool: '#3e2a1a', dance: '#9a7650', bench: '#6a4a2e', bars: '#3a3836',
   lift: '#6a4a2e', stairs: '#6a4a2e', bed: '#cfc2a2',
-  step: '#9a7a56', stepDown: '#4a3624', rail: '#4a3624',
+  step: '#9a7a56', stepDown: '#4a3624', rail: '#4a3624', nosing: '#c9a77c', nosingDown: '#6a5038',
 };
 const FLOOR = WORLD.modern ? MODERN_FLOOR : OLD_FLOOR;
 const WALL = WORLD.modern ? MODERN_WALL : OLD_WALL;

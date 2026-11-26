@@ -44,12 +44,14 @@ export function upperFloors(
     if (tower || !stairs) prop(tower ? 'lift' : 'stairs', am - 1.0, am + 1.0, iD - 1.0, iD, tower ? 2.6 : 0.05);
     // The stairwell beside it, the units on that side stopping short of it.
     const well = stairs ? stairwell(stairs, f, n, (a0, a1, e0, e1) => lift(rect(a0, a1, e0, e1)), on, inward, wall, prop) : undefined;
-    if (stairs) wall(ia0, stairs.a0 - T, stairs.d0 - T, stairs.d0);
+    // Closing off the strip between the stairwell and the outer wall, behind that side's units.
+    if (stairs) { if (stairs.door > 0) wall(ia0, stairs.a0 - T, stairs.d0 - T, stairs.d0); else wall(stairs.a1 + T, ia1, stairs.d0 - T, stairs.d0); }
+    const stairSpine = stairs ? (stairs.door > 0 ? c0 : c1) : null;
     // Offices / flats either side of the corridor, when there's room for them.
     for (const [s0, s1, spine] of [[ia0, c0, c0], [c1, ia1, c1]] as const) {
       if (s1 - s0 < 3) continue;
       const units: [number, number][] = [];
-      const back = stairs && spine === c0 ? stairs.d0 - T : iD;
+      const back = stairs && spine === stairSpine ? stairs.d0 - T : iD;
       for (let e = d0; e < back - 0.5; e += UNIT) units.push([e, Math.min(back, e + UNIT)]);
       units.forEach(([e0, e1], k) => {
         // The corridor-side wall with a doorway in the middle of the unit.

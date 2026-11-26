@@ -10,9 +10,9 @@ import { CORR, floorsFor, type UpperFloor, upperFloors } from './floors';
 import { type Stairwell, stairPlan, stairwell } from './stairs';
 
 export type PropKind = 'counter' | 'shelf' | 'table' | 'booth' | 'bar' | 'rack' | 'desk' | 'stool' | 'dance' | 'bench' | 'bars'
-  | 'lift' | 'stairs' | 'bed' | 'step' | 'stepDown' | 'rail';
+  | 'lift' | 'stairs' | 'bed' | 'step' | 'stepDown' | 'rail' | 'nosing' | 'nosingDown';
 /** Not solid: drawn on the floor only. */
-export const FLAT_PROPS = new Set<PropKind>(['dance', 'stairs', 'step', 'stepDown']);
+export const FLAT_PROPS = new Set<PropKind>(['dance', 'stairs', 'step', 'stepDown', 'nosing', 'nosingDown']);
 export interface Box { rect: Rect; h: number }
 export interface Prop extends Box { kind: PropKind }
 export interface Spot { x: number; y: number; angle: number }
@@ -125,9 +125,11 @@ function build(place: Place, property: boolean, building: number, lot: Lot, layo
     const am = (ia0 + ia1) / 2;
     const tower = layout === 'tower';
     const n = floorsFor(h);
-    const plan = stairPlan(ia0, iD, am - CORR / 2);
+    const plan = stairPlan(ia0, ia1, iD, am - CORR / 2, am + CORR / 2);
     const stairs = plan ? stairwell(plan, 0, n, F.rect, F.point, F.inward, (s0, s1, e0, e1, wh) => wall(s0, s1, e0, e1, wh), prop) : undefined;
     if (tower || !stairs) prop(tower ? 'lift' : 'stairs', am - 1.0, am + 1.0, iD - 1.0, iD, tower ? WALL_H : 0.05);
+    // The mailboxes go on the wall the stairwell isn't against.
+    const boxesRight = !!plan && plan.door > 0 && plan.d0 - T < 4.4;
     let counter: Spot, clerk: Spot;
     if (tower) {
       prop('counter', ia1 - 4.6, ia1 - 0.6, 3, 3.8, 1.1);
@@ -135,8 +137,8 @@ function build(place: Place, property: boolean, building: number, lot: Lot, layo
       counter = at(ia1 - 2.6, 2.1, F.inward);
       clerk = at(ia1 - 2.6, 4.6, front);
     } else {
-      prop('shelf', ia0, ia0 + 0.4, 2, 4, 1.6); // mailboxes
-      counter = at(ia0 + 1.2, 3, F.inward - Math.PI / 2);
+      if (boxesRight) { prop('shelf', ia1 - 0.4, ia1, 2, 4, 1.6); counter = at(ia1 - 1.2, 3, F.inward + Math.PI / 2); } // mailboxes
+      else { prop('shelf', ia0, ia0 + 0.4, 2, 4, 1.6); counter = at(ia0 + 1.2, 3, F.inward - Math.PI / 2); }
       clerk = counter;
     }
     return {

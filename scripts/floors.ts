@@ -93,12 +93,12 @@ const { stairwellOn } = await import('../src/shared/world/stairs');
 const { climbStairs } = await import('../src/server/game/systems/lifts');
 const withStairs = tall.filter(({ i }) => i.stairs && i.floors.every((fl) => fl.stairs));
 check(withStairs.length >= tall.length * 0.6, `stairwells in ${withStairs.length} of ${tall.length} buildings`);
+if (process.env.DEBUG) for (const { i } of tall) if (!i.stairs) console.log('  no stairwell:', i.layout, `room ${(i.room.x1 - i.room.x0).toFixed(1)} x ${(i.room.y1 - i.room.y0).toFixed(1)}`);
 check(tall.every(({ i }) => i.stairs || i.elevator), 'a building without a stairwell keeps a floor menu');
 check(tall.every(({ i }) => i.layout !== 'tower' || i.elevator), 'towers keep their elevator');
 type Pt = { x: number; y: number };
 const mid = (r: { x0: number; y0: number; x1: number; y1: number }): Pt => ({ x: (r.x0 + r.x1) / 2, y: (r.y0 + r.y1) / 2 });
 const add = (a: Pt, b: Pt, k = 1): Pt => ({ x: a.x + b.x * k, y: a.y + b.y * k });
-const unit = (a: Pt, b: Pt): Pt => { const d = Math.hypot(b.x - a.x, b.y - a.y); return { x: (b.x - a.x) / d, y: (b.y - a.y) / d }; };
 const dot = (a: Pt, b: Pt) => a.x * b.x + a.y * b.y;
 const place = (p: Pt) => { me.body.x = p.x; me.body.y = p.y; me.body.vx = 0; me.body.vy = 0; };
 for (const pick of [withStairs.find(({ i }) => i.layout === 'tower'), withStairs.find(({ i }) => i.layout === 'apartments')]) {
@@ -107,10 +107,9 @@ for (const pick of [withStairs.find(({ i }) => i.layout === 'tower'), withStairs
   let climbed = 0, walls = true, settled = true, doors = 0;
   for (let f = 0; f <= n; f++) {
     const s = stairwellOn(i, f)!;
-    const upC = mid(s.up), across = unit(upC, s.down ? mid(s.down) : add(upC, unit(mid(s.up), mid(s.rect)), 0));
-    // Across the stairwell toward the corridor: the lobby has no flight down to measure it by, so
-    // use the floor above's (the stairwells stack exactly).
-    const ax = s.down ? across : (() => { const s1 = stairwellOn(i, 1)!; return unit(mid(s1.up), mid(s1.down!)); })();
+    const upC = mid(s.up);
+    // Across the stairwell toward the corridor (out of its door).
+    const ax = s.out;
     // From the corridor outside the door, through it onto the landing.
     const corridor = add(s.landing, ax, 2.6);
     const inside = walk(corridor, s.landing, 6);
@@ -146,7 +145,7 @@ for (const pick of [withStairs.find(({ i }) => i.layout === 'tower'), withStairs
   }
   check(down === n && w.stairs.at(me.body.x, me.body.y)?.s === i.stairs, `${name}: down the stairs to the lobby (${down}/${n})`);
   // The lobby's stairwell is reachable from the front door.
-  const lobby = walk(walk({ x: i.place.x, y: i.place.y }, add(i.stairs!.landing, unit(mid(stairwellOn(i, 1)!.up), mid(stairwellOn(i, 1)!.down!)), 2.6), 12), i.stairs!.landing, 6);
+  const lobby = walk(walk({ x: i.place.x, y: i.place.y }, add(i.stairs!.landing, i.stairs!.out, 2.6), 12), i.stairs!.landing, 6);
   check(w.stairs.at(lobby.x, lobby.y)?.s === i.stairs, `${name}: from the street door to the lobby stairwell`);
 }
 

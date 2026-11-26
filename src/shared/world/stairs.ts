@@ -20,21 +20,35 @@ export interface Stairwell {
   roof: boolean;
   /** Where you come out arriving from another floor. */
   landing: Spot;
+  /** Out through the door, onto the corridor (a unit vector). */
+  out: { x: number; y: number };
 }
 
-/** Where the stairwell sits in the room's local frame (`a` across, `d` in from the front). */
-export interface StairPlan { a0: number; a1: number; d0: number; d1: number }
+/** Where the stairwell sits in the room's local frame (`a` across, `d` in from the front), and which
+ *  side its door is on: +1 the a1 side (it stands left of the corridor), -1 the a0 side (right of it). */
+export interface StairPlan { a0: number; a1: number; d0: number; d1: number; door: 1 | -1 }
 
-const T = 0.3, WALL_H = 2.8, SW = 2.4, SD = 4.4, DOOR = 1.2, LANDING = 1.6, RAIL = 0.08, TOP = 0.7, STEPS = 6;
+const T = 0.3, WALL_H = 2.8, SW = 2.4, SD = 4.4, DOOR = 1.2, LANDING = 1.6, RAIL = 0.08, TOP = 0.7, STEPS = 7;
+/** How high the top tread of a flight up stands (the flight reads as climbing from above). */
+const RISE = 1.4;
 
-/** The stairwell for a room with inside faces ia0..ia1 across and iD deep, against the corridor's
- *  left wall (`c0`, the line the units' corridor walls stand on); null when the room is too small. */
-export function stairPlan(ia0: number, iD: number, c0: number): StairPlan | null {
-  const a1 = c0 - T, a0 = a1 - SW, d1 = iD, d0 = iD - SD;
-  // Room beside it for the lobby's bench and the units on the floors; the lobby's desk and
-  // mailboxes stand in the front 4.6 m.
-  if (a0 - T < ia0 + 0.6 || d0 - T < 4.8) return null;
-  return { a0, a1, d0, d1 };
+/** The stairwell for a room with inside faces ia0..ia1 across and iD deep, beside the corridor
+ *  (c0..c1, the lines the units' corridor walls stand on), at the back. Left of the corridor with
+ *  the lobby's front 4.6 m clear when there's room; in a small block, a compact one on whichever side
+ *  fits. Null only when the room can't take a stairwell at all. */
+export function stairPlan(ia0: number, ia1: number, iD: number, c0: number, c1: number): StairPlan | null {
+  const d1 = iD, d0 = iD - SD;
+  const left = { a0: c0 - T - SW, a1: c0 - T, d0, d1, door: 1 as const };
+  if (left.a0 - T >= ia0 + 0.6 && d0 - T >= 4.8) return left;
+  // Compact: just room in front of it for the door and the landing.
+  if (d0 - T < 1.4) return null;
+  if (left.a0 - T >= ia0 + 0.2) return left;
+  const right = { a0: c1 + T, a1: c1 + T + SW, d0, d1, door: -1 as const };
+  if (right.a1 + T <= ia1 - 0.2) return right;
+  // A narrow block: against its side wall, the door onto the middle of the floor.
+  const side = { a0: ia0, a1: ia0 + SW, d0, d1, door: 1 as const };
+  if (side.a1 + T + 1.0 <= ia1) return side;
+  return null;
 }
 
 type Local = (a0: number, a1: number, d0: number, d1: number) => Rect;
@@ -51,25 +65,39 @@ export function stairwell(
   // Walls: the front, the far side, and the corridor side with the door onto the landing. The back
   // is the building's back wall.
   wall(a0 - T, a1 + T, d0 - T, d0, WALL_H);
-  wall(a0 - T, a0, d0, d1, WALL_H);
-  wall(a1, a1 + T, d0, d0 + 0.25, WALL_H);
-  wall(a1, a1 + T, d0 + 0.25 + DOOR, d1, WALL_H);
+  const [blind0, blind1, door0, door1] = s.door > 0 ? [a0 - T, a0, a1, a1 + T] : [a1, a1 + T, a0 - T, a0];
+  wall(blind0, blind1, d0, d1, WALL_H);
+  wall(door0, door1, d0, d0 + 0.25, WALL_H);
+  wall(door0, door1, d0 + 0.25 + DOOR, d1, WALL_H);
   // The rail between the flights.
   prop('rail', am - RAIL, am + RAIL, f0, d1, 1.0);
-  // Up: steps rising toward the back. Down: steps falling away (the lobby has nothing below: the
-  // space under the stairs is solid).
+  // The flights swap sides floor to floor, the way a stair turns back on itself: the flight you came
+  // up is the one down from here, and the next flight up is beside it. The lobby's goes up on the
+  // side away from the door.
+  const far: [number, number] = s.door > 0 ? [a0, am - RAIL] : [am + RAIL, a1];
+  const near: [number, number] = s.door > 0 ? [am + RAIL, a1] : [a0, am - RAIL];
+  const [u0, u1] = f % 2 === 0 ? far : near, [w0, w1] = f % 2 === 0 ? near : far;
+  // Up: treads climbing toward the back, a pale nosing on each. Down: treads sinking away into the
+  // dark (the lobby has nothing below: the space under the stairs is solid, fenced off).
   const step = (d1 - f0) / STEPS;
   for (let k = 0; k < STEPS; k++) {
-    const e0 = f0 + k * step, e1 = e0 + step - 0.04;
-    prop('step', a0, am - RAIL, e0, e1, 0.06 + k * 0.08);
-    if (f > 0) prop('stepDown', am + RAIL, a1, e0, e1, 0.03 + (STEPS - 1 - k) * 0.004);
+    const e0 = f0 + k * step, e1 = e0 + step - 0.03;
+    const up = 0.08 + (k + 1) * (RISE / STEPS);
+    prop('step', u0, u1, e0, e1, up);
+    prop('nosing', u0, u1, e0, e0 + 0.07, up + 0.02);
+    if (f > 0) {
+      prop('stepDown', w0, w1, e0, e1, 0.05 + (STEPS - k) * 0.004);
+      prop('nosingDown', w0, w1, e0, e0 + 0.05, 0.06 + (STEPS - k) * 0.004);
+    }
   }
-  if (f === 0) prop('rail', am + RAIL, a1, f0, d1, 1.2);
-  const land = point(am, d0 + 0.8);
+  if (f === 0) prop('rail', w0, w1, f0, d1, 1.2);
+  const land = point(am, d0 + 0.8), toward = point(am + s.door, d0 + 0.8);
+  const ol = Math.hypot(toward.x - land.x, toward.y - land.y) || 1;
   return {
+    out: { x: (toward.x - land.x) / ol, y: (toward.y - land.y) / ol },
     f, rect: rect(a0, a1, d0, d1),
-    up: rect(a0, am - RAIL, d1 - TOP, d1),
-    down: f > 0 ? rect(am + RAIL, a1, d1 - TOP, d1) : null,
+    up: rect(u0, u1, d1 - TOP, d1),
+    down: f > 0 ? rect(w0, w1, d1 - TOP, d1) : null,
     roof: f === n,
     landing: { x: land.x, y: land.y, angle: face },
   };
