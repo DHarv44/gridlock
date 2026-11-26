@@ -12,7 +12,8 @@ const { RULES, UNIVERSE, VEHICLES, vehicleIndex } = await import('../src/shared/
 const { stepVehicle } = await import('../src/shared/sim/physics');
 const { onLegs } = await import('../src/shared/sim/kinds');
 const { materialOf } = await import('../src/shared/materials');
-const { spawnVehicle } = await import('../src/server/game/factory');
+const { removeVehicle, seatPed, spawnPed, spawnVehicle } = await import('../src/server/game/factory');
+const { bolting, isLame, reinIn, spookMounts, updateSpook } = await import('../src/server/game/systems/spook');
 const { damageVehicle } = await import('../src/server/game/combat/damage');
 const { updateTrailers } = await import('../src/server/game/systems/trailers');
 const { addHeat } = await import('../src/server/game/systems/wanted');
@@ -83,6 +84,44 @@ const charger = spawnVehicle(w, vehicleIndex('mustang'), rock.rect.x0 - 25, ry, 
 let worst = 0;
 for (let t = 0; t < 5 * 30; t++) worst = Math.max(worst, stepVehicle(charger.body, charger.spec, ctl(1, 0, true), DT, w.statics, true));
 check(worst === 0 && charger.body.x < rx, 'galloped at a rock it pulls up short: no crash damage');
+
+// Temperament: a blast nearby spooks hot horses far more than steady ones; spooked, a loose horse
+// bolts from the noise and a ridden one may throw its rider.
+const herd = (id: string, ridden: boolean) => Array.from({ length: 24 }, (_, k) => {
+  const h = spawnVehicle(w, vehicleIndex(id), straight.x0 + 200 + (k % 6) * 4, straight.y0 + Math.floor(k / 6) * 3 - 4, 0);
+  if (ridden) seatPed(w, spawnPed(w, 0, h.body.x, h.body.y, 0, false), h, 0);
+  return h;
+});
+const hot = herd('thoroughbred', true), steady = herd('draft_horse', true);
+const bx = straight.x0 + 210, by = straight.y0;
+w.rebuildHashes();
+spookMounts(w, bx, by, 40, true);
+const reared = (hs: typeof hot) => hs.filter((h) => h.rearT > 0).length;
+const thrown = (hs: typeof hot) => hs.filter((h) => !h.seats[0]).length;
+check(reared(hot) > reared(steady) * 2 && reared(hot) >= 8, `a blast spooks hot thoroughbreds (${reared(hot)}/24 rear) far more than draft horses (${reared(steady)}/24)`);
+check(thrown(hot) > thrown(steady) && thrown(hot) > 0, `and throws more riders off them (${thrown(hot)} vs ${thrown(steady)})`);
+const loose = hot.filter((h) => h.rearT > 0 && !h.seats[0]);
+const d0 = loose.map((h) => Math.hypot(h.body.x - bx, h.body.y - by));
+for (let t = 0; t < 4 * 30; t++) { updateMounts(w, DT); for (const h of loose) stepVehicle(h.body, h.spec, h.ctl, DT, open, bolting(h)); }
+const fled = loose.filter((h, i) => Math.hypot(h.body.x - bx, h.body.y - by) > d0[i] + 15).length;
+check(loose.length > 0 && fled >= loose.length * 0.6, `thrown riders' horses bolt away from the noise (${fled}/${loose.length})`);
+for (const h of [...hot, ...steady]) removeVehicle(w, h);
+
+// Lame: hurt badly, a horse can't gallop and holds to a trot; it heals out of it in time.
+const hurt = spawnVehicle(w, vehicleIndex('quarter_horse'), straight.x0 + 30, straight.y0, 0);
+hurt.hp = hurt.spec.hp * 0.25;
+check(isLame(hurt) && !canGallop(hurt), 'badly hurt, a horse is lame and can\'t gallop');
+let fastest = 0;
+for (let t = 0; t < 4 * 30; t++) {
+  hurt.ctl.throttle = 1; hurt.ctl.steer = 0; hurt.ctl.sprint = true;
+  reinIn(hurt);
+  stepVehicle(hurt.body, hurt.spec, hurt.ctl, DT, open, true);
+  fastest = Math.max(fastest, Math.hypot(hurt.body.vx, hurt.body.vy));
+}
+check(fastest <= hurt.spec.gaits!.trot + 0.05, `ridden flat out lame, it only trots (${fastest.toFixed(1)} m/s)`);
+for (let t = 0; t < 90 * 30; t++) updateSpook(w, hurt, DT);
+check(!isLame(hurt), 'given time it heals out of its limp');
+removeVehicle(w, hurt);
 
 // A stagecoach: the coach swings round behind the team through a turn.
 const coach = spawnVehicle(w, vehicleIndex('stagecoach'), straight.x0 + 40, straight.y0, 0);

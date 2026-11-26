@@ -2,6 +2,7 @@
 import type { Ped } from '../entities';
 import type { World } from '../world';
 import { BEHAVIOURS } from './behaviours';
+import { spookMounts } from '../systems/spook';
 
 export function onAttacked(w: World, victim: Ped, attacker: Ped): void {
   if (!victim.ai || victim.dead || victim === attacker) return;
@@ -13,6 +14,8 @@ export function onAttacked(w: World, victim: Ped, attacker: Ped): void {
 /** Gunfire, explosions and deaths make nearby NPCs react. */
 export function onNoise(w: World, x: number, y: number, radius: number, sourceId: number, lethal: boolean): void {
   const source = sourceId ? w.peds.get(sourceId) ?? null : null;
+  // Horses hear it too (a rider's own shots don't spook the horse under them; a blast does).
+  spookMounts(w, x, y, radius, lethal, lethal ? 0 : source?.vehicle ?? 0);
   w.pedsNear(x, y, radius, (p) => {
     if (!p.ai || p.dead || p === source) return;
     BEHAVIOURS[p.spec.behaviour].noise(w, p, x, y, source, lethal);

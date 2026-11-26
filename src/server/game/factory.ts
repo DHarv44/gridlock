@@ -55,7 +55,7 @@ export function spawnVehicle(w: World, type: number, x: number, y: number, angle
     seats: new Array(Math.max(1, spec.seats)).fill(0),
     siren: false, turret: angle, fireCd: 0, vw: 0, owner: 0, persistent: false, sinkT: 0, idleT: 0, spot: -1,
     stolenBy: 0, fireCalled: false, horn: false, trailer: angle, dents: [0, 0, 0, 0],
-    stamina: spec.stamina?.gallop ?? 0, blown: false, calledBy: 0,
+    stamina: spec.stamina?.gallop ?? 0, blown: false, calledBy: 0, rearT: 0, boltT: 0, boltX: 0, boltY: 0,
   };
   w.vehicles.set(v.id, v);
   return v;

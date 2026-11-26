@@ -212,6 +212,8 @@ export interface VehicleView {
   /** A mount's legs (userData.leg: leg_fl...) and its stride state (render/legs.ts). */
   legs: THREE.Mesh[];
   gait: import('./legs').GaitState | null;
+  /** How far up on its hind legs a spooked mount is drawn (radians, eased). */
+  rearing?: number;
   /** Pivot at the hitch; rotate it by (trailer angle - vehicle angle). */
   trailer: THREE.Group | null;
   key: string;

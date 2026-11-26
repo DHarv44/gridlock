@@ -8,6 +8,7 @@ import { damagePed, killPed, wallCrash } from '../combat/damage';
 import { climbStairs, leaveOnRoof } from './lifts';
 import { callMount, canGallop } from './mounts';
 import { toggleHitch } from './hitching';
+import { reinIn } from './spook';
 import { onAttacked } from '../ai/reactions';
 import { tickWeapon, tryFire } from '../combat/fire';
 import type { Ped, Player, Vehicle } from '../entities';
@@ -73,6 +74,7 @@ function applyInput(w: World, pl: Player, p: Ped, inp: InputMsg, dt: number): vo
       v.ctl.handbrake = (btn & BTN.handbrake) !== 0;
       // A mount gallops on Sprint while it has the wind (systems/mounts.ts spends and restores it).
       v.ctl.sprint = (btn & BTN.sprint) !== 0 && canGallop(v);
+      reinIn(v); // a rearing horse won't go, a lame one won't go faster than a trot (systems/spook.ts)
       v.ctl.up = (btn & BTN.up) !== 0; v.ctl.down = (btn & BTN.down) !== 0;
       if (btn & BTN.horn) { if (v.spec.siren) v.siren = !v.siren; else v.horn = true; }
       if (btn & BTN.hitch) toggleHitch(w, pl, v);

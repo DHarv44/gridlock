@@ -111,6 +111,11 @@ export interface Vehicle {
   blown: boolean;
   /** A mount called by this player (their id) is coming to them (systems/mounts.ts); 0 = not. */
   calledBy: number;
+  /** Spooked (systems/mounts.ts): seconds left rearing, then bolting away from (boltX, boltY). */
+  rearT: number;
+  boltT: number;
+  boltX: number;
+  boltY: number;
   /** Damage taken on each side (front, rear, left, right), in hit points: what the model shows as
    *  dents, broken lamps and glass (combat/damage.ts damageLevels). */
   dents: number[];

@@ -91,5 +91,12 @@ film's names, characters, story, map or look).
    each does): metal sparks, dents, smokes and blows up; flesh (horses, teams) bleeds where it's
    hit, never smokes or burns, and dead lies on its side in its own colours; wood (standing
    wagons) kicks up dust and goes down. (Replaced the earlier `wrecks: 'fall'`.)
+   Temperament is a noun (`VehicleSpec.temper`: nerve, buck, lame); systems/spook.ts is the verb.
+   Gunfire, blasts and deaths nearby (ai/reactions.ts onNoise) can spook a horse: it rears (no
+   control for a moment), may throw its rider (hurt, thrown clear), and loose it bolts from the
+   noise before settling. A rider's own shots don't spook their own horse. Hurt below `lame`
+   (a share of hp) it limps: no gallop, no faster than a trot, the near foreleg favoured; it heals
+   slowly. Hot thoroughbreds spook far more than drafts or army horses. Sent as `VF.rearing`,
+   `VF.lame` and `YouState.ml` so prediction holds the reins too. Protocol 21.
    Not yet: its own cast and voiced calls (job posts give briefs only), era sounds (a bell,
    hooves, whinnies); the gatling gun doesn't traverse (trailer parts don't animate).

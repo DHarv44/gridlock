@@ -68,6 +68,11 @@ export interface VehicleSpec {
   /** A mount's wind: it can gallop for up to `gallop` seconds, then has to canter while it gets its
    *  wind back (half as fast as it spends it). */
   stamina?: { gallop: number };
+  /** A mount's temperament (server/game/systems/mounts.ts): `nerve` 0..1, how often it holds steady
+   *  when a gun goes off or something blows up near it (else it rears, then bolts if nobody holds
+   *  it); `buck` 0..1, how readily a rearing horse throws its rider; `lame`, the share of its health
+   *  below which it limps (no faster than a trot) until it heals. */
+  temper?: { nerve: number; buck: number; lame: number };
   /** Comes at a whistle (the Call key) to the player who last rode it. */
   comesWhenCalled?: boolean;
   /** A team-drawn wagon: unhitching (the Hitch key, stopped) leaves the wagon standing as

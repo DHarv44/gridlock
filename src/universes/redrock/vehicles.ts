@@ -55,14 +55,16 @@ const G = (walk: number, trot: number, canter: number, gallop: number, accel: nu
 // A saddle horse: a canter on the throttle, a gallop on Sprint for ~12 s, then twice that to get
 // its wind back. Turns on the spot standing, wide at a gallop. It comes to its rider's whistle.
 const mount = { movement: 'legs' as const, material: 'flesh' as const, openTop: true, length: 2.5, width: 0.75, height: 1.7, mass: 500,
-  stamina: { gallop: 12 }, comesWhenCalled: true, ...G(2.2, 6, 11, 19, 7, 5, 3.0, 1.5, 1.2),
+  stamina: { gallop: 12 }, comesWhenCalled: true, temper: { nerve: 0.55, buck: 0.3, lame: 0.4 }, ...G(2.2, 6, 11, 19, 7, 5, 3.0, 1.5, 1.2),
   accel: 7, brake: 14, reverse: 1.2, grip: 10, turnRate: 3.0, seats: 2,
   saddles: [{ x: -0.05, z: 1.28, lean: 0.05 }, { x: -0.62, z: 1.24, lean: 0 }] };
 const horses = [0, 1, 2, 3, 5, 6, 7]; // coat colours (palette.ts)
 
 // A team in harness: slow to pick up and to turn (it can't pivot with a wagon behind), a short
 // burst at the whip (Sprint), mostly a steady canter.
-const teamBase = { movement: 'legs' as const, material: 'flesh' as const, stamina: { gallop: 8 }, length: 2.8, width: 1.7, height: 1.7, mass: 1800,
+const teamBase = { movement: 'legs' as const, material: 'flesh' as const, stamina: { gallop: 8 },
+  // A team in harness can't rear free or throw a driver off the box, but it can bolt with the wagon.
+  temper: { nerve: 0.6, buck: 0, lame: 0.35 }, length: 2.8, width: 1.7, height: 1.7, mass: 1800,
   ...G(2, 5, 9, 14, 3.5, 4, 0.9, 0.5, 0.8), accel: 3.5, brake: 9, reverse: 0.8, grip: 9, turnRate: 1.8 };
 
 type Wagon = NonNullable<VehicleSpec['trailer']>;
@@ -81,13 +83,15 @@ const standing = (id: string, name: string, w: Wagon, hp: number, as: string): V
 export const VEHICLES: VehicleSpec[] = [
   // Mustang: hardy and nimble, the longest wind. Quarter horse: quickest off the mark and round a
   // corner. Draft: slow and strong. Thoroughbred: the fastest gallop, the shortest wind, turns wide.
-  { ...mount, id: 'mustang', name: 'Mustang', ...G(2.3, 6.2, 11.5, 20, 7.5, 5, 3.2, 1.6, 1.2), hp: 180, price: 120, stamina: { gallop: 15 }, colors: horses, roles: ['traffic', 'parked'], model: horse() },
-  { ...mount, id: 'quarter_horse', name: 'Quarter Horse', ...G(2.2, 6, 11, 19, 9, 6, 3.4, 1.8, 1.4), hp: 220, price: 90, colors: horses, roles: ['traffic', 'parked'], model: horse() },
-  { ...mount, id: 'draft_horse', name: 'Draft Horse', length: 2.8, width: 0.9, height: 1.85, mass: 800, ...G(2, 4.8, 8, 13, 4.5, 4, 2.3, 1.0, 1.0), hp: 380, price: 70, stamina: { gallop: 8 }, colors: [2, 3, 6], roles: ['parked'], model: horse('#3a2a1a') },
-  { ...mount, id: 'thoroughbred', name: 'Thoroughbred', ...G(2.4, 6.5, 12.5, 23, 8, 5, 2.7, 1.2, 1.1), hp: 160, price: 400, stamina: { gallop: 10 }, colors: [0, 1, 2], roles: ['parked'], model: horse('#2a1a12') },
+  // Temperament: the trained law and army horses and the draft horse hold steady under fire; the
+  // thoroughbred is hot and throws riders; the mustang has spirit.
+  { ...mount, id: 'mustang', name: 'Mustang', temper: { nerve: 0.55, buck: 0.4, lame: 0.4 }, ...G(2.3, 6.2, 11.5, 20, 7.5, 5, 3.2, 1.6, 1.2), hp: 180, price: 120, stamina: { gallop: 15 }, colors: horses, roles: ['traffic', 'parked'], model: horse() },
+  { ...mount, id: 'quarter_horse', name: 'Quarter Horse', temper: { nerve: 0.65, buck: 0.25, lame: 0.4 }, ...G(2.2, 6, 11, 19, 9, 6, 3.4, 1.8, 1.4), hp: 220, price: 90, colors: horses, roles: ['traffic', 'parked'], model: horse() },
+  { ...mount, id: 'draft_horse', name: 'Draft Horse', temper: { nerve: 0.85, buck: 0.1, lame: 0.3 }, length: 2.8, width: 0.9, height: 1.85, mass: 800, ...G(2, 4.8, 8, 13, 4.5, 4, 2.3, 1.0, 1.0), hp: 380, price: 70, stamina: { gallop: 8 }, colors: [2, 3, 6], roles: ['parked'], model: horse('#3a2a1a') },
+  { ...mount, id: 'thoroughbred', name: 'Thoroughbred', temper: { nerve: 0.3, buck: 0.55, lame: 0.45 }, ...G(2.4, 6.5, 12.5, 23, 8, 5, 2.7, 1.2, 1.1), hp: 160, price: 400, stamina: { gallop: 10 }, colors: [0, 1, 2], roles: ['parked'], model: horse('#2a1a12') },
   // The law's and the army's horses don't come to a stranger's whistle.
-  { ...mount, id: 'law_horse', name: "Lawman's Horse", ...G(2.3, 6.2, 11.5, 21, 8, 5, 3.1, 1.5, 1.2), hp: 240, price: 0, colors: [2, 0], roles: ['police'], comesWhenCalled: false, model: horse('#1a1612') },
-  { ...mount, id: 'cavalry_horse', name: 'Cavalry Horse', ...G(2.3, 6.2, 11.5, 21, 8, 5, 3.1, 1.5, 1.2), hp: 260, price: 0, colors: [0, 1], roles: ['military'], comesWhenCalled: false, model: horse('#28324a') },
+  { ...mount, id: 'law_horse', name: "Lawman's Horse", temper: { nerve: 0.88, buck: 0.1, lame: 0.35 }, ...G(2.3, 6.2, 11.5, 21, 8, 5, 3.1, 1.5, 1.2), hp: 240, price: 0, colors: [2, 0], roles: ['police'], comesWhenCalled: false, model: horse('#1a1612') },
+  { ...mount, id: 'cavalry_horse', name: 'Cavalry Horse', temper: { nerve: 0.9, buck: 0.08, lame: 0.35 }, ...G(2.3, 6.2, 11.5, 21, 8, 5, 3.1, 1.5, 1.2), hp: 260, price: 0, colors: [0, 1], roles: ['military'], comesWhenCalled: false, model: horse('#28324a') },
 
   { ...teamBase, id: 'buckboard', name: 'Buckboard', ...G(2, 5, 9, 14, 4, 4, 1.0, 0.55, 0.8), hp: 400, seats: 2, openTop: true, price: 160, colors: horses,
     roles: ['traffic', 'parked'], model: team(), saddles: [{ x: -1.9, z: 1.3, lean: 0 }, { x: -1.9, y: 0.5, z: 1.3, lean: 0 }],

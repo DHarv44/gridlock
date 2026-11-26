@@ -25,7 +25,7 @@ function pattern(spec: VehicleSpec, speed: number): Pattern | null {
 }
 
 /** Called every frame with the vehicle's drawn position. */
-export function animateLegs(v: VehicleView, spec: VehicleSpec, x: number, y: number, dt: number): void {
+export function animateLegs(v: VehicleView, spec: VehicleSpec, x: number, y: number, dt: number, lame = false): void {
   if (!v.legs.length || dt <= 0) return;
   const s = (v.gait ??= { phase: 0, x, y, speed: 0, swing: 0 });
   const moved = Math.hypot(x - s.x, y - s.y);
@@ -38,6 +38,8 @@ export function animateLegs(v: VehicleView, spec: VehicleSpec, x: number, y: num
   if (p) s.phase = (s.phase + (s.speed / p.stride) * dt) % 1;
   for (const m of v.legs) {
     const off = p ? p.offset[m.userData.leg as Leg] ?? 0 : 0;
-    m.rotation.z = Math.sin((s.phase + off) * Math.PI * 2) * s.swing;
+    // Lame: it favours the near foreleg, barely swinging it.
+    const favour = lame && m.userData.leg === 'leg_fl' ? 0.25 : 1;
+    m.rotation.z = Math.sin((s.phase + off) * Math.PI * 2) * s.swing * favour;
   }
 }

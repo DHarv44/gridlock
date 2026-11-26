@@ -7,6 +7,7 @@ import { damageLevels } from '../combat/damage';
 import { EK, FULL_SNAP_EVERY, FX, Mode, PF, type PlayerInfo, type S2C, VF, type YouState } from '../../../shared/protocol';
 import type { Ped, Player, Vehicle } from '../entities';
 import type { World } from '../world';
+import { isLame } from './spook';
 import { groundOf } from '../../../shared/world/levels';
 
 const a2 = (v: number) => Math.round(v * 100) / 100;
@@ -35,6 +36,8 @@ function vehFlags(w: World, v: Vehicle): number {
   if (!v.wrecked && v.hp < v.spec.hp * 0.35) f |= VF.smoke;
   const fwd = v.body.vx * Math.cos(v.body.angle) + v.body.vy * Math.sin(v.body.angle);
   if (fwd < -0.5) f |= VF.reverse;
+  if (v.rearT > 0) f |= VF.rearing;
+  if (isLame(v)) f |= VF.lame;
   const hour = (w.gameMinutes / 60) % 24;
   // Lights on from dusk (5 pm, as the sky starts to go) until 7 am, whenever someone's driving.
   if (v.seats[0] && (hour >= 17 || hour < 7)) f |= VF.lights;
@@ -127,6 +130,7 @@ function youState(w: World, pl: Player, p: Ped | undefined): YouState {
     w: p ? p.weapons.map((h) => [h.w, h.ammo, h.clip]) : [], wi: p?.wi ?? 0, rl: p ? a2(p.reloadT) : 0,
     vt: v ? v.type : -1, vhp: v ? Math.max(0, Math.round((v.hp / v.spec.hp) * 100) / 100) : 0,
     // A blown mount reads 0 (no gallop, as the server will have it); otherwise never quite 0.
+    ml: v ? (v.rearT > 0 ? VF.rearing : 0) | (isLame(v) ? VF.lame : 0) : 0,
     st: v?.spec.stamina ? (v.blown ? 0 : Math.max(0.01, Math.round((v.stamina / v.spec.stamina.gallop) * 100) / 100)) : -1,
     respawn: Math.max(0, a2(pl.respawnT)),
     rs: GANGS.map((g) => Math.round(pl.respect[g] ?? 0)),

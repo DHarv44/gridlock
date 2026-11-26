@@ -242,7 +242,8 @@ export class WorldView {
     if (!v || v.key !== key) {
       if (v) this.scene.remove(v.root);
       v = makeVehicle(type, color, charred);
-      v.root.rotation.order = 'YXZ';
+      // Mounts roll onto their side and rear in their own frame (heading first); others keep the default.
+      if (mat.liesDown || spec.temper) v.root.rotation.order = 'YXZ';
       this.vehs.set(e.id, v);
       this.scene.add(v.root);
     }
@@ -250,9 +251,15 @@ export class WorldView {
     const x = mine ? own!.x : e.x, y = mine ? own!.y : e.y, a = mine ? own!.angle : e.angle, alt = mine ? own!.alt : e.alt;
     // Down for good (a horse, not a wagon in harness): on its side.
     const down = wreck && !!mat.liesDown && !spec.trailer;
-    v.root.position.set(x, alt + (down ? spec.width * 0.45 : 0), y);
+    // Spooked: up on its hind legs (nose up about its middle, lifted so the hind feet stay down).
+    const rear = !down && !spec.trailer && flags & VF.rearing ? 0.55 : 0;
+    v.rearing = (v.rearing ?? 0) + (rear - (v.rearing ?? 0)) * Math.min(1, dt * 10);
+    v.root.position.set(x, alt + (down ? spec.width * 0.45 : 0) + Math.sin(v.rearing) * spec.length * 0.4, y);
     v.root.rotation.y = -a;
-    v.root.rotation.x = down ? Math.PI / 2 : 0;
+    if (mat.liesDown || spec.temper) {
+      v.root.rotation.x = down ? Math.PI / 2 : 0;
+      v.root.rotation.z = v.rearing;
+    }
     if (spec.movement === 'boat') {
       floatBoat(v.root, this.fx, spec, this.time + e.id * 1.7, dt, x, y, a, mine ? own!.vx : e.vx, mine ? own!.vy : e.vy, wreck, this.dryAt(x, y));
     }
@@ -267,7 +274,7 @@ export class WorldView {
     const spinning = (flags & VF.driven) || alt > 0.3;
     for (const r of v.rotors) r.rotation.y += dt * (spinning ? 32 : 0);
     for (const r of v.tailRotors) r.rotation.z += dt * (spinning ? 40 : 0);
-    if (v.legs.length) animateLegs(v, VEHICLES[e.data[2]], e.x, e.y, dt);
+    if (v.legs.length) animateLegs(v, VEHICLES[e.data[2]], e.x, e.y, dt, !!(flags & VF.lame));
     const sirenOn = !!(flags & VF.siren);
     const phase = Math.floor(this.time * 6) % 2;
     for (const s of v.sirens) {

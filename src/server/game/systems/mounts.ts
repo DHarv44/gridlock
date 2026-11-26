@@ -8,6 +8,7 @@ import { galloping } from '../../../shared/sim/physics';
 import type { Player, TaskName, Vehicle } from '../entities';
 import type { World } from '../world';
 import { laneSpawn } from './spawnPoints';
+import { bolting, isLame, updateSpook } from './spook';
 
 /** Tasks an AI rider gallops for. */
 const HURRY = new Set<TaskName>(['pursue', 'respond', 'flee', 'attack']);
@@ -23,7 +24,8 @@ export function updateMounts(w: World, dt: number): void {
     const driver = v.seats[0] ? w.peds.get(v.seats[0]) : undefined;
     if (driver?.player && v.spec.comesWhenCalled) adopt(w, driver.player, v);
     if (driver && !driver.player && driver.ai) v.ctl.sprint = canGallop(v) && HURRY.has(driver.ai.task);
-    if (v.calledBy) lead(w, v);
+    if (v.calledBy && v.rearT <= 0 && !bolting(v)) lead(w, v);
+    updateSpook(w, v, dt); // rearing, bolting, limping (systems/spook.ts) override the above
     if (galloping(v.body, v.spec, v.ctl.sprint)) v.stamina = Math.max(0, v.stamina - dt);
     else v.stamina = Math.min(st.gallop, v.stamina + dt * RECOVER);
     if (v.stamina <= 0) v.blown = true;
@@ -35,7 +37,7 @@ export function updateMounts(w: World, dt: number): void {
 const WINDED = 0.3;
 
 /** Whether a mount can be asked for a gallop now. */
-export const canGallop = (v: Vehicle): boolean => !v.blown && v.stamina > 0;
+export const canGallop = (v: Vehicle): boolean => !v.blown && v.stamina > 0 && !isLame(v);
 
 /** The horse a player is riding becomes theirs to whistle for (kept in the world while it is). */
 function adopt(w: World, pl: Player, v: Vehicle): void {

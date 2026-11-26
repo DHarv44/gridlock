@@ -4,7 +4,7 @@ import type { CharacterProgress, CharacterSave, CharLook } from './packs/charact
 export const TICK_HZ = 30;
 export const SNAP_EVERY = 2;             // snapshots at 15 Hz
 export const INTERP_DELAY_MS = 120;
-export const PROTOCOL_VERSION = 20;
+export const PROTOCOL_VERSION = 21;
 /** Every Nth snapshot carries every entity in full (others list unchanged ones in `k`). */
 export const FULL_SNAP_EVERY = 30;
 
@@ -44,7 +44,8 @@ export type C2S =
 export const EK = { Ped: 0, Veh: 1, Proj: 2, Pickup: 3, Fire: 4 } as const;
 
 export const PF = { dead: 1, fast: 2, aim: 4, burning: 8, down: 16, player: 32, busy: 64, jump: 128, hands: 256 } as const;
-export const VF = { siren: 1, wreck: 2, burning: 4, brake: 8, lights: 16, driven: 32, smoke: 64, reverse: 128 } as const;
+/** `rearing` / `lame`: a mount spooked up on its hind legs, or hurt to a limp (systems/mounts.ts). */
+export const VF = { siren: 1, wreck: 2, burning: 4, brake: 8, lights: 16, driven: 32, smoke: 64, reverse: 128, rearing: 256, lame: 512 } as const;
 export const PK = { cash: 0, weapon: 1, health: 2, armor: 3, frenzy: 4 } as const;
 
 /** Hit: [8, attacker ped, victim ped, weapon index]: a melee blow landing. */
@@ -71,6 +72,7 @@ export interface YouState {
   vt: number;              // vehicle type index (-1 on foot)
   vhp: number;             // vehicle health fraction
   st: number;              // the mount's wind (stamina) 0..1; -1 when not riding something with gaits
+  ml: number;              // your mount: VF.rearing (no control) | VF.lame (no faster than a trot)
   respawn: number;         // seconds until respawn while dead/busted
   rs: number[];            // respect per gang (GANGS order)
   mt: number[] | null;     // current mission objective position [x, y]
