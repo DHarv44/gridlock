@@ -9,6 +9,7 @@ import { FLOOR_H, groundOf } from '../../shared/world/levels';
 import { setHidden } from './hideable';
 import { Batch, lambert, UNIT } from './instancing';
 import type { ParticleLayer } from './particles';
+import { StairShade } from './stairShade';
 
 const FLOOR: Record<Interior['layout'], string> = {
   shop: '#d9d4c7', kiosk: '#d6d2c6', diner: '#e3d7c0', club: '#2b2531', warehouse: '#8f8d86', bank: '#cfc6b4', precinct: '#a9aeb3',
@@ -22,6 +23,8 @@ const PROP: Record<PropKind, string> = {
   counter: '#6e5136', shelf: '#b9bdc2', table: '#7a5a3a', booth: '#a63a3a', bar: '#4a2a1a',
   rack: '#a9773d', desk: '#5f6368', stool: '#2a2a2a', dance: '#7a3aa0', bench: '#7a5a3a', bars: '#4a4e54',
   lift: '#8d949b', stairs: '#6d6a64', bed: '#d9d2c4',
+  // Stairwells (world/stairs.ts): pale treads going up, dark ones going down, a steel rail between.
+  step: '#a29d93', stepDown: '#47443f', rail: '#5d6166',
 };
 const CUT = '#2f3136';
 /** How close (m) outside a walk-in place you must be for it to open up. */
@@ -34,7 +37,11 @@ export class Interiors {
 
   private unit = UNIT.box();
 
+  /** Greys out everything but the stairwell you're in. */
+  private shade: StairShade;
+
   constructor(private scene: THREE.Scene, private city: City) {
+    this.shade = new StairShade(scene, city);
     // Vault doors: a thick steel slab with a wheel, standing in the gap in the vault wall.
     const steel = new THREE.MeshStandardMaterial({ color: '#7d848c', metalness: 0.7, roughness: 0.35 });
     const dark = new THREE.MeshLambertMaterial({ color: '#3a3e44' });
@@ -66,6 +73,7 @@ export class Interiors {
   /** Opens the walk-in place you're at or in (on foot); closes it again when you leave. (x, y) is
    *  where you are over the map and `f` your floor: upstairs, that floor is drawn at its height. */
   update(x: number, y: number, onFoot: boolean, f = 0): void {
+    this.shade.update(x, y, f, onFoot);
     let want = -1, inside: Interior | undefined;
     if (onFoot || f > 0) {
       for (const i of this.city.interiors) {

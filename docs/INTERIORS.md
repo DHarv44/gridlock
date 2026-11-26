@@ -63,7 +63,16 @@ Floor {
   `x + f * LEVEL_BAND` (shared/world/levels.ts). Collision, the server's spatial hash, bullets and
   sight work unchanged, because two floors are thousands of metres apart; nothing needed a `floor`
   field, and the snapshot format didn't change (protocol 9 is for the new city layout).
-- Stand at the elevator or stairs and press E: a list of floors; picking one moves you there.
+- Stand at the elevator and press E: a list of floors; picking one moves you there.
+- Stairwells (2026-11-26, shared/world/stairs.ts): a walled stairwell left of the elevator at the
+  back, the same on the lobby and every floor, its door onto the landing from the corridor. Two
+  flights side by side: walk to the top of the left one and you come out on the next floor's
+  landing (from the top floor, into a helicopter on the roof, else the roof door is locked), to the
+  bottom of the right one and you're a floor down. The lobby's right side is the solid space under
+  the stairs. Apartment blocks have no elevator: their stairs are walked (their `lift` is the
+  stairwell landing, for chasers and roof drop-offs); a building too small for a stairwell (2 of 15)
+  keeps the old floor menu. Standing in a stairwell greys out everything else: a grey veil over the
+  view with a hole at the stairwell (client/render/stairShade.ts). `npx tsx scripts/floors.ts`.
 - The client maps strip positions back over the building (`groundOf`), lifted by `FLOOR_H` per floor.
   The camera follows your floor; the building hides and only your floor is drawn; people on other
   upper floors aren't drawn; effects and sounds land where they happen, sounds muffled per floor.

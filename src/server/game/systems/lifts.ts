@@ -1,9 +1,11 @@
-// Lifts (elevators and stairwells) between a tower's or apartment block's floors (world/levels.ts,
-// world/floors.ts). A player stands at the lift and picks a floor; AI chasing someone on another
-// floor of the same building walks to the lift and comes up after them (`route`).
+// Lifts (elevators) and stairwells between a tower's or apartment block's floors (world/levels.ts,
+// world/floors.ts, world/stairs.ts). A player stands at the elevator and picks a floor, or walks the
+// stairs a floor at a time; AI chasing someone on another floor of the same building walks to the
+// lift (in an apartment block, the stairwell's landing) and comes up after them (`route`).
 import { dist } from '../../../shared/math';
 import type { Interior } from '../../../shared/world/interiors';
 import { floorOf, groundOf } from '../../../shared/world/levels';
+import { StairIndex, stairwellOn } from '../../../shared/world/stairs';
 import { doorway } from '../ai/doors';
 import type { Ped, Player, Vehicle } from '../entities';
 import { seatPed, unseatPed } from '../factory';
@@ -59,6 +61,11 @@ export function toRoof(w: World, pl: Player, k: number): string | null {
   if (!p || p.dead || p.vehicle || !i?.lift) return 'Not now.';
   const here = liftOn(i, floorOf(p.body.x));
   if (!here || dist(p.body.x, p.body.y, here.x, here.y) > 2.5) return 'Stand at the lift.';
+  return boardRoofHeli(w, p, i);
+}
+
+/** Into the helicopter set down on interior i's roof, if there is one free. */
+function boardRoofHeli(w: World, p: Ped, i: Interior): string | null {
   let heli: Vehicle | undefined;
   for (const v of w.vehicles.values()) {
     if (v.spec.movement !== 'rotor' || v.wrecked || v.burning >= 0 || w.statics.roofAt(v.body.x, v.body.y) !== i.building) continue;
@@ -72,6 +79,27 @@ export function toRoof(w: World, pl: Player, k: number): string | null {
   if (seat < 0 || (driver && !driver.player)) return 'Someone else has it.';
   seatPed(w, p, heli, seat);
   return null;
+}
+
+/** When a player last heard the roof door was shut (so walking into it doesn't spam them). */
+const roofNag = new WeakMap<Player, number>();
+
+/** A player on foot at the top of a flight goes up to the next floor's landing (or out onto the
+ *  roof, into a helicopter waiting there); at the bottom, down to the floor below's (world/stairs.ts). */
+export function climbStairs(w: World, pl: Player, p: Ped): void {
+  if (p.dead || p.vehicle) return;
+  const hit = w.stairs.at(p.body.x, p.body.y);
+  if (!hit) return;
+  const way = StairIndex.way(hit.s, p.body.x, p.body.y);
+  if (!way) return;
+  const i = w.city.interiors[hit.k];
+  if (way > 0 && hit.s.roof) {
+    const err = boardRoofHeli(w, p, i);
+    if (err && w.time - (roofNag.get(pl) ?? -99) > 4) { roofNag.set(pl, w.time); w.notify('info', 'The roof door is locked.', pl); }
+    return;
+  }
+  const there = stairwellOn(i, hit.s.f + way);
+  if (there) moveTo(p, there.landing);
 }
 
 /** AI heading for a point: where to walk now when the way isn't straight. On the same floor, through

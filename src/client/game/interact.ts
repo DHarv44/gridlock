@@ -22,9 +22,10 @@ export class Interact {
 
   constructor(private city: City, private pane: Pane) {
     this.atms = atmsOf(city).map((a) => ({ id: -1 - a.id, lot: -1, verb: 'atm', spec: -1, x: a.x, y: a.y, name: 'ATM' }));
-    // Every lift stop (lobby and each floor, in world coords): id the interior, lot the floor, spec the floors above.
+    // Every elevator stop (lobby and each floor, in world coords): id the interior, lot the floor, spec
+    // the floors above. Stairwells are walked, not picked from a menu (world/stairs.ts).
     city.interiors.forEach((i, k) => {
-      if (!i.lift) return;
+      if (!i.lift || !i.elevator) return;
       const name = i.layout === 'tower' ? 'Elevator' : 'Stairs';
       [i.lift, ...i.floors.map((f) => f.lift)].forEach((s, f) =>
         this.lifts.push({ id: k, lot: f, verb: 'lift', spec: i.floors.length, x: s.x, y: s.y, name }));

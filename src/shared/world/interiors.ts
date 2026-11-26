@@ -6,12 +6,13 @@
 import type { Rect } from '../math';
 import { INTERIOR_PLANS, type InteriorLayout, PROPERTIES, SERVICES } from '../packs';
 import { DIR_VEC, Dir, type Lot, type Place } from './cityTypes';
-import { floorsFor, type UpperFloor, upperFloors } from './floors';
+import { CORR, floorsFor, type UpperFloor, upperFloors } from './floors';
+import { type Stairwell, stairPlan, stairwell } from './stairs';
 
 export type PropKind = 'counter' | 'shelf' | 'table' | 'booth' | 'bar' | 'rack' | 'desk' | 'stool' | 'dance' | 'bench' | 'bars'
-  | 'lift' | 'stairs' | 'bed';
+  | 'lift' | 'stairs' | 'bed' | 'step' | 'stepDown' | 'rail';
 /** Not solid: drawn on the floor only. */
-export const FLAT_PROPS = new Set<PropKind>(['dance', 'stairs']);
+export const FLAT_PROPS = new Set<PropKind>(['dance', 'stairs', 'step', 'stepDown']);
 export interface Box { rect: Rect; h: number }
 export interface Prop extends Box { kind: PropKind }
 export interface Spot { x: number; y: number; angle: number }
@@ -34,9 +35,14 @@ export interface Interior {
   guards: { spot: Spot; arch: string }[];
   /** A strongroom (the bank): its steel door is a gate in the collision world that explosions open. */
   vault?: { door: Rect; room: Rect; cash: { x: number; y: number }[] };
-  /** Towers and apartment blocks: the lobby's lift (elevator or stairs) and the floors above. */
+  /** Towers and apartment blocks: where the way between floors starts in the lobby (the elevator,
+   *  or the stairwell's landing in an apartment block), and the floors above. */
   lift?: Spot;
   floors: UpperFloor[];
+  /** The lift has a floor menu (an elevator, or the stairs of a block too small for a stairwell). */
+  elevator?: boolean;
+  /** The lobby's stairwell (world/stairs.ts); each floor has its own. */
+  stairs?: Stairwell;
 }
 
 const T = 0.3, GAP = 1.6, WALL_H = 2.8;
@@ -113,11 +119,15 @@ function build(place: Place, property: boolean, building: number, lot: Lot, layo
   }
   const at = (a: number, d: number, face: number): Spot => ({ ...F.point(a, d), angle: face });
   if (layout === 'tower' || layout === 'apartments') {
-    // A lobby: the reception desk (towers) or mailboxes (apartments), the lift at the back in the
-    // middle (an elevator bank or a stairwell), and the floors above (world/floors.ts).
+    // A lobby: the reception desk (towers) or mailboxes (apartments), the elevator bank at the back
+    // in the middle (towers), a stairwell beside it (world/stairs.ts), and the floors above
+    // (world/floors.ts). A block too small for a stairwell keeps its stairs as a floor menu.
     const am = (ia0 + ia1) / 2;
     const tower = layout === 'tower';
-    prop(tower ? 'lift' : 'stairs', am - 1.2, am + 1.2, iD - 1.0, iD, tower ? WALL_H : 0.05);
+    const n = floorsFor(h);
+    const plan = stairPlan(ia0, iD, am - CORR / 2);
+    const stairs = plan ? stairwell(plan, 0, n, F.rect, F.point, F.inward, (s0, s1, e0, e1, wh) => wall(s0, s1, e0, e1, wh), prop) : undefined;
+    if (tower || !stairs) prop(tower ? 'lift' : 'stairs', am - 1.0, am + 1.0, iD - 1.0, iD, tower ? WALL_H : 0.05);
     let counter: Spot, clerk: Spot;
     if (tower) {
       prop('counter', ia1 - 4.6, ia1 - 0.6, 3, 3.8, 1.1);
@@ -131,8 +141,11 @@ function build(place: Place, property: boolean, building: number, lot: Lot, layo
     }
     return {
       place, property, building, layout, room: F.rect(ia0, ia1, T, iD), wallH: WALL_H, walls, rest, props, counter, clerk,
-      clerkArch: tower ? 'clerk' : '', guards: [], lift: at(am, iD - 1.8, front),
-      floors: upperFloors(layout, floorsFor(h), ia0, ia1, T, iD, F.rect, F.point, front),
+      clerkArch: tower ? 'clerk' : '', guards: [],
+      lift: tower || !stairs ? at(am, iD - 1.8, front) : stairs.landing,
+      floors: upperFloors(layout, n, ia0, ia1, T, iD, F.rect, F.point, front, plan, F.inward),
+      ...(tower || !stairs ? { elevator: true } : {}),
+      ...(stairs ? { stairs } : {}),
     };
   }
   // A back room behind a partition when the room is deep enough (door gap on the far side from the counter).

@@ -4,7 +4,7 @@ import { PLAYER_ARCHETYPE, RULES, UNARMED, WEAPONS, weaponIndex } from '../../..
 import { BTN, EDGE_BUTTONS, type InputMsg, Mode, type S2C } from '../../../shared/protocol';
 import { SPRINT, stepVehicle } from '../../../shared/sim/physics';
 import { damagePed, killPed, wallCrash } from '../combat/damage';
-import { leaveOnRoof } from './lifts';
+import { climbStairs, leaveOnRoof } from './lifts';
 import { onAttacked } from '../ai/reactions';
 import { tickWeapon, tryFire } from '../combat/fire';
 import type { Ped, Player, Vehicle } from '../entities';
@@ -45,6 +45,7 @@ export function processPlayers(w: World, dt: number): void {
         applyInput(w, pl, p, inp, dt);
       }
     }
+    climbStairs(w, pl, p);
     pl.bustT = Math.max(0, pl.bustT - dt);
     if (pl.bustT > 1.4) bust(w, pl, p);
   }

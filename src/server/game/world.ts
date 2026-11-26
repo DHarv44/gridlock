@@ -5,6 +5,7 @@ import { CityMap, generateCity } from '../../shared/world/city';
 import type { City } from '../../shared/world/cityTypes';
 import { StaticWorld } from '../../shared/world/collision';
 import { groundOf } from '../../shared/world/levels';
+import { StairIndex } from '../../shared/world/stairs';
 import type { Fire, Pickup, Ped, Player, Projectile, Squad, Vehicle } from './entities';
 import { SpatialHash } from './spatial';
 
@@ -12,6 +13,8 @@ export class World {
   readonly city: City;
   readonly map: CityMap;
   readonly statics: StaticWorld;
+  /** Which stairwell a point is in (world/stairs.ts). */
+  readonly stairs: StairIndex;
   readonly rng: Rng;
   time = 0;                 // seconds since room start
   gameMinutes = 9 * 60;     // in-game clock (starts 09:00)
@@ -46,6 +49,7 @@ export class World {
     this.city = generateCity(seed);
     this.map = new CityMap(this.city);
     this.statics = new StaticWorld(this.city);
+    this.stairs = new StairIndex(this.city);
     this.rng = new Rng(seed ^ 0x5eed);
   }
 

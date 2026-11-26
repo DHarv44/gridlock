@@ -86,5 +86,69 @@ chaser.body.x = tw.lift!.x + 0.5; chaser.body.y = tw.lift!.y;
 route(w, chaser, target.x, target.y);
 check(floorOf(chaser.body.x) === top, 'a chaser at the lift comes up after you');
 
+// Stairwells: walk in from the corridor, up the stairs a floor at a time to the top, find the roof
+// door shut with no helicopter up there, and back down to the lobby. The walls hold, and arriving
+// on a landing doesn't send you straight back.
+const { stairwellOn } = await import('../src/shared/world/stairs');
+const { climbStairs } = await import('../src/server/game/systems/lifts');
+const withStairs = tall.filter(({ i }) => i.stairs && i.floors.every((fl) => fl.stairs));
+check(withStairs.length >= tall.length * 0.6, `stairwells in ${withStairs.length} of ${tall.length} buildings`);
+check(tall.every(({ i }) => i.stairs || i.elevator), 'a building without a stairwell keeps a floor menu');
+check(tall.every(({ i }) => i.layout !== 'tower' || i.elevator), 'towers keep their elevator');
+type Pt = { x: number; y: number };
+const mid = (r: { x0: number; y0: number; x1: number; y1: number }): Pt => ({ x: (r.x0 + r.x1) / 2, y: (r.y0 + r.y1) / 2 });
+const add = (a: Pt, b: Pt, k = 1): Pt => ({ x: a.x + b.x * k, y: a.y + b.y * k });
+const unit = (a: Pt, b: Pt): Pt => { const d = Math.hypot(b.x - a.x, b.y - a.y); return { x: (b.x - a.x) / d, y: (b.y - a.y) / d }; };
+const dot = (a: Pt, b: Pt) => a.x * b.x + a.y * b.y;
+const place = (p: Pt) => { me.body.x = p.x; me.body.y = p.y; me.body.vx = 0; me.body.vy = 0; };
+for (const pick of [withStairs.find(({ i }) => i.layout === 'tower'), withStairs.find(({ i }) => i.layout === 'apartments')]) {
+  if (!pick) { check(false, 'a tower and an apartment block with stairwells'); continue; }
+  const { i } = pick, n = i.floors.length, name = i.layout === 'tower' ? 'tower' : 'apartment block';
+  let climbed = 0, walls = true, settled = true, doors = 0;
+  for (let f = 0; f <= n; f++) {
+    const s = stairwellOn(i, f)!;
+    const upC = mid(s.up), across = unit(upC, s.down ? mid(s.down) : add(upC, unit(mid(s.up), mid(s.rect)), 0));
+    // Across the stairwell toward the corridor: the lobby has no flight down to measure it by, so
+    // use the floor above's (the stairwells stack exactly).
+    const ax = s.down ? across : (() => { const s1 = stairwellOn(i, 1)!; return unit(mid(s1.up), mid(s1.down!)); })();
+    // From the corridor outside the door, through it onto the landing.
+    const corridor = add(s.landing, ax, 2.6);
+    const inside = walk(corridor, s.landing, 6);
+    if (w.stairs.at(inside.x, inside.y)?.s === s) doors++;
+    // The far wall holds.
+    const far = walk(s.landing, add(s.landing, ax, -6), 3);
+    if (w.stairs.at(far.x, far.y)?.s !== s) walls = false;
+    if (f === n) continue;
+    // Up the left-hand flight: across to its foot, then along it to the top.
+    const foot = add(s.landing, ax, dot({ x: upC.x - s.landing.x, y: upC.y - s.landing.y }, ax));
+    const top2 = walk(walk(s.landing, foot, 3), upC, 6);
+    place(top2);
+    climbStairs(w, pl, me);
+    if (floorOf(me.body.x) === f + 1) climbed++;
+    for (let t = 0; t < 10; t++) room.tick();
+    if (floorOf(me.body.x) !== f + 1) settled = false;
+  }
+  check(doors === n + 1, `${name}: in through the stairwell door on every floor (${doors}/${n + 1})`);
+  check(walls, `${name}: the stairwell's walls hold`);
+  check(climbed === n, `${name}: up the stairs floor by floor to the top (${climbed}/${n})`);
+  check(settled, `${name}: arriving on a landing doesn't send you back`);
+  // The top floor's flight up comes out on the roof: shut, with no helicopter there.
+  const topS = stairwellOn(i, n)!;
+  place(mid(topS.up));
+  climbStairs(w, pl, me);
+  check(floorOf(me.body.x) === n && !me.vehicle, `${name}: the roof door is shut with no helicopter up there`);
+  // And back down, a floor at a time.
+  let down = 0;
+  for (let f = n; f > 0; f--) {
+    place(mid(stairwellOn(i, f)!.down!));
+    climbStairs(w, pl, me);
+    if (floorOf(me.body.x) === f - 1) down++;
+  }
+  check(down === n && w.stairs.at(me.body.x, me.body.y)?.s === i.stairs, `${name}: down the stairs to the lobby (${down}/${n})`);
+  // The lobby's stairwell is reachable from the front door.
+  const lobby = walk(walk({ x: i.place.x, y: i.place.y }, add(i.stairs!.landing, unit(mid(stairwellOn(i, 1)!.up), mid(stairwellOn(i, 1)!.down!)), 2.6), 12), i.stairs!.landing, 6);
+  check(w.stairs.at(lobby.x, lobby.y)?.s === i.stairs, `${name}: from the street door to the lobby stairwell`);
+}
+
 console.log(failures ? `${failures} check(s) failed` : 'all floor checks passed');
 process.exit(failures ? 1 : 0);

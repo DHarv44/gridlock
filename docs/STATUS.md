@@ -61,6 +61,10 @@
   (and follows them out), and up to tower/apartment floors by the lift; pursuing drivers park at the
   door and their crew goes in. Distances to someone on another floor are measured through the
   building. server/game/ai/doors.ts; `npx tsx scripts/indoors.ts`.
+- Stairwells (2026-11-26): towers and apartment blocks have a walled stairwell on every floor; walk
+  up or down the flights a floor at a time (top floor: onto the roof if a helicopter is there).
+  Apartment blocks lost their stairs menu (walked now); towers keep the elevator. Inside a
+  stairwell everything else is greyed out. docs/INTERIORS.md; `npx tsx scripts/floors.ts`.
 - Sirens (2026-11-23): civilian traffic pulls over for any siren coming up behind or head-on in
   its road (player or AI driving it): eases to the kerb, stops, and moves off a few seconds after
   it's gone (ai/driving.ts sirenApproaching, cruise). AI emergency drivers pass yielding traffic on
