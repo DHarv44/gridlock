@@ -17,7 +17,7 @@ export function vehicleObstacles(store: EntityStore, x: number, y: number, ownVi
     if (e.kind !== EK.Veh || e.id === ownVid || Math.abs(e.x - x) > NEAR || Math.abs(e.y - y) > NEAR) continue;
     const spec = VEHICLES[e.data[2]];
     if (!spec || (flies(spec) && e.alt > 2) || floats(spec) !== afloat) continue;
-    out.push({ x: e.x, y: e.y, angle: e.angle, hl: spec.length / 2, hw: spec.width / 2 });
+    out.push({ x: e.x, y: e.y, angle: e.angle, hl: spec.length / 2, hw: spec.width / 2, id: e.id });
   }
   return out;
 }

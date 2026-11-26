@@ -16,6 +16,8 @@ export class Predictor {
   private pending: Pending[] = [];
   private mode: Mode = Mode.Foot;
   private vtype = -1;
+  /** The vehicle you're in (never an obstacle to itself). */
+  private vid = 0;
   private ctl: Controls = emptyControls();
   active = false;
   /** Predicted trailer heading (rigs), now and at the previous tick for interpolation. */
@@ -53,7 +55,7 @@ export class Predictor {
     if (this.mode === Mode.Driver && this.vtype >= 0) {
       const spec = VEHICLES[this.vtype];
       stepVehicle(b, spec, c, DT, this.world, true, this.onRoad, this.wear);
-      blockBy(b, { hl: spec.length / 2, hw: spec.width / 2 }, this.obstacles);
+      blockBy(b, { hl: spec.length / 2, hw: spec.width / 2 }, this.obstacles, this.vid);
       const f = this.furniture;
       if (f && !floats(spec) && !(flies(spec) && b.alt > 1)) {
         f.props.meet(b, spec.length / 2, spec.width / 2, (i) => f.standing(i), (i, a) => f.knock(i, a));
@@ -83,6 +85,7 @@ export class Predictor {
     const changed = you.mode !== this.mode || you.vt !== this.vtype || !this.active;
     this.mode = you.mode;
     this.vtype = you.vt;
+    this.vid = you.vid;
     this.wear = wearOf(you.vhp, you.vid);
     if (!predictable) { this.active = false; this.pending.length = 0; return; }
     const [x, y, angle, vx, vy, av, alt, trailer] = you.body;

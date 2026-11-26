@@ -85,6 +85,10 @@ for (const speed of [12, 20, 28]) {
   const ped = { x: 8 - 3, y: 0, angle: 0, vx: 0, vy: 0, av: 0, alt: 0 };
   for (let i = 0; i < 40; i++) { ped.x += 4 * DT; blockBy(ped, { r: 0.35 }, [parked]); }
   check(ped.x < 8 - spec.width / 2 - 0.3, `walking into it: you stop at its side (x ${ped.x.toFixed(2)})`);
+  // Getting into a car: the car you're in is never in its own way (it doesn't lurch off).
+  const mine = { x: 30, y: 0, angle: 0, vx: 0, vy: 0, av: 0, alt: 0 };
+  blockBy(mine, { hl: spec.length / 2, hw: spec.width / 2 }, [{ x: 30, y: 0, angle: 0, hl: spec.length / 2, hw: spec.width / 2, id: 7 }], 7);
+  check(mine.x === 30 && mine.y === 0, 'the car you get into stays put (not pushed out of itself)');
 }
 
 // A beaten-up car drives worse: less top speed, and it pulls to one side with the wheel straight.

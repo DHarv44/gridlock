@@ -5,8 +5,8 @@
 import { obbVsCircle } from '../world/collision';
 import type { Body } from './physics';
 
-/** A vehicle's footprint: centre, heading, half length and half width. */
-export interface Obb { x: number; y: number; angle: number; hl: number; hw: number }
+/** A vehicle's footprint: centre, heading, half length and half width (`id`: which vehicle). */
+export interface Obb { x: number; y: number; angle: number; hl: number; hw: number; id?: number }
 export interface Hit { nx: number; ny: number; depth: number }
 
 /** Separating-axis test of two boxes: the normal points from b toward a, depth is the overlap. */
@@ -27,9 +27,11 @@ export function obbVsObb(a: Obb, b: Obb): Hit | null {
 }
 
 /** Pushes a body out of the boxes in `others` (which don't move) and takes away its speed into
- *  them: a vehicle (`box`: its half length and width) or a ped (`r`: its radius). */
-export function blockBy(b: Body, shape: { hl: number; hw: number } | { r: number }, others: Obb[]): void {
+ *  them: a vehicle (`box`: its half length and width) or a ped (`r`: its radius). `self`: the
+ *  vehicle being moved, never in its own way. */
+export function blockBy(b: Body, shape: { hl: number; hw: number } | { r: number }, others: Obb[], self = 0): void {
   for (const o of others) {
+    if (self && o.id === self) continue;
     let h: Hit | null;
     if ('r' in shape) {
       const g = obbVsCircle(o.x, o.y, Math.cos(o.angle), Math.sin(o.angle), o.hl, o.hw, { x: b.x, y: b.y, r: shape.r });

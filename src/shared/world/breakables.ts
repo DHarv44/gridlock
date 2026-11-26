@@ -78,6 +78,8 @@ export class Breakables {
    *  knocked flat (`knock` is told, with the way it was hit) and the vehicle keeps `slow` of its
    *  speed; slower, the prop stops it like a wall. */
   meet(b: Body, hl: number, hw: number, standing: (i: number) => boolean, knock: (i: number, angle: number) => void): void {
+    // A vehicle standing still is left where it is (parked against a hydrant, say).
+    if (Math.abs(b.vx) + Math.abs(b.vy) < 0.3) return;
     const c = Math.cos(b.angle), s = Math.sin(b.angle);
     this.near(b.x, b.y, hl + 1, (i) => {
       if (!standing(i)) return;
