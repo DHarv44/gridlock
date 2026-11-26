@@ -14,6 +14,7 @@ import { verbOf } from '../../shared/verbs';
 import { OffscreenPlayers } from '../hud/offscreenPlayers';
 import { Phone } from '../hud/phone';
 import { Talk } from '../hud/talk';
+import { Crosshair } from '../hud/crosshair';
 import { PaintGarage } from '../hud/paintGarage';
 import { cleanVoice, RULES, SERVICES } from '../../shared/packs';
 import type { Place } from '../../shared/world/cityTypes';
@@ -68,6 +69,7 @@ export class Game {
   private offscreen: OffscreenPlayers;
   private phone: Phone;
   private talk: Talk;
+  private crosshair: Crosshair;
   private gas: GasStations;
   private interiors: Interiors;
   /** The client's collision world (prediction); vault gates mirror the server's. */
@@ -110,6 +112,7 @@ export class Game {
     this.offscreen = new OffscreenPlayers(this.hud.root);
     this.phone = new Phone(this.hud.root);
     this.talk = new Talk(this.hud.root, this.sound);
+    this.crosshair = new Crosshair(this.hud.root);
     // A call on your cell: the handset shows who's on the line while they talk.
     this.talk.onLine = (who, via) => { if (via === 'cell') this.phone.line(who); };
     this.phone.send = (msg) => conn.send(msg);
@@ -310,7 +313,7 @@ export class Game {
     const disp = own && up ? { ...own, x: up.x, y: up.y } : null;
     if (own && disp && up) {
       // GTA2: centred on you on foot; leads along travel in vehicles.
-      this.cam.update(dt, disp.x, disp.y, own.vx, own.vy, own.alt + up.f * FLOOR_H, disp.x, disp.y, !!own.vid);
+      this.cam.update(dt, disp.x, disp.y, own.vx, own.vy, own.alt + up.f * FLOOR_H, disp.x, disp.y, !!own.vid, this.input.scoped);
       this.sound.listenerX = disp.x; this.sound.listenerY = disp.y; this.sound.listenerF = up.f;
     }
     const vr = this.cam.viewRect();
@@ -342,6 +345,8 @@ export class Game {
     this.stage.render();
     // Call bubbles hang beside your head (upstairs: over your building, at your floor's height).
     this.talk.update(this.stage.camera, own && up ? { x: up.x, h: up.f * FLOOR_H + own.alt + 2.9, y: up.y } : null);
+    // Aim held: a crosshair out the way you're aiming.
+    this.crosshair.update(this.stage.camera, own && up ? { x: up.x, h: up.f * FLOOR_H + own.alt + 1.2, y: up.y } : null, this.input);
     this.offscreen.update(this.stage.camera, this.players, this.myId, (p) => this.playerSpot(p), this.jobs.it);
     this.updateHud(own, disp);
   }

@@ -197,6 +197,16 @@ export class Input {
     this.stopAim();
   }
 
+  /** Aim held (with the mouse): the crosshair shows and the camera closes in. */
+  get scoped(): boolean { return this.aiming && this.enabled; }
+
+  /** Where the crosshair sits, as a share (0..1) of its reach and an angle: the mouse's virtual aim
+   *  stick while Aim is held (it starts where you face, a little way out). */
+  crosshair(): { reach: number; angle: number } {
+    const len = Math.hypot(this.aimX, this.aimY);
+    return { reach: Math.min(1, len / AIM_RADIUS), angle: len < 6 ? this.facingHint : Math.atan2(this.aimY, this.aimX) };
+  }
+
   /** Facing chosen with the mouse while Aim is held, or null. */
   mouseAim(): number | null {
     if (!this.aiming || !this.enabled || Math.hypot(this.aimX, this.aimY) < 6) return null;

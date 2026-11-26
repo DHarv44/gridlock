@@ -42,7 +42,7 @@ export const ACTIONS: ActionDef[] = [
   A('turretLeft', 'Turret left', 'held', 'tank', 'Tank', ['Comma']),
   A('turretRight', 'Turret right', 'held', 'tank', 'Tank', ['Period']),
   A('fire', 'Fire / swing', 'held', 'any', 'Weapons', ['Mouse0', 'ControlLeft']),
-  A('aim', 'Aim (hold: the mouse turns you)', 'held', 'any', 'Weapons', ['Mouse2']),
+  A('aim', 'Aim (hold: the mouse turns you, crosshair, zoom in)', 'held', 'any', 'Weapons', ['Mouse2']),
   A('prevWeapon', 'Previous weapon', 'edge', 'any', 'Weapons', ['KeyZ']),
   A('nextWeapon', 'Next weapon', 'edge', 'any', 'Weapons', ['KeyX']),
   A('action', 'Action: get in/out, shops, property', 'ui', 'any', 'General', ['KeyE', 'KeyF']),
