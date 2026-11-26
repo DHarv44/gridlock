@@ -52,6 +52,10 @@ export function bakeCityMap(map: CityMap, scale: number): HTMLCanvasElement {
   for (const p of city.ponds) ctx.fillRect(p.x0, p.y0, p.x1 - p.x0, p.y1 - p.y0);
   ctx.fillStyle = MAP_COLORS.rock;
   for (const o of city.obstacles) if (o.kind === 'rock') ctx.fillRect(o.rect.x0, o.rect.y0, o.rect.x1 - o.rect.x0, o.rect.y1 - o.rect.y0);
+  for (const r of city.rocks) {
+    if (r.r < 2) continue; // boulders are too small to map
+    ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2); ctx.fill();
+  }
   // Streets on top of the land between blocks, wider and brighter for arterials.
   for (const s of city.segs) {
     ctx.fillStyle = s.lanes > 1 ? MAP_COLORS.arterial : MAP_COLORS.road;

@@ -84,6 +84,10 @@ export interface Block {
 
 export interface Tree { x: number; y: number; r: number }
 
+/** Rock in open country (solid, round in plan): a butte or mesa's columns (`mesa`: sheer sides,
+ *  flat top), or a lump or boulder; `v` picks one of the drawn shapes. */
+export interface Rock { x: number; y: number; r: number; h: number; color: string; mesa: boolean; v: number }
+
 export interface Obstacle {
   rect: Rect;
   h: number;
@@ -124,6 +128,8 @@ export interface City {
   lots: Lot[];
   buildings: Building[];
   obstacles: Obstacle[];
+  /** Open country's rock: buttes, mesas, outcrops and boulders (world/landforms.ts). */
+  rocks: Rock[];
   trees: Tree[];
   parking: ParkSpot[];
   services: Place[];

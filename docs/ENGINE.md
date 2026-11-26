@@ -117,5 +117,18 @@ film's names, characters, story, map or look).
    wind), thoroughbred (fastest, tallest), Indian pony (small, nimblest), draft (big, slow), mule
    (slowest, unflappable, goes all day), and the law's and army's horses. The saddle and rider
    heights follow each one's size. Real walk/trot/canter speeds; gallops 10-17 m/s.
+   Terrain (2026-11-26), "relief you can see": one height map for the world (shared/world/
+   relief.ts: integer-hash value noise, no trig, so server and clients agree) shapes open country
+   without changing movement. Nouns per wild zone (WildSpec): `relief` (m), `low`/`high` colours,
+   `strata` (rock layers banding steep slopes), `boulders`, `brush`. The ground (render/
+   groundRelief.ts) is coloured by height and slope and hillshaded from the north-west, zones fray
+   into each other along wandering edges; fine round grain over it. Rock (world/landforms.ts,
+   City.rocks) is round in plan and solid as circles: formations of mesa/butte columns on the high
+   ground with talus at their feet, and loose boulders (render/rocks.ts: stepped, banded columns and
+   faceted stones). Brush (render/brush.ts) is 3D bushes, not solid, thickest in the washes, built
+   and dropped with each ground chunk. Real elevation (slopes you climb) is a possible later step on
+   the same height map.
+   Soundtrack: the western has music instead of radio stations (content/redrock/soundtrack/,
+   tracks.json for titles); the player for it isn't built yet.
    Not yet: voices for its cast and your lines (they show in bubbles), era
    sounds (a bell, hooves, whinnies); the gatling gun doesn't traverse (trailer parts don't animate).

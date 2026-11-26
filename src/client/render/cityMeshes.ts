@@ -8,6 +8,7 @@ import { decorate, type DetailBatches, type Mass, massesFor } from './buildingDe
 import { type GraffitiSpot, graffitiSpots } from './buildingSpots';
 import { ownInstance } from './hideable';
 import { Batch, byTile, lambert, UNIT } from './instancing';
+import { buildRocks } from './rocks';
 import { StreetProps } from './streetProps';
 import { StreetPropsView } from './breakables';
 import { Breakables } from '../../shared/world/breakables';
@@ -58,6 +59,8 @@ export class CityMeshes {
       obs.add((r.x0 + r.x1) / 2, 0, (r.y0 + r.y1) / 2, r.x1 - r.x0, o.h, r.y1 - r.y0, o.color);
     }
     obs.build(scene);
+    // Open country's buttes, mesas, outcrops and boulders.
+    buildRocks(scene, city);
     this.trees(scene, city, rng);
     this.props = new StreetProps(scene, city, rng);
     // Lamp posts, hydrants, bins and boxes: knockable (shared/world/breakables.ts).

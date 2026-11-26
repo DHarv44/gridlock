@@ -2,7 +2,8 @@
 import { insetRect, type Rect, rectH, rectW } from '../math';
 import { ZONES, type ZoneSpec } from '../packs';
 import type { Rng } from '../rng';
-import { type Block, type Building, Dir, type Lot, type Obstacle, type ParkSpot, SIDEWALK_W, type Tree } from './cityTypes';
+import { type Block, type Building, Dir, type Lot, type Obstacle, type ParkSpot, type Rock, SIDEWALK_W, type Tree } from './cityTypes';
+import { landforms } from './landforms';
 import type { RoadLayout } from './roadgen';
 
 export interface LotOutput {
@@ -11,6 +12,7 @@ export interface LotOutput {
   buildings: Building[];
   trees: Tree[];
   obstacles: Obstacle[];
+  rocks: Rock[];
   parking: ParkSpot[];
   ponds: Rect[];
 }
@@ -46,9 +48,10 @@ function touchingSides(r: Rect, area: Rect): Dir[] {
 }
 
 export class LotBuilder {
-  readonly out: LotOutput = { blocks: [], lots: [], buildings: [], trees: [], obstacles: [], parking: [], ponds: [] };
+  readonly out: LotOutput = { blocks: [], lots: [], buildings: [], trees: [], obstacles: [], rocks: [], parking: [], ponds: [] };
 
-  constructor(private rng: Rng) {}
+  /** `seed`: the world's, for the height map rock stands on (world/relief.ts). */
+  constructor(private rng: Rng, private seed: number) {}
 
   build(L: RoadLayout): LotOutput {
     const { xs, ys, clusters } = L;
@@ -97,23 +100,8 @@ export class LotBuilder {
       clear.push(r);
       this.out.ponds.push(r);
     }
-    const nRocks = Math.floor(per * spec.rocks + this.rng.next());
-    for (let k = 0; k < nRocks; k++) {
-      const s = this.rng.range(spec.rockSize[0], spec.rockSize[1]);
-      const x = this.rng.range(area.x0, area.x1 - s), y = this.rng.range(area.y0, area.y1 - s);
-      const outline = { x0: x, y0: y, x1: x + s, y1: y + s };
-      if (!fits(outline)) continue;
-      clear.push(outline);
-      const top = this.rng.range(spec.rockHeight[0], spec.rockHeight[1]);
-      const color = this.rng.pick(spec.rockColor);
-      // A core and a couple of lower shoulders: reads as a butte from above, not a crate.
-      this.out.obstacles.push({ rect: insetRect(outline, s * 0.18), h: top, color, kind: 'rock' });
-      for (let p = 0; p < 2; p++) {
-        const a = this.rng.range(0.15, 0.55) * s, b = this.rng.range(0.15, 0.55) * s;
-        const px = this.rng.range(x, x + s - a), py = this.rng.range(y, y + s - b);
-        this.out.obstacles.push({ rect: { x0: px, y0: py, x1: px + a, y1: py + b }, h: top * this.rng.range(0.35, 0.7), color, kind: 'rock' });
-      }
-    }
+    // Buttes, mesas, outcrops and boulders: round rock, on the high ground (world/landforms.ts).
+    landforms(this.rng, this.seed, area, spec, fits, clear, this.out.rocks);
   }
 
   /** Open-country features trees keep clear of, by lot. */

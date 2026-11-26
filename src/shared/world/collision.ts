@@ -63,6 +63,8 @@ export class StaticWorld {
       this.addBox({ x0: cx - hx, y0: cy - hy, x1: cx + hx, y1: cy + hy, h: 2.5 });
     }
     for (const t of city.trees) this.addCircle({ x: t.x, y: t.y, r: TRUNK_R, h: 7 });
+    // Open country's rock: round columns, boulders (world/landforms.ts).
+    for (const r of city.rocks) this.addCircle({ x: r.x, y: r.y, r: r.r, h: r.h });
     this.stamp = new Uint32Array(this.boxes.length);
     this.stampC = new Uint32Array(this.circles.length);
     // Roofs, by the blocks each building is drawn as (world/massing.ts: a tower's podium and shaft

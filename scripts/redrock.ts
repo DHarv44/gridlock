@@ -37,8 +37,14 @@ const city = w.city;
 const trails = city.segs.filter((s) => s.trail).length;
 check(trails > 20, `open country is crossed by trails (${trails} trail segments of ${city.segs.length})`);
 check(!city.nodes.some((n) => n.lights), 'no traffic lights anywhere');
-const rocks = city.obstacles.filter((o) => o.kind === 'rock').length;
-check(rocks > 50 && city.ponds.length > 2, `rock formations (${rocks}) and ponds (${city.ponds.length}) in open country`);
+const mesas = city.rocks.filter((r) => r.mesa && r.r > 3).length, boulders = city.rocks.filter((r) => r.r < 2).length;
+check(mesas > 30 && boulders > 100 && city.ponds.length > 2, `buttes and mesas (${mesas} columns), boulders (${boulders}) and ponds (${city.ponds.length}) in open country`);
+const { relief } = await import('../src/shared/world/relief');
+const hs = Array.from({ length: 400 }, (_, k) => relief(city.seed, (k % 20) * 97 + 300, Math.floor(k / 20) * 97 + 300));
+check(Math.max(...hs) - Math.min(...hs) > 0.4, `the land rises and falls (height ${Math.min(...hs).toFixed(2)} to ${Math.max(...hs).toFixed(2)})`);
+const highUp = city.rocks.filter((r) => r.mesa && r.r > 3).reduce((s, r) => s + relief(city.seed, r.x, r.y), 0) / Math.max(1, mesas);
+const avg = hs.reduce((a, b) => a + b, 0) / hs.length;
+check(highUp > avg, `mesas stand on the high ground (${highUp.toFixed(2)} vs ${avg.toFixed(2)} on average)`);
 check(city.edge === 'cliffs' && !w.map.isWater(LAND0 / 2, MAP_SIZE / 2) && !!w.statics.raycast(LAND0 + 5, MAP_SIZE / 2, 2, MAP_SIZE / 2, 1),
   'the territory ends in solid cliffs, not sea');
 check(w.map.isWater((city.ponds[0].x0 + city.ponds[0].x1) / 2, (city.ponds[0].y0 + city.ponds[0].y1) / 2), 'a pond is water');

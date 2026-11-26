@@ -2,9 +2,12 @@
 import * as THREE from 'three';
 import type { CityMap } from '../../shared/world/city';
 import { MAP_SIZE } from '../../shared/world/cityTypes';
+import { buildBrush } from './brush';
 import { CHUNK, paintChunk } from './groundPaint';
+import { hasWild } from './groundRelief';
 
-interface Chunk { mesh: THREE.Mesh; tex: THREE.CanvasTexture; used: number }
+/** `brush`: its bushes (brush.ts), built and dropped with it. */
+interface Chunk { mesh: THREE.Mesh; tex: THREE.CanvasTexture; used: number; brush: THREE.InstancedMesh[] }
 
 const MAX_CHUNKS = 48;
 const BUILDS_PER_FRAME = 3;
@@ -65,7 +68,8 @@ export class Ground {
     mesh.matrixAutoUpdate = false;
     mesh.updateMatrix();
     this.scene.add(mesh);
-    this.chunks.set(j * N + i, { mesh, tex, used: this.frame });
+    const brush = hasWild() ? buildBrush(this.scene, this.map, i * CHUNK, j * CHUNK, CHUNK) : [];
+    this.chunks.set(j * N + i, { mesh, tex, used: this.frame, brush });
   }
 
   private evict(): void {
@@ -75,6 +79,8 @@ export class Ground {
       this.scene.remove(c.mesh);
       (c.mesh.material as THREE.Material).dispose();
       c.tex.dispose();
+      // The bush shape and material are shared; only each chunk's instances go.
+      for (const b of c.brush) { this.scene.remove(b); b.dispose(); }
       this.chunks.delete(k);
     }
   }

@@ -415,10 +415,21 @@ export interface WildSpec {
   rockColor: string[];
   ponds: number;
   pondSize: [number, number];
-  /** Ground colours, blended in patches. */
+  /** Ground colours, blended in broad drifts. */
   ground: string[];
   /** The colour of trails (dirt roads) through it. */
   trail: string;
+  /** How hilly it is (m from wash bottom to ridge top; shading only, movement stays flat; world/
+   *  relief.ts), the colour down in the washes and up on the ridges, and the rock layers that show
+   *  in bands on its steeper slopes. Rock formations stand on the high ground. */
+  relief?: number;
+  low?: string;
+  high?: string;
+  strata?: string[];
+  /** Loose boulders (solid) per 10,000 m², and brush (low bushes, not solid) per 100 m², in these
+   *  colours, this size (m across); it grows thickest down in the washes. */
+  boulders?: number;
+  brush?: { density: number; colors: string[]; size: [number, number] };
 }
 
 /** A radio station: its folder under the universe's `<contentDir>/radio/`, the name players see,

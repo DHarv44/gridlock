@@ -18,6 +18,10 @@ content/
                                (any subfolders, only the file name counts)
     model/                     the player voices' reference clips
   voice-models/                spare reference clips not given to anyone yet
+  redrock/                     the western's own content (its contentDir)
+    characters/, player/       as above
+    soundtrack/                its music instead of radio stations: <title_in_snake_case>.m4a,
+                               and tracks.json giving each file's title
   SCRIPTS.md                   every conversation, readable (generated: npm run scripts)
 ```
 

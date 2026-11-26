@@ -37,7 +37,7 @@ export function generateCity(seed: number): City {
   const rng = new Rng(seed);
   const layout = genLayout(rng);
   const { nodes, segs, bridges } = genGraph(layout);
-  const lotBuilder = new LotBuilder(rng);
+  const lotBuilder = new LotBuilder(rng, seed);
   const lo = lotBuilder.build(layout);
   const nx = layout.xs.length - 1, ny = layout.ys.length - 1;
   const cellBlock = new Int32Array(nx * ny).fill(-1);
@@ -61,7 +61,7 @@ export function generateCity(seed: number): City {
   const city: City = {
     seed, xs: layout.xs, ys: layout.ys, riverRow: layout.riverRow, ponds: lo.ponds, edge: WORLD.edge,
     cellZone: layout.cellZone, cellDistrict: layout.cellDistrict, cellBlock,
-    nodes, segs, blocks: lo.blocks, lots: lo.lots, buildings, obstacles: lo.obstacles, trees: lo.trees,
+    nodes, segs, blocks: lo.blocks, lots: lo.lots, buildings, obstacles: lo.obstacles, rocks: lo.rocks, trees: lo.trees,
     parking, services: places.services, properties: places.properties, bridges, interiors: [],
   };
   // Walk-in ground floors; their places do business at the counter inside.

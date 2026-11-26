@@ -1,9 +1,10 @@
 // Paints a square chunk of the city ground (roads, markings, sidewalks, lots, water) to a canvas.
 import { Rng } from '../../shared/rng';
-import { SERVICES, ZONES, type ZoneSpec } from '../../shared/packs';
+import { SERVICES, ZONES } from '../../shared/packs';
 import type { CityMap } from '../../shared/world/city';
 import { LAND0, LAND1, LANE_W, type Lot, MAP_SIZE, type Segment } from '../../shared/world/cityTypes';
 import { WORLD } from '../../shared/world/worldSpec';
+import { hasWild, paintRelief } from './groundRelief';
 
 export const CHUNK = 128;
 export const PX = 4; // pixels per metre
@@ -46,6 +47,8 @@ export function paintChunk(map: CityMap, cx: number, cy: number, canvas: HTMLCan
     rect(LAND0 - 3, LAND0 - 3, LAND1 + 3, LAND1 + 3, '#2c5866');
   }
   rect(LAND0, LAND0, LAND1, LAND1, WORLD.ground);
+  // Open country's ground from the lie of the land (groundRelief.ts); towns and roads go over it.
+  if (hasWild()) { paintRelief(ctx, map, X0, Y0, CHUNK); grain(ctx, map, cx, cy); }
   const r = map.river;
   if (r && inView(0, r.y0, MAP_SIZE, r.y1)) {
     rect(X0, r.y0 - 1.5, X1, r.y1 + 1.5, '#8c8a82');
@@ -75,7 +78,7 @@ export function paintChunk(map: CityMap, cx: number, cy: number, canvas: HTMLCan
     const br = b.rect;
     if (!inView(br.x0, br.y0, br.x1, br.y1)) continue;
     const z = ZONES[b.zone];
-    if (z.layout === 'wild') { paintWild(ctx, b.id, br, z); continue; }
+    if (z.layout === 'wild') continue; // painted by the lie of the land, above
     rect(br.x0, br.y0, br.x1, br.y1, z.sidewalk);
     grid(ctx, { x0: br.x0 + 0.4, y0: br.y0 + 0.4, x1: br.x1 - 0.4, y1: br.y1 - 0.4 }, 1.5, 'rgba(0,0,0,0.08)');
     // Curb edge.
@@ -139,27 +142,18 @@ function roadWear(ctx: CanvasRenderingContext2D, s: Segment, inView: (a: number,
 let trailColor: string | null = null;
 const TRAIL = (): string => (trailColor ??= ZONES.find((z) => z.wild)?.wild?.trail ?? '#8a7356');
 
-/** Open country: its ground in drifting patches of the zone's colours, scrub dotted over it. The
- *  pattern comes from the block's id, so it lines up across chunk edges. */
-function paintWild(ctx: CanvasRenderingContext2D, id: number, r: { x0: number; y0: number; x1: number; y1: number }, z: ZoneSpec): void {
-  const w = r.x1 - r.x0, h = r.y1 - r.y0;
-  ctx.fillStyle = z.ground;
-  ctx.fillRect(r.x0, r.y0, w, h);
-  const colors = z.wild?.ground ?? [];
-  const rng = new Rng(id * 7907 + 3);
-  const n = Math.min(700, Math.floor((w * h) / 500));
-  ctx.globalAlpha = 0.35;
-  for (let k = 0; k < n && colors.length; k++) {
-    ctx.fillStyle = colors[Math.floor(rng.next() * colors.length)];
-    const rx = rng.range(5, 26), ry = rng.range(4, 18);
-    ctx.beginPath(); ctx.ellipse(rng.range(r.x0, r.x1), rng.range(r.y0, r.y1), rx, ry, rng.range(0, 3.14), 0, Math.PI * 2); ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-  const scrub = Math.min(2500, Math.floor((w * h) / 60));
-  for (let k = 0; k < scrub; k++) {
-    ctx.fillStyle = rng.chance(0.6) ? 'rgba(70,80,45,0.55)' : 'rgba(90,70,45,0.4)';
-    const s = rng.range(0.4, 1.3);
-    ctx.fillRect(rng.range(r.x0, r.x1), rng.range(r.y0, r.y1), s, s);
+/** Open country's fine grain over its ground (groundRelief.ts paints the ground itself): pebbles,
+ *  dry tufts and scuffed dirt, small and round, wherever the country is open (trails go over it).
+ *  Per chunk from its own seed. The brush is 3D (brush.ts). */
+function grain(ctx: CanvasRenderingContext2D, map: CityMap, cx: number, cy: number): void {
+  const rng = new Rng((cy * 4099 + cx) * 7907 + 3);
+  const X0 = cx * CHUNK, Y0 = cy * CHUNK;
+  for (let k = 0; k < (CHUNK * CHUNK) / 10; k++) {
+    const x = X0 + rng.next() * CHUNK, y = Y0 + rng.next() * CHUNK, t = rng.next(), r = rng.range(0.06, 0.22);
+    const z = map.zoneAt(x, y);
+    if (z < 0 || ZONES[z].layout !== 'wild') continue;
+    ctx.fillStyle = t < 0.45 ? 'rgba(60,45,30,0.22)' : t < 0.8 ? 'rgba(255,240,210,0.16)' : 'rgba(80,90,50,0.25)';
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
   }
 }
 

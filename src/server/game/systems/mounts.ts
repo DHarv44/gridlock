@@ -84,7 +84,8 @@ function lead(w: World, v: Vehicle, dt: number): void {
   // From far off, or stuck: it appears on a road nearby instead (round a corner if it was far,
   // closer in if it was already close).
   if (d > 220 || (d > ARRIVE + 1 && prog.t > STUCK_S)) {
-    const s = d > 30 ? laneSpawn(w, at.x, at.y, 45, 80, at) : laneSpawn(w, at.x, at.y, 8, 25, at);
+    // Far off: round a corner well out. Stuck: round the nearest corner, closer in than it was.
+    const s = d > 220 ? laneSpawn(w, at.x, at.y, 45, 80, at) : laneSpawn(w, at.x, at.y, 6, Math.max(12, Math.min(25, d * 0.6)), at);
     if (s) {
       v.body.x = s.x; v.body.y = s.y; v.body.angle = s.angle; v.body.vx = 0; v.body.vy = 0; v.body.av = 0; v.idleT = 0;
       dx = at.x - v.body.x; dy = at.y - v.body.y; d = Math.hypot(dx, dy);
