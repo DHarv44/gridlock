@@ -3,7 +3,9 @@
 import { PROPERTIES, SERVICES, type ServiceVerb } from '../../shared/packs';
 import type { PlayerInfo } from '../../shared/protocol';
 import type { CityMap } from '../../shared/world/city';
+import type { CardVenue } from '../../shared/world/tables';
 import type { Blip } from '../game/jobs';
+import { CARD_ICON } from './cardMarks';
 import type { Pt } from '../game/route';
 import type { Mark } from '../game/waypoint';
 import { MAP_COLORS, bakeCityMap } from './mapArt';
@@ -39,7 +41,7 @@ export class Minimap {
 
   /** Draws the radar centred on (x, y) with `range` metres to the edge. */
   drawRadar(ctx: CanvasRenderingContext2D, size: number, x: number, y: number, angle: number, range: number, players: PlayerInfo[], meId: number,
-    owned: Set<number>, hostiles: { x: number; y: number }[], blips: Blip[] = [], marks: Mark[] = [], jobRoute: Pt[] = []): void {
+    owned: Set<number>, hostiles: { x: number; y: number }[], blips: Blip[] = [], marks: Mark[] = [], jobRoute: Pt[] = [], cards: CardVenue[] = []): void {
     const k = size / 2 / range;
     ctx.save();
     ctx.clearRect(0, 0, size, size);
@@ -72,6 +74,12 @@ export class Minimap {
       const [px, py] = to(s.x, s.y);
       if (px < -6 || py < -6 || px > size + 6 || py > size + 6) continue;
       ctx.fillStyle = icon.color; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(px, py, 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
+    for (const v of cards) {
+      const [px, py] = to(v.x, v.y);
+      if (px < -6 || py < -6 || px > size + 6 || py > size + 6) continue;
+      ctx.fillStyle = CARD_ICON.color; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.arc(px, py, 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     }
     for (const p of this.map.city.properties) {

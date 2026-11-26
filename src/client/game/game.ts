@@ -7,6 +7,8 @@ import { heightAt, installWays } from '../../shared/world/ways';
 import { Highways } from '../render/highways';
 import { RailwayView } from '../render/railway';
 import { joinContent, tableContent, type TableSend } from '../hud/cardTable';
+import { knownVenues } from '../hud/cardMarks';
+import { type CardVenue, cardVenues } from '../../shared/world/tables';
 import { Radio } from '../audio/radio';
 import { Soundtrack } from '../audio/soundtrack';
 import { Sound } from '../audio/sound';
@@ -190,6 +192,14 @@ export class Game {
   /** The table you're sat at, as the server shows it; friends whose number you have. */
   private tableView: TableView | null = null;
   private friends = new Set<string>();
+  /** Gangs whose back-room game you've been asked to; the card games on the maps. */
+  private gangGames = new Set<string>();
+  private cardMarks: CardVenue[] = [];
+  private allVenues: CardVenue[] | null = null;
+  private refreshCardMarks(): void {
+    this.allVenues ??= cardVenues(this.map.city);
+    this.cardMarks = knownVenues(this.allVenues, this.friends, this.gangGames);
+  }
 
   /** A card or casino table's pane: sit down (or meet the friend whose game it is), then play.
    *  Closing it gets you up from the table. */
@@ -282,7 +292,10 @@ export class Game {
         break;
       case 'profile': this.profile = m.p; break;
       case 'table': this.tableView = m.v; this.pane.refresh(); break;
-      case 'friends': this.friends = new Set(m.list.map(([id]) => id)); this.phone.setFriends(m.list); this.pane.refresh(); break;
+      case 'friends':
+        this.friends = new Set(m.list.map(([id]) => id)); this.gangGames = new Set(m.games ?? []);
+        this.refreshCardMarks(); this.phone.setFriends(m.list); this.pane.refresh();
+        break;
       case 'radio': this.radio.set(m.vid, m.station); break;
       case 'save': saveProgress(m.id, m.p); break;
       case 'msg':
@@ -484,10 +497,11 @@ export class Game {
     })];
     const it = this.itSpot();
     if (it && this.jobs.it !== this.myId) blips.push({ x: it.x, y: it.y, color: '#ff2a2a', shape: 'star' });
-    this.radar.drawRadar(ctx, 220, disp.x, disp.y, own.angle, range, this.players, this.myId, owned, hostiles, blips, marks, job.route);
+    if (!this.allVenues) this.refreshCardMarks();
+    this.radar.drawRadar(ctx, 220, disp.x, disp.y, own.angle, range, this.players, this.myId, owned, hostiles, blips, marks, job.route, this.cardMarks);
     if (this.bigMap.isOpen) {
       this.bigMap.draw({ me: { x: disp.x, y: disp.y, angle: own.angle }, players: this.players, meId: this.myId, owned, owners: this.owners,
-        blips, waypoint: wp.point, marks, jobRoute: job.route });
+        blips, waypoint: wp.point, marks, jobRoute: job.route, cards: this.cardMarks });
     }
   }
 

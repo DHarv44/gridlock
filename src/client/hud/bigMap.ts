@@ -6,6 +6,8 @@ import type { PlayerInfo } from '../../shared/protocol';
 import type { CityMap } from '../../shared/world/city';
 import { type Atm, atmsOf } from '../../shared/world/atms';
 import { MAP_SIZE } from '../../shared/world/cityTypes';
+import { type CardVenue, cardVenues } from '../../shared/world/tables';
+import { CARD_ICON, venueLabel } from './cardMarks';
 import type { Blip } from '../game/jobs';
 import type { Pt } from '../game/route';
 import type { Mark } from '../game/waypoint';
@@ -31,6 +33,8 @@ export interface MapFrame {
   marks: Mark[];
   /** Road route to the job objective (drawn in the objective's yellow). */
   jobRoute: Pt[];
+  /** Card games you know of (hud/cardMarks.ts). */
+  cards: CardVenue[];
 }
 
 const JOB_COLOR = '#ffd21f';
@@ -43,6 +47,9 @@ export class BigMap {
   private cy = MAP_SIZE / 2;
   private zoom = 0.9;
   private hidden: Set<string>;
+  private legend: MapLegend;
+  /** Card rooms with their own pin (a casino's floor): their games go on its hover label. */
+  private gameRooms: CardVenue[];
   private atms: Atm[];
   private pins: Pin[] = [];
   private mouse: { x: number; y: number } | null = null;
@@ -54,7 +61,10 @@ export class BigMap {
   constructor(private root: HTMLElement, private canvas: HTMLCanvasElement, private map: CityMap) {
     this.baked = bakeCityMap(map, 1);
     this.atms = atmsOf(map.city);
-    this.hidden = new MapLegend(root, map, this.atms.length).hidden;
+    const venues = cardVenues(map.city);
+    this.gameRooms = venues.filter((v) => v.pinned);
+    this.legend = new MapLegend(root, map, this.atms.length, venues.some((v) => !v.pinned));
+    this.hidden = this.legend.hidden;
     canvas.addEventListener('mousedown', (e) => { if (e.button === 0) this.drag = { x: e.offsetX, y: e.offsetY, moved: false }; });
     canvas.addEventListener('mousemove', (e) => {
       this.padMode = false;
@@ -146,7 +156,17 @@ export class BigMap {
       const icon = PLACE_ICON[verb];
       const [px, py] = this.toScreen(s.x, s.y);
       pin(ctx, px, py, icon.color, icon.glyph);
-      this.pins.push({ x: px, y: py, label: s.name });
+      // A casino's pin lists the games on its floor, one to a line.
+      const floor = this.gameRooms.find((v) => Math.hypot(v.x - s.x, v.y - s.y) < 1);
+      this.pins.push({ x: px, y: py, label: floor ? [s.name, ...floor.games].join('\n') : s.name });
+    }
+    this.legend.count('cards', f.cards.length);
+    if (!this.hidden.has('cards')) {
+      for (const v of f.cards) {
+        const [px, py] = this.toScreen(v.x, v.y);
+        pin(ctx, px, py, CARD_ICON.color, CARD_ICON.glyph);
+        this.pins.push({ x: px, y: py, label: venueLabel(v) });
+      }
     }
     if (!this.hidden.has('atm')) {
       const icon = PLACE_ICON.atm;

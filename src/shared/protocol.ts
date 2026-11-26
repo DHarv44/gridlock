@@ -164,8 +164,9 @@ export type S2C =
   | { t: 'save'; id: string; p: CharacterProgress }
   /** The table you're playing at, as you see it (null: you've left it). */
   | { t: 'table'; v: TableView | null }
-  /** Friends with a card game whose number you have: [id, name]. */
-  | { t: 'friends'; list: [string, string][] };
+  /** Friends with a card game whose number you have: [id, name]; and the gangs whose back-room
+   *  game you've been invited to (or sat in), so the map can show it. */
+  | { t: 'friends'; list: [string, string][]; games?: string[] };
 
 /** A card or casino table as one player sees it (server systems/cardTables.ts builds it; the pane,
  *  client hud/cardTable.ts, draws it). Cards are 0..51 (games/cards.ts), -1 face down. */

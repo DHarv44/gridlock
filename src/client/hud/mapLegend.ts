@@ -3,6 +3,7 @@
 // and clicks on it never land on the map underneath. The choice is remembered in this browser.
 import { PROPERTIES, RULES, SERVICES } from '../../shared/packs';
 import type { CityMap } from '../../shared/world/city';
+import { CARD_ICON } from './cardMarks';
 import { glyphCanvas } from './mapGlyphs';
 import { iconKey } from './mapPlaces';
 import { PLACE_ICON } from './minimap';
@@ -17,7 +18,9 @@ export class MapLegend {
   readonly hidden = new Set<string>();
   private buttons = new Map<string, HTMLButtonElement>();
 
-  constructor(root: HTMLElement, map: CityMap, atms: number) {
+  private counts = new Map<string, HTMLElement>();
+
+  constructor(root: HTMLElement, map: CityMap, atms: number, cards = false) {
     try { for (const k of JSON.parse(localStorage.getItem(STORE) ?? '[]') as string[]) this.hidden.add(k); } catch { /* none saved */ }
     const count = new Map<string, number>();
     for (const s of map.city.services) { const v = SERVICES[s.spec].verb; count.set(v, (count.get(v) ?? 0) + 1); }
@@ -38,6 +41,7 @@ export class MapLegend {
       ...Object.entries(PLACE_ICON).filter(([k]) => count.has(k))
         .map(([key, v]) => ({ key, label: SERVICES.find((s) => s.verb === key)?.name ?? v.label, icon: dot(v.color, v.glyph) })),
       ...[...icons.values()].map((i) => ({ key: iconKey(i.label), label: i.label, icon: glyphCanvas(i.color, i.glyph, 'Bahnschrift, "Segoe UI", sans-serif') as HTMLElement })),
+      ...(cards ? [{ key: 'cards', label: CARD_ICON.label, icon: dot(CARD_ICON.color, CARD_ICON.glyph) }] : []),
       { key: 'phones', label: RULES.jobPost === 'post' ? 'Job post with work' : 'Ringing payphone', icon: phone() },
       { key: 'property', label: 'Property', icon: house() },
       { key: 'players', label: 'Players', icon: dot('#ffffff', '') },
@@ -60,12 +64,21 @@ export class MapLegend {
       name.textContent = r.label;
       b.append(r.icon, name);
       const n = count.get(r.key);
-      if (n !== undefined) { const c = document.createElement('span'); c.className = 'ml-count'; c.textContent = String(n); b.append(c); }
+      if (n !== undefined || r.key === 'cards') {
+        const c = document.createElement('span'); c.className = 'ml-count'; c.textContent = String(n ?? 0); b.append(c);
+        this.counts.set(r.key, c);
+      }
       this.buttons.set(r.key, b);
       box.append(b);
     }
     root.append(box);
     this.refresh();
+  }
+
+  /** A count that changes as you play (the card games you know of). */
+  count(key: string, n: number): void {
+    const c = this.counts.get(key);
+    if (c && c.textContent !== String(n)) c.textContent = String(n);
   }
 
   private set(keys: string[], off: boolean): void {
