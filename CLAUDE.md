@@ -29,7 +29,9 @@ Server-authoritative Node simulation + three.js browser client. Read `docs/STATU
   it reads fields (`behaviour`, `verb`, `roles`, `movement`, ...). Add content by editing a universe only.
   What a verb or movement kind *does* lives in one engine table each: `src/shared/verbs.ts` (service
   verbs: site, pad, garage door, automatic, shop) and `src/shared/sim/kinds.ts` (movement kinds:
-  `flies`, `skids`, `floats`). Ask the table (`flies(spec)`), never compare against a kind or verb in a system.
+  `flies`, `skids`, `floats`), and what a vehicle's `material` does in `src/shared/materials.ts` (metal
+  sparks, dents, smokes, burns and blows up; flesh bleeds and lies down; wood). Ask the table
+  (`flies(spec)`, `materialOf(spec)`), never compare against a kind, verb or material in a system.
 - **Shared determinism.** `generateCity(seed)` runs on server and every client and must stay bit-identical:
   generation uses only `Rng` and arithmetic (no trig). `src/shared/sim/physics.ts` movement is shared so the
   client can predict its own avatar; keep it pure.

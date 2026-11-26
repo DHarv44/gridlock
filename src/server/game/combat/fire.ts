@@ -2,6 +2,7 @@
 import { angleDiff, r2 } from '../../../shared/math';
 import { VEHICLES, WEAPONS, type WeaponSpec, weaponIndex } from '../../../shared/packs';
 import { flies } from '../../../shared/sim/kinds';
+import { materialOf } from '../../../shared/materials';
 import { firingArc } from '../../../shared/sim/firingArc';
 import { FX, HIT } from '../../../shared/protocol';
 import { rayAabb, rayCircle } from '../../../shared/world/collision';
@@ -200,7 +201,10 @@ function hitscan(w: World, p: Ped, x0: number, y0: number, z: number, angle: num
     hitType = HIT.flesh;
   } else if (hitVeh) {
     const v = hitVeh as Vehicle;
-    hitType = HIT.metal;
+    // Sparks off metal, dust off wood, blood from a horse (shared/materials.ts).
+    const mat = materialOf(v.spec);
+    hitType = mat.hit;
+    if (mat.bleeds) w.emit(FX.Blood, r2(x0 + dx * t), r2(y0 + dy * t));
     damageVehicle(w, v, spec.damage * spec.vehicleMul, p.id, { x: x0, y: y0 });
     if (!v.spec.armored) {
       // Bullets through glass and open tops can reach occupants.

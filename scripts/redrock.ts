@@ -11,6 +11,7 @@ const { Room } = await import('../src/server/room');
 const { RULES, UNIVERSE, VEHICLES, vehicleIndex } = await import('../src/shared/packs');
 const { stepVehicle } = await import('../src/shared/sim/physics');
 const { onLegs } = await import('../src/shared/sim/kinds');
+const { materialOf } = await import('../src/shared/materials');
 const { spawnVehicle } = await import('../src/server/game/factory');
 const { damageVehicle } = await import('../src/server/game/combat/damage');
 const { updateTrailers } = await import('../src/server/game/systems/trailers');
@@ -40,6 +41,8 @@ check(city.edge === 'cliffs' && !w.map.isWater(LAND0 / 2, MAP_SIZE / 2) && !!w.s
   'the territory ends in solid cliffs, not sea');
 check(w.map.isWater((city.ponds[0].x0 + city.ponds[0].x1) / 2, (city.ponds[0].y0 + city.ponds[0].y1) / 2), 'a pond is water');
 check(VEHICLES.every((v) => onLegs(v)), 'every ride is on legs (horses and teams)');
+check(VEHICLES.every((v) => !materialOf(v).explodes && !materialOf(v).smokes && (v.gaits ? materialOf(v).bleeds : true)),
+  'horses and teams are flesh (they bleed; nothing smokes, burns or blows up), wagons standing alone are wood');
 
 // A horse on the longest straight trail: gets up to a gallop, and turns.
 const straight = city.segs.filter((s) => s.axis === 'h').sort((a, b) => (b.x1 - b.x0) - (a.x1 - a.x0))[0];

@@ -4,6 +4,7 @@ import { type CharLook, VEHICLES, WEAPONS } from '../../shared/packs';
 import { EK, PF, PK, VF } from '../../shared/protocol';
 import { astride } from '../../shared/sim/kinds';
 import { animateLegs } from './legs';
+import { materialOf } from '../../shared/materials';
 import type { EntityStore, ViewEntity } from '../net/entities';
 import { FLOOR_H, floorOf, groundOf } from '../../shared/world/levels';
 import { putCarLights } from './carLights';
@@ -232,23 +233,31 @@ export class WorldView {
     const { overall: dmg, sides } = decodeDamage(d[10] ?? 0);
     // A wreck has been through a fire and a blast: battered all round, whatever it was before.
     const dents = wreck ? sides.map((l) => Math.max(l, 2)) : sides;
-    const key = `${type}:${color}:${wreck}`;
+    // What it's made of says how it looks hurt and done for (shared/materials.ts): a burnt-out car,
+    // a horse lying in its own colours.
+    const mat = materialOf(spec);
+    const charred = wreck && !!mat.charred;
+    const key = `${type}:${color}:${charred}`;
     let v = this.vehs.get(e.id);
     if (!v || v.key !== key) {
       if (v) this.scene.remove(v.root);
-      v = makeVehicle(type, color, wreck);
+      v = makeVehicle(type, color, charred);
+      v.root.rotation.order = 'YXZ';
       this.vehs.set(e.id, v);
       this.scene.add(v.root);
     }
     const mine = own && own.vid === e.id && own.driving;
     const x = mine ? own!.x : e.x, y = mine ? own!.y : e.y, a = mine ? own!.angle : e.angle, alt = mine ? own!.alt : e.alt;
-    v.root.position.set(x, alt, y);
+    // Down for good (a horse, not a wagon in harness): on its side.
+    const down = wreck && !!mat.liesDown && !spec.trailer;
+    v.root.position.set(x, alt + (down ? spec.width * 0.45 : 0), y);
     v.root.rotation.y = -a;
+    v.root.rotation.x = down ? Math.PI / 2 : 0;
     if (spec.movement === 'boat') {
       floatBoat(v.root, this.fx, spec, this.time + e.id * 1.7, dt, x, y, a, mine ? own!.vx : e.vx, mine ? own!.vy : e.vy, wreck, this.dryAt(x, y));
     }
     v.root.visible = e.id !== this.hiddenVehicle;
-    showDamage(v, spec, e.id, dents);
+    if (mat.dents) showDamage(v, spec, e.id, dents);
     this.carLabel(e.id, v.root, spec.height);
     if (v.turret) v.turret.rotation.y = -(e.turret - e.angle);
     // Trailer swing relative to the cab: your own rig's is predicted with the cab; others' come
@@ -275,11 +284,11 @@ export class WorldView {
     putCarLights(this.fx.beams, this.fx.glow, spec, type, x, y, a, alt, trailerAngle, flags, night, dents);
     // Smoke from under the bonnet: a badly hurt vehicle, or a smashed front end (the engine's there).
     const steam = dmg >= 2 || dents[0] >= 2;
-    if ((flags & VF.smoke || steam) && !wreck && Math.random() < dt * (dents[0] >= 3 ? 12 : 8)) {
+    if (mat.smokes && (flags & VF.smoke || steam) && !wreck && Math.random() < dt * (dents[0] >= 3 ? 12 : 8)) {
       this.fx.smoke(x + c * spec.length * 0.35, y + s * spec.length * 0.35, alt + spec.height * 0.8, dmg >= 2 || dents[0] >= 3 ? 0.6 : 0.3);
     }
     if (flags & VF.burning) { this.fx.fire(x, y, spec.width); if (night > 0.1) this.fx.glow.put(x, y, 0.1, 10, 1, 0, 1, 0.5, 0.15, 0.35 * night); }
-    if (wreck && Math.random() < dt * 3) this.fx.smoke(x, y, 1.5, 1);
+    if (charred && Math.random() < dt * 3) this.fx.smoke(x, y, 1.5, 1);
     // Tyre marks and smoke when sliding.
     this.skids.update(this.fx, e.id, spec, x, y, a, mine ? own!.vx : e.vx, mine ? own!.vy : e.vy, alt, dt);
   }

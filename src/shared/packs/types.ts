@@ -76,9 +76,9 @@ export interface VehicleSpec {
   /** A wagon standing without its team (seats 0): a team backed up to its pole hitches on and it
    *  becomes this vehicle (whose `hitch.team` is that team). */
   hitchAs?: string;
-  /** How it dies at 0 hp: `explode` (default: burns a few seconds, then a blast) or `fall` (a
-   *  horse, a wagon: goes down at once, riders thrown, no fire). */
-  wrecks?: 'explode' | 'fall';
+  /** What it's made of (shared/materials.ts says what each does): `metal` (default: sparks, dents,
+   *  smokes, burns and blows up), `wood` (dust, goes down), `flesh` (bleeds, falls and lies down). */
+  material?: 'metal' | 'wood' | 'flesh';
   armored?: boolean;    // occupants immune to small arms
   openTop?: boolean;    // occupants can be shot
   crushes?: boolean;    // drives over cars

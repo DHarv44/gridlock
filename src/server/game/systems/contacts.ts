@@ -2,6 +2,7 @@
 import { clamp } from '../../../shared/math';
 import { RULES } from '../../../shared/packs';
 import { flies, floats } from '../../../shared/sim/kinds';
+import { materialOf } from '../../../shared/materials';
 import { FX } from '../../../shared/protocol';
 import { PED_RADIUS } from '../../../shared/sim/physics';
 import { obbVsCircle } from '../../../shared/world/collision';
@@ -86,7 +87,8 @@ function vehicleHit(w: World, a: Vehicle, b: Vehicle, h: Hit): void {
     // Each takes the dent on the side facing the other (the normal points from b towards a).
     damageVehicle(w, a, base * clamp(mb / ma, 0.15, 4) * (b.spec.crushes ? 4 : 1), db, { x: a.body.x - h.nx * 50, y: a.body.y - h.ny * 50 });
     damageVehicle(w, b, base * clamp(ma / mb, 0.15, 4) * (a.spec.crushes ? 4 : 1), da, { x: b.body.x + h.nx * 50, y: b.body.y + h.ny * 50 });
-    if (impact > 8) w.emit(FX.Spark, Math.round((a.body.x + b.body.x) / 2), Math.round((a.body.y + b.body.y) / 2));
+    // Metal on metal strikes sparks (a horse or a wagon doesn't: shared/materials.ts).
+    if (impact > 8 && materialOf(a.spec).dents && materialOf(b.spec).dents) w.emit(FX.Spark, Math.round((a.body.x + b.body.x) / 2), Math.round((a.body.y + b.body.y) / 2));
     for (const v of [a, b]) {
       for (const sid of v.seats) {
         const occ = sid ? w.peds.get(sid) : undefined;

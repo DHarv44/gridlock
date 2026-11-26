@@ -87,5 +87,9 @@ film's names, characters, story, map or look).
    wagon*.py; `build.py --universe redrock` → src/universes/redrock/models/*.glb): six breeds in
    saddle, teams in harness, buckboard, covered wagon, stagecoach, buggy, water and gatling wagons,
    standing wagons, and the period guns.
+   What a vehicle is made of is a noun too (`VehicleSpec.material`; shared/materials.ts says what
+   each does): metal sparks, dents, smokes and blows up; flesh (horses, teams) bleeds where it's
+   hit, never smokes or burns, and dead lies on its side in its own colours; wood (standing
+   wagons) kicks up dust and goes down. (Replaced the earlier `wrecks: 'fall'`.)
    Not yet: its own cast and voiced calls (job posts give briefs only), era sounds (a bell,
    hooves, whinnies); the gatling gun doesn't traverse (trailer parts don't animate).

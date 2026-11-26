@@ -1,6 +1,7 @@
 // Redrock Territory's rides: horses, and wagons (a team in harness pulling an articulated wagon, on
-// the engine's trailer physics). All are `legs` (no wheels drawn, riders astride) and `wrecks:
-// 'fall'` (they go down, riders thrown; nothing burns). Box models in fractions of each one's size.
+// the engine's trailer physics). All are `legs` (no wheels drawn, riders astride); horses and teams
+// are `material: 'flesh'` (they bleed, go down and lie there; nothing smokes or burns), standing
+// wagons `wood`. Box models (the Blender ones replace them) in fractions of each one's size.
 import type { Paint, Part, VehicleSpec } from '../../shared/packs/types';
 
 const b = (x0: number, x1: number, y0: number, y1: number, z0: number, z1: number, paint: Paint, tag?: Part['tag']): Part =>
@@ -53,7 +54,7 @@ const G = (walk: number, trot: number, canter: number, gallop: number, accel: nu
 
 // A saddle horse: a canter on the throttle, a gallop on Sprint for ~12 s, then twice that to get
 // its wind back. Turns on the spot standing, wide at a gallop. It comes to its rider's whistle.
-const mount = { movement: 'legs' as const, wrecks: 'fall' as const, openTop: true, length: 2.5, width: 0.75, height: 1.7, mass: 500,
+const mount = { movement: 'legs' as const, material: 'flesh' as const, openTop: true, length: 2.5, width: 0.75, height: 1.7, mass: 500,
   stamina: { gallop: 12 }, comesWhenCalled: true, ...G(2.2, 6, 11, 19, 7, 5, 3.0, 1.5, 1.2),
   accel: 7, brake: 14, reverse: 1.2, grip: 10, turnRate: 3.0, seats: 2,
   saddles: [{ x: -0.05, z: 1.28, lean: 0.05 }, { x: -0.62, z: 1.24, lean: 0 }] };
@@ -61,7 +62,7 @@ const horses = [0, 1, 2, 3, 5, 6, 7]; // coat colours (palette.ts)
 
 // A team in harness: slow to pick up and to turn (it can't pivot with a wagon behind), a short
 // burst at the whip (Sprint), mostly a steady canter.
-const teamBase = { movement: 'legs' as const, wrecks: 'fall' as const, stamina: { gallop: 8 }, length: 2.8, width: 1.7, height: 1.7, mass: 1800,
+const teamBase = { movement: 'legs' as const, material: 'flesh' as const, stamina: { gallop: 8 }, length: 2.8, width: 1.7, height: 1.7, mass: 1800,
   ...G(2, 5, 9, 14, 3.5, 4, 0.9, 0.5, 0.8), accel: 3.5, brake: 9, reverse: 0.8, grip: 9, turnRate: 1.8 };
 
 type Wagon = NonNullable<VehicleSpec['trailer']>;
@@ -71,7 +72,7 @@ const COACH: Wagon = { length: 4.2, width: 1.9, height: 2.4, hitch: 1.2, model: 
 
 /** A wagon standing without its team: seatless (nobody can drive it), it hitches back as `as`. */
 const standing = (id: string, name: string, w: Wagon, hp: number, as: string): VehicleSpec => ({
-  id, name, movement: 'legs', wrecks: 'fall', length: w.length, width: w.width, height: w.height, mass: 900,
+  id, name, movement: 'legs', material: 'wood', length: w.length, width: w.width, height: w.height, mass: 900,
   // A nominal top speed (the physics divides by it); with no seat it's never driven.
   maxSpeed: 1, accel: 0, brake: 6, reverse: 0, grip: 12, turnRate: 0, hp, seats: 0, price: 0, colors: horses,
   roles: [], model: w.model, hitchAs: as,
