@@ -96,7 +96,8 @@ export function damageLevels(v: Vehicle): number[] {
  *  takes the dent. Without it (fire, flames) the damage is spread round. */
 export function damageVehicle(w: World, v: Vehicle, amount: number, attackerId: number, from?: { x: number; y: number }): void {
   if (v.wrecked || amount <= 0) return;
-  v.hp -= amount;
+  // The dents show the hit in full; the vehicle loses only part of it in health (RULES.vehicleHpTake).
+  v.hp -= amount * RULES.vehicleHpTake;
   if (from) v.dents[sideFacing(v, from.x, from.y)] += amount;
   else for (let i = 0; i < 4; i++) v.dents[i] += amount / 4;
   const attacker = w.peds.get(attackerId);
@@ -116,12 +117,11 @@ export function damageVehicle(w: World, v: Vehicle, amount: number, attackerId: 
 /** Running into a wall: `impact` is the speed into it (from stepVehicle), (vx, vy) the velocity
  *  just before, so the side you were heading with takes the dent. Gentle bumps do nothing. */
 export function wallCrash(w: World, v: Vehicle, impact: number, vx: number, vy: number): void {
-  if (impact <= WALL_SAFE) return;
+  if (impact <= RULES.wallSafe) return;
   const sp = Math.hypot(vx, vy) || 1;
-  damageVehicle(w, v, (impact - WALL_SAFE) * 10, 0, { x: v.body.x + (vx / sp) * 50, y: v.body.y + (vy / sp) * 50 });
+  damageVehicle(w, v, (impact - RULES.wallSafe) * RULES.wallDamage, 0, { x: v.body.x + (vx / sp) * 50, y: v.body.y + (vy / sp) * 50 });
   if (impact > 12) w.emit(FX.Spark, Math.round(v.body.x + (vx / sp) * v.spec.length / 2), Math.round(v.body.y + (vy / sp) * v.spec.length / 2));
 }
-const WALL_SAFE = 7;
 
 /** Turns a burning vehicle into a wreck with a blast. */
 export function wreckVehicle(w: World, v: Vehicle): void {

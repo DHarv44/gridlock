@@ -10,7 +10,7 @@ import { Skids } from '../src/client/render/skids';
 import { angleDiff } from '../src/shared/math';
 import { VEHICLES, vehicleIndex } from '../src/shared/packs';
 import { Mode, type YouState } from '../src/shared/protocol';
-import { type Body, type Controls, stepVehicle } from '../src/shared/sim/physics';
+import { type Body, type Controls, stepVehicle, wearOf } from '../src/shared/sim/physics';
 import type { StaticWorld } from '../src/shared/world/collision';
 import { blockBy, obbVsObb } from '../src/shared/sim/dynamic';
 
@@ -85,6 +85,19 @@ for (const speed of [12, 20, 28]) {
   const ped = { x: 8 - 3, y: 0, angle: 0, vx: 0, vy: 0, av: 0, alt: 0 };
   for (let i = 0; i < 40; i++) { ped.x += 4 * DT; blockBy(ped, { r: 0.35 }, [parked]); }
   check(ped.x < 8 - spec.width / 2 - 0.3, `walking into it: you stop at its side (x ${ped.x.toFixed(2)})`);
+}
+
+// A beaten-up car drives worse: less top speed, and it pulls to one side with the wheel straight.
+{
+  const top = (health: number) => {
+    const b = at(NORTH, 0);
+    for (let i = 0; i < 30 * 12; i++) stepVehicle(b, spec, ctl({ throttle: 1 }), DT, open, true, undefined, wearOf(health, 1));
+    return { speed: Math.hypot(b.vx, b.vy), drift: Math.abs(angleDiff(b.angle, NORTH)) };
+  };
+  const fine = top(1), dented = top(0.6), wreck = top(0.1);
+  check(fine.speed === top(0.9).speed && fine.drift < 1e-6, `healthy (and only lightly hurt) it drives as ever (${fine.speed.toFixed(1)} m/s)`);
+  check(dented.speed < fine.speed && wreck.speed < dented.speed && wreck.speed > fine.speed * 0.5, `hurt, slower: ${dented.speed.toFixed(1)} at 60% health, ${wreck.speed.toFixed(1)} at 10%`);
+  check(wreck.drift > 0.3, `badly hurt, it pulls off line with the wheel straight (${(wreck.drift / DEG).toFixed(0)}° in 12 s)`);
 }
 
 // Tyre marks: counted with a stand-in for the effects.

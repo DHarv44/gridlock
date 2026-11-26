@@ -3,7 +3,7 @@ import { dist } from '../../../shared/math';
 import { PLAYER_ARCHETYPE, RULES, UNARMED, WEAPONS, weaponIndex } from '../../../shared/packs';
 import { flies, floats } from '../../../shared/sim/kinds';
 import { BTN, EDGE_BUTTONS, type InputMsg, Mode, type S2C } from '../../../shared/protocol';
-import { SPRINT, stepVehicle } from '../../../shared/sim/physics';
+import { SPRINT, stepVehicle, wearOf } from '../../../shared/sim/physics';
 import { damagePed, killPed, wallCrash } from '../combat/damage';
 import { climbStairs, leaveOnRoof } from './lifts';
 import { onAttacked } from '../ai/reactions';
@@ -72,7 +72,7 @@ function applyInput(w: World, pl: Player, p: Ped, inp: InputMsg, dt: number): vo
       v.ctl.up = (btn & BTN.up) !== 0; v.ctl.down = (btn & BTN.down) !== 0;
       if (btn & BTN.horn) { if (v.spec.siren) v.siren = !v.siren; else v.horn = true; }
       const vx = v.body.vx, vy = v.body.vy;
-      wallCrash(w, v, stepVehicle(v.body, v.spec, v.ctl, dt, w.statics, true, (x, y) => w.map.onRoad(x, y)), vx, vy);
+      wallCrash(w, v, stepVehicle(v.body, v.spec, v.ctl, dt, w.statics, true, (x, y) => w.map.onRoad(x, y), wearOf(v.hp / v.spec.hp, v.id)), vx, vy);
       if (v.spec.turret) v.turret = turnTurret(v.turret, aim, dt, v.spec.turret);
       p.body.x = v.body.x; p.body.y = v.body.y;
     }

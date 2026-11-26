@@ -1,6 +1,6 @@
 // Deterministic movement steps shared by the server simulation and client prediction.
 import { approach, clamp, wrapAngle } from '../math';
-import type { VehicleSpec } from '../packs';
+import { RULES, type VehicleSpec } from '../packs';
 import type { StaticWorld } from '../world/collision';
 import { stepBoat } from './boat';
 
@@ -72,9 +72,16 @@ const ASSIST_CONE = (25 * Math.PI) / 180;
 /**
  * Vehicle movement (wheels, bikes, tracks, rotors). Returns impact speed against static geometry.
  * `onRoad`, when given, enables GTA2's steer assist: with gas on and no steering, a car on a road
- * within 25° of the road's axis is eased straight along it.
+ * within 25° of the road's axis is eased straight along it. `wear`, when given, is how beaten up it
+ * is: below RULES.wearFrom of its health it has less pull, top speed and grip, and pulls to one side.
  */
-export function stepVehicle(b: Body, spec: VehicleSpec, c: Controls, dt: number, world: StaticWorld, driven: boolean, onRoad?: (x: number, y: number) => boolean): number {
+export function stepVehicle(b: Body, spec: VehicleSpec, c: Controls, dt: number, world: StaticWorld, driven: boolean, onRoad?: (x: number, y: number) => boolean, wear?: Wear): number {
+  let pull = 0;
+  if (wear && wear.health < RULES.wearFrom) {
+    const k = clamp((RULES.wearFrom - wear.health) / RULES.wearFrom, 0, 1);
+    spec = worn(spec, k);
+    pull = wear.side * RULES.wearPull * k;
+  }
   if (spec.movement === 'rotor') return stepHeli(b, spec, c, dt, world, driven);
   if (spec.movement === 'boat') return stepBoat(b, spec, c, dt, world, driven);
   if (driven && c.handbrake && (spec.movement === 'wheels' || spec.movement === 'bike') && !spec.minTurnRadius) {
@@ -87,7 +94,8 @@ export function stepVehicle(b: Body, spec: VehicleSpec, c: Controls, dt: number,
   let vf = b.vx * fx + b.vy * fy;
   let vl = -b.vx * fy + b.vy * fx - b.av * pivot;
   const throttle = driven ? c.throttle : 0;
-  const steer = driven ? c.steer : 0;
+  // A beaten-up car pulls to one side (worse the more it's hurt) whenever it's moving.
+  const steer = driven ? clamp(c.steer + pull, -1, 1) : 0;
   const hand = driven && c.handbrake;
 
   if (throttle > 0) {
@@ -169,6 +177,28 @@ function stepHandbrake(b: Body, spec: VehicleSpec, c: Controls, dt: number, worl
   b.x += b.vx * dt;
   b.y += b.vy * dt;
   return collideStatic(b, spec, world, 0);
+}
+
+/** How beaten up a vehicle is: its health (share of its spec's) and the side it pulls to (+1 / -1). */
+export interface Wear { health: number; side: number }
+
+/** A vehicle's wear from its health and id (the id picks the side a wreck pulls to, the same on
+ *  the server and in the driver's prediction). */
+export const wearOf = (health: number, id: number): Wear => ({ health, side: id % 2 ? 1 : -1 });
+
+/** A spec as it drives `k` of the way (0..1) from fine to wrecked; cached in steps of 5%. */
+const wornCache = new Map<VehicleSpec, Map<number, VehicleSpec>>();
+function worn(spec: VehicleSpec, k: number): VehicleSpec {
+  const step = Math.round(k * 20);
+  let m = wornCache.get(spec);
+  if (!m) wornCache.set(spec, (m = new Map()));
+  let s = m.get(step);
+  if (!s) {
+    const t = step / 20, lerp = (to: number) => 1 - (1 - to) * t;
+    s = { ...spec, accel: spec.accel * lerp(RULES.wearPower), maxSpeed: spec.maxSpeed * lerp(RULES.wearSpeed), grip: spec.grip * lerp(RULES.wearGrip) };
+    m.set(step, s);
+  }
+  return s;
 }
 
 /** Where the trailer hitch sits: this far behind the vehicle's centre. */

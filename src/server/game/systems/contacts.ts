@@ -1,5 +1,6 @@
 // Dynamic contacts: vehicle-vehicle, vehicle-ped and ped-ped.
 import { clamp } from '../../../shared/math';
+import { RULES } from '../../../shared/packs';
 import { flies, floats } from '../../../shared/sim/kinds';
 import { FX } from '../../../shared/protocol';
 import { PED_RADIUS } from '../../../shared/sim/physics';
@@ -79,8 +80,8 @@ function vehicleHit(w: World, a: Vehicle, b: Vehicle, h: Hit): void {
   const impact = -vn;
   a.body.av += (w.rng.next() - 0.5) * impact * 0.04 * ka;
   b.body.av += (w.rng.next() - 0.5) * impact * 0.04 * kb;
-  if (impact > 4) {
-    const base = (impact - 4) * 11;
+  if (impact > RULES.crashSafe) {
+    const base = (impact - RULES.crashSafe) * RULES.crashDamage;
     const da = a.seats[0], db = b.seats[0];
     // Each takes the dent on the side facing the other (the normal points from b towards a).
     damageVehicle(w, a, base * clamp(mb / ma, 0.15, 4) * (b.spec.crushes ? 4 : 1), db, { x: a.body.x - h.nx * 50, y: a.body.y - h.ny * 50 });

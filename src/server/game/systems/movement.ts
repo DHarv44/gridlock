@@ -3,7 +3,7 @@
 import { angleDiff, approach } from '../../../shared/math';
 import { flies, floats } from '../../../shared/sim/kinds';
 import { FX } from '../../../shared/protocol';
-import { stepFoot, stepVehicle } from '../../../shared/sim/physics';
+import { stepFoot, stepVehicle, wearOf } from '../../../shared/sim/physics';
 import { killPed, wallCrash, wreckVehicle } from '../combat/damage';
 import { tickWeapon, tryFire } from '../combat/fire';
 import type { Ped, Vehicle } from '../entities';
@@ -62,7 +62,7 @@ export function updateVehicles(w: World, dt: number): void {
     if (!playerDriven(w, v)) {
       const driven = !!driver && !driver.dead && !v.wrecked;
       const vx = v.body.vx, vy = v.body.vy;
-      wallCrash(w, v, stepVehicle(v.body, v.spec, v.ctl, dt, w.statics, driven), vx, vy);
+      wallCrash(w, v, stepVehicle(v.body, v.spec, v.ctl, dt, w.statics, driven, undefined, wearOf(v.hp / v.spec.hp, v.id)), vx, vy);
       if (driver && v.spec.turret) v.turret = turnTurret(v.turret, driver.aim, dt, v.spec.turret);
     }
     if (!v.spec.turret) v.turret = v.body.angle;

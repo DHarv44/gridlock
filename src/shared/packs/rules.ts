@@ -114,6 +114,16 @@ export const RULES = {
   // you're thrown down and hurt (more the faster); at `bailDie` (about 95 km/h) it kills you.
   bailFall: 9,
   bailDie: 26,
+  // Vehicle damage. Dents show every hit in full, but a vehicle only loses `vehicleHpTake` of it in
+  // health, so it takes a beating before it catches fire. Crashes start to hurt above `crashSafe`
+  // (closing speed, m/s; walls `wallSafe`) and do `crashDamage` / `wallDamage` per m/s over that.
+  vehicleHpTake: 0.5,
+  crashSafe: 5, crashDamage: 9,
+  wallSafe: 8, wallDamage: 8,
+  // Below `wearFrom` of its health a vehicle drives worse, worst when wrecked: down to `wearPower`
+  // of its pull and `wearSpeed` of its top speed, `wearGrip` of its grip, and pulling to one side by
+  // `wearPull` of full lock.
+  wearFrom: 0.7, wearPower: 0.5, wearSpeed: 0.6, wearGrip: 0.75, wearPull: 0.12,
   // Jobs done with company: other players riding with you, or this close when it's done, split the
   // pay evenly with you.
   shareRange: 30,

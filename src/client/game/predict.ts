@@ -1,7 +1,7 @@
 // Client-side prediction of the local avatar (on foot or driving) with server reconciliation.
 import { PEDS, PLAYER_ARCHETYPE, VEHICLES } from '../../shared/packs';
 import { BTN, type InputMsg, Mode, type YouState } from '../../shared/protocol';
-import { type Body, type Controls, copyBody, DT, emptyControls, newBody, PED_RADIUS, SPRINT, stepFoot, stepTrailer, stepVehicle } from '../../shared/sim/physics';
+import { type Body, type Controls, copyBody, DT, emptyControls, newBody, PED_RADIUS, SPRINT, stepFoot, stepTrailer, stepVehicle, wearOf } from '../../shared/sim/physics';
 import { blockBy, type Obb } from '../../shared/sim/dynamic';
 import { flies, floats } from '../../shared/sim/kinds';
 import type { StreetPropsView } from '../render/breakables';
@@ -32,6 +32,9 @@ export class Predictor {
    *  too slow, the same way the server does. */
   furniture: StreetPropsView | null = null;
 
+  /** How beaten up your vehicle is (from the server), so the prediction drives it as the server does. */
+  private wear = wearOf(1, 0);
+
   private onRoad: (x: number, y: number) => boolean;
 
   constructor(private world: StaticWorld, private map: CityMap) {
@@ -49,7 +52,7 @@ export class Predictor {
     const b = this.body;
     if (this.mode === Mode.Driver && this.vtype >= 0) {
       const spec = VEHICLES[this.vtype];
-      stepVehicle(b, spec, c, DT, this.world, true, this.onRoad);
+      stepVehicle(b, spec, c, DT, this.world, true, this.onRoad, this.wear);
       blockBy(b, { hl: spec.length / 2, hw: spec.width / 2 }, this.obstacles);
       const f = this.furniture;
       if (f && !floats(spec) && !(flies(spec) && b.alt > 1)) {
@@ -80,6 +83,7 @@ export class Predictor {
     const changed = you.mode !== this.mode || you.vt !== this.vtype || !this.active;
     this.mode = you.mode;
     this.vtype = you.vt;
+    this.wear = wearOf(you.vhp, you.vid);
     if (!predictable) { this.active = false; this.pending.length = 0; return; }
     const [x, y, angle, vx, vy, av, alt, trailer] = you.body;
     const beforeX = this.body.x, beforeY = this.body.y;
