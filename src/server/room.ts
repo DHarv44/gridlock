@@ -20,6 +20,7 @@ import { updateNpcPeds, updateVehicles } from './game/systems/movement';
 import { equipStart, makeAvatar, processPlayers } from './game/systems/players';
 import { updateFires, updateProjectiles } from './game/systems/projectiles';
 import { updateTrailers } from './game/systems/trailers';
+import { updateMounts } from './game/systems/mounts';
 import { buildSnapshot, playerList } from './game/systems/snapshot';
 import { Population } from './game/systems/population';
 import { updateWanted } from './game/systems/wanted';
@@ -288,6 +289,7 @@ export class Room {
     processPlayers(w, DT);
     updateAi(w, DT);
     updateNpcPeds(w, DT);
+    updateMounts(w, DT);
     updateVehicles(w, DT);
     w.rebuildHashes();
     resolveContacts(w);

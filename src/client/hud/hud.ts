@@ -104,7 +104,9 @@ export class Hud {
     }
     this.put('weapon', name, (v) => { this.weapon.textContent = v; });
     this.put('ammo', ammo, (v) => { this.ammo.innerHTML = v; });
-    this.put('veh', vt ? `${vt.name}<div class="bar veh"><div style="width:${Math.round(you.vhp * 100)}%"></div></div>` : '', (v) => { this.veh.innerHTML = v; });
+    // A mount also shows its wind (gallop left), in 5% steps so the bar isn't rewritten every frame.
+    const wind = vt && you.st >= 0 ? `<div class="bar veh"><div style="width:${Math.round(you.st * 20) * 5}%;background:#e8c46a"></div></div>` : '';
+    this.put('veh', vt ? `${vt.name}<div class="bar veh"><div style="width:${Math.round(you.vhp * 100)}%"></div></div>${wind}` : '', (v) => { this.veh.innerHTML = v; });
     this.put('big', String(you.mode), () => {
       if (you.mode === Mode.Dead) { this.big.hidden = false; this.big.className = 'hud-big wasted'; this.big.textContent = 'WASTED'; }
       else if (you.mode === Mode.Busted) { this.big.hidden = false; this.big.className = 'hud-big busted'; this.big.textContent = 'BUSTED'; }

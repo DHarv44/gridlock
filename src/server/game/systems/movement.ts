@@ -62,7 +62,8 @@ export function updateVehicles(w: World, dt: number): void {
     if (v.horn) { w.emit(FX.Horn, v.id); v.horn = false; }
     const driver = v.seats[0] ? w.peds.get(v.seats[0]) : undefined;
     if (!playerDriven(w, v)) {
-      const driven = !!driver && !driver.dead && !v.wrecked;
+      // A horse called by its rider (systems/mounts.ts) goes on its own.
+      const driven = (!!driver && !driver.dead && !v.wrecked) || (v.calledBy > 0 && !v.wrecked);
       const vx = v.body.vx, vy = v.body.vy;
       wallCrash(w, v, stepVehicle(v.body, v.spec, v.ctl, dt, w.statics, driven, undefined, wearOf(v.hp / v.spec.hp, v.id)), vx, vy);
       if (driver && v.spec.turret) v.turret = turnTurret(v.turret, driver.aim, dt, v.spec.turret);

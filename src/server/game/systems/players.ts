@@ -6,6 +6,7 @@ import { BTN, EDGE_BUTTONS, type InputMsg, Mode, type S2C } from '../../../share
 import { SPRINT, stepVehicle, wearOf } from '../../../shared/sim/physics';
 import { damagePed, killPed, wallCrash } from '../combat/damage';
 import { climbStairs, leaveOnRoof } from './lifts';
+import { callMount, canGallop } from './mounts';
 import { onAttacked } from '../ai/reactions';
 import { tickWeapon, tryFire } from '../combat/fire';
 import type { Ped, Player, Vehicle } from '../entities';
@@ -69,6 +70,8 @@ function applyInput(w: World, pl: Player, p: Ped, inp: InputMsg, dt: number): vo
     if (p.seat === 0) {
       v.ctl.throttle = throttle; v.ctl.steer = steer;
       v.ctl.handbrake = (btn & BTN.handbrake) !== 0;
+      // A mount gallops on Sprint while it has the wind (systems/mounts.ts spends and restores it).
+      v.ctl.sprint = (btn & BTN.sprint) !== 0 && canGallop(v);
       v.ctl.up = (btn & BTN.up) !== 0; v.ctl.down = (btn & BTN.down) !== 0;
       if (btn & BTN.horn) { if (v.spec.siren) v.siren = !v.siren; else v.horn = true; }
       const vx = v.body.vx, vy = v.body.vy;
@@ -77,6 +80,7 @@ function applyInput(w: World, pl: Player, p: Ped, inp: InputMsg, dt: number): vo
       p.body.x = v.body.x; p.body.y = v.body.y;
     }
   } else {
+    if (btn & BTN.call) callMount(w, pl);
     p.ctl.mx = mx; p.ctl.my = my;
     // GTA2 jump: a short hop at running speed; cars pass under you while airborne.
     p.jumpT = Math.max(0, p.jumpT - dt);

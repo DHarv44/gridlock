@@ -126,6 +126,8 @@ function youState(w: World, pl: Player, p: Ped | undefined): YouState {
     hp: Math.ceil(p?.hp ?? 0), ar: Math.ceil(p?.armor ?? 0), cash: pl.cash, bank: pl.bank, wl: pl.wanted, heat: Math.round(pl.heat),
     w: p ? p.weapons.map((h) => [h.w, h.ammo, h.clip]) : [], wi: p?.wi ?? 0, rl: p ? a2(p.reloadT) : 0,
     vt: v ? v.type : -1, vhp: v ? Math.max(0, Math.round((v.hp / v.spec.hp) * 100) / 100) : 0,
+    // A blown mount reads 0 (no gallop, as the server will have it); otherwise never quite 0.
+    st: v?.spec.stamina ? (v.blown ? 0 : Math.max(0.01, Math.round((v.stamina / v.spec.stamina.gallop) * 100) / 100)) : -1,
     respawn: Math.max(0, a2(pl.respawnT)),
     rs: GANGS.map((g) => Math.round(pl.respect[g] ?? 0)),
     mt: objectiveOf(w, pl),

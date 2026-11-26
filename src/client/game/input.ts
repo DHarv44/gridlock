@@ -8,7 +8,7 @@ import { PAD, Pad, PAD_ACTIONS, type PadAction } from './gamepad';
 export type UiAction = 'action' | 'chat' | 'map' | 'menu' | 'radio' | 'scoreOn' | 'scoreOff' | 'phone';
 export type NavCmd = 'up' | 'down' | 'left' | 'right' | 'ok' | 'back' | 'zoomIn' | 'zoomOut';
 
-const EDGE_BTN: Partial<Record<Action, number>> = { prevWeapon: BTN.prev, nextWeapon: BTN.next, horn: BTN.horn };
+const EDGE_BTN: Partial<Record<Action, number>> = { prevWeapon: BTN.prev, nextWeapon: BTN.next, horn: BTN.horn, call: BTN.call };
 const KIND = new Map(ACTIONS.map((a) => [a.id, a.kind]));
 const PAD_IDS = new Set<string>(PAD_ACTIONS.map((d) => d.id));
 /** With the mouse this close (px) to your character, aiming doesn't turn you. */
@@ -177,7 +177,7 @@ export class Input {
     if (this.held('handbrake')) b |= BTN.handbrake;
     if (this.held('climb')) b |= BTN.up;
     if (this.held('jump')) b |= BTN.jump;
-    if (this.held('sprint')) b |= BTN.sprint;
+    if (this.held('sprint') || this.held('gallop')) b |= BTN.sprint;
     if (this.held('descend')) b |= BTN.down;
     if (this.aimingNow && this.enabled) b |= BTN.aim;
     this.pressed.clear();

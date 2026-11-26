@@ -42,21 +42,26 @@ function wagon(bed: Paint, top?: Paint): Part[] {
   return parts;
 }
 
+// A saddle horse canters at 60% of its top speed; held to a gallop (Sprint) it lasts ~12 s, then
+// needs twice that to get its wind back. It comes to its rider's whistle.
 const mount = { movement: 'legs' as const, wrecks: 'fall' as const, openTop: true, length: 2.5, width: 0.75, height: 1.7, mass: 500,
+  stamina: { gallop: 12, canter: 0.6 }, comesWhenCalled: true,
   brake: 14, reverse: 1.5, grip: 10, turnIn: 0.05, turnRate: 3.0, seats: 2,
   saddles: [{ x: -0.05, z: 1.28, lean: 0.05 }, { x: -0.62, z: 1.24, lean: 0 }] };
 const horses = [0, 1, 2, 3, 5, 6, 7]; // coat colours (palette.ts)
 
-const teamBase = { movement: 'legs' as const, wrecks: 'fall' as const, length: 2.8, width: 1.7, height: 1.7, mass: 1800,
+// A team in harness: a short burst at the whip (Sprint), mostly a steady canter.
+const teamBase = { movement: 'legs' as const, wrecks: 'fall' as const, stamina: { gallop: 8, canter: 0.7 }, length: 2.8, width: 1.7, height: 1.7, mass: 1800,
   brake: 9, reverse: 1.2, grip: 9, turnIn: 0.02, turnRate: 1.8, minTurnRadius: 6, maxLateral: 3, rearAxle: 0 };
 
 export const VEHICLES: VehicleSpec[] = [
-  { ...mount, id: 'mustang', name: 'Mustang', maxSpeed: 20, accel: 8, turnRate: 3.3, hp: 180, price: 120, colors: horses, roles: ['traffic', 'parked'], model: horse() },
+  { ...mount, id: 'mustang', name: 'Mustang', maxSpeed: 20, accel: 8, turnRate: 3.3, hp: 180, price: 120, stamina: { gallop: 15, canter: 0.6 }, colors: horses, roles: ['traffic', 'parked'], model: horse() },
   { ...mount, id: 'quarter_horse', name: 'Quarter Horse', maxSpeed: 19, accel: 9, hp: 220, price: 90, colors: horses, roles: ['traffic', 'parked'], model: horse() },
-  { ...mount, id: 'draft_horse', name: 'Draft Horse', length: 2.8, width: 0.9, height: 1.85, mass: 800, maxSpeed: 13, accel: 5, turnRate: 2.4, hp: 380, price: 70, colors: [2, 3, 6], roles: ['parked'], model: horse('#3a2a1a') },
-  { ...mount, id: 'thoroughbred', name: 'Thoroughbred', maxSpeed: 23, accel: 10, turnRate: 3.1, hp: 160, price: 400, colors: [0, 1, 2], roles: ['parked'], model: horse('#2a1a12') },
-  { ...mount, id: 'law_horse', name: "Lawman's Horse", maxSpeed: 21, accel: 9, hp: 240, price: 0, colors: [2, 0], roles: ['police'], model: horse('#1a1612') },
-  { ...mount, id: 'cavalry_horse', name: 'Cavalry Horse', maxSpeed: 21, accel: 9, hp: 260, price: 0, colors: [0, 1], roles: ['military'], model: horse('#28324a') },
+  { ...mount, id: 'draft_horse', name: 'Draft Horse', length: 2.8, width: 0.9, height: 1.85, mass: 800, maxSpeed: 13, accel: 5, turnRate: 2.4, hp: 380, price: 70, stamina: { gallop: 8, canter: 0.72 }, colors: [2, 3, 6], roles: ['parked'], model: horse('#3a2a1a') },
+  { ...mount, id: 'thoroughbred', name: 'Thoroughbred', maxSpeed: 23, accel: 10, turnRate: 3.1, hp: 160, price: 400, stamina: { gallop: 10, canter: 0.55 }, colors: [0, 1, 2], roles: ['parked'], model: horse('#2a1a12') },
+  // The law's and the army's horses don't come to a stranger's whistle.
+  { ...mount, id: 'law_horse', name: "Lawman's Horse", maxSpeed: 21, accel: 9, hp: 240, price: 0, colors: [2, 0], roles: ['police'], comesWhenCalled: false, model: horse('#1a1612') },
+  { ...mount, id: 'cavalry_horse', name: 'Cavalry Horse', maxSpeed: 21, accel: 9, hp: 260, price: 0, colors: [0, 1], roles: ['military'], comesWhenCalled: false, model: horse('#28324a') },
 
   { ...teamBase, id: 'buckboard', name: 'Buckboard', maxSpeed: 14, accel: 5, hp: 400, seats: 2, openTop: true, price: 160, colors: horses,
     roles: ['traffic', 'parked'], model: team(), saddles: [{ x: -1.9, z: 1.3, lean: 0 }, { x: -1.9, y: 0.5, z: 1.3, lean: 0 }],

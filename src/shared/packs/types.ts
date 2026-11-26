@@ -59,6 +59,12 @@ export interface VehicleSpec {
    *  drive it. Without them it has no horn / no engine sound. */
   horn?: string;
   engine?: string;
+  /** A mount's gaits: without Sprint it canters at `canter` of its top speed; holding Sprint it
+   *  gallops at full speed for up to `gallop` seconds, then has to canter while it gets its wind
+   *  back (half as fast as it spends it). */
+  stamina?: { gallop: number; canter: number };
+  /** Comes at a whistle (the Call key) to the player who last rode it. */
+  comesWhenCalled?: boolean;
   /** How it dies at 0 hp: `explode` (default: burns a few seconds, then a blast) or `fall` (a
    *  horse, a wagon: goes down at once, riders thrown, no fire). */
   wrecks?: 'explode' | 'fall';

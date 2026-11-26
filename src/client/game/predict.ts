@@ -36,6 +36,8 @@ export class Predictor {
 
   /** How beaten up your vehicle is (from the server), so the prediction drives it as the server does. */
   private wear = wearOf(1, 0);
+  /** Your mount's wind from the server (0..1; -1: not on a mount). */
+  private wind = -1;
 
   private onRoad: (x: number, y: number) => boolean;
 
@@ -48,7 +50,8 @@ export class Predictor {
     const c = this.ctl;
     c.mx = mx; c.my = my; c.throttle = throttle; c.steer = steer;
     c.handbrake = (btn & BTN.handbrake) !== 0;
-    c.sprint = (btn & BTN.sprint) !== 0;
+    // On a mount, Sprint gallops only while it has the wind (the server's word, you.st).
+    c.sprint = (btn & BTN.sprint) !== 0 && (this.mode !== Mode.Driver || this.wind !== 0);
     c.up = (btn & BTN.up) !== 0;
     c.down = (btn & BTN.down) !== 0;
     const b = this.body;
@@ -87,6 +90,7 @@ export class Predictor {
     this.vtype = you.vt;
     this.vid = you.vid;
     this.wear = wearOf(you.vhp, you.vid);
+    this.wind = you.st;
     if (!predictable) { this.active = false; this.pending.length = 0; return; }
     const [x, y, angle, vx, vy, av, alt, trailer] = you.body;
     const beforeX = this.body.x, beforeY = this.body.y;

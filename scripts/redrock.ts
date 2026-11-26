@@ -15,6 +15,8 @@ const { spawnVehicle } = await import('../src/server/game/factory');
 const { damageVehicle } = await import('../src/server/game/combat/damage');
 const { updateTrailers } = await import('../src/server/game/systems/trailers');
 const { addHeat } = await import('../src/server/game/systems/wanted');
+const { callMount, canGallop, updateMounts } = await import('../src/server/game/systems/mounts');
+const { laneSpawn } = await import('../src/server/game/systems/spawnPoints');
 const { LAND0, MAP_SIZE } = await import('../src/shared/world/cityTypes');
 
 let failures = 0;
@@ -43,7 +45,7 @@ const straight = city.segs.filter((s) => s.axis === 'h').sort((a, b) => (b.x1 - 
 const horse = spawnVehicle(w, vehicleIndex('mustang'), straight.x0 + 10, straight.y0, 0);
 let top = 0;
 for (let t = 0; t < 6 * 30; t++) {
-  stepVehicle(horse.body, horse.spec, { mx: 0, my: 0, throttle: 1, steer: 0, handbrake: false, sprint: false, up: false, down: false }, DT, w.statics, true);
+  stepVehicle(horse.body, horse.spec, { mx: 0, my: 0, throttle: 1, steer: 0, handbrake: false, sprint: true, up: false, down: false }, DT, w.statics, true);
   top = Math.max(top, Math.hypot(horse.body.vx, horse.body.vy));
 }
 check(top > horse.spec.maxSpeed * 0.85, `a mustang gallops at ${top.toFixed(1)} m/s (${Math.round(top * 3.6)} km/h)`);
@@ -70,11 +72,48 @@ const mount = spawnVehicle(w, vehicleIndex('quarter_horse'), straight.x0 + 80, s
 damageVehicle(w, mount, 10_000, 0);
 check(mount.wrecked && mount.burning < 0 && w.fires.size === fires, 'a horse killed falls at once: no fire, no explosion');
 
+// Gaits: a canter without Sprint, a gallop with it until the horse is blown, then a canter again.
+const gait = spawnVehicle(w, vehicleIndex('quarter_horse'), straight.x0 + 10, straight.y0, 0);
+const run = (secs: number, sprint: boolean) => {
+  let top = 0;
+  for (let t = 0; t < secs * 30; t++) {
+    gait.ctl.throttle = 1; gait.ctl.steer = 0;
+    gait.ctl.sprint = sprint && canGallop(gait);
+    updateMounts(w, DT);
+    stepVehicle(gait.body, gait.spec, gait.ctl, DT, w.statics, true);
+    if (gait.body.x > straight.x0 + 70) gait.body.x -= 60; // keep it on the straight, at speed
+    top = Math.max(top, Math.hypot(gait.body.vx, gait.body.vy));
+  }
+  return { top, now: Math.hypot(gait.body.vx, gait.body.vy) };
+};
+const canterTop = run(5, false).top;
+const gallop = run(4, true);
+check(gallop.top > canterTop * 1.4, `a canter tops out at ${canterTop.toFixed(1)} m/s, a gallop at ${gallop.top.toFixed(1)} m/s`);
+const blown = run(12, true);
+check(gait.blown && blown.now < gallop.top * 0.7, `held to a gallop it's blown and drops back to a canter (${blown.now.toFixed(1)} m/s)`);
+const rested = run(6, false);
+check(gait.stamina > 2, `cantering it gets its wind back (${gait.stamina.toFixed(1)} s of gallop after 6 s)`);
+void rested;
+
 // Wanted: the law comes on horseback.
 const pl = room.join('Tex', { send: () => {}, close: () => {} });
 if (typeof pl === 'string') throw new Error(pl);
+
+// The whistle: the player's last horse comes to them.
+const tex = w.peds.get(pl.pid)!;
+const tied = laneSpawn(w, tex.body.x, tex.body.y, 70, 110)!;
+const mine = spawnVehicle(w, vehicleIndex('mustang'), tied.x, tied.y, tied.angle);
+pl.mount = mine.id;
+callMount(w, pl);
+let close = Infinity;
+for (let t = 0; t < 40 * 30 && mine.calledBy; t++) {
+  room.tick();
+  const at = w.pedPos(tex);
+  close = Math.hypot(mine.body.x - at.x, mine.body.y - at.y);
+}
+check(close <= 5 && mine.calledBy === 0, `whistled for, the horse comes to its rider (${close.toFixed(1)} m away)`);
 addHeat(pl, 45);
-for (let t = 0; t < 30 * 30; t++) (room as unknown as { tick(): void }).tick?.();
+for (let t = 0; t < 30 * 30; t++) room.tick();
 const lawRides = [...w.vehicles.values()].filter((v) => v.spec.roles.includes('police'));
 check(lawRides.length > 0 && lawRides.every((v) => onLegs(v.spec)), `deputies ride out (${lawRides.length} on horseback)`);
 

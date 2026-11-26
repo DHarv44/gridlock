@@ -4,7 +4,7 @@ import type { CharacterProgress, CharacterSave, CharLook } from './packs/charact
 export const TICK_HZ = 30;
 export const SNAP_EVERY = 2;             // snapshots at 15 Hz
 export const INTERP_DELAY_MS = 120;
-export const PROTOCOL_VERSION = 19;
+export const PROTOCOL_VERSION = 20;
 /** Every Nth snapshot carries every entity in full (others list unchanged ones in `k`). */
 export const FULL_SNAP_EVERY = 30;
 
@@ -13,9 +13,10 @@ export const BTN = {
   fire: 1, handbrake: 2, sprint: 4, up: 8, down: 16,
   enter: 32, interact: 64, reload: 128, next: 256, prev: 512, horn: 1024, jump: 2048,
   aim: 4096, // deliberately aiming (Aim held / right stick): what a hold-up takes
+  call: 8192, // whistle for your mount (systems/mounts.ts)
 } as const;
 /** Edge-triggered buttons must not repeat when the server re-uses a stale input. */
-export const EDGE_BUTTONS = BTN.enter | BTN.interact | BTN.reload | BTN.next | BTN.prev;
+export const EDGE_BUTTONS = BTN.enter | BTN.interact | BTN.reload | BTN.next | BTN.prev | BTN.call;
 
 /** [seq, mx, my, throttle, steer, aim, buttons, weaponWish] */
 export type InputMsg = [number, number, number, number, number, number, number, number];
@@ -68,6 +69,7 @@ export interface YouState {
   rl: number;              // reload time left
   vt: number;              // vehicle type index (-1 on foot)
   vhp: number;             // vehicle health fraction
+  st: number;              // the mount's wind (stamina) 0..1; -1 when not riding something with gaits
   respawn: number;         // seconds until respawn while dead/busted
   rs: number[];            // respect per gang (GANGS order)
   mt: number[] | null;     // current mission objective position [x, y]

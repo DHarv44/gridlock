@@ -82,6 +82,10 @@ export function stepVehicle(b: Body, spec: VehicleSpec, c: Controls, dt: number,
     spec = worn(spec, k);
     pull = wear.side * RULES.wearPull * k;
   }
+  // A mount canters unless it's asked to gallop (Sprint) and has the wind for it (the caller clears
+  // `sprint` when it's blown); dropping from a gallop it eases down to a canter.
+  const canter = !!spec.stamina && !c.sprint;
+  if (canter) spec = cantering(spec);
   if (spec.movement === 'rotor') return stepHeli(b, spec, c, dt, world, driven);
   if (spec.movement === 'boat') return stepBoat(b, spec, c, dt, world, driven);
   if (driven && c.handbrake && (spec.movement === 'wheels' || spec.movement === 'bike') && !spec.minTurnRadius) {
@@ -100,6 +104,7 @@ export function stepVehicle(b: Body, spec: VehicleSpec, c: Controls, dt: number,
 
   if (throttle > 0) {
     if (vf < -0.5) vf = approach(vf, 0, spec.brake * dt);
+    else if (canter && vf > spec.maxSpeed) vf = approach(vf, spec.maxSpeed, spec.brake * 0.25 * dt);
     else vf += spec.accel * throttle * clamp(1 - (vf / spec.maxSpeed) ** 2, 0, 1) * dt;
   } else if (throttle < 0) {
     if (vf > 0.5) vf = approach(vf, 0, spec.brake * -throttle * dt);
@@ -185,6 +190,18 @@ export interface Wear { health: number; side: number }
 /** A vehicle's wear from its health and id (the id picks the side a wreck pulls to, the same on
  *  the server and in the driver's prediction). */
 export const wearOf = (health: number, id: number): Wear => ({ health, side: id % 2 ? 1 : -1 });
+
+/** A mount held to a canter (its `stamina.canter` share of top speed); cached per spec. */
+const canterCache = new Map<VehicleSpec, VehicleSpec>();
+function cantering(spec: VehicleSpec): VehicleSpec {
+  let s = canterCache.get(spec);
+  if (!s) canterCache.set(spec, (s = { ...spec, maxSpeed: spec.maxSpeed * spec.stamina!.canter }));
+  return s;
+}
+
+/** Whether a mount is galloping flat out (spending its wind): Sprint held, going faster than a canter. */
+export const galloping = (b: Body, spec: VehicleSpec, sprint: boolean): boolean =>
+  !!spec.stamina && sprint && Math.hypot(b.vx, b.vy) > spec.maxSpeed * spec.stamina.canter * 1.02;
 
 /** A spec as it drives `k` of the way (0..1) from fine to wrecked; cached in steps of 5%. */
 const wornCache = new Map<VehicleSpec, Map<number, VehicleSpec>>();

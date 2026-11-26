@@ -105,6 +105,12 @@ export interface Vehicle {
    *  it came tuned to (picked on the client from its id). */
   radio?: number;
   trailer: number;         // articulated trailer heading (semis), else = body angle
+  /** A mount's wind: seconds of gallop it has left (spec.stamina); `blown` once it ran out, until
+   *  it has back enough (systems/mounts.ts) to gallop again. */
+  stamina: number;
+  blown: boolean;
+  /** A mount called by this player (their id) is coming to them (systems/mounts.ts); 0 = not. */
+  calledBy: number;
   /** Damage taken on each side (front, rear, left, right), in hit points: what the model shows as
    *  dents, broken lamps and glass (combat/damage.ts damageLevels). */
   dents: number[];
@@ -192,6 +198,10 @@ export interface Player {
   frags: number;                  // player kills this round
   earned: number;                 // cash earned this round
   itTime: number;                 // seconds spent "it" this round (tag)
+  /** The mount (vehicle id) this player last rode, which comes when they whistle; when they may
+   *  whistle again (systems/mounts.ts). */
+  mount?: number;
+  callT?: number;
   /** Character being played (absent for guests); its progress is sent back to the browser. */
   character?: { id: string };
   look?: CharLook;
