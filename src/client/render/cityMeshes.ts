@@ -9,6 +9,7 @@ import { type GraffitiSpot, graffitiSpots } from './buildingSpots';
 import { ownInstance } from './hideable';
 import { Batch, byTile, lambert, UNIT } from './instancing';
 import { buildRocks } from './rocks';
+import { buildTrestles } from './trestles';
 import { groundUnder } from '../../shared/world/terrain';
 import { FixturesView } from './fixtures';
 import { StreetProps } from './streetProps';
@@ -65,6 +66,7 @@ export class CityMeshes {
     obs.build(scene);
     // Open country's buttes, mesas, outcrops and boulders; churches, barns, windmills, cacti...
     buildRocks(scene, city);
+    buildTrestles(scene, city);
     this.fixtures = new FixturesView(scene, city);
     this.trees(scene, city, rng);
     this.props = new StreetProps(scene, city, rng);

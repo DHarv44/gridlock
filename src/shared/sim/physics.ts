@@ -62,8 +62,7 @@ export function stepFoot(b: Body, c: Controls, speed: number, dt: number, world:
   // GTA2-style: full speed the instant a key is down, dead stop when released.
   b.vx = mx * speed;
   b.vy = my * speed;
-  b.x += b.vx * dt;
-  b.y += b.vy * dt;
+  moveOnGround(b, dt, world);
   const hit = world.resolveCircle(b, PED_RADIUS, 0);
   if (hit) {
     const vn = b.vx * hit.nx + b.vy * hit.ny;
@@ -155,8 +154,7 @@ export function stepVehicle(b: Body, spec: VehicleSpec, c: Controls, dt: number,
   const lat = vl + b.av * pivot;
   b.vx = nfx * vf - nfy * lat;
   b.vy = nfy * vf + nfx * lat;
-  b.x += b.vx * dt;
-  b.y += b.vy * dt;
+  moveOnGround(b, dt, world);
   return collideStatic(b, spec, world, 0);
 }
 
@@ -186,8 +184,7 @@ function stepHandbrake(b: Body, spec: VehicleSpec, c: Controls, dt: number, worl
   const targetAv = c.steer * spec.turnRate * HANDBRAKE_SPIN * clamp(speed / 2, 0, 1);
   b.av += (targetAv - b.av) * Math.min(1, 10 * dt);
   b.angle += b.av * dt;
-  b.x += b.vx * dt;
-  b.y += b.vy * dt;
+  moveOnGround(b, dt, world);
   return collideStatic(b, spec, world, 0);
 }
 
@@ -210,8 +207,7 @@ function stepBurnout(b: Body, spec: VehicleSpec, c: Controls, dt: number, world:
   const fx = Math.cos(b.angle), fy = Math.sin(b.angle);
   b.vx = fx * vf - fy * vl;
   b.vy = fy * vf + fx * vl;
-  b.x += b.vx * dt;
-  b.y += b.vy * dt;
+  moveOnGround(b, dt, world);
   return collideStatic(b, spec, world, 0);
 }
 
@@ -303,9 +299,21 @@ function stepHeli(b: Body, spec: VehicleSpec, c: Controls, dt: number, world: St
   const sp = Math.hypot(b.vx, b.vy);
   if (sp > spec.maxSpeed) { b.vx *= spec.maxSpeed / sp; b.vy *= spec.maxSpeed / sp; }
   b.angle += b.av * dt;
-  b.x += b.vx * dt;
+  b.x += b.vx * dt; // flying: over the cliffs
   b.y += b.vy * dt;
   return collideStatic(b, spec, world, b.alt);
+}
+
+/** Moves a body on the ground by its velocity; a cliff (world/terrain.ts) stops it like a wall,
+ *  sliding along the edge, with no crash (nothing hit hard). */
+export function moveOnGround(b: Body, dt: number, world: StaticWorld): void {
+  const px = b.x, py = b.y;
+  b.x += b.vx * dt;
+  b.y += b.vy * dt;
+  const hit = world.cliff(b, px, py);
+  if (!hit) return;
+  const vn = b.vx * hit.nx + b.vy * hit.ny;
+  if (vn < 0) { b.vx -= vn * hit.nx; b.vy -= vn * hit.ny; }
 }
 
 export function collideStatic(b: Body, spec: VehicleSpec, world: StaticWorld, z: number): number {

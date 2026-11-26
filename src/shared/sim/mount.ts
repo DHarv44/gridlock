@@ -8,7 +8,7 @@ import { approach, clamp } from '../math';
 import type { VehicleSpec } from '../packs/types';
 import type { StaticWorld } from '../world/collision';
 import { slopeFactor } from '../world/terrain';
-import { type Body, type Controls, collideStatic } from './physics';
+import { type Body, type Controls, collideStatic, moveOnGround } from './physics';
 
 /** The gait a throttle asks for (a pad trigger part-way: a walk or a trot; full: a canter). */
 function targetSpeed(spec: VehicleSpec, throttle: number, sprint: boolean): number {
@@ -41,8 +41,7 @@ export function stepMount(b: Body, spec: VehicleSpec, c: Controls, dt: number, w
   // It goes where it points: all its speed along its heading.
   const nfx = Math.cos(b.angle), nfy = Math.sin(b.angle);
   b.vx = nfx * v; b.vy = nfy * v;
-  b.x += b.vx * dt;
-  b.y += b.vy * dt;
+  moveOnGround(b, dt, world); // a cliff turns it aside
   const impact = collideStatic(b, spec, world, 0);
   if (impact > 0) {
     // Shies at the wall: pulls up rather than crashing (no damage).

@@ -1,11 +1,12 @@
-// Streams ground chunks (canvas textures on flat planes) around the camera.
+// Streams ground chunks (canvas textures on planes, bent over the land in open country) around
+// the camera.
 import * as THREE from 'three';
 import type { CityMap } from '../../shared/world/city';
 import { MAP_SIZE } from '../../shared/world/cityTypes';
 import { buildBrush } from './brush';
 import { CHUNK, paintChunk } from './groundPaint';
 import { hasWild } from './groundRelief';
-import { groundAt } from '../../shared/world/terrain';
+import { strataOf, terrainGeo, terrainMaterial } from './terrainMesh';
 
 /** `brush`: its bushes (brush.ts), built and dropped with it. */
 interface Chunk { mesh: THREE.Mesh; tex: THREE.CanvasTexture; used: number; brush: THREE.InstancedMesh[] }
@@ -30,7 +31,7 @@ export class Ground {
     // Below the lowest wash (world/terrain.ts), or it would show through wherever the land dips.
     const t = map.city.terrain;
     let low = 0;
-    if (t) for (const h of t.h) low = Math.min(low, h);
+    if (t) for (let k = 0; k < t.base.length; k++) low = Math.min(low, t.base[k] - t.gorgeD[k]);
     this.sea.position.set(0, -0.05 + (low < 0 ? low - 0.5 : 0), 0);
     this.sea.receiveShadow = true;
     scene.add(this.sea);
@@ -69,8 +70,12 @@ export class Ground {
     tex.anisotropy = this.maxAniso;
     tex.generateMipmaps = true;
     // alphaTest: a trench's cut-out (groundPaint.ts) shows through.
-    const mat = new THREE.MeshLambertMaterial({ map: tex, alphaTest: 0.5 });
-    const mesh = new THREE.Mesh(hillsGeo(i, j) ?? this.geo, mat);
+    // Out in the hills a bent surface (terrainMesh.ts) that shades and casts shadow; else flat.
+    const hills = terrainGeo(i * CHUNK, j * CHUNK, CHUNK);
+    const mat = hills ? terrainMaterial(tex, strataOf(this.map, (i + 0.5) * CHUNK, (j + 0.5) * CHUNK))
+      : new THREE.MeshLambertMaterial({ map: tex, alphaTest: 0.5 });
+    const mesh = new THREE.Mesh(hills ?? this.geo, mat);
+    mesh.castShadow = !!hills;
     mesh.position.set((i + 0.5) * CHUNK, 0, (j + 0.5) * CHUNK);
     mesh.receiveShadow = true;
     mesh.matrixAutoUpdate = false;
@@ -93,24 +98,4 @@ export class Ground {
       this.chunks.delete(k);
     }
   }
-}
-
-/** Segments along a chunk's side: a vertex every 4 m (the height grid is every 8 m; bilinear between). */
-const HILL_SEGS = CHUNK / 4;
-
-/** The chunk's plane bent over the hills (world/terrain.ts), or null where it's all level. Normals
- *  stay straight up: the painted hillshade (groundRelief.ts) does the shading, as before. */
-function hillsGeo(i: number, j: number): THREE.PlaneGeometry | null {
-  const x0 = i * CHUNK, y0 = j * CHUNK;
-  const geo = new THREE.PlaneGeometry(CHUNK, CHUNK, HILL_SEGS, HILL_SEGS).rotateX(-Math.PI / 2);
-  const pos = geo.attributes.position;
-  let any = false;
-  for (let v = 0; v < pos.count; v++) {
-    const h = groundAt(x0 + CHUNK / 2 + pos.getX(v), y0 + CHUNK / 2 + pos.getZ(v));
-    if (h !== 0) any = true;
-    pos.setY(v, h);
-  }
-  if (!any) { geo.dispose(); return null; }
-  geo.computeBoundingSphere();
-  return geo;
 }

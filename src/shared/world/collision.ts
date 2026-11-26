@@ -10,7 +10,7 @@ import { WORLD_X } from './levels';
 import { KIND, massesFor } from './massing';
 import { wayCollision } from './ways';
 import { type Box2, type Hit, type RayHit, obbVsAabb, obbVsCircle, rayAabb, rayCircle } from './shapes';
-import { grade, groundZ, type Terrain, terrainHit } from './terrain';
+import { cliff, grade, groundZ, type Terrain, terrainHit } from './terrain';
 
 /** `gate` on a Box2: a box that can open (a vault door: its interior's index); open gates are passed through. */
 export { type Box2, type Hit, type RayHit, obbVsAabb, obbVsCircle, rayAabb, rayCircle } from './shapes';
@@ -118,6 +118,8 @@ export class StaticWorld {
   /** The ground's height at a point, and its rise per metre heading along (dx, dy). */
   groundAt(x: number, y: number): number { return groundZ(this.terrain, x, y); }
   gradeAt(x: number, y: number, dx: number, dy: number): number { return grade(this.terrain, x, y, dx, dy); }
+  /** Holds a body that moved from (px, py) back from a cliff (world/terrain.ts); the push-back normal. */
+  cliff(b: { x: number; y: number }, px: number, py: number): { nx: number; ny: number } | null { return cliff(this.terrain, b, px, py); }
 
   private roofs: (Box2 & { bi: number })[] = [];
   private roofCells: number[][] = Array.from({ length: N * N }, () => []);

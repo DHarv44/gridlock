@@ -514,7 +514,8 @@ export interface WorldSpec {
    *  world of real-size horses draws people on foot at the same size. Looks only, not hit boxes. */
   pedScale?: number;
   /** Real hills: open country's ground rises and falls by its zone's WildSpec.relief times `scale`
-   *  (world/terrain.ts); towns, water and the railway stay level. Without it the world is flat. */
+   *  (world/terrain.ts), with its zones' mesas and gorges; towns, water and the railway stay level.
+   *  Without it the world is flat. */
   terrain?: { scale: number };
 }
 
@@ -570,6 +571,14 @@ export interface WildSpec {
    *  colours, this size (m across); it grows thickest down in the washes. */
   boulders?: number;
   brush?: { density: number; colors: string[]; size: [number, number] };
+  /** Real landforms (with WorldSpec.terrain; world/terrainGen.ts). Plateaus: flat-topped high
+   *  ground `height` m up behind sheer cliffs, over about `cover` of the land (0..1); the broad ones
+   *  rise in a second tier, and here and there a slope leads up. Kept back from the trails. */
+  mesas?: { cover: number; height: number };
+  /** Gorges: winding canyons `depth` m deep and `width` m across at the rim (a range), sheer-walled
+   *  with a ledge part way down, over about `cover` of the land; `river`: water along the floor.
+   *  A trail crosses one on a timber trestle. */
+  gorges?: { cover: number; depth: number; width: [number, number]; river?: boolean };
 }
 
 /** A radio station: its folder under the universe's `<contentDir>/radio/`, the name players see,

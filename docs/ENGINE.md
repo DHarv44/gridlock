@@ -127,26 +127,36 @@ film's names, characters, story, map or look).
    ground with talus at their feet, and loose boulders (render/rocks.ts: stepped, banded columns and
    faceted stones). Brush (render/brush.ts) is 3D bushes, not solid, thickest in the washes, built
    and dropped with each ground chunk.
-   Real elevation (2026-11-26, phase B): WorldSpec.terrain { scale } gives open country real height
-   (shared/world/terrain.ts): a grid every 8 m built in generateCity from the same height map,
-   (relief - 0.45) x the zone's WildSpec.relief x scale, zone hilliness blended over ~50 m; towns
-   (any non-wild zone), ponds and the river (plus a grid step round them) and a grade railway's bed
-   are held level, the hills easing down to them over 60 m (a distance transform). City.terrain;
-   bilinear `groundZ`; Bayhaven has no `terrain` and stays flat. Redrock scale 0.6: about -9..+7 m,
-   most slopes under 6%, washes steeper. A body's z stays relative to its own ground, so collision
-   and cover heights are unchanged. StaticWorld.groundAt / gradeAt: stepFoot and stepMount scale
-   their top speed by slopeFactor (a 10% climb about -25%, a descent up to +10%, never below 40%);
-   wheeled vehicles feel 0.6 g along the slope. StaticWorld.raycast (every shot, lookout, witness,
-   robbery and AI sight line) is also blocked where the ground between two eye heights rises over
-   the line (terrainHit, 3 m samples, 2 m ends left out). Lobbed projectiles fly at true height
-   (carried over the land's rise and fall); straight shots keep their height over the ground.
-   Client: installTerrain + `groundAt`; heightAt (ways.ts) adds it, so peds, mounts, wagons
-   (pitched with the slope), projectiles, pickups, the camera, sound and talk follow the land.
-   Ground chunks are bent planes (a vertex every 4 m, normals up: the painted hillshade still
-   shades); rocks, fixtures and trees are footed on the lowest ground under them, brush, tumbleweeds
-   and effects (effects.ts: heights given over the ground) on it; skids, rotors and headlight beams
-   use height over the hillside. The rock/sea plane past the edge sits below the lowest wash.
-   Check: scripts/terrain.ts.
+   Real land (2026-11-26): WorldSpec.terrain { scale } gives open country real height and
+   landforms; Bayhaven has none and stays flat. world/terrainGen.ts builds, in generateCity, smooth
+   fields on an 8 m grid (City.terrain): the broad swell (relief.ts `swell`: the long octaves only,
+   (swell - 0.5) x WildSpec.relief x scale); plateaus (WildSpec.mesas { cover, height }: rims where
+   a noise field crosses the level its cover asks for, held back ~16 m from trails along a wavering
+   line, a second tier on tall ones, `ramp` noise breaking a rim into a climbable slope); gorges
+   (WildSpec.gorges { cover, depth, width, river }: courses where another field crosses a half,
+   opened by a slow gate). Each zone's nouns blend over ~80 m. Towns, ponds and the river (plus a
+   step round them) and a grade railway's bed are level, the land easing in over 60 m (wobbled
+   distance transform). world/terrain.ts `groundOf` interpolates the fields and applies the sharp
+   profiles at each point asked: a mesa's 5 m sheer wall over a talus skirt, a canyon's sheer walls
+   (a ledge in wide ones) and flat floor, a river on deep floors (`water`: CityMap.isWater counts
+   it). Trestles: wherever a trail crosses a cut over 1.2 m, a deck from rim to rim (Terrain.
+   trestles, indexed per cell); groundOf stands you on it (`raw` ignores decks). Generation clears
+   rock, fixtures and trees off cliff faces, canyon walls and rivers (clearLand). Redrock: prairie
+   swells with low benches and creek ravines; badlands mesas 16 m (+7 tier) and 12 m canyons;
+   about -22..+25 m. Bodies keep z over their own ground. Movement (shared, predicted): top speed
+   x slopeFactor of the grade (a 10% climb about -25%, descents up to +10%, never below 40%);
+   wheels feel 0.6 g along it; moveOnGround holds any ground body back from a step steeper than
+   CLIFF (1.25) and slides it along the edge, no crash (one already on a face may move down off it).
+   StaticWorld.raycast (shots, lookouts, witnesses, robbery, AI sight) is blocked where the ground
+   rises over the line between two eye heights (terrainHit). Lobbed projectiles fly at true height;
+   straight shots keep their height over the ground. Client: installTerrain + `groundAt`;
+   heightAt (ways.ts) adds it, so everything drawn follows the land, mounts and wagons pitched.
+   Ground chunks (render/terrainMesh.ts) are bent planes, a vertex every 2 m (1 m in chunks with
+   cliffs), normals from the land itself, casting and receiving shadow; steep faces are drawn in the
+   zone's strata by height in the shader. The painting (groundRelief.ts) reads as a relief map from
+   straight above: hillshade from the true slopes, darker down in canyons, a bright lip on rims,
+   rivers on gorge floors. render/trestles.ts: plank deck, rails, braced bents down to the floor.
+   A chunk builds in 11-19 ms. Check: scripts/terrain.ts.
    Soundtrack (2026-11-26): music that isn't a radio (the western has no stations). Songs in
    <contentDir>/soundtrack/, tracks.json giving each its title and `regions` (zone ids; none =
    anywhere). Server: server/soundtrack.ts lists and serves them (/api/soundtrack, /soundtrack/).

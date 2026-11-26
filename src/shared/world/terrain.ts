@@ -1,84 +1,128 @@
-// The ground's real height: open country rises and falls with the land's shape (world/relief.ts);
-// towns, water and the railway stay level, the hills easing down to them over FALL metres. A grid
-// of heights every STEP metres, built once at world generation from the seed (Rng-free arithmetic,
-// no trig), so the server and every client agree bit for bit. How hilly is a noun: each wild zone's
-// WildSpec.relief, scaled by WorldSpec.terrain. A world without `terrain` is flat (z 0 everywhere).
+// The ground's real height: open country's rolling swells, plateaus behind sheer cliffs, gorges
+// cut down to a river, trestles over them where a trail crosses; towns, water and the railway
+// level. Built once at world generation (world/terrainGen.ts) as smooth fields on a grid every
+// STEP metres; the cliffs and canyon walls are sharp profiles of those fields worked out at each
+// point asked about, so a wall is a couple of metres across however coarse the grid. Shared and
+// deterministic (no trig): the server and every client agree bit for bit. A flat world has none.
 //
-// Heights are where the ground is; a body's z stays above its own ground, so collision, cover
-// heights and the rest work as on flat ground. Movement asks `grade` to climb slower and run
-// downhill a little faster; sight lines ask `groundZ` so ridges hide what's behind them.
-import { ZONES } from '../packs';
-import { MAP_SIZE } from './cityTypes';
-import type { City } from './cityTypes';
-import type { CityMap } from './city';
-import { relief } from './relief';
-import { WORLD } from './worldSpec';
+// Heights are where the ground is; a body's z stays above its own ground, so collision and cover
+// work as on flat ground. Movement asks `grade` (climbs slow you) and `cliff` (a cliff is a wall);
+// sight lines ask `terrainHit` so ridges hide what's behind them.
 
-/** Grid spacing (m), the distance (m) over which hills ease down to level ground, the relief value
- *  that sits at ground level (so the land runs both above and below the towns), and how wide (m)
- *  the zone-to-zone blend of hilliness is. */
-const STEP = 8, FALL = 60, LEVEL = 0.45, BLEND = 6;
+export const STEP = 8;
+
+/** A timber trestle carrying a trail over a gorge: its deck (rect) and the deck's height at its two
+ *  ends along the trail (`axis`). */
+export interface Trestle { x0: number; y0: number; x1: number; y1: number; axis: 'h' | 'v'; z0: number; z1: number }
 
 export interface Terrain {
   step: number;
   /** Points per side; point (i, j) is at (i * step, j * step). */
   n: number;
-  h: Float32Array;
+  /** Rolling ground (m). */
+  base: Float32Array;
+  /** Plateaus: height (m) where one would stand, signed distance (m) in from its rim, how gentle its
+   *  edge is (0 a sheer cliff, 1 a slope you can climb). */
+  mesaH: Float32Array;
+  mesaD: Float32Array;
+  ramp: Float32Array;
+  /** Gorges: depth (m), signed distance (m) across from the centre line, rim half-width (m). */
+  gorgeD: Float32Array;
+  gorgeS: Float32Array;
+  gorgeW: Float32Array;
+  /** Which gorge floors carry a river (1) or are dry (0). */
+  river: Float32Array;
+  trestles: Trestle[];
+  /** Per grid cell, 1 + the trestle over it (0: none), so a height lookup needn't search them. */
+  deck: Int16Array;
 }
 
-/** The ground heights for a generated city, or undefined for a flat world. */
-export function buildTerrain(city: City, map: CityMap): Terrain | undefined {
-  const scale = WORLD.terrain?.scale ?? 0;
-  if (scale <= 0) return undefined;
-  const n = Math.ceil(MAP_SIZE / STEP) + 1, N = n * n;
-  // Open ground (a wild zone, dry, off the railway's bed) carries its zone's hilliness.
-  const amp = new Float32Array(N);
-  const open = new Uint8Array(N);
-  const rail = city.railway;
-  const railHalf = rail ? rail.width / 2 + 14 : 0;
-  for (let j = 0; j < n; j++) {
-    for (let i = 0; i < n; i++) {
-      const x = i * STEP, y = j * STEP, k = j * n + i;
-      const z = map.zoneAt(x, y);
-      const w = z >= 0 && ZONES[z].layout === 'wild' ? ZONES[z].wild : undefined;
-      if (!w || map.isWater(x, y)) continue;
-      if (rail && Math.abs((rail.axis === 'h' ? y : x) - rail.pos) < railHalf) continue;
-      open[k] = 1;
-      amp[k] = (w.relief ?? 0) * scale;
+/** How the land breaks: a sheer wall's half-width and the talus at its foot (m), the share of a
+ *  plateau's height the talus climbs, how far in (m) a second tier stands and its share, a canyon
+ *  wall's width, and the share of its depth the ledge is at. */
+const WALL = 2.4, TALUS = 7, TALUS_H = 0.16, TIER_IN = 18, TIER_H = 0.45, CANYON_WALL = 3.4, LEDGE = 0.5;
+/** How steep a move may be (rise per metre) before the ground is a wall. */
+export const CLIFF = 1.25;
+
+const smooth = (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
+
+/** A plateau's rise (0..1) at signed distance d in from its rim, its wall `w` metres half-wide. */
+function mesaRise(d: number, w: number): number {
+  if (d >= w) return 1;
+  if (d >= -w) return TALUS_H + (1 - TALUS_H) * smooth((d + w) / (2 * w));
+  const t = (d + w + TALUS) / TALUS;
+  return t > 0 ? TALUS_H * t * t : 0;
+}
+
+/** A gorge's floor half-width for rim half-width W: sheer walls, and in a wide one a ledge between
+ *  two of them. */
+const ledged = (W: number) => W >= 12;
+export const gorgeFloor = (W: number): number => Math.max(1.5, ledged(W) ? W - CANYON_WALL * 2 - 3 : W - CANYON_WALL);
+
+/** A gorge's cut (0..1 of its depth) at distance s from its centre line, rim half-width W. */
+function gorgeCut(s: number, W: number): number {
+  const F = gorgeFloor(W);
+  if (s <= F) return 1;
+  if (s >= W) return 0;
+  if (!ledged(W)) return 1 - smooth((s - F) / (W - F)); // one sheer wall
+  if (s <= F + CANYON_WALL) return 1 - (1 - LEDGE) * smooth((s - F) / CANYON_WALL);
+  if (s >= W - CANYON_WALL) return LEDGE * (1 - smooth((s - (W - CANYON_WALL)) / CANYON_WALL));
+  return LEDGE;
+}
+
+/** What the land is at a point: height, how far up a plateau (0..1), how deep in a gorge (0..1),
+ *  and whether it's river. Bilinear on the fields, then the sharp profiles. `raw`: the ground
+ *  itself, ignoring trestle decks over it. */
+export interface Ground { z: number; mesa: number; gorge: number; rise: number; cut: number; water: boolean }
+const out: Ground = { z: 0, mesa: 0, gorge: 0, rise: 0, cut: 0, water: false };
+export function groundOf(t: Terrain, x: number, y: number, raw = false): Ground {
+  out.z = 0; out.mesa = 0; out.gorge = 0; out.rise = 0; out.cut = 0; out.water = false;
+  const fx = x / t.step, fy = y / t.step;
+  const i = Math.floor(fx), j = Math.floor(fy);
+  if (i < 0 || j < 0 || i >= t.n - 1 || j >= t.n - 1) return out;
+  const u = fx - i, v = fy - j, k = j * t.n + i, n = t.n;
+  const w00 = (1 - u) * (1 - v), w10 = u * (1 - v), w01 = (1 - u) * v, w11 = u * v;
+  const at = (a: Float32Array) => a[k] * w00 + a[k + 1] * w10 + a[k + n] * w01 + a[k + n + 1] * w11;
+  let z = at(t.base);
+  const mh = at(t.mesaH);
+  if (mh > 0.05) {
+    const ramp = at(t.ramp), w = WALL + ramp * 16;
+    const d = at(t.mesaD);
+    const m = mesaRise(d, w);
+    out.mesa = m;
+    out.rise = mh * m;
+    // Flat-topped: the swell of the land mostly smoothed out up there; broad ones rise again.
+    z = z * (1 - 0.75 * m) + mh * m + mh * TIER_H * mesaRise(d - TIER_IN, w) * smooth((mh - 8) / 6);
+  }
+  const gd = at(t.gorgeD);
+  if (gd > 0.05) {
+    const s = Math.abs(at(t.gorgeS)), W = at(t.gorgeW);
+    const g = gorgeCut(s, W);
+    if (g > 0) {
+      z -= gd * g;
+      out.gorge = g;
+      out.cut = gd * g;
+      out.water = g >= 1 && gd > 3 && at(t.river) > 0.5 && s < gorgeFloor(W) - 0.8;
     }
   }
-  // Water lies level to its banks: a grid step round each pond and the river is level too, so no
-  // grid cell straddling the bank tips the water's edge.
-  const wet = [...city.ponds, ...(map.river ? [map.river] : [])];
-  for (const r of wet) {
-    const i0 = Math.max(0, Math.floor(r.x0 / STEP) - 1), i1 = Math.min(n - 1, Math.ceil(r.x1 / STEP) + 1);
-    const j0 = Math.max(0, Math.floor(r.y0 / STEP) - 1), j1 = Math.min(n - 1, Math.ceil(r.y1 / STEP) + 1);
-    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) open[j * n + i] = 0;
-  }
-  blur(amp, n, BLEND);
-  blur(amp, n, BLEND);
-  const d = distance(open, n);
-  const h = new Float32Array(N);
-  for (let j = 0; j < n; j++) {
-    for (let i = 0; i < n; i++) {
-      const k = j * n + i;
-      if (!open[k]) continue;
-      const t = Math.min(1, d[k] / FALL), mask = t * t * (3 - 2 * t);
-      h[k] = (relief(city.seed, i * STEP, j * STEP) - LEVEL) * amp[k] * mask;
+  const d = raw ? 0 : t.deck[k];
+  if (d) {
+    const inside = (b: Trestle) => x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1;
+    // The cell's trestle, or (where two meet in one cell, over a crossroads) whichever holds it.
+    const b = inside(t.trestles[d - 1]) ? t.trestles[d - 1] : t.trestles.find(inside);
+    if (b) {
+      const f = b.axis === 'h' ? (x - b.x0) / (b.x1 - b.x0) : (y - b.y0) / (b.y1 - b.y0);
+      z = b.z0 + (b.z1 - b.z0) * f;
+      out.water = false;
     }
   }
-  return { step: STEP, n, h };
+  out.z = z;
+  return out;
 }
 
 /** Ground height (m) at (x, y): 0 off the map (and on upper floors, far past it) or in a flat world. */
-export function groundZ(t: Terrain | undefined, x: number, y: number): number {
-  if (!t) return 0;
-  const fx = x / t.step, fy = y / t.step;
-  const i = Math.floor(fx), j = Math.floor(fy);
-  if (i < 0 || j < 0 || i >= t.n - 1 || j >= t.n - 1) return 0;
-  const u = fx - i, v = fy - j, k = j * t.n + i, h = t.h;
-  const a = h[k], b = h[k + 1], c = h[k + t.n], e = h[k + t.n + 1];
-  return a + (b - a) * u + (c - a) * v + (a - b - c + e) * u * v;
+export function groundZ(t: Terrain | undefined, x: number, y: number, raw = false): number {
+  return t ? groundOf(t, x, y, raw).z : 0;
 }
 
 /** Rise per metre heading along (dx, dy) (a unit vector) at (x, y): + uphill, - downhill. */
@@ -87,9 +131,40 @@ export function grade(t: Terrain | undefined, x: number, y: number, dx: number, 
   return (groundZ(t, x + dx * 2, y + dy * 2) - groundZ(t, x - dx * 2, y - dy * 2)) / 4;
 }
 
+/**
+ * A cliff is a wall: a body that moved from (px, py) to (b.x, b.y) up or down anything steeper
+ * than CLIFF is held back, sliding along the edge where it can. One already on a steep face (put
+ * there) may always move down off it. Returns the push-back normal, or null.
+ */
+export function cliff(t: Terrain | undefined, b: { x: number; y: number }, px: number, py: number): { nx: number; ny: number } | null {
+  if (!t) return null;
+  const z0 = groundZ(t, px, py);
+  const steep = (x: number, y: number): boolean => {
+    const d = Math.hypot(x - px, y - py);
+    const dz = groundZ(t, x, y) - z0;
+    // No allowance: a body pushing at a wall moves a hair each tick, and would inch up it.
+    return d > 1e-6 && Math.abs(dz) > CLIFF * d && !(dz < 0 && onFace(t, px, py));
+  };
+  if (!steep(b.x, b.y)) return null;
+  const gx = groundZ(t, b.x + 0.5, b.y) - groundZ(t, b.x - 0.5, b.y), gy = groundZ(t, b.x, b.y + 0.5) - groundZ(t, b.x, b.y - 0.5);
+  const up = groundZ(t, b.x, b.y) > z0;
+  if (!steep(b.x, py)) b.y = py;
+  else if (!steep(px, b.y)) b.x = px;
+  else { b.x = px; b.y = py; }
+  const g = Math.hypot(gx, gy) || 1;
+  // Away from the wall: downhill if it was climbing, back up onto the top if it was going over.
+  return up ? { nx: -gx / g, ny: -gy / g } : { nx: gx / g, ny: gy / g };
+}
+
+/** Standing on a face steeper than a cliff (only something put there can be). */
+function onFace(t: Terrain, x: number, y: number): boolean {
+  const gx = groundZ(t, x + 0.5, y) - groundZ(t, x - 0.5, y), gy = groundZ(t, x, y + 0.5) - groundZ(t, x, y - 0.5);
+  return Math.hypot(gx, gy) > CLIFF;
+}
+
 /** Sample spacing (m) along a sight line, the stretch at each end left out (the slope you stand
  *  on doesn't hide you), and how far the ground must rise over the line to block it. */
-const LOOK = 3, ENDS = 2, CLEAR = 0.15;
+const LOOK = 2, ENDS = 1.5, CLEAR = 0.15;
 
 /**
  * Where the ground first rises over the line from (x0, y0) to (x1, y1), each end z above its own
@@ -122,55 +197,10 @@ export function slopeFactor(g: number): number {
 let installed: Terrain | undefined;
 /** The client installs its city's ground once, for drawing (render code asks `groundAt`). */
 export function installTerrain(t: Terrain | undefined): void { installed = t; }
+export const installedTerrain = (): Terrain | undefined => installed;
 export const groundAt = (x: number, y: number): number => groundZ(installed, x, y);
 /** The lowest ground under a footprint of radius r: where to stand a thing so no side floats. */
 export function groundUnder(x: number, y: number, r: number): number {
   if (!installed) return 0;
   return Math.min(groundAt(x, y), groundAt(x - r, y), groundAt(x + r, y), groundAt(x, y - r), groundAt(x, y + r));
-}
-
-// ------------------------------------------------------------------ grid helpers
-
-/** Box blur of radius r points, in place (rows then columns). */
-function blur(a: Float32Array, n: number, r: number): void {
-  const tmp = new Float32Array(n);
-  for (let pass = 0; pass < 2; pass++) {
-    for (let line = 0; line < n; line++) {
-      const at = (s: number) => (pass ? s * n + line : line * n + s);
-      let sum = 0, cnt = 0;
-      for (let s = 0; s <= r && s < n; s++) { sum += a[at(s)]; cnt++; }
-      for (let s = 0; s < n; s++) {
-        tmp[s] = sum / cnt;
-        const add = s + r + 1, drop = s - r;
-        if (add < n) { sum += a[at(add)]; cnt++; }
-        if (drop >= 0) { sum -= a[at(drop)]; cnt--; }
-      }
-      for (let s = 0; s < n; s++) a[at(s)] = tmp[s];
-    }
-  }
-}
-
-/** Metres from each point to the nearest closed one (two-pass chamfer, 3-4 weights). */
-function distance(open: Uint8Array, n: number): Float32Array {
-  const BIG = 1e9, d = new Float32Array(n * n);
-  for (let k = 0; k < n * n; k++) d[k] = open[k] ? BIG : 0;
-  const A = STEP, D = STEP * 1.4;
-  const relax = (k: number, o: number, w: number) => { if (d[o] + w < d[k]) d[k] = d[o] + w; };
-  for (let j = 0; j < n; j++) {
-    for (let i = 0; i < n; i++) {
-      const k = j * n + i;
-      if (!d[k]) continue;
-      if (i > 0) relax(k, k - 1, A);
-      if (j > 0) { relax(k, k - n, A); if (i > 0) relax(k, k - n - 1, D); if (i < n - 1) relax(k, k - n + 1, D); }
-    }
-  }
-  for (let j = n - 1; j >= 0; j--) {
-    for (let i = n - 1; i >= 0; i--) {
-      const k = j * n + i;
-      if (!d[k]) continue;
-      if (i < n - 1) relax(k, k + 1, A);
-      if (j < n - 1) { relax(k, k + n, A); if (i < n - 1) relax(k, k + n + 1, D); if (i > 0) relax(k, k + n - 1, D); }
-    }
-  }
-  return d;
 }

@@ -11,7 +11,8 @@ import { PlaceBuilder } from './placegen';
 import { genGraph, genLayout } from './roadgen';
 import { buildRailway } from './railgen';
 import { placeTables } from './tables';
-import { buildTerrain } from './terrain';
+import { buildTerrain, clearLand } from './terrainGen';
+import { groundOf } from './terrain';
 import type { Way } from './wayTypes';
 
 const HALF_PI = Math.PI / 2;
@@ -81,9 +82,10 @@ export function generateCity(seed: number): City {
   city.interiors = interiorsOf(city);
   for (const i of city.interiors) i.place.counter = { x: i.counter.x, y: i.counter.y };
   const map = new CityMap(city);
-  // The ground's height in open country (world/terrain.ts), when the universe has hills.
+  // The ground's height in open country (world/terrain.ts), when the universe has hills: nothing
+  // left standing on a cliff face or in a river.
   const terrain = buildTerrain(city, map);
-  if (terrain) city.terrain = terrain;
+  if (terrain) { city.terrain = terrain; clearLand(city, terrain); }
   for (const p of city.parking) if (p.zone < 0) p.zone = map.zoneAt(p.x, p.y);
   // Card and casino tables (world/tables.ts): the floors laid out for them, gangs' back rooms, friends' yards.
   placeTables(city, (x, y) => map.districtAt(x, y));
@@ -153,7 +155,8 @@ export class CityMap {
       return true;
     }
     for (const p of this.city.ponds) if (x > p.x0 && x < p.x1 && y > p.y0 && y < p.y1) return true;
-    return false;
+    // A river down a gorge's floor (world/terrain.ts).
+    return !!this.city.terrain && groundOf(this.city.terrain, x, y).water;
   }
 
   /** True when (x,y) lies on a road surface (not sidewalk/lot). */
