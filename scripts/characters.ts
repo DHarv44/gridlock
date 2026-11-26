@@ -13,7 +13,7 @@ const check = (ok: boolean, what: string) => { console.log(`${ok ? 'ok  ' : 'FAI
 
 // What a browser might send, including junk the server must not trust.
 const sent = {
-  id: 'abc123', name: 'Rook', look: { top: 2, hat: 99 }, created: 1, lastPlayed: 1,
+  id: 'abc123', universe: 'bayhaven', name: 'Rook', look: { top: 2, hat: 99 }, created: 1, lastPlayed: 1,
   cash: 4200.7, garage: [3, 9999, -1, 'x'], felonies: { murder: 2, notACrime: 5 }, deaths: 1, respect: { v22: 250, nope: 3 },
 };
 const c = sanitizeCharacter(sent)!;
@@ -23,6 +23,7 @@ check(c.felonies.murder === 2 && !('notACrime' in c.felonies), 'only real crimes
 check(c.respect.v22 === 100 && !('nope' in c.respect), 'respect clamped, unknown gangs dropped');
 check(c.look.hat === 0 && c.look.top === 2, 'look indices kept in range');
 check(sanitizeCharacter({ id: 'x', name: '' }) === null && sanitizeCharacter('junk') === null, 'nonsense is refused');
+check(sanitizeCharacter({ ...sent, universe: 'dustwater' }) === null && sanitizeCharacter({ ...sent, universe: undefined }) === null, "another universe's character (or one with none) isn't let in");
 void VEHICLES;
 
 // Play it: progress comes back to the browser.

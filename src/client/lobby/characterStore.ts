@@ -1,13 +1,25 @@
 // The player's characters, kept in this browser's local storage: looks, cash, cars, record,
-// respect. Taken along when joining a game; the server sends progress back to save here.
-import { type CharacterProgress, type CharacterSave, cleanLook, cleanName, cleanVoice, MAX_CHARACTERS, RULES } from '../../shared/packs';
+// respect. Taken along when joining a game; the server sends progress back to save here. Each is
+// tagged with its universe (UNIVERSE_ID); only this universe's characters are listed.
+import { type CharacterProgress, type CharacterSave, cleanLook, cleanName, cleanVoice, MAX_CHARACTERS, RULES, UNIVERSE_ID } from '../../shared/packs';
 
-const KEY = 'gridlock.characters.v1';
+// v2: characters carry their universe (v1's, from before, are left in storage, unread).
+const KEY = 'gridlock.characters.v2';
 
-export function loadCharacters(): CharacterSave[] {
+/** Every character in storage, from any universe (kept when saving). */
+function loadAll(): CharacterSave[] {
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) ?? '[]') as unknown;
     return Array.isArray(raw) ? (raw as CharacterSave[]).filter((c) => c && typeof c.id === 'string' && typeof c.name === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+/** This universe's characters. */
+export function loadCharacters(): CharacterSave[] {
+  try {
+    return loadAll().filter((c) => c.universe === UNIVERSE_ID);
   } catch {
     return [];
   }
@@ -26,18 +38,18 @@ export function createCharacter(rawName: string, look: unknown, voice?: string):
   if (list.some((c) => c.name.toLowerCase() === name.toLowerCase())) return 'You already have a character with that name.';
   const now = Date.now();
   const id = [...crypto.getRandomValues(new Uint8Array(8))].map((b) => b.toString(16).padStart(2, '0')).join('');
-  const c: CharacterSave = { id, name, look: cleanLook(look), voice: cleanVoice(voice), created: now, lastPlayed: now, cash: RULES.startCash, bank: 0, garage: [], felonies: {}, deaths: 0, respect: {} };
-  store([c, ...list]);
+  const c: CharacterSave = { id, universe: UNIVERSE_ID, name, look: cleanLook(look), voice: cleanVoice(voice), created: now, lastPlayed: now, cash: RULES.startCash, bank: 0, garage: [], felonies: {}, deaths: 0, respect: {} };
+  store([c, ...loadAll()]);
   return c;
 }
 
 export function deleteCharacter(id: string): void {
-  store(loadCharacters().filter((c) => c.id !== id));
+  store(loadAll().filter((c) => c.id !== id));
 }
 
 /** Saves progress the server sent for a character. */
 export function saveProgress(id: string, p: CharacterProgress): void {
-  const list = loadCharacters();
+  const list = loadAll();
   const c = list.find((x) => x.id === id);
   if (!c) return; // deleted meanwhile
   Object.assign(c, { cash: p.cash, bank: p.bank, garage: p.garage, felonies: p.felonies, deaths: p.deaths, respect: p.respect, met: p.met ?? c.met, lastPlayed: Date.now() });

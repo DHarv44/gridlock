@@ -90,6 +90,13 @@
   character marked "welcome". `npm run voices` masters recordings into src/client/voice/,
   `npm run scripts` writes content/SCRIPTS.md. The user records the lines (Benny's are in); the
   rest are silent bubbles until recorded (or filled by scripts/voice-calls.ts).
+- Persistent games (2026-11-26): the plan is one always-on server (Railway, a volume at
+  GRIDLOCK_DATA; README "Over the internet, always on"), so nobody hosts: a room saves as it's
+  played and when it empties, the server unloads it after ten idle minutes, and any member opens it
+  again by its code (Continue, or the link) alone and finds it as it was. Room saves (v2) and
+  characters (browser store v2) carry `universe` (packs UNIVERSE_ID 'bayhaven'; engine phase 2
+  moves it to the universe manifest) and only load where it matches; older saves and characters
+  were left unread (no migrations). /api/health reports memMB. `npx tsx scripts/rooms.ts`.
 - Boats (2026-11-26): a `boat` movement kind (shared/sim/boat.ts: momentum carries through turns,
   low sideways grip, the rudder needs flow, land is a wall) on the sea round the island and the whole
   river, under bridges too (StaticWorld.boatWater; render/boats.ts drops a boat out of sight under

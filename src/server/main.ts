@@ -28,7 +28,8 @@ const server = createServer((req, res) => {
   if (radioRoutes(req, res, url.pathname)) return;
   if (url.pathname === '/api/health') {
     res.writeHead(200, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ ok: true, ...lobby.stats() }));
+    // Memory in use (MB): what an always-on host bills for.
+    res.end(JSON.stringify({ ok: true, memMB: Math.round(process.memoryUsage().rss / 1e6), ...lobby.stats() }));
     return;
   }
   let file = normalize(join(DIST, decodeURIComponent(url.pathname)));

@@ -1,5 +1,5 @@
 // A room: one shared city, up to RULES.maxPlayers players, its own fixed-rate simulation.
-import { RADIO, RULES, VEHICLES } from '../shared/packs';
+import { RADIO, RULES, UNIVERSE_ID, VEHICLES } from '../shared/packs';
 import { type C2S, type InputMsg, Mode, PLAYER_COLORS, type S2C, SNAP_EVERY, TICK_HZ } from '../shared/protocol';
 import { DT } from '../shared/sim/physics';
 import { MAP_SIZE } from '../shared/world/cityTypes';
@@ -26,7 +26,7 @@ import { World } from './game/world';
 import type { CharacterSave } from '../shared/packs';
 import { progressOf } from './characters';
 import { lastOf, resumeSpot, resumeVehicle } from './resume';
-import { loadRoom, type RoomSave, type SavedProfile, saveRoom } from './persist';
+import { loadRoom, type RoomSave, SAVE_VERSION, type SavedProfile, saveRoom } from './persist';
 
 export interface Conn {
   send(data: string): void;
@@ -237,7 +237,7 @@ export class Room {
 
   persist(): void {
     for (const pl of this.world.players.values()) this.storeProfile(pl);
-    const save: RoomSave = { version: 1, seed: this.world.seed, mode: this.rounds.mode.id, gameMinutes: this.world.gameMinutes, owners: [...this.econ.owners.entries()], safes: [...this.business.safes.entries()], profiles: this.profiles };
+    const save: RoomSave = { version: SAVE_VERSION, universe: UNIVERSE_ID, seed: this.world.seed, mode: this.rounds.mode.id, gameMinutes: this.world.gameMinutes, owners: [...this.econ.owners.entries()], safes: [...this.business.safes.entries()], profiles: this.profiles };
     saveRoom(this.code, save);
   }
 

@@ -15,7 +15,7 @@ const msgs: { t: string; [k: string]: unknown }[] = [];
 const room = new Room('CELL', 303);
 room.stop();
 const pl = room.join('Caller', { send: (d) => msgs.push(JSON.parse(d)), close: () => {} }, {
-  id: 'cell01', name: 'Caller', look: {} as never, created: 1, lastPlayed: 1, cash: 100, bank: 0, garage: [], felonies: {}, deaths: 0,
+  id: 'cell01', universe: 'bayhaven', name: 'Caller', look: {} as never, created: 1, lastPlayed: 1, cash: 100, bank: 0, garage: [], felonies: {}, deaths: 0,
   respect: { [g1]: RESPECT.cellAt + 5, [g2]: 10 }, met: ['benny'], // Benny's welcome is tested in coop.ts
 });
 if (typeof pl === 'string') throw new Error(pl);
@@ -95,7 +95,7 @@ check(said(k).some(([, s]) => s === 'refuse') && !said(k).some(([, s]) => s === 
 pl.blownRun = 0;
 // A crewless player gets his nudge when idle; miss it and it's a voicemail.
 const loner = room.join('Loner', { send: (d) => msgs.push(JSON.parse(d)), close: () => {} }, {
-  id: 'cell02', name: 'Loner', look: {} as never, created: 1, lastPlayed: 1, cash: 0, bank: 0, garage: [], felonies: {}, deaths: 0, respect: {}, met: [mentor],
+  id: 'cell02', universe: 'bayhaven', name: 'Loner', look: {} as never, created: 1, lastPlayed: 1, cash: 0, bank: 0, garage: [], felonies: {}, deaths: 0, respect: {}, met: [mentor],
 });
 if (typeof loner === 'string') throw new Error(loner);
 loner.cell.nudgeAt = 0;

@@ -14,7 +14,7 @@ export { PALETTE, PALETTE_NAMES, paletteFor } from './palette';
 export { RADIO, type RadioStation } from './radio';
 export { ARMOR_MODEL } from './weaponModels';
 export { INTERIOR_PLANS } from './interiorPlans';
-export { CHARACTER_LOOKS, type CharacterLast, type CharacterProgress, type CharacterSave, type CharLook, cleanLook, cleanName, DEFAULT_LOOK, LOOK_PARTS, type LookPart, MAX_CHARACTERS, NAME_PARTS } from './characters';
+export { CHARACTER_LOOKS, type CharacterLast, type CharacterProgress, type CharacterSave, type CharLook, cleanLook, cleanName, DEFAULT_LOOK, LOOK_PARTS, type LookPart, MAX_CHARACTERS, NAME_PARTS, UNIVERSE_ID } from './characters';
 export { DISTRICTS, FACTIONS, PEDS, PROPERTIES, SERVICES, VEHICLES, WEAPONS, ZONES };
 export type * from './types';
 

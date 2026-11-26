@@ -13,11 +13,20 @@ Open http://localhost:5228, pick a name, **Create game**, then send friends the 
 (Esc → Copy invite link, or `http://<your-address>:5228/#CODE`).
 
 - **Same network:** friends use the LAN address the server prints on startup.
-- **Over the internet:** forward TCP port 5228 on your router to this PC and share
-  `http://<your-public-ip>:5228/#CODE`, or deploy to any Node host (it honours `PORT`;
-  build command `npm run build`, start command `npm start`). `railway.json` configures Railway.
-  Room saves (who owns which property) live in `data/` (or `GRIDLOCK_DATA`); on Railway mount
-  a volume there to keep them across deploys. Characters live in the players' browsers.
+- **Over the internet, always on (recommended):** run the server on a host that never sleeps, so
+  nobody has to host: any player can carry on a game whenever they like, with or without the
+  others. On Railway (`railway.json` sets build `npm run build`, start `npm start` and the health
+  check `/api/health`): create a project from this repo, add a **volume** (any mount path, e.g.
+  `/data`) and set the variable **`GRIDLOCK_DATA`** to that path, so room saves survive redeploys.
+  Share `https://<your-app>.up.railway.app/#CODE`. `/api/health` reports rooms, players, tick
+  time and memory (`memMB`: ~80 MB idle, ~140 MB with a room of four, at the cost of a Hobby
+  plan's included usage).
+- **Over the internet from this PC:** forward TCP port 5228 on your router and share
+  `http://<your-public-ip>:5228/#CODE`; the game is only up while this PC runs the server.
+
+Room saves (who owns which property, business safes, the clock) live in `data/` (or
+`GRIDLOCK_DATA`). Characters live in the players' browsers. Both are tagged with their universe
+(`bayhaven`) and only load where it matches.
 
 **Radio:** each vehicle's radio comes tuned to its own station; press R (controller: D-pad up)
 to cycle that vehicle's radio through Off and the stations

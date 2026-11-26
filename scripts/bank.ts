@@ -11,7 +11,7 @@ const { PROPERTIES, RULES, SERVICES } = await import('../src/shared/packs');
 let failures = 0;
 const check = (ok: boolean, what: string) => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${what}`); if (!ok) failures++; };
 
-const c = sanitizeCharacter({ id: 'bank01', name: 'Vault', look: {}, created: 1, lastPlayed: 1, cash: 3000, bank: 500.4, garage: [], felonies: {}, deaths: 0, respect: {} })!;
+const c = sanitizeCharacter({ id: 'bank01', universe: 'bayhaven', name: 'Vault', look: {}, created: 1, lastPlayed: 1, cash: 3000, bank: 500.4, garage: [], felonies: {}, deaths: 0, respect: {} })!;
 check(c.bank === 500, 'a character brings its bank balance (cleaned)');
 
 const room = new Room('BANK', 202);

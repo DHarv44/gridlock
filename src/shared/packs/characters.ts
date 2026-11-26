@@ -4,6 +4,10 @@ import { HAIR, SKIN } from './peds';
 
 export const MAX_CHARACTERS = 5;
 
+/** This pack set's universe: room saves and characters are tagged with it and only load where it
+ *  matches. (Engine phase 2 moves it to the universe manifest as UNIVERSE.id.) */
+export const UNIVERSE_ID = 'bayhaven';
+
 export const CHARACTER_LOOKS = {
   skin: SKIN,
   hair: HAIR,
@@ -73,6 +77,9 @@ export interface CharacterProgress {
 /** A character as the player's browser keeps it (local storage); brought along to every game. */
 export interface CharacterSave extends CharacterProgress {
   id: string;
+  /** The universe (pack set and city) the character lives in: UNIVERSE_ID. Characters from another
+   *  universe aren't listed or let into this one's rooms. */
+  universe: string;
   name: string;
   look: CharLook;
   /** Their voice on the phone (packs/calls.ts PLAYER_VOICES); older characters have none yet. */
