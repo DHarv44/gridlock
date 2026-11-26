@@ -6,6 +6,7 @@
 import type { Box2, Circle2 } from './collision';
 import type { City } from './cityTypes';
 import { railColumns } from './railgen';
+import { groundAt } from './terrain';
 import { FLOOR_H, floorOf, isWayStrip, LEVEL_BAND, MAX_FLOORS } from './levels';
 import { CLEAR_S, DECK_H, DECK_HALF, inRamp, MERGE, profileZ, RAMP_LEN, RAMP_W, rampS, SWITCH_S, WALL_H, WALL_T, type Way, wayLocal, wayPoint } from './wayTypes';
 
@@ -13,8 +14,9 @@ import { CLEAR_S, DECK_H, DECK_HALF, inRamp, MERGE, profileZ, RAMP_LEN, RAMP_W, 
  *  is built). */
 let drawn: Way[] = [];
 export function installWays(ways: Way[]): void { drawn = ways; }
-/** surfaceZ over the installed ways. */
-export const heightAt = (x: number, y: number): number => surfaceZ(drawn, x, y);
+/** surfaceZ over the installed ways, on the installed ground (world/terrain.ts: hills in open
+ *  country; 0 in a flat world and on upper floors). */
+export const heightAt = (x: number, y: number): number => surfaceZ(drawn, x, y) + groundAt(x, y);
 
 /** The way whose strip `f` is, if any. */
 export const wayOn = (ways: Way[], f: number): Way | undefined => (isWayStrip(f) ? ways.find((w) => w.strip === f) : undefined);

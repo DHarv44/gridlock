@@ -126,8 +126,27 @@ film's names, characters, story, map or look).
    City.rocks) is round in plan and solid as circles: formations of mesa/butte columns on the high
    ground with talus at their feet, and loose boulders (render/rocks.ts: stepped, banded columns and
    faceted stones). Brush (render/brush.ts) is 3D bushes, not solid, thickest in the washes, built
-   and dropped with each ground chunk. Real elevation (slopes you climb) is a possible later step on
-   the same height map.
+   and dropped with each ground chunk.
+   Real elevation (2026-11-26, phase B): WorldSpec.terrain { scale } gives open country real height
+   (shared/world/terrain.ts): a grid every 8 m built in generateCity from the same height map,
+   (relief - 0.45) x the zone's WildSpec.relief x scale, zone hilliness blended over ~50 m; towns
+   (any non-wild zone), ponds and the river (plus a grid step round them) and a grade railway's bed
+   are held level, the hills easing down to them over 60 m (a distance transform). City.terrain;
+   bilinear `groundZ`; Bayhaven has no `terrain` and stays flat. Redrock scale 0.6: about -9..+7 m,
+   most slopes under 6%, washes steeper. A body's z stays relative to its own ground, so collision
+   and cover heights are unchanged. StaticWorld.groundAt / gradeAt: stepFoot and stepMount scale
+   their top speed by slopeFactor (a 10% climb about -25%, a descent up to +10%, never below 40%);
+   wheeled vehicles feel 0.6 g along the slope. StaticWorld.raycast (every shot, lookout, witness,
+   robbery and AI sight line) is also blocked where the ground between two eye heights rises over
+   the line (terrainHit, 3 m samples, 2 m ends left out). Lobbed projectiles fly at true height
+   (carried over the land's rise and fall); straight shots keep their height over the ground.
+   Client: installTerrain + `groundAt`; heightAt (ways.ts) adds it, so peds, mounts, wagons
+   (pitched with the slope), projectiles, pickups, the camera, sound and talk follow the land.
+   Ground chunks are bent planes (a vertex every 4 m, normals up: the painted hillshade still
+   shades); rocks, fixtures and trees are footed on the lowest ground under them, brush, tumbleweeds
+   and effects (effects.ts: heights given over the ground) on it; skids, rotors and headlight beams
+   use height over the hillside. The rock/sea plane past the edge sits below the lowest wash.
+   Check: scripts/terrain.ts.
    Soundtrack (2026-11-26): music that isn't a radio (the western has no stations). Songs in
    <contentDir>/soundtrack/, tracks.json giving each its title and `regions` (zone ids; none =
    anywhere). Server: server/soundtrack.ts lists and serves them (/api/soundtrack, /soundtrack/).

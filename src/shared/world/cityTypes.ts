@@ -3,6 +3,7 @@ import type { Interior } from './interiors';
 import type { Way } from './wayTypes';
 import type { Railway } from './railgen';
 import type { TableSpot } from './tables';
+import type { Terrain } from './terrain';
 
 /** Map size and the land's edges come from the installed universe (worldSpec.ts). */
 export { LAND0, LAND1, MAP_SIZE } from './worldSpec';
@@ -162,4 +163,6 @@ export interface City {
   railway?: Railway;
   /** Card and casino tables (world/tables.ts). */
   tables: TableSpot[];
+  /** The ground's height in open country (world/terrain.ts); absent: flat. */
+  terrain?: Terrain;
 }

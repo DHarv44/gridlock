@@ -516,6 +516,9 @@ export interface WorldSpec {
    *  the street camera next to cars). Riders are always about 1.1x, to sit a real-size saddle; a
    *  world of real-size horses draws people on foot at the same size. Looks only, not hit boxes. */
   pedScale?: number;
+  /** Real hills: open country's ground rises and falls by its zone's WildSpec.relief times `scale`
+   *  (world/terrain.ts); towns, water and the railway stay level. Without it the world is flat. */
+  terrain?: { scale: number };
 }
 
 /** A railway along one road line. 'elevated': on a viaduct over the street (a city's L), on its own
@@ -559,9 +562,10 @@ export interface WildSpec {
   ground: string[];
   /** The colour of trails (dirt roads) through it. */
   trail: string;
-  /** How hilly it is (m from wash bottom to ridge top; shading only, movement stays flat; world/
-   *  relief.ts), the colour down in the washes and up on the ridges, and the rock layers that show
-   *  in bands on its steeper slopes. Rock formations stand on the high ground. */
+  /** How hilly it is (m from wash bottom to ridge top, as painted; world/relief.ts; the ground's
+   *  real rise is this times WorldSpec.terrain.scale), the colour down in the washes and up on the
+   *  ridges, and the rock layers that show in bands on its steeper slopes. Rock formations stand on
+   *  the high ground. */
   relief?: number;
   low?: string;
   high?: string;

@@ -4,6 +4,7 @@ import { CityMap, generateCity } from '../../shared/world/city';
 import { StaticWorld } from '../../shared/world/collision';
 import { groundOf, isWayStrip } from '../../shared/world/levels';
 import { heightAt, installWays } from '../../shared/world/ways';
+import { installTerrain } from '../../shared/world/terrain';
 import { Highways } from '../render/highways';
 import { RailwayView } from '../render/railway';
 import { joinScreen, tableScreen, type TableSend } from '../hud/cardTable';
@@ -113,6 +114,7 @@ export class Game {
   constructor(private conn: Connection, private myId: number, private myName: string, private code: string, seed: number, private onLeave: () => void) {
     const city = generateCity(seed);
     installWays(city.ways);
+    installTerrain(city.terrain);
     this.map = new CityMap(city);
     const statics = this.statics = new StaticWorld(city);
     const canvas = document.getElementById('view') as HTMLCanvasElement;

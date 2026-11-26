@@ -7,6 +7,7 @@
 import { approach, clamp } from '../math';
 import type { VehicleSpec } from '../packs/types';
 import type { StaticWorld } from '../world/collision';
+import { slopeFactor } from '../world/terrain';
 import { type Body, type Controls, collideStatic } from './physics';
 
 /** The gait a throttle asks for (a pad trigger part-way: a walk or a trot; full: a canter). */
@@ -27,7 +28,8 @@ export function stepMount(b: Body, spec: VehicleSpec, c: Controls, dt: number, w
     // Reined in hard while moving; at a standstill, a few slow steps back.
     v = v > 0.3 ? approach(v, 0, g.slow * 2.5 * dt) : approach(v, -g.back, g.accel * 0.5 * dt);
   } else {
-    const want = targetSpeed(spec, throttle, driven && c.sprint);
+    // A climb holds it back, a descent lets it out a little (world/terrain.ts).
+    const want = targetSpeed(spec, throttle, driven && c.sprint) * slopeFactor(world.gradeAt(b.x, b.y, fx, fy));
     v = approach(v, want, (v < want ? g.accel : want === 0 ? g.slow : g.slow * 0.7) * dt);
   }
   // Tight at a walk (on the spot when standing), wide at a gallop; a team is stiffer throughout.

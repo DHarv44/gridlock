@@ -2,6 +2,7 @@
 import { approach, clamp, wrapAngle } from '../math';
 import { RULES, type VehicleSpec } from '../packs';
 import type { StaticWorld } from '../world/collision';
+import { slopeFactor } from '../world/terrain';
 import { stepBoat } from './boat';
 import { stepMount } from './mount';
 
@@ -21,6 +22,8 @@ const HANDBRAKE_SLEW = 0.5;
 /** How near the middle of a roof a helicopter's centre must be to set down on it (metres in from
  *  the edge it may hang over). */
 const HELI_PAD = 0.8;
+/** The share of gravity (m/s² per unit of grade) a wheeled vehicle feels along a slope. */
+const ROLL = 9.8 * 0.6;
 
 export interface Body {
   x: number; y: number; angle: number;
@@ -54,6 +57,8 @@ export function stepFoot(b: Body, c: Controls, speed: number, dt: number, world:
   let mx = c.mx, my = c.my;
   const m = Math.hypot(mx, my);
   if (m > 1) { mx /= m; my /= m; }
+  // Slower up a hill, a little quicker down one (world/terrain.ts).
+  if (m > 1e-3) speed *= slopeFactor(world.gradeAt(b.x, b.y, c.mx / m, c.my / m));
   // GTA2-style: full speed the instant a key is down, dead stop when released.
   b.vx = mx * speed;
   b.vy = my * speed;
@@ -113,6 +118,8 @@ export function stepVehicle(b: Body, spec: VehicleSpec, c: Controls, dt: number,
   }
   if (hand) vf = approach(vf, 0, spec.brake * 0.45 * dt);
   vf -= vf * 0.04 * dt;
+  // Gravity along the slope: it labours up a hill and rolls on down one (world/terrain.ts).
+  vf -= ROLL * world.gradeAt(b.x, b.y, fx, fy) * dt;
 
   const speedK = clamp(Math.abs(vf) / spec.maxSpeed, 0, 1);
   // Oversteer while turning (GTA2 turn_in): the rear lets go a little as you steer at speed.

@@ -12,6 +12,7 @@ import { genGraph, genLayout } from './roadgen';
 import { buildWays } from './waygen';
 import { buildRailway } from './railgen';
 import { placeTables } from './tables';
+import { buildTerrain } from './terrain';
 
 const HALF_PI = Math.PI / 2;
 
@@ -81,6 +82,9 @@ export function generateCity(seed: number): City {
   city.interiors = interiorsOf(city);
   for (const i of city.interiors) i.place.counter = { x: i.counter.x, y: i.counter.y };
   const map = new CityMap(city);
+  // The ground's height in open country (world/terrain.ts), when the universe has hills.
+  const terrain = buildTerrain(city, map);
+  if (terrain) city.terrain = terrain;
   for (const p of city.parking) if (p.zone < 0) p.zone = map.zoneAt(p.x, p.y);
   // Card and casino tables (world/tables.ts): the floors laid out for them, gangs' back rooms, friends' yards.
   placeTables(city, (x, y) => map.districtAt(x, y));
