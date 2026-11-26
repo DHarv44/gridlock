@@ -100,7 +100,7 @@
   spin that whips round and drives off. Pause menu or V to switch; saved in the browser.
   Tyre marks and smoke (render/skids.ts) come from tyre load (turn rate x speed, hard braking),
   since the physics has no sideways slide; a looping tyre squeal follows the hardest slide
-  (audio/sound.ts `tyres`, silent until the `skid` recording is added).
+  (audio/sound.ts `tyres`; ASSETS.md `skid`, a CC0 Chrysler cornering squeal).
   `npx tsx scripts/drive.ts`. Also: twin-stick aiming in vehicles (right stick: drive-by, heli
   guns, turret) and a shared car radio (protocol 16).
 - Company (2026-11-23): waypoints go to the server and show, in each player's colour, to everyone in

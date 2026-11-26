@@ -50,6 +50,7 @@ Test with the game muted (`?mute`); never play sounds out loud while testing.
 | `phone_ring` | [456433 "Old Rotary Phone Ringing - Western Electric Bell 500 phone"](https://freesound.org/s/456433/) | mycompasstv | CC0 | 2026-11-23 | Ringing payphones (one ring) |
 | `engine_diesel` | [128160 "Diesel Truck Idling Front.wav"](https://freesound.org/s/128160/) | ibirdfilm | CC0 | 2026-11-23 | Trucks', buses', the tank's and the ice cream van's engine loop |
 | `engine_bike` | [119455 "Motorbike Idling.wav"](https://freesound.org/s/119455/) | lmbubec | CC0 | 2026-11-23 | Motorbikes' engine loop |
+| `skid` | [71739 "Chrysler LHS tire squeal 04 (04-25-2009).wav"](https://freesound.org/s/71739/) | audible-edge | CC0 | 2026-11-26 | Tyre squeal in slides (a 1.5 s loop from 5.3–7.0 s, the steadiest squeal) |
 
 ## Music
 

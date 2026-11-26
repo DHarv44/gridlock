@@ -158,5 +158,10 @@
   "seconds": 2.7,
   "loop": false,
   "src": "phone_ring"
+ },
+ "skid": {
+  "seconds": 1.492,
+  "loop": true,
+  "src": "skid"
  }
 }

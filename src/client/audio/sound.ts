@@ -39,8 +39,7 @@ const VOICES: Record<string, { file: string; gain: number; vary?: number; gap?: 
   phone_ring: { file: 'phone_ring', gain: 0.4 },
 };
 const SIREN_GAIN = 0.3;
-/** Tyres squealing in a slide: one loop that follows the hardest slide nearby (silent until the
- *  CC0 recording `skid` is fetched and prepared, ASSETS.md). */
+/** Tyres squealing in a slide: one loop that follows the hardest slide nearby (ASSETS.md `skid`). */
 const SKID_GAIN = 0.32;
 /** Most sounds playing at once; past this, new ones are dropped. */
 const MAX_VOICES = 28;

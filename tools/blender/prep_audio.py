@@ -55,6 +55,7 @@ JOBS = {
     "phone_ring": {"src": "phone_ring", "mode": "first", "max": 2.7},  # one ring of the 2 s on / 4 s off cadence
     "engine_diesel": {"src": "engine_diesel", "mode": "loop", "max": 3.0},
     "engine_bike": {"src": "engine_bike", "mode": "loop", "max": 3.0},
+    "skid": {"src": "skid", "mode": "loop", "max": 1.4, "span": (5.3, 7.0)},  # the loudest, steadiest squeal
 }
 
 

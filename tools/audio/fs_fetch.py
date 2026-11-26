@@ -49,6 +49,7 @@ CHOSEN = [  # key, sound id (the page's address names the author: freesound.org/
     ("engine_maserati", 585215), # Maserati GranTurismo V8 idle: sports cars (engine_sport)
     ("engine_firebird", 157142), # 1975 Pontiac Firebird, free exhaust: muscle cars (engine_muscle)
     ("phone_ring", 456433),      # Western Electric 500 bell: ringing payphones
+    ("skid", 71739),             # Chrysler LHS hard cornering: tyre squeal loop
 ]
 CC0 = "creativecommons.org/publicdomain/zero"
 
